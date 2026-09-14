@@ -1,0 +1,7 @@
+# Normalize line endings in the repository to LF, and let each checkout use
+# whatever its platform expects. Without this the result depends on each
+# contributor's `core.autocrlf`, and a single one with it turned off is enough
+# to land CRLF in history and turn the next diff into a whole-file rewrite.
+* text=auto
+
+package-lock.json -diff

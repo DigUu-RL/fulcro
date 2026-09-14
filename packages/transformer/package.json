@@ -1,0 +1,48 @@
+{
+	"name": "@fulcro/transformer",
+	"version": "0.0.0",
+	"description": "Compile time transformer resolving the @fulcro/reflect utilities, for ts-patch and every bundler unplugin covers.",
+	"keywords": [
+		"typescript",
+		"transformer",
+		"ts-patch",
+		"unplugin",
+		"compiler"
+	],
+	"license": "ISC",
+	"author": "diguu <rodrigogeribola@hotmail.com>",
+	"main": "./dist/transformer/index.js",
+	"types": "./dist/transformer/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/transformer/index.d.ts",
+			"default": "./dist/transformer/index.js"
+		},
+		"./unplugin": {
+			"types": "./dist/unplugin/index.d.mts",
+			"default": "./dist/unplugin/index.mjs"
+		},
+		"./package.json": "./package.json"
+	},
+	"files": [
+		"dist"
+	],
+	"sideEffects": false,
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
+		"typecheck": "tsc --noEmit -p tsconfig.json",
+		"prepublishOnly": "npm run build"
+	},
+	"dependencies": {
+		"unplugin": "^3.3.0"
+	},
+	"peerDependencies": {
+		"typescript": ">=5.3.3"
+	},
+	"devDependencies": {
+		"@fulcro/reflect": "*"
+	},
+	"publishConfig": {
+		"access": "public"
+	}
+}

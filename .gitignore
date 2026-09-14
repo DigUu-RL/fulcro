@@ -1,0 +1,11 @@
+node_modules/
+dist/
+
+# Emitted output never belongs beside a source. A build misconfigured on its
+# `rootDir` drops `.js` and `.d.ts` files right next to the `.ts` they came
+# from, and the test runner then resolves the stale copy in preference to the
+# source — a failure that reads as a broken import rather than as stale output.
+packages/*/src/**/*.js
+packages/*/src/**/*.mjs
+packages/*/src/**/*.d.ts
+packages/*/src/**/*.d.mts

@@ -1,0 +1,35 @@
+{
+	"name": "@fulcro/collections",
+	"version": "0.0.0",
+	"description": "Lazily evaluated sequences with a composable query operator set.",
+	"keywords": [
+		"sequence",
+		"query",
+		"lazy",
+		"collections",
+		"typescript"
+	],
+	"license": "ISC",
+	"author": "diguu <rodrigogeribola@hotmail.com>",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		},
+		"./package.json": "./package.json"
+	},
+	"files": [
+		"dist"
+	],
+	"//sideEffects": "Deliberately omitted. The barrels run `bootstrapCollections()` on load to plug the concrete classes into the factory registry, so a bundler treating this package as side effect free would drop the call and break `groupBy`, `orderBy` and `orderByDescending`.",
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
+		"typecheck": "tsc --noEmit -p tsconfig.json",
+		"prepublishOnly": "npm run build"
+	},
+	"publishConfig": {
+		"access": "public"
+	}
+}

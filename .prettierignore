@@ -1,0 +1,6 @@
+node_modules/
+dist/
+package-lock.json
+
+# Written by the tooling, not by hand.
+.claude/

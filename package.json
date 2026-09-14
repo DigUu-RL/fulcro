@@ -1,0 +1,28 @@
+{
+	"name": "fulcro",
+	"version": "0.0.0",
+	"description": "Development root for the @fulcro packages.",
+	"private": true,
+	"workspaces": [
+		"packages/*"
+	],
+	"scripts": {
+		"build": "npm run build --workspaces",
+		"typecheck": "npm run typecheck --workspaces && tsc --noEmit -p tsconfig.tests.json",
+		"test": "npm run build && vitest run --configLoader native",
+		"test:watch": "npm run build && vitest --configLoader native",
+		"format": "prettier --write .",
+		"format:check": "prettier --check ."
+	},
+	"author": "diguu <rodrigogeribola@hotmail.com>",
+	"license": "ISC",
+	"devDependencies": {
+		"@types/node": "^26.5.1",
+		"eslint-config-prettier": "^10.1.8",
+		"eslint-plugin-simple-import-sort": "^14.0.0",
+		"prettier": "^3.9.6",
+		"tsc-alias": "^1.9.5",
+		"typescript": "^5.3.3",
+		"vitest": "^5.0.0"
+	}
+}

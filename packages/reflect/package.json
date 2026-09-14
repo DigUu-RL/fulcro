@@ -1,0 +1,35 @@
+{
+	"name": "@fulcro/reflect",
+	"version": "0.0.0",
+	"description": "Type aware `nameOf`, `typeOf` and `defaultOf`, resolved at compile time by @fulcro/transformer.",
+	"keywords": [
+		"nameof",
+		"typeof",
+		"default",
+		"reflection",
+		"typescript"
+	],
+	"license": "ISC",
+	"author": "diguu <rodrigogeribola@hotmail.com>",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		},
+		"./package.json": "./package.json"
+	},
+	"files": [
+		"dist"
+	],
+	"sideEffects": false,
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
+		"typecheck": "tsc --noEmit -p tsconfig.json",
+		"prepublishOnly": "npm run build"
+	},
+	"publishConfig": {
+		"access": "public"
+	}
+}
