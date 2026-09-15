@@ -349,8 +349,8 @@ platform difference is settled by the bundler rather than by a runtime check,
 and a browser bundle never contains a reference to `node:worker_threads`.
 
 **Versioned independently** from the other four. The fixed group exists because
-`@fulcro/transformer` is tied to the folder layout `@fulcro/reflect` publishes,
-a coupling no compiler checks. Nothing of the sort binds this package: it
+a transformer is tied to the folder layout the library it serves publishes, a
+coupling no compiler checks. Nothing of the sort binds this package: it
 consumes `AsyncSequence` through its public types like any other consumer, and a
 mismatch there is a type error rather than a silent fallback.
 

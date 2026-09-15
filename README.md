@@ -5,17 +5,19 @@
 Development root for the `@fulcro` packages. Private — nothing is published from
 here; the packages under `packages/` are.
 
-| Package                                       | What it is                                                                         | Runtime deps                  |
-| --------------------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------- |
-| [`@fulcro/collections`](packages/collections) | Lazily evaluated sequences with a composable query operator set                    | none                          |
-| [`@fulcro/reflect`](packages/reflect)         | `nameOf`, `typeOf`, `defaultOf`                                                    | peer `@fulcro/transformer`    |
-| [`@fulcro/functions`](packages/functions)     | `switchFor` and `tryCatch` — control flow as values                                | none                          |
-| [`@fulcro/transformer`](packages/transformer) | Compile-time resolution of the `@fulcro/reflect` utilities, for `tsc` and bundlers | `unplugin`, peer `typescript` |
-| [`@fulcro/parallel`](packages/parallel)       | A worker pool for CPU-bound work, on browser and Node                              | none                          |
+| Package                                             | What it is                                                              | Runtime deps                           |
+| --------------------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------- |
+| [`@fulcro/collections`](packages/collections)       | Lazily evaluated sequences with a composable query operator set         | none                                   |
+| [`@fulcro/reflect`](packages/reflect)               | `nameOf`, `typeOf`, `defaultOf`, with their transformer in the box      | `@fulcro/transform-core`               |
+| [`@fulcro/functions`](packages/functions)           | `switchFor` and `tryCatch` — control flow as values                     | none                                   |
+| [`@fulcro/transform-core`](packages/transform-core) | Shared machinery behind the transformers. Installed for you, not by you | `unplugin`, optional peer `typescript` |
+| [`@fulcro/parallel`](packages/parallel)             | A worker pool for CPU-bound work, on browser and Node                   | none                                   |
 
 `@fulcro/collections`, `@fulcro/functions` and `@fulcro/parallel` stand alone.
-`@fulcro/reflect` works on its own and gets sharper with `@fulcro/transformer`;
-only `defaultOf` strictly requires it.
+`@fulcro/reflect` ships its own compile time transformer behind a separate entry
+point, so one install gets you everything and a runtime-only bundle still pulls
+in none of the compiler machinery. Wiring that transformer up is optional for
+`nameOf` and `typeOf`, which degrade, and required by `defaultOf`, which throws.
 
 ## Documentation
 
@@ -35,11 +37,12 @@ npx eslint .
 ```
 
 `npm test` builds before running, and has to: the test harness loads the
-transformer from `@fulcro/transformer`'s built output, the transformer fixture
+transformer from `@fulcro/reflect`'s built output, the transformer fixture
 resolves `@fulcro/reflect` through `node_modules` the way a consumer would, and
 the entry point suite runs entirely against the built packages.
 
-There are six suites — one per package, plus `tests/entrypoints.spec.mts` at
+There are five suites — one per package that has tests, plus
+`tests/entrypoints.spec.mts` at
 the root. That last one exists because every other suite reaches into a package
 through its internal `@/*` alias: a wrong `main`, a typo in `exports` or a
 `files` list that forgets a folder would leave all of them green and break the
@@ -57,12 +60,23 @@ is shared between packages except the compiler options in `tsconfig.base.json`.
 Two structural decisions are worth knowing before changing anything.
 
 **Testing is owned by the root, not by each package.** The `@fulcro/reflect`
-suites only mean something with the transformer applied — `defaultOf` throws
-without it — but making the package depend on `@fulcro/transformer` to test
-itself would tie the two together in both directions, since the transformer
-already depends on `@fulcro/reflect` for its compile fixture. Wiring the plugin
-once in `vitest.config.mts`, as one project per package, keeps that edge
-single and lets each published package declare only what its consumers need.
+suites only mean something with its transformer applied — `defaultOf` throws
+without it — and the plugin is a build time concern. Wiring it once in
+`vitest.config.mts`, as one project per package, keeps it out of the manifest of
+every package that only needs it while its own tests run.
+
+**Each library owns its own transformer.** `@fulcro/reflect` publishes one at
+`@fulcro/reflect/transformer`; anything else that grows compile time behaviour
+will publish its own too, and `@fulcro/transform-core` holds only the part that
+belongs to neither — following a call to its declaration, walking a file,
+keeping a program for the bundlers that have no checker.
+
+That replaced a single `@fulcro/transformer` installed as a peer dependency,
+which failed in both available directions: npm installs peers and Yarn does not,
+so a project could get the utilities with nothing to resolve them, quietly; and
+`reflect@0.3` with `transformer@0.2` was an installable, broken pair. What a
+call means and what it compiles to now ship together because they are one
+package.
 
 **The transformer fixture imports `@fulcro/reflect` by name.** It resolves into
 that package's built declarations rather than into a sibling source file, so the
@@ -90,13 +104,13 @@ runs the whole suite, and only then publishes.
 `.changeset/config.json`. `@fulcro/parallel` is outside it and versions on its
 own: nothing binds it to the others the way the group members are bound. A
 package with no changes of its own is bumped along with the rest, and that is
-deliberate: `@fulcro/transformer` recognises a call by the folder its
-declaration sits in inside the published output of
-`@fulcro/reflect`. Reorganising those folders breaks nothing `reflect` exports,
-so nothing would push its major version up — yet the transformer silently stops
-rewriting and the runtime fallbacks take over. Versioning them as one makes that
-combination impossible to install. `.changeset/README.md` has the longer
-version, including what would have to change before the group could be split.
+deliberate: a rewriter recognises a call by the folder its declaration sits in
+inside the published output of the library it belongs to. Reorganising those
+folders breaks nothing that library exports, so nothing would push its major
+version up — yet the transformer silently stops rewriting and the runtime
+fallbacks take over. Versioning them as one makes that combination impossible to
+install. `.changeset/README.md` has the longer version, including what would
+have to change before the group could be split.
 
 ### Authentication
 

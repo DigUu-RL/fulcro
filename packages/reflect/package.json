@@ -1,7 +1,7 @@
 {
 	"name": "@fulcro/reflect",
 	"version": "0.2.1",
-	"description": "Type aware nameOf, typeOf and defaultOf, resolved at compile time by @fulcro/transformer.",
+	"description": "Type aware nameOf, typeOf and defaultOf, with the compile time transformer that resolves them in the box.",
 	"keywords": [
 		"nameof",
 		"typeof",
@@ -17,6 +17,14 @@
 		".": {
 			"types": "./dist/index.d.ts",
 			"default": "./dist/index.js"
+		},
+		"./transformer": {
+			"types": "./dist/transformer/index.d.ts",
+			"default": "./dist/transformer/index.js"
+		},
+		"./unplugin": {
+			"types": "./dist/unplugin/index.d.mts",
+			"default": "./dist/unplugin/index.mjs"
 		},
 		"./package.json": "./package.json"
 	},
@@ -44,7 +52,15 @@
 	"bugs": {
 		"url": "https://github.com/DigUu-RL/fulcro/issues"
 	},
+	"dependencies": {
+		"@fulcro/transform-core": "^0.2.1"
+	},
 	"peerDependencies": {
-		"@fulcro/transformer": "^0.2.1"
+		"typescript": ">=5.3.3 <7"
+	},
+	"peerDependenciesMeta": {
+		"typescript": {
+			"optional": true
+		}
 	}
 }

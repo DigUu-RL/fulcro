@@ -6,7 +6,7 @@ import {
 	isTupleType,
 	RewriteContext,
 	utilityModuleSegment,
-} from '@/transformer/shared';
+} from '@fulcro/transform-core';
 
 /**
  * Rewriter of `defaultOf`.

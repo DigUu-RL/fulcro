@@ -4,7 +4,7 @@ import {
 	CallRewriter,
 	RewriteContext,
 	utilityModuleSegment,
-} from '@/transformer/shared';
+} from '@fulcro/transform-core';
 
 /**
  * Rewriter of `nameOf`.

@@ -34,7 +34,7 @@ const PACKAGE_NAMES = [
 	'@fulcro/functions',
 	'@fulcro/parallel',
 	'@fulcro/reflect',
-	'@fulcro/transformer',
+	'@fulcro/transform-core',
 ] as const;
 
 /** Manifest fields this suite reads back. */
@@ -44,6 +44,7 @@ interface Manifest {
 	readonly types?: string;
 	readonly license?: string;
 	readonly exports?: Record<string, unknown>;
+	readonly peerDependencies?: Record<string, string>;
 	readonly publishConfig?: { readonly access?: string };
 }
 
@@ -328,7 +329,7 @@ describe('@fulcro/reflect', () => {
 
 		// Nothing compiles this file through the transformer, which is the
 		// point: this is the fallback behaviour a consumer gets before wiring
-		// `@fulcro/transformer` up.
+		// the transformer up.
 		expect(typeOf(null).typeId).toBe('null');
 		expect(typeOf([1, 2]).typeId).toBe('array');
 		expect(typeOf(Number.NaN).typeId).toBe('nan');
@@ -409,25 +410,48 @@ describe('@fulcro/functions', () => {
 	});
 });
 
-describe('@fulcro/transformer', () => {
+/** Bundlers every `/unplugin` entry point claims to serve. */
+const BUNDLERS = [
+	'vite',
+	'rollup',
+	'webpack',
+	'rspack',
+	'esbuild',
+	'farm',
+] as const;
+
+describe('@fulcro/reflect/transformer', () => {
 	it('should expose the compiler plugin as its default export', async () => {
-		const entry = await import('@fulcro/transformer');
+		const entry = await import('@fulcro/reflect/transformer');
 
 		// What `ts-patch` loads and calls with the program.
 		expect(typeof entry.default).toBe('function');
 	});
 
-	it('should expose an adapter for every bundler it claims to serve', async () => {
-		const adapters = await import('@fulcro/transformer/unplugin');
+	it('should ship inside the package whose calls it rewrites', () => {
+		// The whole point of the restructure: installing `@fulcro/reflect` is
+		// enough. Resolved the way a consumer's runtime resolves it, so a build
+		// that forgot to emit either entry point fails here rather than in
+		// somebody's tsconfig.
+		expect(() => resolve('@fulcro/reflect/transformer')).not.toThrow();
+		expect(() => resolve('@fulcro/reflect/unplugin')).not.toThrow();
+	});
 
-		for (const bundler of [
-			'vite',
-			'rollup',
-			'webpack',
-			'rspack',
-			'esbuild',
-			'farm',
-		]) {
+	it('should need nothing else installed to be wired up', () => {
+		// A separate `@fulcro/transformer` used to be a peer dependency here, and
+		// a consumer whose package manager did not install peers got the utilities
+		// with no way to resolve them. There is nothing left to miss.
+		const { manifest } = manifestOf('@fulcro/reflect');
+
+		expect(manifest.peerDependencies ?? {}).not.toHaveProperty(
+			'@fulcro/transformer',
+		);
+	});
+
+	it('should expose an adapter for every bundler it claims to serve', async () => {
+		const adapters = await import('@fulcro/reflect/unplugin');
+
+		for (const bundler of BUNDLERS) {
 			expect(typeof adapters[bundler as keyof typeof adapters]).toBe(
 				'function',
 			);

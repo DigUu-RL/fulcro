@@ -3,7 +3,8 @@ import * as path from 'node:path';
 
 import typescript from 'typescript';
 
-import transformer, { TransformerOptions } from '@/transformer';
+import { CallRewriter } from '@/shared';
+import { createTransformer, TransformerOptions } from '@/transformer';
 
 /**
  * Type checking core shared by every bundler integration.
@@ -22,8 +23,24 @@ import transformer, { TransformerOptions } from '@/transformer';
 /** Extensions carrying TypeScript this core is responsible for. */
 const HANDLED_EXTENSIONS = ['.ts', '.mts', '.cts'];
 
-/** Files mentioning none of these have nothing for the transformer to do. */
-const UTILITY_PATTERN = /\b(nameOf|typeOf|defaultOf)\b/;
+/**
+ * Builds the cheap pre-filter that skips files with nothing to rewrite.
+ *
+ * Reading a file is far cheaper than type checking it, so a source mentioning
+ * none of the owned function names never reaches the program. Derived from the
+ * rewriters rather than written out, because each package brings its own names
+ * and this core belongs to none of them.
+ *
+ * @param rewriters Rewriters the core was built with.
+ * @returns A pattern matching any of their function names as a whole word.
+ */
+const buildUtilityPattern = (rewriters: readonly CallRewriter[]): RegExp => {
+	const names: string = rewriters
+		.map((rewriter) => rewriter.functionName)
+		.join('|');
+
+	return new RegExp(`\\b(${names})\\b`);
+};
 
 /**
  * Rewrites a path the way the compiler spells it.
@@ -251,13 +268,17 @@ export interface FileTransformer {
  * The program is built on the first file that actually needs it, so a project
  * never calling the utilities pays nothing.
  *
+ * @param rewriters Rewriters of the package this core is serving.
  * @param options Options of the core.
  * @returns A transformer usable by any bundler adapter.
  */
 export const createFileTransformer = (
+	rewriters: readonly CallRewriter[],
 	options: TransformCoreOptions = {},
 ): FileTransformer => {
 	const root: string = options.root ?? process.cwd();
+	const utilityPattern: RegExp = buildUtilityPattern(rewriters);
+	const transformer = createTransformer(rewriters);
 
 	let host: ProgramHost | undefined;
 	let service: typescript.LanguageService | undefined;
@@ -276,7 +297,7 @@ export const createFileTransformer = (
 		// Cheap rejection before anything expensive: most files of a project
 		// mention none of the utilities, and building the program for them
 		// would cost seconds for nothing.
-		if (!UTILITY_PATTERN.test(code)) return null;
+		if (!utilityPattern.test(code)) return null;
 
 		const fileName: string = toCompilerPath(id.split('?')[0]);
 

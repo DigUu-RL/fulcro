@@ -1,17 +1,20 @@
 import { defineConfig, type ViteUserConfig } from 'vitest/config';
 
-import { vite as typeAwareTransformer } from '@fulcro/transformer/unplugin';
+import { vite as reflectTransformer } from '@fulcro/reflect/unplugin';
 
 /**
  * Test harness of the whole workspace.
  *
- * Testing is owned by the root rather than by each package, and deliberately
- * so. The suites of `@fulcro/reflect` only mean something with the transformer
- * applied — `defaultOf` throws without it — yet making the package depend on
- * `@fulcro/transformer` to test itself would tie the two together in both
- * directions, since the transformer already depends on `@fulcro/reflect` for
- * its fixture. Wiring the plugin here keeps that edge single and lets every
- * published package declare only what its consumers actually need.
+ * Testing is owned by the root rather than by each package. The suites of
+ * `@fulcro/reflect` only mean something with its transformer applied —
+ * `defaultOf` throws without it — and the plugin is a build time concern, so
+ * wiring it here keeps it out of the manifest of every package that only needs
+ * it while its own tests run.
+ *
+ * The plugin now comes from `@fulcro/reflect` itself rather than from a package
+ * beside it: each library ships the transformer for its own utilities, so there
+ * is nothing extra to install and no way for the two halves to drift apart in
+ * version.
  *
  * Each package runs as its own project, rooted at its own directory, so that
  * the `@/*` alias and the program the transformer builds both resolve against
@@ -30,7 +33,7 @@ const project = (name: string): ViteUserConfig => ({
 	// The type aware utilities are resolved by the transformer, which needs a
 	// type checker. Without this plugin the suites would exercise only their
 	// runtime fallbacks, and `defaultOf` would throw.
-	plugins: [typeAwareTransformer()],
+	plugins: [reflectTransformer()],
 
 	// The `@/*` alias is declared once, in the tsconfig of each package, and
 	// read back from there rather than repeated as a Vite alias — so a path the
@@ -85,7 +88,6 @@ export default defineConfig({
 			project('functions'),
 			project('parallel'),
 			project('reflect'),
-			project('transformer'),
 			entryPoints(),
 		],
 	},

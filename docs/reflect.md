@@ -4,17 +4,17 @@ Three utilities that answer questions TypeScript erases on its way to
 JavaScript.
 
 ```sh
-npm install @fulcro/reflect @fulcro/transformer
+npm install @fulcro/reflect
 ```
 
 ```ts
 import { defaultOf, nameOf, typeOf } from '@fulcro/reflect';
 ```
 
-`@fulcro/transformer` is declared as a peer dependency. npm installs peers for
-you and Yarn does not, so name both: half of this pair fails quietly rather than
-loudly. It is not optional —
-[see below](#the-transformer-is-not-optional).
+One package: the compile time transformer ships inside it, as
+`@fulcro/reflect/transformer`. It is not optional —
+[see below](#the-transformer-is-not-optional) — but there is nothing else to
+install, and no way to end up with half of it.
 
 ## The problem
 
@@ -194,8 +194,8 @@ would be a lie.
 
 ## Wiring the transformer in
 
-Two paths, depending on how you build. Full detail in the
-[package README](../packages/transformer/README.md).
+Two paths, depending on how you build. Nothing extra to install either way — the
+transformer came with the package.
 
 ### With `tsc`
 
@@ -209,7 +209,9 @@ npm install --save-dev ts-patch
 // tsconfig.json
 {
 	"compilerOptions": {
-		"plugins": [{ "transform": "@fulcro/transformer", "type": "program" }],
+		"plugins": [
+			{ "transform": "@fulcro/reflect/transformer", "type": "program" },
+		],
 	},
 }
 ```
@@ -223,7 +225,7 @@ npm install --save-dev ts-patch
 
 ```ts
 // vite.config.ts
-import { vite as fulcro } from '@fulcro/transformer/unplugin';
+import { vite as fulcro } from '@fulcro/reflect/unplugin';
 
 export default defineConfig({ plugins: [fulcro()] });
 ```

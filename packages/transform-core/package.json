@@ -1,7 +1,7 @@
 {
-	"name": "@fulcro/transformer",
+	"name": "@fulcro/transform-core",
 	"version": "0.2.1",
-	"description": "Compile time transformer resolving the @fulcro/reflect utilities, for ts-patch and every bundler unplugin covers.",
+	"description": "Shared machinery behind the Fulcro compile time transformers. Installed for you; not meant to be depended on directly.",
 	"keywords": [
 		"typescript",
 		"transformer",
@@ -11,12 +11,12 @@
 	],
 	"license": "ISC",
 	"author": "diguu <rodrigogeribola@hotmail.com>",
-	"main": "./dist/transformer/index.js",
-	"types": "./dist/transformer/index.d.ts",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
 	"exports": {
 		".": {
-			"types": "./dist/transformer/index.d.ts",
-			"default": "./dist/transformer/index.js"
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
 		},
 		"./unplugin": {
 			"types": "./dist/unplugin/index.d.mts",
@@ -39,8 +39,10 @@
 	"peerDependencies": {
 		"typescript": ">=5.3.3 <7"
 	},
-	"devDependencies": {
-		"@fulcro/reflect": "*"
+	"peerDependenciesMeta": {
+		"typescript": {
+			"optional": true
+		}
 	},
 	"publishConfig": {
 		"access": "public"
@@ -51,9 +53,9 @@
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/DigUu-RL/fulcro.git",
-		"directory": "packages/transformer"
+		"directory": "packages/transform-core"
 	},
-	"homepage": "https://github.com/DigUu-RL/fulcro/tree/main/packages/transformer#readme",
+	"homepage": "https://github.com/DigUu-RL/fulcro/tree/main/packages/transform-core#readme",
 	"bugs": {
 		"url": "https://github.com/DigUu-RL/fulcro/issues"
 	}

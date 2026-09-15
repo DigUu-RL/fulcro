@@ -10,7 +10,7 @@
 			"@fulcro/collections",
 			"@fulcro/functions",
 			"@fulcro/reflect",
-			"@fulcro/transformer"
+			"@fulcro/transform-core"
 		]
 	],
 	"linked": [],

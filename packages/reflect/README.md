@@ -4,17 +4,21 @@
 TypeScript erases on its way to JavaScript.
 
 ```sh
-npm install @fulcro/reflect @fulcro/transformer
+npm install @fulcro/reflect
 ```
 
-Both named, deliberately. [`@fulcro/transformer`](../transformer) is declared as
-a peer dependency, and npm installs peers for you — but Yarn does not, and a
-project that ends up with only half of this pair breaks quietly rather than
-loudly: `defaultOf` throws, `nameOf` degrades to parsing closures, and
-`typeOf(…).declared` goes `null`. Naming both costs nothing and behaves the same
-on every package manager.
+One package. The compile time transformer ships **inside** it, as
+`@fulcro/reflect/transformer`, so there is nothing else to install and no way to
+end up with the utilities but not the thing that resolves them.
 
-**It is not optional, and the split between the two is not a menu.** These
+It used to be a second package, installed as a peer dependency, and that went
+wrong in both of the ways it could. npm installs peers and Yarn does not, so a
+project could get the utilities alone — quietly, because these degrade rather
+than crash. And `@fulcro/reflect@0.3` with `@fulcro/transformer@0.2` was an
+installable, broken combination. What a call means and what it compiles to are
+now released together, because they are the same package.
+
+**The transformer is not optional, and it is not a menu.** These
 utilities are named for what they read, and what they read is the
 type — which exists only while the compiler is running. Without the transformer
 the package still loads and still answers, but it answers from the value in
@@ -22,9 +26,10 @@ front of it: `typeOf` reports a runtime shape with `declared` reading `null`,
 `nameOf` falls back to parsing the closure and is at the mercy of a minifier,
 and `defaultOf` throws, because a default it cannot compute would be a lie.
 
-That is a fallback, not a mode to choose. The two packages are separate so the
-transformer's own dependencies stay out of anything that only imports these
-functions at runtime — not so that either half is usable alone.
+That is a fallback, not a mode to choose. The transformer is a **build time**
+concern and lives behind its own entry point, so a bundle that only imports
+these functions at runtime never pulls the compiler machinery in — but it is
+always there to be wired up.
 
 ```ts
 import { defaultOf, nameOf, typeOf } from '@fulcro/reflect';
@@ -32,8 +37,16 @@ import { defaultOf, nameOf, typeOf } from '@fulcro/reflect';
 
 What each utility gains from the transformer is spelled out below, and
 summarised in a table at the end. Wiring it into a build takes one entry in a
-tsconfig or one plugin in a bundler; see
-[`@fulcro/transformer`](../transformer).
+tsconfig:
+
+```json
+{
+	"plugins": [{ "transform": "@fulcro/reflect/transformer", "type": "program" }]
+}
+```
+
+or one plugin in a bundler, from `@fulcro/reflect/unplugin`. See
+[docs/reflect.md](../../docs/reflect.md) for the full setup.
 
 Looking for `switchFor` or `tryCatch`? They moved to
 [`@fulcro/functions`](../functions). Neither has anything to do with the
@@ -138,16 +151,15 @@ a lie, and failing loudly at the call site beats handing back a wrong value.
 
 ## With and without the transformer
 
-|                            | Without                             | With `@fulcro/transformer`                                    |
+|                            | Without                             | With the transformer                                          |
 | -------------------------- | ----------------------------------- | ------------------------------------------------------------- |
 | `nameOf(() => user.email)` | `'email'` — parsed from the closure | `'email'` — emitted as a literal, minifier-proof              |
 | `nameOf<UserContract>()`   | not available                       | `'UserContract'`                                              |
 | `typeOf(value)`            | runtime shape; `declared` is `null` | runtime shape **+** the declared type and its source location |
 | `defaultOf<T>()`           | throws                              | the built value, emitted inline                               |
 
-Installing the transformer is a build-time concern only; this package stays a
-plain runtime dependency either way. See
-[`@fulcro/transformer`](../transformer) for the setup.
+Wiring the transformer is a build time concern only; this package stays a plain
+runtime dependency either way, and nothing extra is installed to get it.
 
 ---
 
