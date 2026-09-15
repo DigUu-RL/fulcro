@@ -1,6 +1,6 @@
 {
 	"name": "@fulcro/reflect",
-	"version": "0.0.0",
+	"version": "0.1.0",
 	"description": "Type aware nameOf, typeOf and defaultOf, resolved at compile time by @fulcro/transformer.",
 	"keywords": [
 		"nameof",

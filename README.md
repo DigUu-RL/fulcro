@@ -21,7 +21,7 @@ requires it.
 ```sh
 npm install     # links the workspaces
 npm run build   # every package
-npm test        # builds first, then runs all three suites
+npm test        # builds first, then runs every suite
 npm run typecheck
 npm run format
 npx eslint .
@@ -62,6 +62,45 @@ that package's built declarations rather than into a sibling source file, so the
 suite exercises call recognition across a real package boundary. The rewriters
 identify a call by the module that declares it, and a same-tree relative import
 would never have covered the case that actually ships.
+
+## Releasing
+
+Changes that should reach a release are described with
+[changesets](https://github.com/changesets/changesets):
+
+```sh
+npx changeset              # describe what changed and how far it moves
+npm run version-packages   # apply the pending changesets to the manifests
+git commit -am "Release"   # review the diff first
+```
+
+Then run the **Release** workflow from the Actions tab. It is manual on purpose:
+publishing is irreversible — a name is taken for good and a version can never be
+reused — so it is never something a merge does on its own. The workflow builds,
+runs the whole suite, and only then publishes.
+
+**The four packages share one version**, as a `fixed` group in
+`.changeset/config.json`. A package with no changes of its own is bumped along
+with the rest, and that is deliberate: `@fulcro/transformer` recognises a call
+by the folder its declaration sits in inside the published output of
+`@fulcro/reflect`. Reorganising those folders breaks nothing `reflect` exports,
+so nothing would push its major version up — yet the transformer silently stops
+rewriting and the runtime fallbacks take over. Versioning them as one makes that
+combination impossible to install. `.changeset/README.md` has the longer
+version, including what would have to change before the group could be split.
+
+### Authentication
+
+There is no npm token anywhere, and there should not be one. The release
+workflow authenticates through **trusted publishing**: GitHub mints a short
+lived OIDC token, npm verifies it came from this repository and this workflow
+file, and grants publish rights for that run alone. Nothing to store, rotate, or
+leak.
+
+It has to be configured once per package on npmjs.com — repository
+`DigUu-RL/fulcro`, workflow `release.yml` — and npm does not validate that
+configuration when it is saved, so the first run is where a mistake in it shows
+up.
 
 ## Emitted output never belongs beside a source
 

@@ -1,6 +1,6 @@
 {
 	"name": "@fulcro/collections",
-	"version": "0.0.0",
+	"version": "0.1.0",
 	"description": "Lazily evaluated sequences with a composable query operator set.",
 	"keywords": [
 		"sequence",

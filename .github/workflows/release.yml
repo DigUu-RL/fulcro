@@ -1,0 +1,70 @@
+name: Release
+
+# Deliberately manual. Publishing is irreversible — a name is taken for good and
+# a version can never be reused — so it is never something a merge does on its
+# own. Version the packages locally with `npm run version-packages`, review the
+# manifests and changelogs that produces, commit, and then run this.
+on:
+  workflow_dispatch:
+
+permissions:
+  # Lets GitHub mint the OIDC token npm exchanges for publish rights, which is
+  # what removes the need for a long-lived token stored as a secret.
+  id-token: write
+  # Lets the tags `changeset publish` creates be pushed back.
+  contents: write
+
+jobs:
+  release:
+    name: publish to npm
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          # Trusted publishing needs Node 22.14 or newer; this is the line CI
+          # already tests on.
+          node-version: '24'
+          cache: npm
+          # Writes the .npmrc that points the CLI at the public registry. No
+          # token goes in it — the OIDC exchange supplies the credential.
+          registry-url: 'https://registry.npmjs.org'
+
+      # The bundled npm is usually new enough, but "usually" is not a thing to
+      # discover halfway through publishing four packages.
+      - name: Ensure npm supports trusted publishing
+        run: |
+          npm install -g npm@latest
+          node - <<'NODE'
+          const { execSync } = require('node:child_process');
+          const version = execSync('npm --version', { encoding: 'utf8' }).trim();
+          const [major, minor, patch] = version.split('.').map(Number);
+          const supported =
+            major > 11 ||
+            (major === 11 && (minor > 5 || (minor === 5 && patch >= 1)));
+          if (!supported) {
+            console.error(`npm ${version} is too old for trusted publishing; 11.5.1 is the minimum.`);
+            process.exit(1);
+          }
+          console.log(`npm ${version} supports trusted publishing.`);
+          NODE
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      # Nothing broken gets published. The entry point suite matters most here:
+      # it is the one that resolves the packages by name against the tarball npm
+      # would actually upload.
+      - name: Test
+        run: npx vitest run --configLoader native
+
+      - name: Publish
+        run: npx changeset publish
+
+      - name: Push the tags
+        run: git push --follow-tags

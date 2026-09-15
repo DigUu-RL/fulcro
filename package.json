@@ -12,11 +12,15 @@
 		"test": "npm run build && vitest run --configLoader native",
 		"test:watch": "npm run build && vitest --configLoader native",
 		"format": "prettier --write .",
-		"format:check": "prettier --check ."
+		"format:check": "prettier --check .",
+		"changeset": "changeset",
+		"version-packages": "changeset version && npm install --package-lock-only",
+		"release": "npm run build && changeset publish"
 	},
 	"author": "diguu <rodrigogeribola@hotmail.com>",
 	"license": "ISC",
 	"devDependencies": {
+		"@changesets/cli": "^3.0.3",
 		"@types/node": "^26.5.1",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-simple-import-sort": "^14.0.0",
