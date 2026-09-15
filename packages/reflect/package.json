@@ -1,7 +1,7 @@
 {
-	"name": "@diguu/reflect",
+	"name": "@fulcro/reflect",
 	"version": "0.0.0",
-	"description": "Type aware nameOf, typeOf and defaultOf, resolved at compile time by @diguu/transformer.",
+	"description": "Type aware nameOf, typeOf and defaultOf, resolved at compile time by @fulcro/transformer.",
 	"keywords": [
 		"nameof",
 		"typeof",

@@ -1,6 +1,6 @@
-# @diguu/transformer
+# @fulcro/transformer
 
-The compile-time half of [`@diguu/reflect`](../reflect). It rewrites
+The compile-time half of [`@fulcro/reflect`](../reflect). It rewrites
 `nameOf`, `typeOf` and `defaultOf` calls while the types are still there,
 turning what the runtime can only guess — and, for `defaultOf`, cannot answer at
 all — into an emitted literal.
@@ -18,7 +18,7 @@ This package runs inside the compiler, where all of it is still available.
 ## Install
 
 ```sh
-npm install --save-dev @diguu/transformer
+npm install --save-dev @fulcro/transformer
 ```
 
 `typescript` is a peer dependency, and deliberately so: the transformer reads
@@ -44,7 +44,7 @@ npm install --save-dev ts-patch
 	"compilerOptions": {
 		"plugins": [
 			{
-				"transform": "@diguu/transformer",
+				"transform": "@fulcro/transformer",
 				"type": "program",
 			},
 		],
@@ -76,7 +76,7 @@ frameworks layered on top.
 
 ```ts
 // vite.config.ts
-import { vite as fulcro } from '@diguu/transformer/unplugin';
+import { vite as fulcro } from '@fulcro/transformer/unplugin';
 
 export default defineConfig({
 	plugins: [fulcro()],
@@ -85,14 +85,14 @@ export default defineConfig({
 
 ```js
 // rollup.config.js
-import { rollup as fulcro } from '@diguu/transformer/unplugin';
+import { rollup as fulcro } from '@fulcro/transformer/unplugin';
 
 export default { plugins: [fulcro()] };
 ```
 
 ```js
 // webpack.config.js
-const { webpack: fulcro } = require('@diguu/transformer/unplugin');
+const { webpack: fulcro } = require('@fulcro/transformer/unplugin');
 
 module.exports = { plugins: [fulcro()] };
 ```
@@ -135,7 +135,7 @@ what makes the plugin behave correctly inside a monorepo.
 
 ## What it rewrites, and what it leaves alone
 
-A call is claimed only when its symbol traces back to the module `@diguu/reflect`
+A call is claimed only when its symbol traces back to the module `@fulcro/reflect`
 declares it in — matched by declaration, never by name — so an unrelated local
 `nameOf` in your code is never touched.
 

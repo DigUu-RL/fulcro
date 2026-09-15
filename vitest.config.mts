@@ -1,15 +1,15 @@
 import { defineConfig, type ViteUserConfig } from 'vitest/config';
 
-import { vite as typeAwareTransformer } from '@diguu/transformer/unplugin';
+import { vite as typeAwareTransformer } from '@fulcro/transformer/unplugin';
 
 /**
  * Test harness of the whole workspace.
  *
  * Testing is owned by the root rather than by each package, and deliberately
- * so. The suites of `@diguu/reflect` only mean something with the transformer
+ * so. The suites of `@fulcro/reflect` only mean something with the transformer
  * applied — `defaultOf` throws without it — yet making the package depend on
- * `@diguu/transformer` to test itself would tie the two together in both
- * directions, since the transformer already depends on `@diguu/reflect` for
+ * `@fulcro/transformer` to test itself would tie the two together in both
+ * directions, since the transformer already depends on `@fulcro/reflect` for
  * its fixture. Wiring the plugin here keeps that edge single and lets every
  * published package declare only what its consumers actually need.
  *

@@ -1,7 +1,7 @@
 {
-	"name": "@diguu/transformer",
+	"name": "@fulcro/transformer",
 	"version": "0.0.0",
-	"description": "Compile time transformer resolving the @diguu/reflect utilities, for ts-patch and every bundler unplugin covers.",
+	"description": "Compile time transformer resolving the @fulcro/reflect utilities, for ts-patch and every bundler unplugin covers.",
 	"keywords": [
 		"typescript",
 		"transformer",
@@ -40,7 +40,7 @@
 		"typescript": ">=5.3.3"
 	},
 	"devDependencies": {
-		"@diguu/reflect": "*"
+		"@fulcro/reflect": "*"
 	},
 	"publishConfig": {
 		"access": "public"

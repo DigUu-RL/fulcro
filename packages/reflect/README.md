@@ -1,19 +1,19 @@
-# @diguu/reflect
+# @fulcro/reflect
 
 `nameOf`, `typeOf` and `defaultOf` — three utilities that answer questions
 TypeScript erases on its way to JavaScript. No dependencies.
 
 ```ts
-import { defaultOf, nameOf, typeOf } from '@diguu/reflect';
+import { defaultOf, nameOf, typeOf } from '@fulcro/reflect';
 ```
 
 Each works on its own and gets sharper when the project compiles through
-[`@diguu/transformer`](../transformer); `defaultOf` requires it outright. What
+[`@fulcro/transformer`](../transformer); `defaultOf` requires it outright. What
 changes with the transformer is spelled out per utility below, and summarised in
 a table at the end.
 
 Looking for `switchFor` or `tryCatch`? They moved to
-[`@diguu/functions`](../functions). Neither has anything to do with the
+[`@fulcro/functions`](../functions). Neither has anything to do with the
 compiler, and keeping them here blurred what this package is for.
 
 ## `nameOf`
@@ -115,7 +115,7 @@ a lie, and failing loudly at the call site beats handing back a wrong value.
 
 ## With and without the transformer
 
-|                            | Without                             | With `@diguu/transformer`                                     |
+|                            | Without                             | With `@fulcro/transformer`                                    |
 | -------------------------- | ----------------------------------- | ------------------------------------------------------------- |
 | `nameOf(() => user.email)` | `'email'` — parsed from the closure | `'email'` — emitted as a literal, minifier-proof              |
 | `nameOf<UserContract>()`   | not available                       | `'UserContract'`                                              |
@@ -124,4 +124,4 @@ a lie, and failing loudly at the call site beats handing back a wrong value.
 
 Installing the transformer is a build-time concern only; this package stays a
 plain runtime dependency either way. See
-[`@diguu/transformer`](../transformer) for the setup.
+[`@fulcro/transformer`](../transformer) for the setup.

@@ -1,10 +1,10 @@
-# @diguu/functions
+# @fulcro/functions
 
 Two runtime helpers that turn control flow into values. No dependencies, no
 compiler involvement, nothing to configure.
 
 ```ts
-import { switchFor, tryCatch } from '@diguu/functions';
+import { switchFor, tryCatch } from '@fulcro/functions';
 ```
 
 ## `switchFor`

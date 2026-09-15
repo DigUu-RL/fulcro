@@ -29,10 +29,10 @@ const resolve = createRequire(import.meta.url).resolve;
 
 /** Packages published from this repository. */
 const PACKAGE_NAMES = [
-	'@diguu/collections',
-	'@diguu/functions',
-	'@diguu/reflect',
-	'@diguu/transformer',
+	'@fulcro/collections',
+	'@fulcro/functions',
+	'@fulcro/reflect',
+	'@fulcro/transformer',
 ] as const;
 
 /** Manifest fields this suite reads back. */
@@ -173,16 +173,16 @@ describe.each(PACKAGE_NAMES)('%s, as a consumer sees it', (name) => {
 	});
 });
 
-describe('@diguu/collections', () => {
+describe('@fulcro/collections', () => {
 	it('should expose the one class a sequence is built from', async () => {
-		const entry = await import('@diguu/collections');
+		const entry = await import('@fulcro/collections');
 
 		expect(typeof entry.SequenceCollection.from).toBe('function');
 		expect(typeof entry.SequenceCollection.empty).toBe('function');
 	});
 
 	it('should work end to end through the published entry point', async () => {
-		const { SequenceCollection } = await import('@diguu/collections');
+		const { SequenceCollection } = await import('@fulcro/collections');
 
 		const result = SequenceCollection.from([3, 1, 2, 1])
 			.distinct()
@@ -194,7 +194,7 @@ describe('@diguu/collections', () => {
 	});
 
 	it('should run its composition root on import', async () => {
-		const { SequenceCollection } = await import('@diguu/collections');
+		const { SequenceCollection } = await import('@fulcro/collections');
 
 		// `groupBy` and `orderBy` build their results through the factory
 		// registry, so both throw unless the barrel wired the concrete classes
@@ -209,14 +209,14 @@ describe('@diguu/collections', () => {
 	});
 
 	it('should keep the concrete subclasses and the registry unexported', async () => {
-		const entry = await import('@diguu/collections');
+		const entry = await import('@fulcro/collections');
 
 		expect(entry).not.toHaveProperty('GroupCollection');
 		expect(entry).not.toHaveProperty('OrderedSequenceCollection');
 
 		// The factory registry is wiring, not API. It carries no runtime value
 		// to assert on, so the declarations are what gets checked.
-		const { root } = manifestOf('@diguu/collections');
+		const { root } = manifestOf('@fulcro/collections');
 		const declarations: string = readFileSync(
 			path.join(root, 'dist/index.d.ts'),
 			'utf8',
@@ -226,9 +226,9 @@ describe('@diguu/collections', () => {
 	});
 });
 
-describe('@diguu/reflect', () => {
+describe('@fulcro/reflect', () => {
 	it('should expose the type aware utilities and the constant they report', async () => {
-		const entry = await import('@diguu/reflect');
+		const entry = await import('@fulcro/reflect');
 
 		expect(typeof entry.nameOf).toBe('function');
 		expect(typeof entry.typeOf).toBe('function');
@@ -237,20 +237,20 @@ describe('@diguu/reflect', () => {
 	});
 
 	it('should leave the runtime helpers to their own package', async () => {
-		const entry = await import('@diguu/reflect');
+		const entry = await import('@fulcro/reflect');
 
 		// This package is for what the compiler erases. `switchFor` and
-		// `tryCatch` need nothing from it, and live in `@diguu/functions`.
+		// `tryCatch` need nothing from it, and live in `@fulcro/functions`.
 		expect(entry).not.toHaveProperty('switchFor');
 		expect(entry).not.toHaveProperty('tryCatch');
 	});
 
 	it('should answer at runtime, without the transformer', async () => {
-		const { typeOf } = await import('@diguu/reflect');
+		const { typeOf } = await import('@fulcro/reflect');
 
 		// Nothing compiles this file through the transformer, which is the
 		// point: this is the fallback behaviour a consumer gets before wiring
-		// `@diguu/transformer` up.
+		// `@fulcro/transformer` up.
 		expect(typeOf(null).typeId).toBe('null');
 		expect(typeOf([1, 2]).typeId).toBe('array');
 		expect(typeOf(Number.NaN).typeId).toBe('nan');
@@ -258,22 +258,22 @@ describe('@diguu/reflect', () => {
 	});
 
 	it('should keep the internal helpers unexported', async () => {
-		const entry = await import('@diguu/reflect');
+		const entry = await import('@fulcro/reflect');
 
 		expect(entry).not.toHaveProperty('resolveCallableId');
 	});
 });
 
-describe('@diguu/functions', () => {
+describe('@fulcro/functions', () => {
 	it('should expose both helpers', async () => {
-		const entry = await import('@diguu/functions');
+		const entry = await import('@fulcro/functions');
 
 		expect(typeof entry.switchFor).toBe('function');
 		expect(typeof entry.tryCatch).toBe('function');
 	});
 
 	it('should dispatch exhaustively through the published entry point', async () => {
-		const { switchFor } = await import('@diguu/functions');
+		const { switchFor } = await import('@fulcro/functions');
 
 		expect(
 			switchFor('dark' as 'dark' | 'light', {
@@ -284,7 +284,7 @@ describe('@diguu/functions', () => {
 	});
 
 	it('should still take the predicate form', async () => {
-		const { switchFor } = await import('@diguu/functions');
+		const { switchFor } = await import('@fulcro/functions');
 
 		expect(
 			switchFor(10, [{ when: (n) => n > 5, then: () => 'big' }], () => 'small'),
@@ -292,7 +292,7 @@ describe('@diguu/functions', () => {
 	});
 
 	it('should capture a synchronous throw', async () => {
-		const { tryCatch } = await import('@diguu/functions');
+		const { tryCatch } = await import('@fulcro/functions');
 
 		const failed = await tryCatch(() => {
 			throw new Error('boom');
@@ -302,16 +302,16 @@ describe('@diguu/functions', () => {
 	});
 });
 
-describe('@diguu/transformer', () => {
+describe('@fulcro/transformer', () => {
 	it('should expose the compiler plugin as its default export', async () => {
-		const entry = await import('@diguu/transformer');
+		const entry = await import('@fulcro/transformer');
 
 		// What `ts-patch` loads and calls with the program.
 		expect(typeof entry.default).toBe('function');
 	});
 
 	it('should expose an adapter for every bundler it claims to serve', async () => {
-		const adapters = await import('@diguu/transformer/unplugin');
+		const adapters = await import('@fulcro/transformer/unplugin');
 
 		for (const bundler of [
 			'vite',
