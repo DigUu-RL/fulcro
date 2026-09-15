@@ -3,8 +3,8 @@
 A design for the three things phase 5 covers, written before any of it is built
 so the decisions can be argued with while they are still cheap to change.
 
-Nothing here is implemented yet. Where a decision is still open it says so, and
-every one of those is collected at the end.
+Nothing here is implemented yet. The decisions it opened have since been
+settled, and are collected at the end along with the order of the work.
 
 ## The three are not variations of each other
 
@@ -126,21 +126,18 @@ element at a time; `selectAwait` keeps several in flight. Making it a separate
 name rather than an option on `select` keeps the ordinary case free of a
 decision it does not need to make.
 
-### `concurrency` has no default — open decision
+### `concurrency` is required
 
 An unbounded default is how rate limits get hit and file descriptors get
 exhausted, and it fails in production rather than in development, where the
 input is small. A default of `1` silently makes the operator pointless. Any
 number in between is a guess about someone else's service.
 
-The proposal is that `concurrency` is **required**, and the type enforces it.
-This is the same argument that was made for a required `otherwise` on
-`switchFor`, which was rejected — and rightly, because there the answer was
+So the type demands it. This is the same argument that was made for a required
+`otherwise` on `switchFor` and rejected — rightly, because there the answer was
 expressible in the type as `R | undefined`. Here there is no equivalent: a wrong
 concurrency does not change the type, it changes how hard something external
-gets hit.
-
-**Decision needed.** Required, or a conservative default such as `4`?
+gets hit, and only the caller knows what that thing tolerates.
 
 ### Order is preserved, by default
 
@@ -184,24 +181,80 @@ intended path rather than adding a `settled: true` flag that would duplicate it.
 
 ### Cancellation
 
-Every terminal accepts an optional `AbortSignal`:
+Every terminal accepts an optional `AbortSignal`, the platform's own mechanism
+for calling off work in progress:
 
 ```ts
-await sequence.toArray({ signal });
+const controller = new AbortController();
+
+setTimeout(() => controller.abort(), 5_000);
+
+const users = await source
+	.selectAwait(load, { concurrency: 8 })
+	.toArray({ signal: controller.signal });
 ```
 
-An aborted signal stops new work and rejects with the signal's reason. In-flight
-work is not killed — it cannot be, since a promise has no cancel — but it is
-awaited and discarded.
+**What abort actually does, and what it cannot.** A promise has no cancel — the
+language offers none, and nothing here can invent one. Aborting therefore means
+two concrete things: no further work is started, and the terminal rejects with
+the signal's reason. Calls already in flight keep running to completion and
+their results are discarded. Anyone expecting `abort()` to kill eight requests
+mid-flight will be wrong, and the documentation has to say so rather than let
+them find out.
 
-**Open decision.** Whether `signal` belongs on the terminals, on the
-`ConcurrencyOptions`, or on `from`. Terminals are proposed because that is where
-the waiting actually happens.
+Where a selector itself takes a signal — `fetch` being the obvious case — it is
+handed the same one, so those _do_ stop:
+
+```ts
+.selectAwait((id, { signal }) => fetch(`/users/${id}`, { signal }), { concurrency: 8 })
+```
+
+**It goes on the terminal**, not on the operators and not on `from`. Cancelling
+is a property of consuming a sequence, not of describing one: the terminal is
+where the waiting happens and where the promise that rejects lives, and the same
+sequence can then be consumed twice under different signals. Putting it on `from`
+would bind one signal to the sequence for its lifetime; putting it on each
+operator would mean repeating the same signal at every stage to cancel the
+chain.
 
 ## Part three — parallelism
 
-This is the part that does not belong in the same package, and possibly not
-behind the same shape of API.
+This is the part that does not belong in the same package. It does, however,
+belong in the browser as much as on a server — a library that only threads on
+Node would be half a library, and the design below is portable rather than
+ported.
+
+### It is more portable than it looks
+
+Almost everything this needs is a web standard that Node adopted, verified on
+the Node 24 this repository targets:
+
+| Needed                | Browser                              | Node 24                        |
+| --------------------- | ------------------------------------ | ------------------------------ |
+| Default worker count  | `navigator.hardwareConcurrency`      | same global, present           |
+| Copying values across | structured clone                     | same, `structuredClone` global |
+| Transferring buffers  | `ArrayBuffer` in a transfer list     | same                           |
+| Cancellation          | `AbortSignal`                        | same global                    |
+| Locating the work     | `new URL('./x.js', import.meta.url)` | same                           |
+
+Only the worker itself differs, and only in its construction and how messages
+are read:
+
+```ts
+// browser
+const worker = new Worker(url, { type: 'module' });
+worker.addEventListener('message', handler);
+
+// node
+import { Worker } from 'node:worker_threads';
+const worker = new Worker(url);
+worker.on('message', handler);
+```
+
+That is a thin adapter behind one interface — spawn, post, receive, terminate —
+selected by the `exports` conditions of the package rather than by a runtime
+check, so a bundle for the browser never contains a reference to
+`node:worker_threads` and nothing has to be marked external.
 
 ### Why a closure cannot cross
 
@@ -232,6 +285,11 @@ The worker imports that module and calls that export. The function is a module
 boundary, which is a thing that genuinely crosses realms, and nothing is
 pretending otherwise.
 
+`new URL(…, import.meta.url)` is also the form that survives bundling: it is the
+shape Vite, Rollup, webpack and esbuild all recognise as a worker entry and
+rewrite to the emitted asset. A bare string path would work on Node and break
+the moment the browser build moved a file.
+
 ### What the data costs
 
 Every element is structured-cloned on the way in and the result on the way out.
@@ -258,28 +316,33 @@ when it ends early.
 
 ## Packaging
 
-| Package                     | Holds                                | Dependencies    |
-| --------------------------- | ------------------------------------ | --------------- |
-| `@fulcro/collections`       | `Sequence`, unchanged                | none            |
-| `@fulcro/collections/async` | `AsyncSequence`, bounded concurrency | none            |
-| `@fulcro/parallel`          | worker pool, `selectParallel`        | none, Node only |
+| Package                     | Holds                                | Runs on          | Dependencies |
+| --------------------------- | ------------------------------------ | ---------------- | ------------ |
+| `@fulcro/collections`       | `Sequence`, unchanged                | anywhere         | none         |
+| `@fulcro/collections/async` | `AsyncSequence`, bounded concurrency | anywhere         | none         |
+| `@fulcro/parallel`          | worker pool, `selectParallel`        | browser and Node | none         |
 
 Async and concurrency are a subpath of the existing package: they share the
 operator vocabulary, add no dependencies, and a reader who has met `Sequence`
 already knows most of the surface. A separate entry point rather than the main
-one so that nothing of it reaches a bundle that only imports the synchronous
+one, so that nothing of it reaches a bundle that only imports the synchronous
 sequence.
 
-Parallelism is its own package because it is the only one of the three that is
-**not portable** — `worker_threads` is Node, and a browser would need
-`Web Worker` with a different module loading story. Putting it behind its own
-name keeps `@fulcro/collections` usable in a browser and makes the platform
-constraint visible at install time rather than at runtime.
+Parallelism is its own package for reasons that have nothing to do with
+portability. It carries a worker pool, a lifecycle and a failure model the other
+two do not, and its API is shaped by a constraint — work named rather than
+captured — that would look arbitrary sitting beside operators under no such
+limit. Keeping it separate lets someone take the sequences without the threads.
 
-**Open decision.** Whether `@fulcro/parallel` joins the fixed version group with
-the other four, or versions independently. It has no compile-time coupling of
-the sort that forced `reflect` and `transformer` together, so independent is
-defensible here.
+Its `exports` carry `browser` and `node` conditions over one shared core, so the
+platform difference is settled by the bundler rather than by a runtime check,
+and a browser bundle never contains a reference to `node:worker_threads`.
+
+**Versioned independently** from the other four. The fixed group exists because
+`@fulcro/transformer` is tied to the folder layout `@fulcro/reflect` publishes,
+a coupling no compiler checks. Nothing of the sort binds this package: it
+consumes `AsyncSequence` through its public types like any other consumer, and a
+mismatch there is a type error rather than a silent fallback.
 
 ## Testing
 
@@ -296,13 +359,36 @@ Concurrency tests are the ones that pass by accident, so:
 - **Timers are faked** where the test is about scheduling rather than duration,
   so the suite does not get slower with every case added.
 
-## Decisions to settle before implementation
+## Decisions, settled
 
-1. **`concurrency`** — required, or defaulted to a conservative number?
-2. **`AbortSignal`** — on the terminals, on the options, or on `from`?
-3. **Phase order** — async and concurrency first with parallelism after, or all
-   three before any of it ships?
-4. **`@fulcro/parallel` versioning** — in the fixed group, or independent?
-5. **Browser support for parallelism** — out of scope for now, or designed for
-   from the start so a `Web Worker` backend can be added without changing the
-   API?
+1. **`concurrency` is required.** No default is right for someone else's
+   service, and getting it wrong fails in production rather than in
+   development.
+2. **`AbortSignal` goes on the terminals.** Cancelling is a property of
+   consuming a sequence, not of describing one.
+3. **Parallelism supports the browser as a first-class target**, not as a port.
+   Almost everything it needs is already a web standard Node adopted; only
+   worker construction differs, behind `exports` conditions.
+4. **`@fulcro/parallel` versions independently** of the other four. It has none
+   of the layout coupling that forced the existing fixed group.
+
+## Implementation order
+
+Three pieces, in the order that keeps each one buildable and testable on its
+own.
+
+**First, `AsyncSequence` with one element in flight.** It is the foundation the
+other two are expressed in — bounded concurrency is an operator on it, and the
+worker pool returns one. Building it first means the other two never need a
+temporary shape to stand on. It is also the piece with no timing in it, so its
+suite is deterministic and fast.
+
+**Then bounded concurrency**, which is where the hard parts live: a limit that
+holds, an order that survives uneven durations, a rejection that leaves nothing
+running, and a signal that stops new work. All of it testable with fake timers
+and a counter, none of it needing a second thread.
+
+**Last the worker pool**, because it is the only piece whose tests are slow, the
+only one that touches two runtimes, and the only one whose value has to be
+demonstrated by a benchmark rather than asserted. By then the async surface it
+returns is already proven, so a failure there is a failure of the pool.
