@@ -24,5 +24,8 @@
 		"tsc-alias": "^1.9.5",
 		"typescript": "^5.3.3",
 		"vitest": "^5.0.0"
+	},
+	"engines": {
+		"node": ">=22"
 	}
 }

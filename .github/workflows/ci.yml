@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A newer push to the same branch makes the run already in flight pointless.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test · node ${{ matrix.node }} · ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      # One platform failing should not hide the state of the other.
+      fail-fast: false
+      matrix:
+        # Both maintained release lines. Node 20 left maintenance in April 2026.
+        node: ['22', '24']
+        # Windows earns its place here rather than being cargo cult: the
+        # transformer recognises a call by matching path segments, and builds
+        # those with `path.join`, so it sees backslashes on Windows and forward
+        # slashes everywhere else. A regression there would be invisible on
+        # Linux alone.
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      # Built before anything else, and as its own step: the type checking and
+      # the suites both read the built output — the test harness loads the
+      # transformer from it, and the entry point suite runs entirely against the
+      # published packages — so a build failure here is reported as a build
+      # failure rather than as a confusing pile of missing modules.
+      - name: Build
+        run: npm run build
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # `npm test` would build a second time. Everything it does beyond that is
+      # exactly this line.
+      - name: Test
+        run: npx vitest run --configLoader native
+
+  quality:
+    name: lint and formatting
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      # Neither reads the built output, so this job skips the build entirely and
+      # runs once rather than once per matrix entry.
+      - name: Formatting
+        run: npm run format:check
+
+      - name: Lint
+        run: npx eslint .

@@ -1,4 +1,5 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { execSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
 
@@ -58,6 +59,54 @@ const manifestOf = (name: string): { manifest: Manifest; root: string } => {
 	};
 };
 
+/** One entry of the file list `npm pack --dry-run --json` reports. */
+interface PackedFile {
+	readonly path: string;
+}
+
+/** Tarball contents per package, computed once and reused. */
+const packed = new Map<string, readonly string[]>();
+
+/**
+ * Lists what a package would actually publish.
+ *
+ * Deliberately asked of `npm` rather than checked against the working tree.
+ * `files`, `.npmignore` and the entries npm always adds or always drops decide
+ * the tarball between them, and the result is regularly not what the directory
+ * looks like: a `files` list that forgets `dist` leaves every built file sitting
+ * right there on disk while the published package contains none of them.
+ *
+ * @param root Directory of the package.
+ * @returns Paths the tarball would contain, as npm spells them.
+ */
+const packedFiles = (root: string): readonly string[] => {
+	const cached: readonly string[] | undefined = packed.get(root);
+
+	if (cached !== undefined) return cached;
+
+	const output: string = execSync('npm pack --dry-run --json', {
+		cwd: root,
+		encoding: 'utf8',
+		stdio: ['ignore', 'pipe', 'ignore'],
+	});
+
+	const [report] = JSON.parse(output) as [{ files: readonly PackedFile[] }];
+	const files: readonly string[] = report.files.map((file) => file.path);
+
+	packed.set(root, files);
+
+	return files;
+};
+
+/**
+ * Rewrites a manifest path the way npm spells it inside a tarball.
+ *
+ * @param declared Path as written in the manifest, such as `./dist/index.js`.
+ * @returns The same path without its leading `./`, with forward slashes.
+ */
+const asPackedPath = (declared: string): string =>
+	declared.replace(/^\.\//, '').split(path.sep).join('/');
+
 /**
  * Collects every relative path an exports map points at.
  *
@@ -83,27 +132,31 @@ describe.each(PACKAGE_NAMES)('%s, as a consumer sees it', (name) => {
 		expect(manifest.name).toBe(name);
 	});
 
-	it('should ship every file its exports map points at', () => {
+	it('should publish every file its exports map points at', () => {
 		const paths: string[] = exportedPaths(manifest.exports);
 
 		// A guard on the guard: an exports map that resolved to nothing would
 		// make the assertion below pass without checking anything.
 		expect(paths.length).toBeGreaterThan(0);
 
+		const shipped: readonly string[] = packedFiles(root);
+
 		for (const exported of paths)
 			expect(
-				existsSync(path.join(root, exported)),
-				`${name} exports ${exported}, which is not in the package`,
-			).toBe(true);
+				shipped,
+				`${name} exports ${exported}, which its tarball does not contain`,
+			).toContain(asPackedPath(exported));
 	});
 
-	it('should ship the files main and types point at', () => {
+	it('should publish the files main and types point at', () => {
+		const shipped: readonly string[] = packedFiles(root);
+
 		for (const field of [manifest.main, manifest.types]) {
 			expect(field).toBeDefined();
 			expect(
-				existsSync(path.join(root, field as string)),
-				`${name} declares ${field}, which is not in the package`,
-			).toBe(true);
+				shipped,
+				`${name} declares ${field}, which its tarball does not contain`,
+			).toContain(asPackedPath(field as string));
 		}
 	});
 
@@ -115,7 +168,7 @@ describe.each(PACKAGE_NAMES)('%s, as a consumer sees it', (name) => {
 
 	it('should carry the licence it declares', () => {
 		expect(manifest.license).toBe('ISC');
-		expect(existsSync(path.join(root, 'LICENSE'))).toBe(true);
+		expect(packedFiles(root)).toContain('LICENSE');
 	});
 });
 
