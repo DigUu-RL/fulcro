@@ -5,19 +5,40 @@
 Development root for the `@fulcro` packages. Private — nothing is published from
 here; the packages under `packages/` are.
 
-| Package                                             | What it is                                                              | Runtime deps                           |
-| --------------------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------- |
-| [`@fulcro/collections`](packages/collections)       | Lazily evaluated sequences with a composable query operator set         | none                                   |
-| [`@fulcro/reflect`](packages/reflect)               | `nameOf`, `typeOf`, `defaultOf`, with their transformer in the box      | `@fulcro/transform-core`               |
-| [`@fulcro/functions`](packages/functions)           | `switchFor` and `tryCatch` — control flow as values                     | none                                   |
-| [`@fulcro/transform-core`](packages/transform-core) | Shared machinery behind the transformers. Installed for you, not by you | `unplugin`, optional peer `typescript` |
-| [`@fulcro/parallel`](packages/parallel)             | A worker pool for CPU-bound work, on browser and Node                   | none                                   |
+| Package                                             | What it is                                                                 | Runtime deps                           |
+| --------------------------------------------------- | -------------------------------------------------------------------------- | -------------------------------------- |
+| [`@fulcro/collections`](packages/collections)       | Lazily evaluated sequences, and runtime validation derived from your types | `@fulcro/transform-core`               |
+| [`@fulcro/reflect`](packages/reflect)               | `nameOf`, `typeOf`, `defaultOf`, with their transformer in the box         | `@fulcro/transform-core`               |
+| [`@fulcro/functions`](packages/functions)           | `switchFor` and `tryCatch` — control flow as values                        | none                                   |
+| [`@fulcro/transform-core`](packages/transform-core) | Shared machinery behind the transformers. Installed for you, not by you    | `unplugin`, optional peer `typescript` |
+| [`@fulcro/parallel`](packages/parallel)             | A worker pool for CPU-bound work, on browser and Node                      | none                                   |
 
-`@fulcro/collections`, `@fulcro/functions` and `@fulcro/parallel` stand alone.
-`@fulcro/reflect` ships its own compile time transformer behind a separate entry
-point, so one install gets you everything and a runtime-only bundle still pulls
-in none of the compiler machinery. Wiring that transformer up is optional for
-`nameOf` and `typeOf`, which degrade, and required by `defaultOf`, which throws.
+`@fulcro/functions` and `@fulcro/parallel` stand alone. `@fulcro/collections`
+and `@fulcro/reflect` each ship **their own compile time transformer**, behind a
+separate entry point — so one install gets you everything, and a runtime-only
+bundle still pulls in none of the compiler machinery. Neither knows the other
+exists; each rewrites only the calls it can trace back to itself.
+
+Wiring a transformer up is optional everywhere except `defaultOf`, which throws
+without it because a default it cannot compute would be a lie. `nameOf` and
+`typeOf` degrade, and every operator in `@fulcro/collections` works untouched.
+
+**What the plugin buys in `@fulcro/collections` is worth knowing about**, since
+it is easy to miss under "sequences": `cast<T>()` becomes a validator for
+untrusted data derived from the type you already wrote.
+
+```ts
+// `response.json()` hands back `any`. This is the last place it is unchecked.
+const orders = SequenceCollection.from(await response.json())
+	.cast<Order>()
+	.toArray();
+```
+
+An interface has no runtime form to point at, so the transformer writes the
+check out — every property, nested objects, every element of an array, unions,
+`Date` by `instanceof`. Anything it cannot write out completely it refuses
+loudly rather than half-checking, because a check that answers yes to the wrong
+thing is worse than no check at all.
 
 ## Documentation
 
@@ -36,14 +57,14 @@ npm run format
 npx eslint .
 ```
 
-`npm test` builds before running, and has to: the test harness loads the
-transformer from `@fulcro/reflect`'s built output, the transformer fixture
-resolves `@fulcro/reflect` through `node_modules` the way a consumer would, and
-the entry point suite runs entirely against the built packages.
+`npm test` builds before running, and has to: the harness loads both
+transformers from the built output of the packages that ship them, each compile
+fixture resolves its package through `node_modules` the way a consumer would,
+and the entry point suite runs entirely against the built packages.
 
 There are five suites — one per package that has tests, plus
-`tests/entrypoints.spec.mts` at
-the root. That last one exists because every other suite reaches into a package
+`tests/entrypoints.spec.mts` at the root. That last one exists because every
+other suite reaches into a package
 through its internal `@/*` alias: a wrong `main`, a typo in `exports` or a
 `files` list that forgets a folder would leave all of them green and break the
 first consumer to install. So it resolves the packages by name instead, checks
@@ -61,14 +82,16 @@ Two structural decisions are worth knowing before changing anything.
 
 **Testing is owned by the root, not by each package.** The `@fulcro/reflect`
 suites only mean something with its transformer applied — `defaultOf` throws
-without it — and the plugin is a build time concern. Wiring it once in
-`vitest.config.mts`, as one project per package, keeps it out of the manifest of
-every package that only needs it while its own tests run.
+without it — and the plugins are a build time concern. Wiring them once in
+`vitest.config.mts`, as one project per package, keeps them out of the manifest
+of every package that only needs them while its own tests run. Both plugins are
+applied to every project and do not interfere: each claims only the calls whose
+declarations it can trace back to its own package.
 
 **Each library owns its own transformer.** `@fulcro/reflect` publishes one at
-`@fulcro/reflect/transformer`; anything else that grows compile time behaviour
-will publish its own too, and `@fulcro/transform-core` holds only the part that
-belongs to neither — following a call to its declaration, walking a file,
+`@fulcro/reflect/transformer` and `@fulcro/collections` one at
+`@fulcro/collections/transformer`; `@fulcro/transform-core` holds only the part
+that belongs to neither — following a call to its declaration, walking a file,
 keeping a program for the bundlers that have no checker.
 
 That replaced a single `@fulcro/transformer` installed as a peer dependency,
@@ -78,11 +101,15 @@ so a project could get the utilities with nothing to resolve them, quietly; and
 call means and what it compiles to now ship together because they are one
 package.
 
-**The transformer fixture imports `@fulcro/reflect` by name.** It resolves into
-that package's built declarations rather than into a sibling source file, so the
-suite exercises call recognition across a real package boundary. The rewriters
-identify a call by the module that declares it, and a same-tree relative import
-would never have covered the case that actually ships.
+**Each compile fixture imports its package by name.** It resolves into that
+package's built declarations rather than into a sibling source file, so the
+suite exercises call recognition across a real package boundary. A rewriter
+identifies a call by the module that declares it, and a same-tree relative
+import would never have covered the case that actually ships.
+
+That matters most in `@fulcro/collections`, where the calls are **methods**:
+`ofType` is not imported by anyone, so it is claimed by following the method
+symbol back to the `Sequence` declaration.
 
 ## Releasing
 
