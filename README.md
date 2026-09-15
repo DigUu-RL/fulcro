@@ -114,13 +114,27 @@ a secret, or has to be remembered and revoked later:
 
 ```sh
 npm login                 # interactive, through the browser
-npm run release           # builds, runs nothing else, publishes all four
+npm run release           # builds, runs the suite, publishes all four
 git push --follow-tags    # the tags `changeset publish` just created
 ```
 
-With two-factor authentication on the account, npm asks for the one-time code
-during the publish; `npx changeset publish --otp=123456` passes it directly if
-the prompt gets in the way.
+**Two-factor authentication has to be on first.** npm requires it to publish, and
+refuses with a 403 that names the requirement rather than a missing code:
+
+```text
+E403: Two-factor authentication or granular access token with bypass 2fa
+enabled is required to publish packages.
+```
+
+That message appears whether the account has 2FA switched off or simply did not
+send a code, so check the account before hunting for a CLI flag — `npm profile
+get` reports `two-factor auth` plainly. Switch it on under Account settings,
+with an authenticator app.
+
+With it on, npm asks for the one-time code during the publish, and
+`npx changeset publish --otp=123456` passes one directly if the prompt gets in
+the way. A code lasts about thirty seconds, so if four publishes outrun one
+code, publishing a package at a time with a fresh code finishes the job.
 
 Then configure the trusted publisher on each of the four packages, and every
 release after this one goes through the workflow with nothing to authenticate by

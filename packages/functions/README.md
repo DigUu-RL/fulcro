@@ -33,7 +33,7 @@ const label = switchFor(status, {
 
 Leave a member out and it does not compile:
 
-```
+```text
 error TS2345: Property '[Status.Archived]' is missing in type
 '{ 0: () => string; 1: () => string; }' but required in type
 'ExhaustiveCases<Status, string>'.

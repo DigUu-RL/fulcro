@@ -1,10 +1,15 @@
 // Markdown in this repository is formatted by Prettier, which `npm run
-// format:check` enforces. These two rules disagree with it, and a linter that
-// flags what the formatter just wrote is a linter that trains you to ignore it.
+// format:check` enforces. These rules disagree with it, and a linter that flags
+// what the formatter just wrote is a linter that trains you to ignore it.
 {
 	// Prettier indents code samples with tabs, matching `useTabs` in .prettierrc
 	// and the TypeScript around them. Prose is still checked for stray tabs.
 	"MD010": { "code_blocks": false },
+
+	// Prettier wraps prose at 80 columns, so the limit still applies where it
+	// can be met. It does not wrap tables or code, and neither can be broken at
+	// a column without changing what they mean.
+	"MD013": { "tables": false, "code_blocks": false },
 
 	// Prettier decides how table pipes line up, and re-aligns them on every
 	// write. There is nothing here for a second opinion to settle.
