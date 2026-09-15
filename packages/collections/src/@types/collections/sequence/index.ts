@@ -648,4 +648,165 @@ export interface Sequence<T> extends Iterable<T> {
 	 * @returns A new set holding the distinct elements of the sequence.
 	 */
 	toSet(): Set<T>;
+
+	/**
+	 * Remembers the elements as they are read, so the sequence can be traversed
+	 * more than once.
+	 *
+	 * Every operator here is deferred, which has two consequences that surprise
+	 * people in different ways. A sequence over a generator, or any other
+	 * single-pass source, **yields nothing on a second traversal** — and does so
+	 * silently, since an exhausted iterator is indistinguishable from an empty
+	 * one. And a chain that is iterated twice runs its projections twice.
+	 *
+	 * ```ts
+	 * const query = SequenceCollection.from(rows()).select(expensive);
+	 *
+	 * query.count();   // reads the generator, runs `expensive` per row
+	 * query.toArray(); // [] — the generator is spent
+	 *
+	 * const kept = query.memoize();
+	 *
+	 * kept.count();    // reads it once
+	 * kept.toArray();  // every row, and `expensive` never ran again
+	 * ```
+	 *
+	 * The cost is memory: everything pulled through is held. Elements are
+	 * remembered as they are read rather than up front, so a memoized sequence
+	 * that is only partly consumed only holds the part that was.
+	 *
+	 * @returns A deferred sequence yielding the same elements, repeatably.
+	 */
+	memoize(): Sequence<T>;
+
+	/**
+	 * Splits the sequence in two by a condition, in a single traversal.
+	 *
+	 * ```ts
+	 * const [active, archived] = users.partition((user) => user.active);
+	 * ```
+	 *
+	 * Two calls to {@link Sequence.where} would read the source twice — which a
+	 * generator cannot survive at all, and which doubles the work of an
+	 * expensive predicate. This reads it once, so both halves are materialized
+	 * immediately rather than deferred.
+	 *
+	 * @param predicate Condition deciding which half an element belongs to.
+	 * @returns The matching elements and the rest, in source order.
+	 */
+	partition(predicate: Predicate<T>): readonly [Sequence<T>, Sequence<T>];
+
+	/**
+	 * Accumulates the sequence, yielding every intermediate value.
+	 *
+	 * Where {@link Sequence.aggregate} returns only the final result, this
+	 * emits the accumulation as it goes — a running total, a balance after each
+	 * transaction, a cumulative count.
+	 *
+	 * ```ts
+	 * SequenceCollection.from([1, 2, 3]).scan(0, (total, n) => total + n);
+	 * // 1, 3, 6
+	 * ```
+	 *
+	 * The seed is not emitted: one value comes out per element in, which keeps
+	 * the result the same length as the source and lets the two be zipped.
+	 *
+	 * @template A Type of the accumulated value. Defaults to `T`.
+	 * @param seed Initial accumulated value.
+	 * @param callback Function merging the accumulated value with each element.
+	 * @returns A deferred sequence of the accumulated values.
+	 */
+	scan<A = T>(seed: A, callback: Accumulator<A, T>): Sequence<A>;
+
+	/**
+	 * Yields every run of consecutive elements of a given length.
+	 *
+	 * Windows overlap, advancing one element at a time, so a sequence of `n`
+	 * produces `n - size + 1` of them — and nothing at all when it is shorter
+	 * than one window.
+	 *
+	 * @param size Amount of elements per window.
+	 * @returns A deferred sequence of windows.
+	 * @throws {Error} When `size` is not a positive integer.
+	 */
+	windowed(size: number): Sequence<T[]>;
+
+	/**
+	 * Yields each element paired with the one before it.
+	 *
+	 * The typed form of a window of two, for comparing an element with its
+	 * predecessor — deltas between readings, gaps between timestamps.
+	 *
+	 * @returns A deferred sequence of consecutive pairs.
+	 */
+	pairwise(): Sequence<[T, T]>;
+
+	/**
+	 * Groups runs of *consecutive* elements sharing a key.
+	 *
+	 * Where {@link Sequence.groupBy} collects every element with a given key
+	 * wherever it appears, this starts a new group whenever the key changes —
+	 * so the same key can open several groups, and nothing is buffered beyond
+	 * the run in hand.
+	 *
+	 * The natural fit for data already in order: log lines by level as they
+	 * arrive, readings by day, runs of equal values.
+	 *
+	 * @template K Type of the grouping key.
+	 * @param keySelector Projection returning the key of each element.
+	 * @returns A deferred sequence of groups, one per run.
+	 */
+	groupAdjacent<K>(keySelector: Selector<T, K>): Sequence<Group<K, T>>;
+
+	/**
+	 * Finds the middle value of the sequence.
+	 *
+	 * Averages the two middle values when the count is even, so the result is
+	 * not necessarily an element of the sequence.
+	 *
+	 * @param selector Optional projection returning the value of each element.
+	 * @returns The median of the values.
+	 * @throws {Error} When the sequence is empty.
+	 */
+	median(selector?: Selector<T, number>): number;
+
+	/**
+	 * Finds the value below which a given share of the sequence falls.
+	 *
+	 * Interpolates linearly between the two nearest values, which is the method
+	 * a spreadsheet uses, so `percentile(50)` and {@link Sequence.median} agree.
+	 *
+	 * @param rank Percentile wanted, from `0` to `100`.
+	 * @param selector Optional projection returning the value of each element.
+	 * @returns The value at that percentile.
+	 * @throws {Error} When the sequence is empty, or `rank` is out of range.
+	 */
+	percentile(rank: number, selector?: Selector<T, number>): number;
+
+	/**
+	 * Measures how far the values spread around their mean, treating the
+	 * sequence as the whole population.
+	 *
+	 * Use {@link Sequence.sampleStandardDeviation} when the sequence is a
+	 * sample drawn from a larger population. The two differ by whether the
+	 * squared deviations are divided by `n` or by `n - 1`, and the choice is
+	 * left explicit rather than defaulted quietly, because the answers differ
+	 * most exactly when the data is small.
+	 *
+	 * @param selector Optional projection returning the value of each element.
+	 * @returns The population standard deviation.
+	 * @throws {Error} When the sequence is empty.
+	 */
+	standardDeviation(selector?: Selector<T, number>): number;
+
+	/**
+	 * Measures how far the values spread around their mean, treating the
+	 * sequence as a sample of a larger population.
+	 *
+	 * @param selector Optional projection returning the value of each element.
+	 * @returns The sample standard deviation.
+	 * @throws {Error} When the sequence holds fewer than two elements, since a
+	 * sample of one says nothing about the spread it was drawn from.
+	 */
+	sampleStandardDeviation(selector?: Selector<T, number>): number;
 }

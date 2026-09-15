@@ -1710,6 +1710,363 @@ export class SequenceCollection<T> implements Sequence<T> {
 	}
 
 	/**
+	 * Remembers the elements as they are read, so the sequence can be traversed
+	 * more than once.
+	 *
+	 * @returns A deferred sequence yielding the same elements, repeatably.
+	 */
+	memoize(): Sequence<T> {
+		const source: Iterable<T> = this.source;
+
+		// Shared by every traversal of the returned sequence. Each traversal
+		// keeps its own position into it, so two of them can interleave and the
+		// source is still pulled exactly once per element.
+		const cache: T[] = [];
+
+		let iterator: Iterator<T> | null = null;
+		let exhausted = false;
+
+		return SequenceCollection.deferred(
+			{
+				*[Symbol.iterator](): Iterator<T> {
+					let index = 0;
+
+					for (;;) {
+						if (index < cache.length) {
+							yield cache[index];
+							index++;
+							continue;
+						}
+
+						if (exhausted) return;
+
+						// Opened on the first element actually wanted, so a
+						// memoized sequence nobody reads costs nothing.
+						iterator ??= source[Symbol.iterator]();
+
+						const next: IteratorResult<T> = iterator.next();
+
+						if (next.done === true) {
+							exhausted = true;
+							return;
+						}
+
+						cache.push(next.value);
+						yield next.value;
+						index++;
+					}
+				},
+			},
+			this.countResolver,
+		);
+	}
+
+	/**
+	 * Splits the sequence in two by a condition, in a single traversal.
+	 *
+	 * @param predicate Condition deciding which half an element belongs to.
+	 * @returns The matching elements and the rest, in source order.
+	 */
+	partition(predicate: Predicate<T>): readonly [Sequence<T>, Sequence<T>] {
+		const matched: T[] = [];
+		const rest: T[] = [];
+
+		// Immediate rather than deferred, and that is the point: two `where`
+		// calls would read the source twice, which a generator cannot survive.
+		for (const item of this.source)
+			(predicate(item) ? matched : rest).push(item);
+
+		return [
+			SequenceCollection.from(matched),
+			SequenceCollection.from(rest),
+		] as const;
+	}
+
+	/**
+	 * Accumulates the sequence, yielding every intermediate value.
+	 *
+	 * @template A Type of the accumulated value.
+	 * @param seed Initial accumulated value.
+	 * @param callback Function merging the accumulated value with each element.
+	 * @returns A deferred sequence of the accumulated values.
+	 */
+	scan<A = T>(seed: A, callback: Accumulator<A, T>): Sequence<A> {
+		const source: Iterable<T> = this.source;
+
+		return SequenceCollection.deferred<A>(
+			{
+				*[Symbol.iterator](): Iterator<A> {
+					// Kept local to the traversal, so iterating the result twice
+					// starts from the seed both times rather than continuing.
+					let accumulator: A = seed;
+
+					for (const item of source) {
+						accumulator = callback(accumulator, item);
+						yield accumulator;
+					}
+				},
+			},
+			// One value out per element in, which is what lets the result be
+			// zipped with the source it came from.
+			this.countResolver,
+		);
+	}
+
+	/**
+	 * Yields every run of consecutive elements of a given length.
+	 *
+	 * @param size Amount of elements per window.
+	 * @returns A deferred sequence of windows.
+	 * @throws {Error} When `size` is not a positive integer.
+	 */
+	windowed(size: number): Sequence<T[]> {
+		if (!Number.isInteger(size) || size < 1)
+			throw new Error(`windowed(${size}) needs a positive integer.`);
+
+		const source: Iterable<T> = this.source;
+		const knownCount: () => number | null = this.countResolver;
+
+		return SequenceCollection.deferred<T[]>(
+			{
+				*[Symbol.iterator](): Iterator<T[]> {
+					const window: T[] = [];
+
+					for (const item of source) {
+						window.push(item);
+
+						if (window.length > size) window.shift();
+
+						// Copied on the way out: the window keeps moving, and a
+						// consumer holding on to one must not see it change.
+						if (window.length === size) yield [...window];
+					}
+				},
+			},
+			() => {
+				const total: number | null = knownCount();
+
+				return total === null ? null : Math.max(0, total - size + 1);
+			},
+		);
+	}
+
+	/**
+	 * Yields each element paired with the one before it.
+	 *
+	 * @returns A deferred sequence of consecutive pairs.
+	 */
+	pairwise(): Sequence<[T, T]> {
+		const source: Iterable<T> = this.source;
+		const knownCount: () => number | null = this.countResolver;
+
+		return SequenceCollection.deferred<[T, T]>(
+			{
+				*[Symbol.iterator](): Iterator<[T, T]> {
+					let previous: T | typeof NOT_FOUND = NOT_FOUND;
+
+					for (const item of source) {
+						if (previous !== NOT_FOUND) yield [previous, item];
+
+						previous = item;
+					}
+				},
+			},
+			() => {
+				const total: number | null = knownCount();
+
+				return total === null ? null : Math.max(0, total - 1);
+			},
+		);
+	}
+
+	/**
+	 * Groups runs of consecutive elements sharing a key.
+	 *
+	 * @template K Type of the grouping key.
+	 * @param keySelector Projection returning the key of each element.
+	 * @returns A deferred sequence of groups, one per run.
+	 */
+	groupAdjacent<K>(keySelector: Selector<T, K>): Sequence<Group<K, T>> {
+		const source: Iterable<T> = this.source;
+
+		return SequenceCollection.deferred<Group<K, T>>(
+			{
+				*[Symbol.iterator](): Iterator<Group<K, T>> {
+					let currentKey: K | typeof NOT_FOUND = NOT_FOUND;
+					let run: T[] = [];
+
+					for (const item of source) {
+						const key: K = keySelector(item);
+
+						// Only the run in hand is buffered, never the whole
+						// sequence — which is what separates this from groupBy.
+						if (currentKey !== NOT_FOUND && key !== currentKey) {
+							yield createGroup(currentKey, run);
+							run = [];
+						}
+
+						currentKey = key;
+						run.push(item);
+					}
+
+					if (currentKey !== NOT_FOUND) yield createGroup(currentKey, run);
+				},
+			},
+			UNKNOWN_COUNT,
+		);
+	}
+
+	/**
+	 * Collects the numeric values of the sequence in ascending order.
+	 *
+	 * Shared by the operators that answer a question about position within the
+	 * data rather than about its total, and which therefore cannot stream.
+	 *
+	 * @param operation Name of the calling operator, for the error message.
+	 * @param selector Optional projection returning the value of each element.
+	 * @returns The values, sorted ascending.
+	 * @throws {Error} When the sequence is empty.
+	 */
+	private sortedValues(
+		operation: string,
+		selector?: Selector<T, number>,
+	): number[] {
+		const values: number[] = [];
+
+		for (const item of this.source)
+			values.push(
+				selector === undefined ? (item as unknown as number) : selector(item),
+			);
+
+		if (values.length === 0)
+			throw new Error(`${operation}() was called on an empty sequence.`);
+
+		// Numeric rather than the default lexicographic sort, which would put
+		// 10 before 9.
+		return values.sort((left, right) => left - right);
+	}
+
+	/**
+	 * Finds the middle value of the sequence.
+	 *
+	 * @param selector Optional projection returning the value of each element.
+	 * @returns The median of the values.
+	 * @throws {Error} When the sequence is empty.
+	 */
+	median(selector?: Selector<T, number>): number {
+		const values: number[] = this.sortedValues('median', selector);
+		const middle: number = Math.floor(values.length / 2);
+
+		return values.length % 2 === 1
+			? values[middle]
+			: (values[middle - 1] + values[middle]) / 2;
+	}
+
+	/**
+	 * Finds the value below which a given share of the sequence falls.
+	 *
+	 * @param rank Percentile wanted, from `0` to `100`.
+	 * @param selector Optional projection returning the value of each element.
+	 * @returns The value at that percentile.
+	 * @throws {Error} When the sequence is empty, or `rank` is out of range.
+	 */
+	percentile(rank: number, selector?: Selector<T, number>): number {
+		if (!Number.isFinite(rank) || rank < 0 || rank > 100)
+			throw new Error(`percentile(${rank}) takes a rank between 0 and 100.`);
+
+		const values: number[] = this.sortedValues('percentile', selector);
+
+		// Linear interpolation between the two nearest values, which is what a
+		// spreadsheet does — and what keeps percentile(50) and median equal.
+		const position: number = ((values.length - 1) * rank) / 100;
+		const lower: number = Math.floor(position);
+		const upper: number = Math.ceil(position);
+
+		if (lower === upper) return values[lower];
+
+		return values[lower] + (values[upper] - values[lower]) * (position - lower);
+	}
+
+	/**
+	 * Sums the squared distances of every value from their mean.
+	 *
+	 * Shared by the two standard deviations, which differ only in what they
+	 * divide this by.
+	 *
+	 * @param operation Name of the calling operator, for the error message.
+	 * @param selector Optional projection returning the value of each element.
+	 * @returns The values collected and their summed squared deviations.
+	 * @throws {Error} When the sequence is empty.
+	 */
+	private squaredDeviations(
+		operation: string,
+		selector?: Selector<T, number>,
+	): { readonly count: number; readonly total: number } {
+		const values: number[] = [];
+
+		for (const item of this.source)
+			values.push(
+				selector === undefined ? (item as unknown as number) : selector(item),
+			);
+
+		if (values.length === 0)
+			throw new Error(`${operation}() was called on an empty sequence.`);
+
+		const mean: number =
+			values.reduce((sum, value) => sum + value, 0) / values.length;
+
+		return {
+			count: values.length,
+			total: values.reduce(
+				(sum, value) => sum + (value - mean) * (value - mean),
+				0,
+			),
+		};
+	}
+
+	/**
+	 * Measures how far the values spread around their mean, treating the
+	 * sequence as the whole population.
+	 *
+	 * @param selector Optional projection returning the value of each element.
+	 * @returns The population standard deviation.
+	 * @throws {Error} When the sequence is empty.
+	 */
+	standardDeviation(selector?: Selector<T, number>): number {
+		const { count, total } = this.squaredDeviations(
+			'standardDeviation',
+			selector,
+		);
+
+		return Math.sqrt(total / count);
+	}
+
+	/**
+	 * Measures how far the values spread around their mean, treating the
+	 * sequence as a sample of a larger population.
+	 *
+	 * @param selector Optional projection returning the value of each element.
+	 * @returns The sample standard deviation.
+	 * @throws {Error} When the sequence holds fewer than two elements.
+	 */
+	sampleStandardDeviation(selector?: Selector<T, number>): number {
+		const { count, total } = this.squaredDeviations(
+			'sampleStandardDeviation',
+			selector,
+		);
+
+		// Dividing by n - 1 rather than n, which is undefined for a single
+		// observation: one measurement says nothing about the spread it came
+		// from, and answering 0 would claim that it does.
+		if (count < 2)
+			throw new Error(
+				'sampleStandardDeviation() needs at least two elements: a sample of one says nothing about its spread.',
+			);
+
+		return Math.sqrt(total / (count - 1));
+	}
+
+	/**
 	 * Creates a sequence of consecutive integers.
 	 *
 	 * Generated as it is read rather than built as an array, so a range of a
