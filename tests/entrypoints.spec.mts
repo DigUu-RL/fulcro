@@ -155,6 +155,35 @@ const exportedPaths = (node: unknown): string[] => {
 	return Object.values(node as Record<string, unknown>).flatMap(exportedPaths);
 };
 
+describe('the repository as someone else clones it', () => {
+	it('should not be ignoring a file the sources need', () => {
+		// A `.gitignore` rule written to block build output beside sources once
+		// swallowed a test fixture that happened to share its extension. It
+		// existed on every machine that had run the build, so everything passed
+		// locally — and thirteen tests failed on the first clean checkout, which
+		// is the only place a file missing from the repository can be noticed.
+		//
+		// This asks git directly: what is on disk under a package's sources, and
+		// not in the repository? The answer has to be nothing.
+		const everything: string = execSync(
+			'git ls-files --others --ignored --exclude-standard',
+			{ cwd: WORKSPACE_ROOT, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 },
+		);
+
+		// Filtered here rather than through a pathspec: `packages/*/src` does not
+		// match as a git pathspec, and passing one that silently matches nothing
+		// is how this assertion would pass while checking nothing at all.
+		const missing: string[] = everything
+			.split(/\r?\n/)
+			.filter((line) => /^packages\/[^/]+\/src\//.test(line));
+
+		expect(
+			missing,
+			`these files exist locally but are not in the repository:\n${missing.join('\n')}`,
+		).toEqual([]);
+	});
+});
+
 describe.each(PACKAGE_NAMES)('%s, as a consumer sees it', (name) => {
 	const { manifest } = manifestOf(name);
 

@@ -9,3 +9,15 @@ packages/*/src/**/*.js
 packages/*/src/**/*.mjs
 packages/*/src/**/*.d.ts
 packages/*/src/**/*.d.mts
+
+# A fixture is source, not output, and the rule above cannot tell them apart by
+# extension alone. `@fulcro/parallel` needs one: a worker imports its task module
+# from disk at runtime, with no build step in between, so the file has to be real
+# JavaScript sitting beside the test that uses it.
+#
+# This exception exists because the rule above silently swallowed exactly that
+# file once. Everything still passed locally, where it was on disk, and thirteen
+# tests failed on the first clean checkout — which is the only place a file
+# missing from the repository can be noticed.
+!packages/*/src/**/fixtures/*.mjs
+!packages/*/src/**/fixtures/*.js
