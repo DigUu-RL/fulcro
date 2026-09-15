@@ -166,4 +166,5 @@ operation.
 
 ---
 
-**Full guide:** [docs/functions.md](../../docs/functions.md) — scenarios, worked examples and the failure modes worth knowing before you meet them.
+**Full guide:** [docs/functions.md](../../docs/functions.md) — scenarios, worked
+examples and the failure modes worth knowing before you meet them.

@@ -174,4 +174,5 @@ script portably, and it does not exist in CommonJS.
 
 ---
 
-**Full guide:** [docs/parallelism.md](../../docs/parallelism.md) — scenarios, worked examples and the failure modes worth knowing before you meet them.
+**Full guide:** [docs/parallelism.md](../../docs/parallelism.md) — scenarios,
+worked examples and the failure modes worth knowing before you meet them.

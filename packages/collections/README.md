@@ -174,4 +174,5 @@ don't add an override.
 
 ---
 
-**Full guide:** [docs/sequences.md](../../docs/sequences.md) — scenarios, worked examples and the failure modes worth knowing before you meet them.
+**Full guide:** [docs/sequences.md](../../docs/sequences.md) — scenarios, worked
+examples and the failure modes worth knowing before you meet them.

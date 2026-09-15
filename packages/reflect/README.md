@@ -145,4 +145,5 @@ plain runtime dependency either way. See
 
 ---
 
-**Full guide:** [docs/reflect.md](../../docs/reflect.md) — scenarios, worked examples and the failure modes worth knowing before you meet them.
+**Full guide:** [docs/reflect.md](../../docs/reflect.md) — scenarios, worked
+examples and the failure modes worth knowing before you meet them.

@@ -13,9 +13,9 @@ here; the packages under `packages/` are.
 | [`@fulcro/transformer`](packages/transformer) | Compile-time resolution of the `@fulcro/reflect` utilities, for `tsc` and bundlers | `unplugin`, peer `typescript` |
 | [`@fulcro/parallel`](packages/parallel)       | A worker pool for CPU-bound work, on browser and Node                              | none                          |
 
-`@fulcro/collections`, `@fulcro/functions` and `@fulcro/parallel` stand alone. `@fulcro/reflect` works
-on its own and gets sharper with `@fulcro/transformer`; only `defaultOf` strictly
-requires it.
+`@fulcro/collections`, `@fulcro/functions` and `@fulcro/parallel` stand alone.
+`@fulcro/reflect` works on its own and gets sharper with `@fulcro/transformer`;
+only `defaultOf` strictly requires it.
 
 ## Documentation
 
@@ -88,9 +88,10 @@ runs the whole suite, and only then publishes.
 
 **Four of the five packages share one version**, as a `fixed` group in
 `.changeset/config.json`. `@fulcro/parallel` is outside it and versions on its
-own: nothing binds it to the others the way the group members are bound. A package with no changes of its own is bumped along
-with the rest, and that is deliberate: `@fulcro/transformer` recognises a call
-by the folder its declaration sits in inside the published output of
+own: nothing binds it to the others the way the group members are bound. A
+package with no changes of its own is bumped along with the rest, and that is
+deliberate: `@fulcro/transformer` recognises a call by the folder its
+declaration sits in inside the published output of
 `@fulcro/reflect`. Reorganising those folders breaks nothing `reflect` exports,
 so nothing would push its major version up — yet the transformer silently stops
 rewriting and the runtime fallbacks take over. Versioning them as one makes that

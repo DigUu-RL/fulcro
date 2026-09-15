@@ -175,4 +175,5 @@ They are made relative to it, and the default — the compiler's working directo
 
 ---
 
-**Full guide:** [docs/reflect.md](../../docs/reflect.md) — scenarios, worked examples and the failure modes worth knowing before you meet them.
+**Full guide:** [docs/reflect.md](../../docs/reflect.md) — scenarios, worked
+examples and the failure modes worth knowing before you meet them.

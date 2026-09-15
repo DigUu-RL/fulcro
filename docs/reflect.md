@@ -48,7 +48,7 @@ nameOf(User); // 'User'
 The accessor is **never invoked**, so it is safe on a getter with side effects
 and costs nothing to evaluate.
 
-### Where you actually use it
+### Where you actually use `nameOf`
 
 Anywhere a string has to match a property name, and a typo would be silent:
 
@@ -106,7 +106,7 @@ typeOf(user).declared;
 
 The type's name, how it was declared, and the file and line it came from.
 
-### Where you actually use it
+### Where you actually use `typeOf`
 
 ```ts
 // A logger that says what it got, not 'object'.
@@ -155,7 +155,7 @@ Tuples are filled position by position, arrays come back empty, `Set` and `Date`
 are instantiated rather than described, and a circular type is closed off instead
 of nesting forever.
 
-### Where you actually use it
+### Where you actually use `defaultOf`
 
 ```ts
 // An empty form state that follows the model.
