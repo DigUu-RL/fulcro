@@ -1,0 +1,17 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"rootDir": "./src",
+		"outDir": "./dist",
+		// The only package that speaks to both runtimes, so it needs both sets of
+		// declarations: `Worker`, `MessageEvent` and `Transferable` come from DOM,
+		// and `node:worker_threads` from Node. Neither adapter is reachable from
+		// the other's entry point, so having both declared costs nothing at
+		// runtime.
+		"lib": ["ES2024", "DOM"],
+		"paths": {
+			"@/*": ["./src/*"]
+		}
+	},
+	"include": ["src/**/*"]
+}

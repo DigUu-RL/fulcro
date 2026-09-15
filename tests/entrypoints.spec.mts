@@ -32,6 +32,7 @@ const resolve = createRequire(import.meta.url).resolve;
 const PACKAGE_NAMES = [
 	'@fulcro/collections',
 	'@fulcro/functions',
+	'@fulcro/parallel',
 	'@fulcro/reflect',
 	'@fulcro/transformer',
 ] as const;

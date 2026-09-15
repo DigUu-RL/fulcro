@@ -1,0 +1,51 @@
+{
+	"name": "@fulcro/parallel",
+	"version": "0.1.0",
+	"description": "A worker pool for CPU-bound work, on the browser and on Node, with the work named rather than captured.",
+	"keywords": [
+		"worker",
+		"worker-threads",
+		"web-worker",
+		"parallel",
+		"pool",
+		"typescript"
+	],
+	"license": "ISC",
+	"author": "diguu <rodrigogeribola@hotmail.com>",
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"browser": "./dist/browser.js",
+			"default": "./dist/index.js"
+		},
+		"./worker": "./dist/worker/entry.js",
+		"./package.json": "./package.json"
+	},
+	"files": [
+		"dist"
+	],
+	"sideEffects": false,
+	"engines": {
+		"node": ">=22"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/DigUu-RL/fulcro.git",
+		"directory": "packages/parallel"
+	},
+	"homepage": "https://github.com/DigUu-RL/fulcro/tree/main/packages/parallel#readme",
+	"bugs": {
+		"url": "https://github.com/DigUu-RL/fulcro/issues"
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
+		"typecheck": "tsc --noEmit -p tsconfig.json",
+		"prepublishOnly": "npm run build"
+	}
+}

@@ -5,7 +5,14 @@
 	"access": "public",
 	"baseBranch": "main",
 	"updateInternalDependencies": "patch",
-	"fixed": [["@fulcro/*"]],
+	"fixed": [
+		[
+			"@fulcro/collections",
+			"@fulcro/functions",
+			"@fulcro/reflect",
+			"@fulcro/transformer"
+		]
+	],
 	"linked": [],
 	"ignore": []
 }

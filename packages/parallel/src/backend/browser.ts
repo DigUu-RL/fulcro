@@ -1,0 +1,50 @@
+import { SpawnWorker, WorkerHandle } from '@/@types/index.js';
+
+/**
+ * Starts workers with the platform `Worker`.
+ *
+ * The other of the two adapters, imported only by the browser entry point. It
+ * differs from the Node one in exactly three places — the constructor, how a
+ * message is read, and how a failure arrives — which is the whole of what is
+ * not portable about threading.
+ *
+ * `{ type: 'module' }` is not optional: the worker script is an ES module, and
+ * a classic worker cannot `import` the consumer's own module.
+ *
+ * @param url Module the worker runs.
+ * @returns The worker.
+ */
+export const spawnWorker: SpawnWorker = (url: URL): WorkerHandle => {
+	const worker = new Worker(url, { type: 'module' });
+
+	return {
+		post: (message: unknown, transfer?: readonly Transferable[]): void => {
+			worker.postMessage(message, (transfer ?? []) as Transferable[]);
+		},
+
+		listen: (handler): void => {
+			worker.addEventListener('message', (event: MessageEvent) => {
+				handler(event.data);
+			});
+
+			worker.addEventListener('error', (event: ErrorEvent) => {
+				handler(undefined, new Error(event.message));
+			});
+
+			// A message the structured clone algorithm could not carry. Silent
+			// otherwise, and it would leave a run waiting forever.
+			worker.addEventListener('messageerror', () => {
+				handler(
+					undefined,
+					new Error(
+						'A message could not be cloned across the worker boundary.',
+					),
+				);
+			});
+		},
+
+		terminate: async (): Promise<void> => {
+			worker.terminate();
+		},
+	};
+};

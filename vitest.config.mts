@@ -83,6 +83,7 @@ export default defineConfig({
 		projects: [
 			project('collections'),
 			project('functions'),
+			project('parallel'),
 			project('reflect'),
 			project('transformer'),
 			entryPoints(),

@@ -11,8 +11,9 @@ here; the packages under `packages/` are.
 | [`@fulcro/reflect`](packages/reflect)         | `nameOf`, `typeOf`, `defaultOf`                                                    | none                          |
 | [`@fulcro/functions`](packages/functions)     | `switchFor` and `tryCatch` — control flow as values                                | none                          |
 | [`@fulcro/transformer`](packages/transformer) | Compile-time resolution of the `@fulcro/reflect` utilities, for `tsc` and bundlers | `unplugin`, peer `typescript` |
+| [`@fulcro/parallel`](packages/parallel)       | A worker pool for CPU-bound work, on browser and Node                              | none                          |
 
-`@fulcro/collections` and `@fulcro/functions` stand alone. `@fulcro/reflect` works
+`@fulcro/collections`, `@fulcro/functions` and `@fulcro/parallel` stand alone. `@fulcro/reflect` works
 on its own and gets sharper with `@fulcro/transformer`; only `defaultOf` strictly
 requires it.
 
@@ -32,7 +33,7 @@ transformer from `@fulcro/transformer`'s built output, the transformer fixture
 resolves `@fulcro/reflect` through `node_modules` the way a consumer would, and
 the entry point suite runs entirely against the built packages.
 
-There are five suites — one per package, plus `tests/entrypoints.spec.mts` at
+There are six suites — one per package, plus `tests/entrypoints.spec.mts` at
 the root. That last one exists because every other suite reaches into a package
 through its internal `@/*` alias: a wrong `main`, a typo in `exports` or a
 `files` list that forgets a folder would leave all of them green and break the
@@ -79,8 +80,9 @@ publishing is irreversible — a name is taken for good and a version can never 
 reused — so it is never something a merge does on its own. The workflow builds,
 runs the whole suite, and only then publishes.
 
-**The four packages share one version**, as a `fixed` group in
-`.changeset/config.json`. A package with no changes of its own is bumped along
+**Four of the five packages share one version**, as a `fixed` group in
+`.changeset/config.json`. `@fulcro/parallel` is outside it and versions on its
+own: nothing binds it to the others the way the group members are bound. A package with no changes of its own is bumped along
 with the rest, and that is deliberate: `@fulcro/transformer` recognises a call
 by the folder its declaration sits in inside the published output of
 `@fulcro/reflect`. Reorganising those folders breaks nothing `reflect` exports,
@@ -114,7 +116,7 @@ a secret, or has to be remembered and revoked later:
 
 ```sh
 npm login                 # interactive, through the browser
-npm run release           # builds, runs the suite, publishes all four
+npm run release           # builds, runs the suite, publishes what is unpublished
 git push --follow-tags    # the tags `changeset publish` just created
 ```
 
@@ -136,7 +138,7 @@ With it on, npm asks for the one-time code during the publish, and
 the way. A code lasts about thirty seconds, so if four publishes outrun one
 code, publishing a package at a time with a fresh code finishes the job.
 
-Then configure the trusted publisher on each of the four packages, and every
+Then configure the trusted publisher on each published package, and every
 release after this one goes through the workflow with nothing to authenticate by
 hand.
 
