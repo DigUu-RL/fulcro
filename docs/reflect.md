@@ -4,15 +4,17 @@ Three utilities that answer questions TypeScript erases on its way to
 JavaScript.
 
 ```sh
-npm install @fulcro/reflect
+npm install @fulcro/reflect @fulcro/transformer
 ```
 
 ```ts
 import { defaultOf, nameOf, typeOf } from '@fulcro/reflect';
 ```
 
-`@fulcro/transformer` comes with it as a peer dependency npm installs for you.
-It is not optional — [see below](#the-transformer-is-not-optional).
+`@fulcro/transformer` is declared as a peer dependency. npm installs peers for
+you and Yarn does not, so name both: half of this pair fails quietly rather than
+loudly. It is not optional —
+[see below](#the-transformer-is-not-optional).
 
 ## The problem
 

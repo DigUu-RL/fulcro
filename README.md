@@ -8,7 +8,7 @@ here; the packages under `packages/` are.
 | Package                                       | What it is                                                                         | Runtime deps                  |
 | --------------------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------- |
 | [`@fulcro/collections`](packages/collections) | Lazily evaluated sequences with a composable query operator set                    | none                          |
-| [`@fulcro/reflect`](packages/reflect)         | `nameOf`, `typeOf`, `defaultOf`                                                    | none                          |
+| [`@fulcro/reflect`](packages/reflect)         | `nameOf`, `typeOf`, `defaultOf`                                                    | peer `@fulcro/transformer`    |
 | [`@fulcro/functions`](packages/functions)     | `switchFor` and `tryCatch` — control flow as values                                | none                          |
 | [`@fulcro/transformer`](packages/transformer) | Compile-time resolution of the `@fulcro/reflect` utilities, for `tsc` and bundlers | `unplugin`, peer `typescript` |
 | [`@fulcro/parallel`](packages/parallel)       | A worker pool for CPU-bound work, on browser and Node                              | none                          |

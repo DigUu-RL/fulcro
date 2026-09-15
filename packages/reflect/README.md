@@ -4,12 +4,18 @@
 TypeScript erases on its way to JavaScript.
 
 ```sh
-npm install @fulcro/reflect
+npm install @fulcro/reflect @fulcro/transformer
 ```
 
-[`@fulcro/transformer`](../transformer) comes with it, as a peer dependency npm
-installs for you. **It is not optional, and the split between the two is not a
-menu.** These utilities are named for what they read, and what they read is the
+Both named, deliberately. [`@fulcro/transformer`](../transformer) is declared as
+a peer dependency, and npm installs peers for you — but Yarn does not, and a
+project that ends up with only half of this pair breaks quietly rather than
+loudly: `defaultOf` throws, `nameOf` degrades to parsing closures, and
+`typeOf(…).declared` goes `null`. Naming both costs nothing and behaves the same
+on every package manager.
+
+**It is not optional, and the split between the two is not a menu.** These
+utilities are named for what they read, and what they read is the
 type — which exists only while the compiler is running. Without the transformer
 the package still loads and still answers, but it answers from the value in
 front of it: `typeOf` reports a runtime shape with `declared` reading `null`,
