@@ -32,22 +32,26 @@ import {
  * @returns The name, or `null` when the expression names nothing.
  */
 const nameOfExpression = (expression: typescript.Expression): string | null => {
-	if (typescript.isParenthesizedExpression(expression))
+	if (typescript.isParenthesizedExpression(expression)) {
 		return nameOfExpression(expression.expression);
+	}
 
-	if (typescript.isNonNullExpression(expression))
+	if (typescript.isNonNullExpression(expression)) {
 		return nameOfExpression(expression.expression);
+	}
 
 	if (typescript.isIdentifier(expression)) return expression.text;
 
-	if (typescript.isPropertyAccessExpression(expression))
+	if (typescript.isPropertyAccessExpression(expression)) {
 		return expression.name.text;
+	}
 
 	if (
 		typescript.isElementAccessExpression(expression) &&
 		typescript.isStringLiteralLike(expression.argumentExpression)
-	)
+	) {
 		return expression.argumentExpression.text;
+	}
 
 	return null;
 };

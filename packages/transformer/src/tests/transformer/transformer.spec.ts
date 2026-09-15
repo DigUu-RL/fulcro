@@ -1,6 +1,8 @@
 import * as path from 'node:path';
+
 import * as ts from 'typescript';
-import { describe, it, expect, beforeAll } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
+
 import transformer from '@/transformer';
 
 /**

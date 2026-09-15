@@ -92,8 +92,9 @@ describe('creating an asynchronous sequence', () => {
 	it('should be consumable with for await', async () => {
 		const collected: number[] = [];
 
-		for await (const value of AsyncSequenceCollection.from([1, 2]))
+		for await (const value of AsyncSequenceCollection.from([1, 2])) {
 			collected.push(value);
+		}
 
 		expect(collected).toEqual([1, 2]);
 	});

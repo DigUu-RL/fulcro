@@ -134,3 +134,39 @@ export interface TerminalOptions {
 	 */
 	readonly signal?: AbortSignal;
 }
+
+/**
+ * How many elements an operator may have in flight at once, and in what order
+ * it hands back the results.
+ *
+ * Only the operators whose names end in `Await` take this. The others process
+ * one element at a time, which is the right default and needs no configuring.
+ */
+export interface ConcurrencyOptions {
+	/**
+	 * Maximum amount of elements worked on at the same time.
+	 *
+	 * Required, with no default, and that is on purpose. Unbounded is how rate
+	 * limits get hit and file descriptors run out — and it fails in production
+	 * rather than in development, where the input is small. A default of `1`
+	 * would make the operator pointless. Anything in between would be a guess
+	 * about a service only the caller knows.
+	 *
+	 * Must be a positive integer.
+	 */
+	readonly concurrency: number;
+
+	/**
+	 * Whether results come back in the order their inputs went in.
+	 *
+	 * `true` by default, because it is the behaviour that composes: an operator
+	 * in the middle of a chain should not quietly change what a later `zip` or
+	 * `pairwise` is pairing. A slow element then holds back the ones behind it,
+	 * though they still *ran* concurrently — the wait is overlapped either way.
+	 *
+	 * Set it to `false` to have each result handed over as it finishes, which
+	 * removes that head-of-line blocking at the cost of an order that no longer
+	 * corresponds to the input.
+	 */
+	readonly ordered?: boolean;
+}

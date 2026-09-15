@@ -22,8 +22,7 @@
  * wiring into a breaking change.
  */
 export * from '@/@types';
-export * from '@/@types/collections/sequence';
 export * from '@/@types/collections/group';
 export * from '@/@types/collections/ordered';
-
+export * from '@/@types/collections/sequence';
 export { SequenceCollection } from '@/collections/sequence';

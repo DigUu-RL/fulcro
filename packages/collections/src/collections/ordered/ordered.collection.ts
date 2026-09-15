@@ -1,6 +1,6 @@
 import { Predicate, Selector } from '@/@types';
-import { Sequence } from '@/@types/collections/sequence';
 import { OrderedSequence, SortCriterion } from '@/@types/collections/ordered';
+import { Sequence } from '@/@types/collections/sequence';
 import { SequenceCollection } from '@/collections/sequence/sequence.collection';
 
 /**
@@ -98,8 +98,9 @@ export class OrderedSequenceCollection<T>
 			const keySelector: Selector<T, unknown> = criterion.keySelector;
 			const extracted: unknown[] = new Array<unknown>(length);
 
-			for (let index = 0; index < length; index++)
+			for (let index = 0; index < length; index++) {
 				extracted[index] = keySelector(elements[index]);
+			}
 
 			keys[criterionIndex] = extracted;
 			directions[criterionIndex] = criterion.descending ? -1 : 1;
@@ -128,8 +129,9 @@ export class OrderedSequenceCollection<T>
 		});
 
 		const sorted: T[] = new Array<T>(length);
-		for (let index = 0; index < length; index++)
+		for (let index = 0; index < length; index++) {
 			sorted[index] = elements[positions[index]];
+		}
 
 		return sorted;
 	}

@@ -13,7 +13,7 @@ export {
 	type DeclarationSite,
 	type DeclaredKind,
 	type DeclaredType,
-	typeOf,
 	type TypeId,
 	type TypeOf,
+	typeOf,
 } from '@/functions/utils/typeOf';

@@ -3,6 +3,7 @@ import {
 	AsyncAction,
 	AsyncPredicate,
 	AsyncSelector,
+	ConcurrencyOptions,
 	TerminalOptions,
 } from '@/@types';
 
@@ -144,6 +145,72 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * @returns A deferred sequence of the accumulated values.
 	 */
 	scan<A = T>(seed: A, callback: AsyncAccumulator<A, T>): AsyncSequence<A>;
+
+	/**
+	 * Projects every element into a new shape, several at a time.
+	 *
+	 * The concurrent form of {@link AsyncSequence.select}. Where that one awaits
+	 * an element before pulling the next, this keeps up to `concurrency` of them
+	 * in flight — which for work that spends its time waiting is the difference
+	 * between the sum of the waits and the longest of them.
+	 *
+	 * ```ts
+	 * const users = await ids.selectAwait(loadUser, { concurrency: 8 }).toArray();
+	 * ```
+	 *
+	 * It deliberately gives up the back pressure the rest of the type keeps: up
+	 * to `concurrency` elements are pulled before any result is handed back.
+	 *
+	 * Results come back in input order by default. A rejection stops the
+	 * sequence: no further work is started, whatever is already running is
+	 * awaited so nothing is left unobserved, and the rejection then surfaces.
+	 *
+	 * @template R Type produced by the projection.
+	 * @param selector Projection applied to each element.
+	 * @param options How many at a time, and in what order.
+	 * @returns A deferred sequence with the projected elements.
+	 * @throws {Error} When `concurrency` is not a positive integer.
+	 */
+	selectAwait<R>(
+		selector: AsyncSelector<T, R>,
+		options: ConcurrencyOptions,
+	): AsyncSequence<R>;
+
+	/**
+	 * Filters the sequence, evaluating several conditions at a time.
+	 *
+	 * For a predicate that has to ask something — a permission check, a lookup —
+	 * rather than one that can answer from the element alone.
+	 *
+	 * @param predicate Condition evaluated for each element.
+	 * @param options How many at a time, and in what order.
+	 * @returns A deferred sequence with the matching elements.
+	 * @throws {Error} When `concurrency` is not a positive integer.
+	 */
+	whereAwait(
+		predicate: AsyncPredicate<T>,
+		options: ConcurrencyOptions,
+	): AsyncSequence<T>;
+
+	/**
+	 * Runs an action for every element, several at a time.
+	 *
+	 * The terminal counterpart of {@link AsyncSequence.selectAwait}, for work
+	 * done for its effects — writing rows, sending requests — where no result is
+	 * collected.
+	 *
+	 * The index handed to the action is the position of the element in the
+	 * source, not the order in which the actions happened to run.
+	 *
+	 * @param action Action invoked with each element and its index.
+	 * @param options How many at a time, in what order, and cancellation.
+	 * @returns A promise settling when every element has been dealt with.
+	 * @throws {Error} When `concurrency` is not a positive integer.
+	 */
+	forEachAwait(
+		action: AsyncAction<T>,
+		options: ConcurrencyOptions & TerminalOptions,
+	): Promise<void>;
 
 	/**
 	 * Materializes the sequence into an array.

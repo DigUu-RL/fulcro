@@ -78,8 +78,9 @@ const buildDefaultExpression = (
 				typescript.TypeFlags.Void |
 				typescript.TypeFlags.Never)) !==
 		0
-	)
+	) {
 		return factory.createIdentifier('undefined');
+	}
 
 	if (
 		(flags &
@@ -87,61 +88,72 @@ const buildDefaultExpression = (
 				typescript.TypeFlags.Any |
 				typescript.TypeFlags.Unknown)) !==
 		0
-	)
+	) {
 		return factory.createNull();
+	}
 
 	// A literal type admits exactly one value, which is therefore its default.
 	if (type.isStringLiteral()) return factory.createStringLiteral(type.value);
-	if (type.isNumberLiteral())
+	if (type.isNumberLiteral()) {
 		return type.value < 0
 			? factory.createPrefixUnaryExpression(
 					typescript.SyntaxKind.MinusToken,
 					factory.createNumericLiteral(Math.abs(type.value)),
 				)
 			: factory.createNumericLiteral(type.value);
+	}
 
-	if ((flags & typescript.TypeFlags.BooleanLiteral) !== 0)
+	if ((flags & typescript.TypeFlags.BooleanLiteral) !== 0) {
 		return checker.typeToString(type) === 'true'
 			? factory.createTrue()
 			: factory.createFalse();
+	}
 
-	if ((flags & typescript.TypeFlags.BigIntLiteral) !== 0)
+	if ((flags & typescript.TypeFlags.BigIntLiteral) !== 0) {
 		return factory.createBigIntLiteral(
 			`${checker.typeToString(type).replace(/n$/, '')}n`,
 		);
+	}
 
-	if ((flags & typescript.TypeFlags.String) !== 0)
+	if ((flags & typescript.TypeFlags.String) !== 0) {
 		return factory.createStringLiteral('');
+	}
 
-	if ((flags & typescript.TypeFlags.Number) !== 0)
+	if ((flags & typescript.TypeFlags.Number) !== 0) {
 		return factory.createNumericLiteral(0);
+	}
 
-	if ((flags & typescript.TypeFlags.BigInt) !== 0)
+	if ((flags & typescript.TypeFlags.BigInt) !== 0) {
 		return factory.createBigIntLiteral('0n');
+	}
 
-	if ((flags & typescript.TypeFlags.Boolean) !== 0)
+	if ((flags & typescript.TypeFlags.Boolean) !== 0) {
 		return factory.createFalse();
+	}
 
-	if ((flags & typescript.TypeFlags.ESSymbol) !== 0)
+	if ((flags & typescript.TypeFlags.ESSymbol) !== 0) {
 		return factory.createCallExpression(
 			factory.createIdentifier('Symbol'),
 			undefined,
 			[],
 		);
+	}
 
 	// An enum defaults to its first member, which is the one carrying the
 	// zero value of an auto numbered enum.
 	if ((flags & typescript.TypeFlags.EnumLike) !== 0) {
 		const [first] = type.isUnion() ? type.types : [type];
 
-		if (first !== undefined && first !== type)
+		if (first !== undefined && first !== type) {
 			return buildDefaultExpression(first, { ...state, depth: depth + 1 });
+		}
 	}
 
 	if (type.isUnion()) return buildUnionDefault(type, state);
 
-	if ((flags & typescript.TypeFlags.Object) !== 0)
+	if ((flags & typescript.TypeFlags.Object) !== 0) {
 		return buildObjectDefault(type as typescript.ObjectType, state);
+	}
 
 	// A type parameter that was never substituted, or anything else the
 	// checker could not reduce.
@@ -170,10 +182,11 @@ const buildUnionDefault = (
 			0,
 	);
 
-	if (nullish !== undefined)
+	if (nullish !== undefined) {
 		return (nullish.flags & typescript.TypeFlags.Null) !== 0
 			? factory.createNull()
 			: factory.createIdentifier('undefined');
+	}
 
 	const [first] = type.types;
 
@@ -240,8 +253,9 @@ const buildObjectDefault = (
 		);
 	}
 
-	if (checker.isArrayType(type))
+	if (checker.isArrayType(type)) {
 		return factory.createArrayLiteralExpression([], false);
+	}
 
 	const builtIn: typescript.Expression | null = buildBuiltInDefault(
 		type,
@@ -254,7 +268,7 @@ const buildObjectDefault = (
 	// that the result stays callable and its return value stays a valid one.
 	const [signature] = type.getCallSignatures();
 
-	if (signature !== undefined)
+	if (signature !== undefined) {
 		return factory.createArrowFunction(
 			undefined,
 			undefined,
@@ -263,6 +277,7 @@ const buildObjectDefault = (
 			factory.createToken(typescript.SyntaxKind.EqualsGreaterThanToken),
 			buildDefaultExpression(signature.getReturnType(), deeper),
 		);
+	}
 
 	const nested: BuildState = {
 		...deeper,

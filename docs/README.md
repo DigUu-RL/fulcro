@@ -7,9 +7,10 @@ The package READMEs are the short version; these are where the detail lives.
 
 ## Guides
 
-| Guide                                   | Covers                               | Package                     |
-| --------------------------------------- | ------------------------------------ | --------------------------- |
-| [Async sequences](./async-sequences.md) | Querying data that arrives over time | `@fulcro/collections/async` |
+| Guide                                   | Covers                                                | Package                     |
+| --------------------------------------- | ----------------------------------------------------- | --------------------------- |
+| [Async sequences](./async-sequences.md) | Querying data that arrives over time                  | `@fulcro/collections/async` |
+| [Bounded concurrency](./concurrency.md) | Running several elements at once, for work that waits | `@fulcro/collections/async` |
 
 More are being written; this table is the index as they land.
 

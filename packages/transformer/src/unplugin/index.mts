@@ -66,11 +66,12 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (
 			configResolved(config: { root?: string }): void {
 				// The root of the bundler wins over the working directory, which
 				// is what makes the plugin behave inside a monorepo.
-				if (config.root !== undefined && options.root === undefined)
+				if (config.root !== undefined && options.root === undefined) {
 					transformer = createFileTransformer({
 						...options,
 						root: config.root,
 					});
+				}
 			},
 		},
 	};

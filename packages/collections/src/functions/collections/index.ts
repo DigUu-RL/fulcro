@@ -87,8 +87,9 @@ export const isIndexKey = (property: string | symbol): property is string => {
 	if (
 		firstCharacterCode < DIGIT_ZERO_CODE ||
 		firstCharacterCode > DIGIT_NINE_CODE
-	)
+	) {
 		return false;
+	}
 
 	return INDEX_KEY_PATTERN.test(property);
 };

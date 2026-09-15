@@ -3,9 +3,11 @@ import {
 	AsyncAction,
 	AsyncPredicate,
 	AsyncSelector,
+	ConcurrencyOptions,
 	TerminalOptions,
 } from '@/@types';
 import { AsyncSequence } from '@/@types/collections/async';
+import { assertConcurrency, mapConcurrent } from '@/functions/concurrency';
 
 /**
  * Marks the absence of an element, so that one which is itself `null` or
@@ -73,8 +75,9 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 			| Iterable<PromiseLike<T>>
 			| Iterable<T | PromiseLike<T>>,
 	): AsyncIterable<T> {
-		if (Symbol.asyncIterator in Object(source))
+		if (Symbol.asyncIterator in Object(source)) {
 			return source as AsyncIterable<T>;
+		}
 
 		const synchronous = source as Iterable<T | PromiseLike<T>>;
 
@@ -363,10 +366,11 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	 * @throws {Error} When `size` is not a positive integer.
 	 */
 	chunk(size: number): AsyncSequence<T[]> {
-		if (!Number.isInteger(size) || size < 1)
+		if (!Number.isInteger(size) || size < 1) {
 			throw new Error(
 				`chunk(${size}) needs a positive integer: a chunk of no elements would never end the sequence.`,
 			);
+		}
 
 		const source: AsyncIterable<T> = this.source;
 
@@ -409,6 +413,88 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 				}
 			},
 		});
+	}
+
+	/**
+	 * Projects every element into a new shape, several at a time.
+	 *
+	 * @template R Type produced by the projection.
+	 * @param selector Projection applied to each element.
+	 * @param options How many at a time, and in what order.
+	 * @returns A deferred sequence with the projected elements.
+	 * @throws {Error} When `concurrency` is not a positive integer.
+	 */
+	selectAwait<R>(
+		selector: AsyncSelector<T, R>,
+		options: ConcurrencyOptions,
+	): AsyncSequence<R> {
+		// Thrown here rather than on first iteration, so a bad limit fails where
+		// it was written instead of somewhere down the chain.
+		assertConcurrency('selectAwait', options.concurrency);
+
+		return AsyncSequenceCollection.deferred<R>(
+			mapConcurrent(this.source, selector, options),
+		);
+	}
+
+	/**
+	 * Filters the sequence, evaluating several conditions at a time.
+	 *
+	 * @param predicate Condition evaluated for each element.
+	 * @param options How many at a time, and in what order.
+	 * @returns A deferred sequence with the matching elements.
+	 * @throws {Error} When `concurrency` is not a positive integer.
+	 */
+	whereAwait(
+		predicate: AsyncPredicate<T>,
+		options: ConcurrencyOptions,
+	): AsyncSequence<T> {
+		assertConcurrency('whereAwait', options.concurrency);
+
+		// The element is carried alongside its verdict rather than looked up
+		// again, so an unordered run still knows which one it was judging.
+		const judged: AsyncIterable<{ item: T; keep: boolean }> = mapConcurrent(
+			this.source,
+			async (item: T) => ({ item, keep: await predicate(item) }),
+			options,
+		);
+
+		return AsyncSequenceCollection.deferred<T>({
+			async *[Symbol.asyncIterator](): AsyncIterator<T> {
+				for await (const { item, keep } of judged) if (keep) yield item;
+			},
+		});
+	}
+
+	/**
+	 * Runs an action for every element, several at a time.
+	 *
+	 * @param action Action invoked with each element and its index.
+	 * @param options How many at a time, in what order, and cancellation.
+	 * @returns A promise settling when every element has been dealt with.
+	 * @throws {Error} When `concurrency` is not a positive integer.
+	 */
+	async forEachAwait(
+		action: AsyncAction<T>,
+		options: ConcurrencyOptions & TerminalOptions,
+	): Promise<void> {
+		assertConcurrency('forEachAwait', options.concurrency);
+
+		let index = 0;
+
+		// The index is taken as the element is pulled, so it reports the
+		// position in the source rather than the order the actions finished in.
+		const running: AsyncIterable<void> = mapConcurrent(
+			this.source,
+			async (item: T) => {
+				await action(item, index++);
+			},
+			options,
+		);
+
+		for await (const _ of running) {
+			AsyncSequenceCollection.checkAborted(options);
+		}
 	}
 
 	/**
@@ -502,8 +588,9 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	async first(options?: TerminalOptions): Promise<T> {
 		const found: T | null = await this.firstOrNull(options);
 
-		if (found === null)
+		if (found === null) {
 			throw new Error('first() was called on an empty sequence.');
+		}
 
 		return found;
 	}
@@ -534,8 +621,9 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	async last(options?: TerminalOptions): Promise<T> {
 		const found: T | typeof NOT_FOUND = await this.resolveLast(options);
 
-		if (found === NOT_FOUND)
+		if (found === NOT_FOUND) {
 			throw new Error('last() was called on an empty sequence.');
+		}
 
 		return found;
 	}

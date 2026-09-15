@@ -1,4 +1,5 @@
 import * as path from 'node:path';
+
 import typescript from 'typescript';
 
 import {
@@ -46,8 +47,9 @@ const resolveKind = (
 
 	if (type.isUnion()) return 'union';
 	if (type.isIntersection()) return 'intersection';
-	if (type.isLiteral() || (flags & typescript.TypeFlags.BooleanLiteral) !== 0)
+	if (type.isLiteral() || (flags & typescript.TypeFlags.BooleanLiteral) !== 0) {
 		return 'literal';
+	}
 
 	if (
 		(flags &
@@ -60,8 +62,9 @@ const resolveKind = (
 				typescript.TypeFlags.Undefined |
 				typescript.TypeFlags.Null)) !==
 		0
-	)
+	) {
 		return 'primitive';
+	}
 
 	if ((flags & typescript.TypeFlags.Object) !== 0) {
 		const objectType = type as typescript.ObjectType;

@@ -5,9 +5,9 @@ import {
 	ResultSelector,
 	Selector,
 } from '@/@types';
-import { Sequence } from '@/@types/collections/sequence';
 import { Group } from '@/@types/collections/group';
 import { OrderedSequence } from '@/@types/collections/ordered';
+import { Sequence } from '@/@types/collections/sequence';
 import { createGroup, createOrderedSequence } from '@/collections/factories';
 import { isIndexKey, resolveDeclaredCount } from '@/functions/collections';
 
@@ -491,8 +491,9 @@ export class SequenceCollection<T> implements Sequence<T> {
 						else bucket.push(element);
 					}
 
-					for (const [key, elements] of map.entries())
+					for (const [key, elements] of map.entries()) {
 						yield createGroup(key, elements);
+					}
 				},
 			},
 			UNKNOWN_COUNT,
@@ -592,8 +593,9 @@ export class SequenceCollection<T> implements Sequence<T> {
 	protected static materialize<T>(source: Iterable<T>): T[] {
 		if (Array.isArray(source)) return source.slice();
 
-		if (source instanceof SequenceCollection)
+		if (source instanceof SequenceCollection) {
 			return SequenceCollection.materialize(source.source as Iterable<T>);
+		}
 
 		return [...source];
 	}
@@ -926,8 +928,9 @@ export class SequenceCollection<T> implements Sequence<T> {
 	single(predicate?: Predicate<T>): T {
 		const found: T | null = this.resolveSingle(predicate);
 
-		if (found === null)
+		if (found === null) {
 			throw new Error('single() found no element matching the condition.');
+		}
 
 		return found;
 	}
@@ -1256,10 +1259,11 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 * @throws {Error} When `size` is not a positive integer.
 	 */
 	chunk(size: number): Sequence<T[]> {
-		if (!Number.isInteger(size) || size < 1)
+		if (!Number.isInteger(size) || size < 1) {
 			throw new Error(
 				`chunk(${size}) needs a positive integer: a chunk of no elements would never end the sequence.`,
 			);
+		}
 
 		const source: Iterable<T> = this.source;
 		const knownCount: () => number | null = this.countResolver;
@@ -1308,8 +1312,9 @@ export class SequenceCollection<T> implements Sequence<T> {
 					// result is iterated.
 					const materialized: T[] = SequenceCollection.materialize(source);
 
-					for (let index = materialized.length - 1; index >= 0; index--)
+					for (let index = materialized.length - 1; index >= 0; index--) {
 						yield materialized[index];
+					}
 				},
 			},
 			knownCount,
@@ -1484,8 +1489,9 @@ export class SequenceCollection<T> implements Sequence<T> {
 			}
 		}
 
-		if (best === NOT_FOUND)
+		if (best === NOT_FOUND) {
 			throw new Error(`${operation}() was called on an empty sequence.`);
+		}
 
 		return best;
 	}
@@ -1773,8 +1779,9 @@ export class SequenceCollection<T> implements Sequence<T> {
 
 		// Immediate rather than deferred, and that is the point: two `where`
 		// calls would read the source twice, which a generator cannot survive.
-		for (const item of this.source)
+		for (const item of this.source) {
 			(predicate(item) ? matched : rest).push(item);
+		}
 
 		return [
 			SequenceCollection.from(matched),
@@ -1820,8 +1827,9 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 * @throws {Error} When `size` is not a positive integer.
 	 */
 	windowed(size: number): Sequence<T[]> {
-		if (!Number.isInteger(size) || size < 1)
+		if (!Number.isInteger(size) || size < 1) {
 			throw new Error(`windowed(${size}) needs a positive integer.`);
+		}
 
 		const source: Iterable<T> = this.source;
 		const knownCount: () => number | null = this.countResolver;
@@ -1933,13 +1941,15 @@ export class SequenceCollection<T> implements Sequence<T> {
 	): number[] {
 		const values: number[] = [];
 
-		for (const item of this.source)
+		for (const item of this.source) {
 			values.push(
 				selector === undefined ? (item as unknown as number) : selector(item),
 			);
+		}
 
-		if (values.length === 0)
+		if (values.length === 0) {
 			throw new Error(`${operation}() was called on an empty sequence.`);
+		}
 
 		// Numeric rather than the default lexicographic sort, which would put
 		// 10 before 9.
@@ -1971,8 +1981,9 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 * @throws {Error} When the sequence is empty, or `rank` is out of range.
 	 */
 	percentile(rank: number, selector?: Selector<T, number>): number {
-		if (!Number.isFinite(rank) || rank < 0 || rank > 100)
+		if (!Number.isFinite(rank) || rank < 0 || rank > 100) {
 			throw new Error(`percentile(${rank}) takes a rank between 0 and 100.`);
+		}
 
 		const values: number[] = this.sortedValues('percentile', selector);
 
@@ -2004,13 +2015,15 @@ export class SequenceCollection<T> implements Sequence<T> {
 	): { readonly count: number; readonly total: number } {
 		const values: number[] = [];
 
-		for (const item of this.source)
+		for (const item of this.source) {
 			values.push(
 				selector === undefined ? (item as unknown as number) : selector(item),
 			);
+		}
 
-		if (values.length === 0)
+		if (values.length === 0) {
 			throw new Error(`${operation}() was called on an empty sequence.`);
+		}
 
 		const mean: number =
 			values.reduce((sum, value) => sum + value, 0) / values.length;
@@ -2058,10 +2071,11 @@ export class SequenceCollection<T> implements Sequence<T> {
 		// Dividing by n - 1 rather than n, which is undefined for a single
 		// observation: one measurement says nothing about the spread it came
 		// from, and answering 0 would claim that it does.
-		if (count < 2)
+		if (count < 2) {
 			throw new Error(
 				'sampleStandardDeviation() needs at least two elements: a sample of one says nothing about its spread.',
 			);
+		}
 
 		return Math.sqrt(total / (count - 1));
 	}
@@ -2079,8 +2093,9 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 * integer.
 	 */
 	static range(start: number, count: number): Sequence<number> {
-		if (!Number.isInteger(start) || !Number.isInteger(count))
+		if (!Number.isInteger(start) || !Number.isInteger(count)) {
 			throw new Error('range() takes integers.');
+		}
 
 		if (count < 0) throw new Error('range() cannot produce a negative count.');
 
@@ -2104,8 +2119,9 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 * @throws {Error} When `count` is negative or not an integer.
 	 */
 	static repeat<T>(value: T, count: number): Sequence<T> {
-		if (!Number.isInteger(count))
+		if (!Number.isInteger(count)) {
 			throw new Error('repeat() takes an integer count.');
+		}
 
 		if (count < 0) throw new Error('repeat() cannot produce a negative count.');
 

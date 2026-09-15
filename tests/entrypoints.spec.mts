@@ -97,11 +97,12 @@ const readPackedFiles = (): void => {
 		stdio: ['ignore', 'pipe', 'ignore'],
 	});
 
-	for (const report of JSON.parse(output) as readonly PackReport[])
+	for (const report of JSON.parse(output) as readonly PackReport[]) {
 		packed.set(
 			report.name,
 			report.files.map((file) => file.path),
 		);
+	}
 };
 
 /**
@@ -113,10 +114,11 @@ const readPackedFiles = (): void => {
 const packedFiles = (name: string): readonly string[] => {
 	const files: readonly string[] | undefined = packed.get(name);
 
-	if (files === undefined)
+	if (files === undefined) {
 		throw new Error(
 			`npm pack reported nothing for ${name}. Is it still a workspace?`,
 		);
+	}
 
 	return files;
 };
@@ -168,11 +170,12 @@ describe.each(PACKAGE_NAMES)('%s, as a consumer sees it', (name) => {
 
 		const shipped: readonly string[] = packedFiles(name);
 
-		for (const exported of paths)
+		for (const exported of paths) {
 			expect(
 				shipped,
 				`${name} exports ${exported}, which its tarball does not contain`,
 			).toContain(asPackedPath(exported));
+		}
 	});
 
 	it('should publish the files main and types point at', () => {
@@ -375,9 +378,10 @@ describe('@fulcro/transformer', () => {
 			'rspack',
 			'esbuild',
 			'farm',
-		])
+		]) {
 			expect(typeof adapters[bundler as keyof typeof adapters]).toBe(
 				'function',
 			);
+		}
 	});
 });

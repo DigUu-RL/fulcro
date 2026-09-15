@@ -98,8 +98,9 @@ export function nameOf(input?: unknown): string {
 		// A class carries its own name and is never an accessor, so its body is
 		// not worth reading — and reading it would misfire on any arrow
 		// function written inside one of its methods.
-		if (resolveCallableId(input as () => unknown) === 'class')
+		if (resolveCallableId(input as () => unknown) === 'class') {
 			return input.name.length > 0 ? input.name : ANONYMOUS_NAME;
+		}
 
 		const accessed: string | null = parseAccessedName(input as NameAccessor);
 

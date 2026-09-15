@@ -1,5 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+
 import typescript from 'typescript';
 
 import transformer, { TransformerOptions } from '@/transformer';
@@ -93,8 +94,9 @@ class ProgramHost implements typescript.LanguageServiceHost {
 			!this.overlays.has(fileName) &&
 			this.rootNames.includes(fileName) &&
 			this.matchesDisk(fileName, content)
-		)
+		) {
 			return;
+		}
 
 		this.overlays.set(fileName, content);
 		this.versions.set(fileName, (this.versions.get(fileName) ?? 0) + 1);
@@ -130,8 +132,9 @@ class ProgramHost implements typescript.LanguageServiceHost {
 	getScriptSnapshot(fileName: string): typescript.IScriptSnapshot | undefined {
 		const overlay: string | undefined = this.overlays.get(fileName);
 
-		if (overlay !== undefined)
+		if (overlay !== undefined) {
 			return typescript.ScriptSnapshot.fromString(overlay);
+		}
 
 		if (!fs.existsSync(fileName)) return undefined;
 
@@ -185,18 +188,20 @@ const parseTsconfig = (
 			? path.resolve(root, explicit)
 			: typescript.findConfigFile(root, typescript.sys.fileExists);
 
-	if (configPath === undefined)
+	if (configPath === undefined) {
 		throw new Error(
 			`No tsconfig.json found from ${root}. The transformer needs one to ` +
 				'know which files belong to the program.',
 		);
+	}
 
 	const read = typescript.readConfigFile(configPath, typescript.sys.readFile);
 
-	if (read.error !== undefined)
+	if (read.error !== undefined) {
 		throw new Error(
 			typescript.flattenDiagnosticMessageText(read.error.messageText, '\n'),
 		);
+	}
 
 	return typescript.parseJsonConfigFileContent(
 		read.config,

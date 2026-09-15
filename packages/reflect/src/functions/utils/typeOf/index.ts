@@ -243,8 +243,9 @@ export const resolveCallableId = (value: () => unknown): TypeId => {
 	// `Function.prototype.toString` is required to return the original source
 	// text, so the prefix is reliable wherever the code was not minified into
 	// a plain function.
-	if (/^\s*class[\s{]/.test(Function.prototype.toString.call(value)))
+	if (/^\s*class[\s{]/.test(Function.prototype.toString.call(value))) {
 		return 'class';
+	}
 
 	switch (tagOf(value)) {
 		case 'AsyncFunction':
@@ -335,15 +336,17 @@ const resolveName = (value: unknown, typeId: TypeId): string => {
 	if (typeId === 'undefined') return 'undefined';
 	if (typeId === 'null-prototype-object') return NULL_PROTOTYPE_NAME;
 
-	if (typeof value === 'function')
+	if (typeof value === 'function') {
 		return value.name.length > 0 ? value.name : ANONYMOUS_NAME;
+	}
 
 	const constructorName: unknown = (
 		value as { constructor?: { name?: unknown } }
 	)?.constructor?.name;
 
-	if (typeof constructorName === 'string' && constructorName.length > 0)
+	if (typeof constructorName === 'string' && constructorName.length > 0) {
 		return constructorName;
+	}
 
 	return tagOf(value);
 };

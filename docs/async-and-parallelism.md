@@ -202,11 +202,21 @@ their results are discarded. Anyone expecting `abort()` to kill eight requests
 mid-flight will be wrong, and the documentation has to say so rather than let
 them find out.
 
-Where a selector itself takes a signal — `fetch` being the obvious case — it is
-handed the same one, so those _do_ stop:
+Work that takes a signal of its own — `fetch` being the obvious case — _can_ be
+stopped, by closing over the same controller. The operator does not thread the
+signal in for you, and deliberately so: the signal arrives at the terminal while
+the selector was registered further up the chain, and carrying a context down
+through every deferred operator would serve a case the caller can already write
+with the controller they built:
 
 ```ts
-.selectAwait((id, { signal }) => fetch(`/users/${id}`, { signal }), { concurrency: 8 })
+const controller = new AbortController();
+
+await source
+	.selectAwait((id) => fetch(`/users/${id}`, { signal: controller.signal }), {
+		concurrency: 8,
+	})
+	.toArray({ signal: controller.signal });
 ```
 
 **It goes on the terminal**, not on the operators and not on `from`. Cancelling
