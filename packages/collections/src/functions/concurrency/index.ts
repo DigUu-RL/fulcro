@@ -127,11 +127,22 @@ export const mapConcurrent = <T, R>(
 		/**
 		 * Starts work until the limit is reached or the source runs out.
 		 *
+		 * The limit counts what has been pulled and not yet handed over, rather
+		 * than what is running at this instant. The difference is not subtle: a
+		 * selector that resolves immediately leaves `running` empty again before
+		 * the loop re-checks it, so a limit measured that way never bites and the
+		 * whole source is drained into memory. Counting undelivered elements
+		 * keeps the buffer at `concurrency` whatever the work costs.
+		 *
 		 * Elements are pulled one at a time — a source cannot be read ahead of
 		 * itself — while the work started on them overlaps, which is the point.
 		 */
 		const fill = async (): Promise<void> => {
-			while (!exhausted && failed() === null && running.size < concurrency) {
+			while (
+				!exhausted &&
+				failed() === null &&
+				started - delivered < concurrency
+			) {
 				const next: IteratorResult<T> = await iterator.next();
 
 				if (next.done === true) {

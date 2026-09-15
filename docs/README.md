@@ -19,9 +19,10 @@ More are being written; this table is the index as they land.
 Not guides. These record decisions and the reasoning behind them, for anyone
 changing the code rather than using it.
 
-| Note                                                             | Covers                                                    |
-| ---------------------------------------------------------------- | --------------------------------------------------------- |
-| [Async, concurrency and parallelism](./async-and-parallelism.md) | Why the three are different, and the shape each one takes |
+| Note                                                             | Covers                                                                      |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| [Async, concurrency and parallelism](./async-and-parallelism.md) | Why the three are different, and the shape each one takes                   |
+| [Testing standard](./testing.md)                                 | The two suites every feature carries, and why timing is the wrong assertion |
 
 ## What belongs where
 
