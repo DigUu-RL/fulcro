@@ -163,3 +163,7 @@ came would make the failure indistinguishable from a success.
 
 `tryCatch` always returns a promise, including for a fully synchronous
 operation.
+
+---
+
+**Full guide:** [docs/functions.md](../../docs/functions.md) — scenarios, worked examples and the failure modes worth knowing before you meet them.

@@ -171,3 +171,7 @@ bundle never contains a reference to `node:worker_threads`.
 
 **This package is ESM only.** `import.meta.url` is what locates the worker
 script portably, and it does not exist in CommonJS.
+
+---
+
+**Full guide:** [docs/parallelism.md](../../docs/parallelism.md) — scenarios, worked examples and the failure modes worth knowing before you meet them.

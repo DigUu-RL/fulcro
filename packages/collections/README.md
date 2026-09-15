@@ -171,3 +171,7 @@ ordered classes into a factory registry. A bundler told to treat the package as
 side-effect free would drop that step, and `groupBy`, `orderBy` and
 `orderByDescending` would fail at runtime. No configuration is needed — just
 don't add an override.
+
+---
+
+**Full guide:** [docs/sequences.md](../../docs/sequences.md) — scenarios, worked examples and the failure modes worth knowing before you meet them.

@@ -172,3 +172,7 @@ by design, so they are worth checking whenever the setup changes.
 **The paths reported by `typeOf` look wrong.** Set `projectRoot` explicitly.
 They are made relative to it, and the default — the compiler's working directory
 — is not always what you expect inside a monorepo.
+
+---
+
+**Full guide:** [docs/reflect.md](../../docs/reflect.md) — scenarios, worked examples and the failure modes worth knowing before you meet them.

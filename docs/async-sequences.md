@@ -2,7 +2,7 @@
 
 Querying data that arrives over time — pages of an API, lines of a file, rows
 from a cursor — with the same operators you already know from
-[`Sequence`](../packages/collections/README.md).
+[`Sequence`](./sequences.md).
 
 ```sh
 npm install @fulcro/collections

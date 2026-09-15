@@ -142,3 +142,7 @@ a lie, and failing loudly at the call site beats handing back a wrong value.
 Installing the transformer is a build-time concern only; this package stays a
 plain runtime dependency either way. See
 [`@fulcro/transformer`](../transformer) for the setup.
+
+---
+
+**Full guide:** [docs/reflect.md](../../docs/reflect.md) — scenarios, worked examples and the failure modes worth knowing before you meet them.

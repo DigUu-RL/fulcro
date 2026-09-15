@@ -17,6 +17,12 @@ here; the packages under `packages/` are.
 on its own and gets sharper with `@fulcro/transformer`; only `defaultOf` strictly
 requires it.
 
+## Documentation
+
+Full guides live in [`docs/`](./docs) — install commands, worked examples and
+the scenarios each feature exists for. [`docs/README.md`](./docs/README.md) is
+the index, and opens with a table matching a problem to the tool for it.
+
 ## Working on it
 
 ```sh

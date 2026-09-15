@@ -42,7 +42,7 @@ let reply: (message: unknown) => void = () => {};
  * @param message What the pool sent.
  * @throws {Error} When the module has no such export, or it is not callable.
  */
-const initialise = async (message: InitMessage): Promise<void> => {
+const initialize = async (message: InitMessage): Promise<void> => {
 	const loaded: Record<string, unknown> = (await import(
 		message.module
 	)) as Record<string, unknown>;
@@ -99,7 +99,7 @@ const run = async (message: TaskMessage): Promise<void> => {
 const receive = async (message: Incoming): Promise<void> => {
 	if (message.kind === 'init') {
 		try {
-			await initialise(message);
+			await initialize(message);
 			reply({ kind: 'ready' });
 		} catch (error) {
 			reply({
