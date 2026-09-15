@@ -7,7 +7,7 @@
 		"packages/*"
 	],
 	"scripts": {
-		"build": "npm run build --workspaces",
+		"build": "npm run build --workspace @fulcro/transform-core && npm run build --workspaces",
 		"typecheck": "npm run typecheck --workspaces && tsc --noEmit -p tsconfig.tests.json",
 		"test": "npm run build && vitest run --configLoader native",
 		"test:watch": "npm run build && vitest --configLoader native",
