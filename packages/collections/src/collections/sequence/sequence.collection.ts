@@ -1394,4 +1394,371 @@ export class SequenceCollection<T> implements Sequence<T> {
 			},
 		);
 	}
+
+	/**
+	 * Removes the duplicated elements, comparing by a key.
+	 *
+	 * @template K Type of the key elements are compared by.
+	 * @param keySelector Projection returning the key of each element.
+	 * @returns A deferred sequence with one element per distinct key.
+	 */
+	distinctBy<K>(keySelector: Selector<T, K>): Sequence<T> {
+		const source: Iterable<T> = this.source;
+
+		return SequenceCollection.deferred(
+			{
+				*[Symbol.iterator](): Iterator<T> {
+					const seen = new Set<K>();
+
+					for (const item of source) {
+						const key: K = keySelector(item);
+
+						if (seen.has(key)) continue;
+
+						seen.add(key);
+						yield item;
+					}
+				},
+			},
+			UNKNOWN_COUNT,
+		);
+	}
+
+	/**
+	 * Finds the element with the smallest key.
+	 *
+	 * @template K Type of the compared key.
+	 * @param keySelector Projection returning the key of each element.
+	 * @returns The element whose key is smallest.
+	 * @throws {Error} When the sequence is empty.
+	 */
+	minBy<K>(keySelector: Selector<T, K>): T {
+		return this.resolveExtremeBy(keySelector, 'minBy', (candidate, best) =>
+			candidate < best ? true : false,
+		);
+	}
+
+	/**
+	 * Finds the element with the largest key.
+	 *
+	 * @template K Type of the compared key.
+	 * @param keySelector Projection returning the key of each element.
+	 * @returns The element whose key is largest.
+	 * @throws {Error} When the sequence is empty.
+	 */
+	maxBy<K>(keySelector: Selector<T, K>): T {
+		return this.resolveExtremeBy(keySelector, 'maxBy', (candidate, best) =>
+			candidate > best ? true : false,
+		);
+	}
+
+	/**
+	 * Finds the element whose key wins a comparison against every other.
+	 *
+	 * Shared by {@link SequenceCollection.minBy} and
+	 * {@link SequenceCollection.maxBy}, which differ only in which direction
+	 * wins. A tie leaves the incumbent in place, so the first of several equal
+	 * keys is the one returned.
+	 *
+	 * @template K Type of the compared key.
+	 * @param keySelector Projection returning the key of each element.
+	 * @param operation Name of the calling operator, for the error message.
+	 * @param wins Whether a candidate key beats the current best.
+	 * @returns The winning element.
+	 * @throws {Error} When the sequence is empty.
+	 */
+	private resolveExtremeBy<K>(
+		keySelector: Selector<T, K>,
+		operation: string,
+		wins: (candidate: K, best: K) => boolean,
+	): T {
+		let best: T | typeof NOT_FOUND = NOT_FOUND;
+		let bestKey: K | undefined;
+
+		for (const item of this.source) {
+			const key: K = keySelector(item);
+
+			if (best === NOT_FOUND || wins(key, bestKey as K)) {
+				best = item;
+				bestKey = key;
+			}
+		}
+
+		if (best === NOT_FOUND)
+			throw new Error(`${operation}() was called on an empty sequence.`);
+
+		return best;
+	}
+
+	/**
+	 * Removes the elements whose key appears in a sequence of keys.
+	 *
+	 * @template K Type of the compared key.
+	 * @param second Keys to exclude.
+	 * @param keySelector Projection returning the key of each element.
+	 * @returns A deferred sequence with one element per remaining key.
+	 */
+	exceptBy<K>(second: Iterable<K>, keySelector: Selector<T, K>): Sequence<T> {
+		const source: Iterable<T> = this.source;
+
+		return SequenceCollection.deferred(
+			{
+				*[Symbol.iterator](): Iterator<T> {
+					const excluded = new Set<K>(second);
+					const seen = new Set<K>();
+
+					for (const item of source) {
+						const key: K = keySelector(item);
+
+						if (excluded.has(key) || seen.has(key)) continue;
+
+						seen.add(key);
+						yield item;
+					}
+				},
+			},
+			UNKNOWN_COUNT,
+		);
+	}
+
+	/**
+	 * Concatenates two sequences, discarding elements whose key was already
+	 * seen.
+	 *
+	 * @template K Type of the compared key.
+	 * @param second Sequence appended to this one.
+	 * @param keySelector Projection returning the key of each element.
+	 * @returns A deferred sequence with one element per distinct key.
+	 */
+	unionBy<K>(second: Iterable<T>, keySelector: Selector<T, K>): Sequence<T> {
+		const source: Iterable<T> = this.source;
+
+		return SequenceCollection.deferred(
+			{
+				*[Symbol.iterator](): Iterator<T> {
+					const seen = new Set<K>();
+
+					for (const item of source) {
+						const key: K = keySelector(item);
+
+						if (seen.has(key)) continue;
+
+						seen.add(key);
+						yield item;
+					}
+
+					for (const item of second) {
+						const key: K = keySelector(item);
+
+						if (seen.has(key)) continue;
+
+						seen.add(key);
+						yield item;
+					}
+				},
+			},
+			UNKNOWN_COUNT,
+		);
+	}
+
+	/**
+	 * Keeps the elements whose key appears in a sequence of keys.
+	 *
+	 * @template K Type of the compared key.
+	 * @param second Keys to keep.
+	 * @param keySelector Projection returning the key of each element.
+	 * @returns A deferred sequence with one element per matching key.
+	 */
+	intersectBy<K>(
+		second: Iterable<K>,
+		keySelector: Selector<T, K>,
+	): Sequence<T> {
+		const source: Iterable<T> = this.source;
+
+		return SequenceCollection.deferred(
+			{
+				*[Symbol.iterator](): Iterator<T> {
+					const wanted = new Set<K>(second);
+					const seen = new Set<K>();
+
+					for (const item of source) {
+						const key: K = keySelector(item);
+
+						if (!wanted.has(key) || seen.has(key)) continue;
+
+						seen.add(key);
+						yield item;
+					}
+				},
+			},
+			UNKNOWN_COUNT,
+		);
+	}
+
+	/**
+	 * Counts how many elements share each key.
+	 *
+	 * @template K Type of the grouping key.
+	 * @param keySelector Projection returning the key of each element.
+	 * @returns A map of key to count, in first-seen order.
+	 */
+	countBy<K>(keySelector: Selector<T, K>): Map<K, number> {
+		const counts = new Map<K, number>();
+
+		// The elements themselves are never collected, which is the whole
+		// reason to reach for this instead of grouping and measuring.
+		for (const item of this.source) {
+			const key: K = keySelector(item);
+
+			counts.set(key, (counts.get(key) ?? 0) + 1);
+		}
+
+		return counts;
+	}
+
+	/**
+	 * Correlates each element with all the inner elements sharing its key.
+	 *
+	 * @template I Type of the inner elements.
+	 * @template K Type of the correlation key.
+	 * @template R Type of the produced results.
+	 * @param innerCollection Sequence correlated with this one.
+	 * @param outerKeySelector Projection returning the key of each element of
+	 * this sequence.
+	 * @param innerKeySelector Projection returning the key of each element of
+	 * `innerCollection`.
+	 * @param resultSelector Projection merging an element with its matches.
+	 * @returns A deferred sequence with one result per element of this
+	 * sequence.
+	 */
+	groupJoin<I, K, R>(
+		innerCollection: Iterable<I>,
+		outerKeySelector: Selector<T, K>,
+		innerKeySelector: Selector<I, K>,
+		resultSelector: (outer: T, inner: Sequence<I>) => R,
+	): Sequence<R> {
+		const source: Iterable<T> = this.source;
+		const knownCount: () => number | null = this.countResolver;
+
+		return SequenceCollection.deferred<R>(
+			{
+				*[Symbol.iterator](): Iterator<R> {
+					const lookup = new Map<K, I[]>();
+
+					for (const item of innerCollection) {
+						const key: K = innerKeySelector(item);
+						const bucket: I[] | undefined = lookup.get(key);
+
+						if (bucket === undefined) lookup.set(key, [item]);
+						else bucket.push(item);
+					}
+
+					for (const item of source) {
+						// An element with no match still produces a result, with an
+						// empty group — which is what makes this a left outer join
+						// rather than the inner one `join` performs.
+						const matches: I[] = lookup.get(outerKeySelector(item)) ?? [];
+
+						yield resultSelector(item, SequenceCollection.from(matches));
+					}
+				},
+			},
+			// One result per element of this sequence, whatever the inner one
+			// holds.
+			knownCount,
+		);
+	}
+
+	/**
+	 * Materializes the sequence into a map of key to every element sharing it.
+	 *
+	 * @template K Type of the map keys.
+	 * @template R Type of the collected values.
+	 * @param keySelector Projection returning the key of each element.
+	 * @param elementSelector Optional projection applied to each element.
+	 * @returns A map of key to the elements sharing it, in first-seen order.
+	 */
+	toLookup<K, R = T>(
+		keySelector: Selector<T, K>,
+		elementSelector?: Selector<T, R>,
+	): Map<K, R[]> {
+		const lookup = new Map<K, R[]>();
+
+		for (const item of this.source) {
+			const key: K = keySelector(item);
+			const value: R =
+				elementSelector === undefined
+					? (item as unknown as R)
+					: elementSelector(item);
+
+			const bucket: R[] | undefined = lookup.get(key);
+
+			if (bucket === undefined) lookup.set(key, [value]);
+			else bucket.push(value);
+		}
+
+		return lookup;
+	}
+
+	/**
+	 * Materializes the sequence into a set, discarding duplicates.
+	 *
+	 * @returns A new set holding the distinct elements of the sequence.
+	 */
+	toSet(): Set<T> {
+		return new Set<T>(this.source);
+	}
+
+	/**
+	 * Creates a sequence of consecutive integers.
+	 *
+	 * Generated as it is read rather than built as an array, so a range of a
+	 * million costs nothing until something asks for its elements.
+	 *
+	 * @param start First integer of the range.
+	 * @param count Amount of integers to produce.
+	 * @returns The created sequence.
+	 * @throws {Error} When `count` is negative or either argument is not an
+	 * integer.
+	 */
+	static range(start: number, count: number): Sequence<number> {
+		if (!Number.isInteger(start) || !Number.isInteger(count))
+			throw new Error('range() takes integers.');
+
+		if (count < 0) throw new Error('range() cannot produce a negative count.');
+
+		return SequenceCollection.deferred<number>(
+			{
+				*[Symbol.iterator](): Iterator<number> {
+					for (let offset = 0; offset < count; offset++) yield start + offset;
+				},
+			},
+			() => count,
+		);
+	}
+
+	/**
+	 * Creates a sequence repeating one value.
+	 *
+	 * @template T Type of the repeated value.
+	 * @param value Value yielded on every position.
+	 * @param count Amount of times to yield it.
+	 * @returns The created sequence.
+	 * @throws {Error} When `count` is negative or not an integer.
+	 */
+	static repeat<T>(value: T, count: number): Sequence<T> {
+		if (!Number.isInteger(count))
+			throw new Error('repeat() takes an integer count.');
+
+		if (count < 0) throw new Error('repeat() cannot produce a negative count.');
+
+		return SequenceCollection.deferred<T>(
+			{
+				*[Symbol.iterator](): Iterator<T> {
+					for (let remaining = count; remaining > 0; remaining--) yield value;
+				},
+			},
+			() => count,
+		);
+	}
 }

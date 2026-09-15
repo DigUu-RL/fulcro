@@ -510,4 +510,142 @@ export interface Sequence<T> extends Iterable<T> {
 	 * @returns A deferred sequence starting with those elements.
 	 */
 	prepend(...values: readonly T[]): Sequence<T>;
+
+	/**
+	 * Removes the duplicated elements, comparing by a key rather than by the
+	 * element itself.
+	 *
+	 * The first element seen for a key is the one kept, so the result follows
+	 * the order of the source.
+	 *
+	 * @template K Type of the key elements are compared by.
+	 * @param keySelector Projection returning the key of each element.
+	 * @returns A deferred sequence with one element per distinct key.
+	 */
+	distinctBy<K>(keySelector: Selector<T, K>): Sequence<T>;
+
+	/**
+	 * Finds the element with the smallest key.
+	 *
+	 * Returns the *element*, where {@link Sequence.min} returns the value — the
+	 * usual reason to reach for this one is wanting the object that carried the
+	 * smallest number, not the number.
+	 *
+	 * Keys are compared with `<`, so they must be mutually comparable: numbers,
+	 * strings and dates all are.
+	 *
+	 * @template K Type of the compared key.
+	 * @param keySelector Projection returning the key of each element.
+	 * @returns The element whose key is smallest, the first of them on a tie.
+	 * @throws {Error} When the sequence is empty.
+	 */
+	minBy<K>(keySelector: Selector<T, K>): T;
+
+	/**
+	 * Finds the element with the largest key.
+	 *
+	 * @template K Type of the compared key.
+	 * @param keySelector Projection returning the key of each element.
+	 * @returns The element whose key is largest, the first of them on a tie.
+	 * @throws {Error} When the sequence is empty.
+	 */
+	maxBy<K>(keySelector: Selector<T, K>): T;
+
+	/**
+	 * Removes the elements whose key appears in a sequence of keys.
+	 *
+	 * Takes keys rather than elements, which is what makes it useful: the
+	 * exclusion list rarely holds the same shape as the sequence being
+	 * filtered — a list of identifiers against a list of records.
+	 *
+	 * @template K Type of the compared key.
+	 * @param second Keys to exclude.
+	 * @param keySelector Projection returning the key of each element.
+	 * @returns A deferred sequence with one element per remaining key.
+	 */
+	exceptBy<K>(second: Iterable<K>, keySelector: Selector<T, K>): Sequence<T>;
+
+	/**
+	 * Concatenates two sequences, discarding elements whose key was already
+	 * seen.
+	 *
+	 * @template K Type of the compared key.
+	 * @param second Sequence appended to this one.
+	 * @param keySelector Projection returning the key of each element.
+	 * @returns A deferred sequence with one element per distinct key.
+	 */
+	unionBy<K>(second: Iterable<T>, keySelector: Selector<T, K>): Sequence<T>;
+
+	/**
+	 * Keeps the elements whose key appears in a sequence of keys.
+	 *
+	 * @template K Type of the compared key.
+	 * @param second Keys to keep.
+	 * @param keySelector Projection returning the key of each element.
+	 * @returns A deferred sequence with one element per matching key.
+	 */
+	intersectBy<K>(second: Iterable<K>, keySelector: Selector<T, K>): Sequence<T>;
+
+	/**
+	 * Counts how many elements share each key.
+	 *
+	 * Cheaper than grouping when only the sizes are wanted, since the elements
+	 * themselves are never collected.
+	 *
+	 * @template K Type of the grouping key.
+	 * @param keySelector Projection returning the key of each element.
+	 * @returns A map of key to count, in the order the keys were first seen.
+	 */
+	countBy<K>(keySelector: Selector<T, K>): Map<K, number>;
+
+	/**
+	 * Correlates each element with all the inner elements sharing its key.
+	 *
+	 * Where {@link Sequence.join} produces one result per matching pair, this
+	 * produces one per element of *this* sequence, handing the matches over as
+	 * a group — so an element with no match still appears, with an empty group.
+	 * That is the difference between an inner join and a left outer one.
+	 *
+	 * @template I Type of the inner elements.
+	 * @template K Type of the correlation key.
+	 * @template R Type of the produced results.
+	 * @param innerCollection Sequence correlated with this one.
+	 * @param outerKeySelector Projection returning the key of each element of
+	 * this sequence.
+	 * @param innerKeySelector Projection returning the key of each element of
+	 * `innerCollection`.
+	 * @param resultSelector Projection merging an element with its matches.
+	 * @returns A deferred sequence with one result per element of this
+	 * sequence.
+	 */
+	groupJoin<I, K, R>(
+		innerCollection: Iterable<I>,
+		outerKeySelector: Selector<T, K>,
+		innerKeySelector: Selector<I, K>,
+		resultSelector: (outer: T, inner: Sequence<I>) => R,
+	): Sequence<R>;
+
+	/**
+	 * Materializes the sequence into a map of key to every element sharing it.
+	 *
+	 * The one-to-many counterpart of {@link Sequence.toMap}, which rejects a
+	 * duplicate key rather than collecting it.
+	 *
+	 * @template K Type of the map keys.
+	 * @template R Type of the collected values. Defaults to `T`.
+	 * @param keySelector Projection returning the key of each element.
+	 * @param elementSelector Optional projection applied to each element.
+	 * @returns A map of key to the elements sharing it, in first-seen order.
+	 */
+	toLookup<K, R = T>(
+		keySelector: Selector<T, K>,
+		elementSelector?: Selector<T, R>,
+	): Map<K, R[]>;
+
+	/**
+	 * Materializes the sequence into a set, discarding duplicates.
+	 *
+	 * @returns A new set holding the distinct elements of the sequence.
+	 */
+	toSet(): Set<T>;
 }
