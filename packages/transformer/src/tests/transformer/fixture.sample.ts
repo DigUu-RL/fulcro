@@ -6,12 +6,12 @@
  *
  * The utilities are imported by package name rather than by path, so the
  * symbols the transformer follows resolve into the built declarations of
- * `@fulcro/reflect` exactly as they would in a consumer project. That is what
+ * `@diguu/reflect` exactly as they would in a consumer project. That is what
  * keeps the rewriters honest: they recognise a call by the module that declares
  * it, and this fixture is what proves the recognition survives the package
  * boundary — the case a same-tree relative import could never cover.
  */
-import { defaultOf, nameOf, typeOf } from '@fulcro/reflect';
+import { defaultOf, nameOf, typeOf } from '@diguu/reflect';
 
 /** Interface that leaves no trace at runtime, which is the whole point. */
 export interface UserContract {

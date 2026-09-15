@@ -1,12 +1,13 @@
 {
-	"name": "@diguu/reflect",
+	"name": "@diguu/functions",
 	"version": "0.0.0",
-	"description": "Type aware nameOf, typeOf and defaultOf, resolved at compile time by @diguu/transformer.",
+	"description": "Runtime helpers turning control flow into values: an exhaustive switchFor and a throwing-free tryCatch.",
 	"keywords": [
-		"nameof",
-		"typeof",
-		"default",
-		"reflection",
+		"switch",
+		"exhaustive",
+		"enum",
+		"result",
+		"try-catch",
 		"typescript"
 	],
 	"license": "ISC",
@@ -24,24 +25,24 @@
 		"dist"
 	],
 	"sideEffects": false,
-	"scripts": {
-		"build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
-		"typecheck": "tsc --noEmit -p tsconfig.json",
-		"prepublishOnly": "npm run build"
+	"engines": {
+		"node": ">=22"
 	},
 	"publishConfig": {
 		"access": "public"
 	},
-	"engines": {
-		"node": ">=22"
-	},
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/DigUu-RL/fulcro.git",
-		"directory": "packages/reflect"
+		"directory": "packages/functions"
 	},
-	"homepage": "https://github.com/DigUu-RL/fulcro/tree/main/packages/reflect#readme",
+	"homepage": "https://github.com/DigUu-RL/fulcro/tree/main/packages/functions#readme",
 	"bugs": {
 		"url": "https://github.com/DigUu-RL/fulcro/issues"
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
+		"typecheck": "tsc --noEmit -p tsconfig.json",
+		"prepublishOnly": "npm run build"
 	}
 }

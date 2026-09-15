@@ -59,18 +59,18 @@ export const IDENTIFIER_PATTERN = /^[A-Za-z_$][\w$]*$/;
 /**
  * Builds the path segment identifying a utility module.
  *
- * These segments tie this package to the folder layout `@fulcro/reflect`
+ * These segments tie this package to the folder layout `@diguu/reflect`
  * publishes — a call is recognised by the module that declares it, and after
  * resolution that module is `functions/utils/<name>` inside the built output of
  * that package. Moving those folders there silently stops the rewriting here,
  * because a mismatch does not fail loudly on its own: the transformer simply
  * leaves the calls alone and the runtime fallbacks take over. The compile
- * fixture is what catches it, and it imports `@fulcro/reflect` by name rather
+ * fixture is what catches it, and it imports `@diguu/reflect` by name rather
  * than by path precisely so that it resolves the same way a consumer would.
  *
  * Matched exactly, casing included.
  *
- * @param name Folder of the utility inside the output of `@fulcro/reflect`.
+ * @param name Folder of the utility inside the output of `@diguu/reflect`.
  * @returns The segment to look for in a declaration path.
  */
 export const utilityModuleSegment = (name: string): string =>

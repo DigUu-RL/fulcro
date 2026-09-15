@@ -2,17 +2,19 @@
 
 [![CI](https://github.com/DigUu-RL/fulcro/actions/workflows/ci.yml/badge.svg)](https://github.com/DigUu-RL/fulcro/actions/workflows/ci.yml)
 
-Development root for the `@fulcro` packages. Private — nothing is published from
+Development root for the `@diguu` packages. Private — nothing is published from
 here; the packages under `packages/` are.
 
-| Package                                       | What it is                                                         | Runtime deps                  |
-| --------------------------------------------- | ------------------------------------------------------------------ | ----------------------------- |
-| [`@fulcro/collections`](packages/collections) | Lazily evaluated sequences with a composable query operator set    | none                          |
-| [`@fulcro/reflect`](packages/reflect)         | `nameOf`, `typeOf`, `defaultOf`, plus `switchFor` and `tryCatch`   | none                          |
-| [`@fulcro/transformer`](packages/transformer) | Compile-time resolution of those three, for `tsc` and for bundlers | `unplugin`, peer `typescript` |
+| Package                                      | What it is                                                                        | Runtime deps                  |
+| -------------------------------------------- | --------------------------------------------------------------------------------- | ----------------------------- |
+| [`@diguu/collections`](packages/collections) | Lazily evaluated sequences with a composable query operator set                   | none                          |
+| [`@diguu/reflect`](packages/reflect)         | `nameOf`, `typeOf`, `defaultOf`                                                   | none                          |
+| [`@diguu/functions`](packages/functions)     | `switchFor` and `tryCatch` — control flow as values                               | none                          |
+| [`@diguu/transformer`](packages/transformer) | Compile-time resolution of the `@diguu/reflect` utilities, for `tsc` and bundlers | `unplugin`, peer `typescript` |
 
-`@fulcro/collections` stands alone. `@fulcro/reflect` works on its own and gets
-sharper with `@fulcro/transformer`; only `defaultOf` strictly requires it.
+`@diguu/collections` and `@diguu/functions` stand alone. `@diguu/reflect` works
+on its own and gets sharper with `@diguu/transformer`; only `defaultOf` strictly
+requires it.
 
 ## Working on it
 
@@ -26,11 +28,11 @@ npx eslint .
 ```
 
 `npm test` builds before running, and has to: the test harness loads the
-transformer from `@fulcro/transformer`'s built output, the transformer fixture
-resolves `@fulcro/reflect` through `node_modules` the way a consumer would, and
+transformer from `@diguu/transformer`'s built output, the transformer fixture
+resolves `@diguu/reflect` through `node_modules` the way a consumer would, and
 the entry point suite runs entirely against the built packages.
 
-There are four suites — one per package, plus `tests/entrypoints.spec.mts` at
+There are five suites — one per package, plus `tests/entrypoints.spec.mts` at
 the root. That last one exists because every other suite reaches into a package
 through its internal `@/*` alias: a wrong `main`, a typo in `exports` or a
 `files` list that forgets a folder would leave all of them green and break the
@@ -47,15 +49,15 @@ is shared between packages except the compiler options in `tsconfig.base.json`.
 
 Two structural decisions are worth knowing before changing anything.
 
-**Testing is owned by the root, not by each package.** The `@fulcro/reflect`
+**Testing is owned by the root, not by each package.** The `@diguu/reflect`
 suites only mean something with the transformer applied — `defaultOf` throws
-without it — but making the package depend on `@fulcro/transformer` to test
+without it — but making the package depend on `@diguu/transformer` to test
 itself would tie the two together in both directions, since the transformer
-already depends on `@fulcro/reflect` for its compile fixture. Wiring the plugin
+already depends on `@diguu/reflect` for its compile fixture. Wiring the plugin
 once in `vitest.config.mts`, as one project per package, keeps that edge
 single and lets each published package declare only what its consumers need.
 
-**The transformer fixture imports `@fulcro/reflect` by name.** It resolves into
+**The transformer fixture imports `@diguu/reflect` by name.** It resolves into
 that package's built declarations rather than into a sibling source file, so the
 suite exercises call recognition across a real package boundary. The rewriters
 identify a call by the module that declares it, and a same-tree relative import

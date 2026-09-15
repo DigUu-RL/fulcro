@@ -10,7 +10,7 @@ import transformer from '@/transformer';
  * that proves anything: a fixture is compiled with it and the emitted
  * JavaScript is asserted on. Nothing here imports the fixture at runtime.
  *
- * The fixture imports `@fulcro/reflect` by name, so the program below resolves
+ * The fixture imports `@diguu/reflect` by name, so the program below resolves
  * it through `node_modules` into the built declarations of that package. The
  * suite therefore exercises the transformer across the package boundary, which
  * is the only place the split could have broken it.

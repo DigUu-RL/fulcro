@@ -1,9 +1,9 @@
-# @fulcro/collections
+# @diguu/collections
 
 Lazily evaluated sequences with a composable query operator set. No dependencies.
 
 ```ts
-import { SequenceCollection } from '@fulcro/collections';
+import { SequenceCollection } from '@diguu/collections';
 
 const active = SequenceCollection.from(users)
 	.where((user) => user.active)

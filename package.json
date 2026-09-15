@@ -1,7 +1,7 @@
 {
 	"name": "fulcro",
 	"version": "0.0.0",
-	"description": "Development root for the @fulcro packages.",
+	"description": "Development root for the @diguu packages.",
 	"private": true,
 	"workspaces": [
 		"packages/*"

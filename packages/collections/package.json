@@ -1,5 +1,5 @@
 {
-	"name": "@fulcro/collections",
+	"name": "@diguu/collections",
 	"version": "0.0.0",
 	"description": "Lazily evaluated sequences with a composable query operator set.",
 	"keywords": [
