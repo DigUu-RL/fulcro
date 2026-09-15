@@ -290,6 +290,35 @@ describe('@fulcro/reflect', () => {
 	});
 });
 
+describe('@fulcro/collections/async', () => {
+	it('should resolve from its own subpath', async () => {
+		const entry = await import('@fulcro/collections/async');
+
+		expect(typeof entry.AsyncSequenceCollection.from).toBe('function');
+		expect(typeof entry.AsyncSequenceCollection.empty).toBe('function');
+	});
+
+	it('should work end to end through the published subpath', async () => {
+		const { AsyncSequenceCollection } =
+			await import('@fulcro/collections/async');
+
+		const result = await AsyncSequenceCollection.from([1, 2, 3, 4])
+			.where(async (value) => value % 2 === 0)
+			.select((value) => value * 10)
+			.toArray();
+
+		expect(result).toEqual([20, 40]);
+	});
+
+	it('should stay out of the main entry point', async () => {
+		// The subpath exists so a bundle importing only the synchronous
+		// sequence carries none of the asynchronous half.
+		const main = await import('@fulcro/collections');
+
+		expect(main).not.toHaveProperty('AsyncSequenceCollection');
+	});
+});
+
 describe('@fulcro/functions', () => {
 	it('should expose both helpers', async () => {
 		const entry = await import('@fulcro/functions');

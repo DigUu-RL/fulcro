@@ -18,6 +18,10 @@
 			"types": "./dist/index.d.ts",
 			"default": "./dist/index.js"
 		},
+		"./async": {
+			"types": "./dist/async.d.ts",
+			"default": "./dist/async.js"
+		},
 		"./package.json": "./package.json"
 	},
 	"files": [
