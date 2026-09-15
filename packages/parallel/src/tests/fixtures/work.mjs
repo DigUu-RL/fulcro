@@ -49,3 +49,19 @@ export const burn = (rounds) => {
 export const explode = () => {
 	throw new Error('the task refused');
 };
+
+/**
+ * Identity of the worker this module was imported into.
+ *
+ * Each worker is its own realm and imports this file separately, so each gets
+ * its own value. Counting the distinct ones that come back proves the work
+ * spread across threads — deterministically, where timing only suggests it.
+ */
+const WORKER = Math.random().toString(36).slice(2);
+
+/**
+ * Reports which worker handled the element.
+ *
+ * @returns {string} The identity of this worker.
+ */
+export const whoRanThis = () => WORKER;

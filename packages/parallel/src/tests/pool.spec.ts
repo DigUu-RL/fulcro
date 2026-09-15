@@ -114,34 +114,70 @@ describe('running work on workers', () => {
 });
 
 describe('spreading across workers', () => {
-	it('should use every worker it was given', async () => {
-		// Four elements of genuinely CPU-bound work. Both pools are warmed first,
-		// and deliberately: starting threads is expensive enough to swallow the
-		// saving on a small job, and this test is about whether the work spreads,
-		// not about what a cold start costs. That cost is measured on its own,
-		// below.
-		const items: readonly number[] = [
-			40_000_000, 40_000_000, 40_000_000, 40_000_000,
-		];
+	it('should hand work to every worker, not just one', async () => {
+		// Counted rather than timed, and that is the point. Elapsed time only
+		// suggests that work spread; distinct worker identities prove it, on any
+		// machine, however many cores it has and however loaded it is.
+		//
+		// Each worker is its own realm and imports the fixture separately, so
+		// each carries a different identity. Four elements over four workers must
+		// come back with four of them.
+		const identities = await poolFor<number, string>('whoRanThis', 4).map([
+			1, 2, 3, 4,
+		]);
+
+		expect(new Set(identities).size).toBe(4);
+	});
+
+	it('should actually be faster for it', async () => {
+		// How much speed-up is *physically available* here. A pool of four on a
+		// two-core runner cannot produce a fourfold saving however correct it is,
+		// so the assertion is scaled to the machine rather than to a number that
+		// happened to hold on the one it was written on.
+		const cores: number = navigator?.hardwareConcurrency ?? 2;
+		const workers: number = Math.min(4, cores);
+
+		if (workers < 2) {
+			// Nothing to prove on a single core, and no honest way to prove it.
+			expect(cores).toBeGreaterThan(0);
+			return;
+		}
+
+		// Genuinely CPU-bound work, one element per worker. Both pools are warmed
+		// first, and deliberately: starting threads is expensive enough to
+		// swallow the saving on a small job, and this test is about whether the
+		// work spreads. That cost is measured on its own, below.
+		const items: readonly number[] = Array.from(
+			{ length: workers },
+			() => 40_000_000,
+		);
 
 		const one = poolFor<number, number>('burn', 1);
-		const four = poolFor<number, number>('burn', 4);
+		const many = poolFor<number, number>('burn', workers);
 
 		await one.map([1]);
-		await four.map([1]);
+		await many.map([1]);
 
 		const oneStart: number = performance.now();
 		await one.map(items);
 		const sequential: number = performance.now() - oneStart;
 
-		const fourStart: number = performance.now();
-		await four.map(items);
-		const parallel: number = performance.now() - fourStart;
+		const manyStart: number = performance.now();
+		await many.map(items);
+		const parallel: number = performance.now() - manyStart;
 
-		// Four cores should take roughly a quarter of the time. Asserting half is
-		// generous enough for a loaded machine and still fails outright on a pool
-		// that only ever used one worker.
-		expect(parallel).toBeLessThan(sequential / 2);
+		// What is asserted is that the work *spread*, not that it sped up in
+		// proportion to the worker count. Proportionality is not observable on a
+		// shared virtualised CPU: the first version of this demanded half the
+		// theoretical best and failed on a runner that had genuinely parallelised
+		// — four workers, a real 1.43x, and vCPUs that are not four cores.
+		//
+		// A modest bar, and deliberately. The test above already proves the work
+		// spread, deterministically; this one only has to show the spreading was
+		// worth something. A serialised pool measures below 1 — it pays the
+		// copying and gains nothing — so the gap this has to tell apart is wide,
+		// and there is no reason to sit close to either edge of it.
+		expect(sequential / parallel).toBeGreaterThan(1.1);
 	});
 
 	it('should cost more to start than a small job saves', async () => {
