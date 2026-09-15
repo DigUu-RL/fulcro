@@ -98,7 +98,26 @@ const readPackedFiles = (): void => {
 		stdio: ['ignore', 'pipe', 'ignore'],
 	});
 
-	for (const report of JSON.parse(output) as readonly PackReport[]) {
+	// npm has changed this shape across major versions: 11 answers with an array
+	// of reports, 12 with an object keyed by package name. Both are accepted
+	// rather than one being assumed, because assuming is how a release broke —
+	// the release workflow upgrades npm, so it met the new shape first and this
+	// died on `JSON.parse(...)` not being iterable.
+	const parsed: unknown = JSON.parse(output);
+
+	const reports: readonly PackReport[] = Array.isArray(parsed)
+		? (parsed as readonly PackReport[])
+		: Object.values(parsed as Record<string, PackReport>);
+
+	for (const report of reports) {
+		// A third shape would otherwise populate nothing and leave every
+		// assertion below passing over an empty map.
+		if (typeof report?.name !== 'string' || !Array.isArray(report?.files)) {
+			throw new Error(
+				`npm pack answered in a shape this suite does not recognise, which has happened before. The output began: ${output.slice(0, 200)}`,
+			);
+		}
+
 		packed.set(
 			report.name,
 			report.files.map((file) => file.path),

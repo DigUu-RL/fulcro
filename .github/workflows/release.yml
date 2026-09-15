@@ -42,9 +42,14 @@ jobs:
 
       # The bundled npm is usually new enough, but "usually" is not a thing to
       # discover halfway through publishing four packages.
+      # Checked, not forced. This step used to run `npm install -g npm@latest`
+      # first, which quietly moved the release onto whatever npm shipped that
+      # day — and a major bump changed the shape of `npm pack --json`, breaking
+      # the suite here while CI stayed green on the npm that setup-node
+      # provides. The version that comes with the pinned Node is already new
+      # enough; if it ever is not, this fails and says so.
       - name: Ensure npm supports trusted publishing
         run: |
-          npm install -g npm@latest
           node - <<'NODE'
           const { execSync } = require('node:child_process');
           const version = execSync('npm --version', { encoding: 'utf8' }).trim();
