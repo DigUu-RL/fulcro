@@ -889,4 +889,181 @@ export class SequenceCollection<T> implements Sequence<T> {
 		for (const item of this.source) accumulator = callback(accumulator, item);
 		return accumulator;
 	}
+
+	/**
+	 * Determines whether every element satisfies a condition.
+	 *
+	 * @param predicate Condition every element must satisfy.
+	 * @returns `true` when no element fails the condition.
+	 */
+	all(predicate: Predicate<T>): boolean {
+		// One counterexample settles it, so the rest is never read.
+		for (const item of this.source) if (!predicate(item)) return false;
+
+		return true;
+	}
+
+	/**
+	 * Determines whether the sequence contains an element.
+	 *
+	 * @param value Element searched for.
+	 * @returns `true` when the element is present.
+	 */
+	contains(value: T): boolean {
+		for (const item of this.source) if (item === value) return true;
+
+		return false;
+	}
+
+	/**
+	 * Returns the only element of the sequence, optionally the only one
+	 * matching a condition.
+	 *
+	 * @param predicate Optional condition the returned element must satisfy.
+	 * @returns The single matching element.
+	 * @throws {Error} When no element matches, or more than one does.
+	 */
+	single(predicate?: Predicate<T>): T {
+		const found: T | null = this.resolveSingle(predicate);
+
+		if (found === null)
+			throw new Error('single() found no element matching the condition.');
+
+		return found;
+	}
+
+	/**
+	 * Returns the only element of the sequence, optionally the only one
+	 * matching a condition, without throwing when there is none.
+	 *
+	 * @param predicate Optional condition the returned element must satisfy.
+	 * @returns The single matching element, or `null` when none matches.
+	 * @throws {Error} When more than one element matches.
+	 */
+	singleOrNull(predicate?: Predicate<T>): T | null {
+		return this.resolveSingle(predicate);
+	}
+
+	/**
+	 * Finds the one matching element, or reports that there was none.
+	 *
+	 * Shared by {@link SequenceCollection.single} and
+	 * {@link SequenceCollection.singleOrNull}, which differ only in what they
+	 * do about an absence. A second match throws for both: an ambiguous answer
+	 * is a defect in the query, not an absence to tolerate.
+	 *
+	 * Traversal stops on the second match rather than draining the sequence,
+	 * so the failure costs no more than the success.
+	 *
+	 * @param predicate Optional condition the element must satisfy.
+	 * @returns The single matching element, or `null` when none matches.
+	 * @throws {Error} When more than one element matches.
+	 */
+	private resolveSingle(predicate?: Predicate<T>): T | null {
+		let found: T | null = null;
+		let seen = false;
+
+		for (const item of this.source) {
+			if (predicate !== undefined && !predicate(item)) continue;
+
+			if (seen)
+				throw new Error(
+					'single() found more than one element matching the condition.',
+				);
+
+			found = item;
+			seen = true;
+		}
+
+		return seen ? found : null;
+	}
+
+	/**
+	 * Reads the element at a position.
+	 *
+	 * @param index Zero based position of the element.
+	 * @returns The element at that position.
+	 * @throws {Error} When the position is out of range.
+	 */
+	elementAt(index: number): T {
+		const found: T | null = this.elementAtOrNull(index);
+
+		if (found === null) throw new Error(`elementAt(${index}) is out of range.`);
+
+		return found;
+	}
+
+	/**
+	 * Reads the element at a position without throwing when out of range.
+	 *
+	 * @param index Zero based position of the element.
+	 * @returns The element, or `null` when the position is out of range.
+	 */
+	elementAtOrNull(index: number): T | null {
+		if (!Number.isInteger(index) || index < 0) return null;
+
+		let position = 0;
+
+		for (const item of this.source) {
+			if (position === index) return item;
+			position++;
+		}
+
+		return null;
+	}
+
+	/**
+	 * Substitutes a single fallback element for an empty sequence.
+	 *
+	 * @param fallback Element yielded when the sequence is empty.
+	 * @returns A deferred sequence that is never empty.
+	 */
+	defaultIfEmpty(fallback: T): Sequence<T> {
+		const source: Iterable<T> = this.source;
+		const knownCount: () => number | null = this.countResolver;
+
+		return SequenceCollection.deferred(
+			{
+				*[Symbol.iterator](): Iterator<T> {
+					let empty = true;
+
+					for (const item of source) {
+						empty = false;
+						yield item;
+					}
+
+					if (empty) yield fallback;
+				},
+			},
+			// An empty source yields one element, so a known zero becomes one and
+			// anything else is left as it was.
+			() => {
+				const count: number | null = knownCount();
+
+				return count === null ? null : count === 0 ? 1 : count;
+			},
+		);
+	}
+
+	/**
+	 * Determines whether two sequences hold the same elements in the same
+	 * order.
+	 *
+	 * @param second Sequence compared with this one.
+	 * @returns `true` when both yield equal elements in the same order.
+	 */
+	sequenceEqual(second: Iterable<T>): boolean {
+		const left: Iterator<T> = this.source[Symbol.iterator]();
+		const right: Iterator<T> = second[Symbol.iterator]();
+
+		// Stepped together rather than materialised, so the first difference
+		// ends the comparison and neither side is read past it.
+		for (;;) {
+			const a: IteratorResult<T> = left.next();
+			const b: IteratorResult<T> = right.next();
+
+			if (a.done === true || b.done === true) return a.done === b.done;
+			if (a.value !== b.value) return false;
+		}
+	}
 }

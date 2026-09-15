@@ -288,4 +288,101 @@ export interface Sequence<T> extends Iterable<T> {
 	 * @returns The final accumulated value.
 	 */
 	aggregate<A = T>(seed: A, callback: Accumulator<A, T>): A;
+
+	/**
+	 * Determines whether every element satisfies a condition.
+	 *
+	 * Stops at the first element that does not, so a failing condition costs
+	 * only as much of the sequence as it takes to find one counterexample.
+	 *
+	 * An empty sequence satisfies any condition, which is the convention
+	 * everywhere this operator exists and the only answer that keeps
+	 * `all(p)` and `!any(not p)` the same statement.
+	 *
+	 * @param predicate Condition every element must satisfy.
+	 * @returns `true` when no element fails the condition.
+	 */
+	all(predicate: Predicate<T>): boolean;
+
+	/**
+	 * Determines whether the sequence contains an element.
+	 *
+	 * Compared by reference or value as `Set` and `===` do, so an object is
+	 * found only when it is the same object. Use {@link Sequence.any} with a
+	 * predicate to match on content.
+	 *
+	 * @param value Element searched for.
+	 * @returns `true` when the element is present.
+	 */
+	contains(value: T): boolean;
+
+	/**
+	 * Returns the only element of the sequence, optionally the only one
+	 * matching a condition.
+	 *
+	 * Where {@link Sequence.first} asks for one of possibly many, this asserts
+	 * there is exactly one — a second match is as much of an error as none, and
+	 * is what separates the two operators.
+	 *
+	 * @param predicate Optional condition the returned element must satisfy.
+	 * @returns The single matching element.
+	 * @throws {Error} When no element matches, or more than one does.
+	 */
+	single(predicate?: Predicate<T>): T;
+
+	/**
+	 * Returns the only element of the sequence, optionally the only one
+	 * matching a condition, without throwing when there is none.
+	 *
+	 * Still throws when more than one element matches: an ambiguous answer is a
+	 * defect in the query rather than an absence to be tolerated.
+	 *
+	 * @param predicate Optional condition the returned element must satisfy.
+	 * @returns The single matching element, or `null` when none matches.
+	 * @throws {Error} When more than one element matches.
+	 */
+	singleOrNull(predicate?: Predicate<T>): T | null;
+
+	/**
+	 * Reads the element at a position.
+	 *
+	 * The same traversal as indexing the sequence, but stated as a call and
+	 * loud when the position is out of range.
+	 *
+	 * @param index Zero based position of the element.
+	 * @returns The element at that position.
+	 * @throws {Error} When the position is out of range.
+	 */
+	elementAt(index: number): T;
+
+	/**
+	 * Reads the element at a position without throwing when out of range.
+	 *
+	 * @param index Zero based position of the element.
+	 * @returns The element, or `null` when the position is out of range.
+	 */
+	elementAtOrNull(index: number): T | null;
+
+	/**
+	 * Substitutes a single fallback element for an empty sequence.
+	 *
+	 * Leaves a non empty sequence exactly as it is, so a query that must not
+	 * produce nothing can say so without branching on a count first.
+	 *
+	 * @param fallback Element yielded when the sequence is empty.
+	 * @returns A deferred sequence that is never empty.
+	 */
+	defaultIfEmpty(fallback: T): Sequence<T>;
+
+	/**
+	 * Determines whether two sequences hold the same elements in the same
+	 * order.
+	 *
+	 * Traverses both in step and stops at the first difference, so unequal
+	 * sequences usually cost far less than a full pass.
+	 *
+	 * @param second Sequence compared with this one.
+	 * @returns `true` when both yield equal elements in the same order.
+	 */
+	sequenceEqual(second: Iterable<T>): boolean;
 }
