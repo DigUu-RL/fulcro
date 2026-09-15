@@ -420,6 +420,58 @@ const BUNDLERS = [
 	'farm',
 ] as const;
 
+describe('@fulcro/collections/transformer', () => {
+	it('should expose the compiler plugin as its default export', async () => {
+		const entry = await import('@fulcro/collections/transformer');
+
+		expect(typeof entry.default).toBe('function');
+	});
+
+	it('should ship inside the package whose calls it rewrites', () => {
+		expect(() => resolve('@fulcro/collections/transformer')).not.toThrow();
+		expect(() => resolve('@fulcro/collections/unplugin')).not.toThrow();
+	});
+
+	it('should expose an adapter for every bundler it claims to serve', async () => {
+		const adapters = await import('@fulcro/collections/unplugin');
+
+		for (const bundler of BUNDLERS) {
+			expect(typeof adapters[bundler as keyof typeof adapters]).toBe(
+				'function',
+			);
+		}
+	});
+
+	it('should leave every other operator working without it', async () => {
+		// The transformer of this package is optional, unlike the one in
+		// `@fulcro/reflect`. Nothing compiles this file through it, so a chain
+		// using the token forms has to work here exactly as it would for a
+		// consumer who never wired a plugin up.
+		const { SequenceCollection } = await import('@fulcro/collections');
+
+		const values: unknown[] = ['a', 1, 'b'];
+
+		expect(SequenceCollection.from(values).ofType('string').toArray()).toEqual([
+			'a',
+			'b',
+		]);
+	});
+
+	it('should refuse the type argument form when nothing resolved it', async () => {
+		const { SequenceCollection } = await import('@fulcro/collections');
+
+		// Compiled without the plugin, so this call arrives with no token. It has
+		// to say so rather than quietly keeping everything or nothing.
+		expect(() =>
+			(
+				SequenceCollection.from(['a']) as unknown as {
+					ofType: () => unknown;
+				}
+			).ofType(),
+		).toThrow(/was not resolved at compile time/);
+	});
+});
+
 describe('@fulcro/reflect/transformer', () => {
 	it('should expose the compiler plugin as its default export', async () => {
 		const entry = await import('@fulcro/reflect/transformer');

@@ -2190,10 +2190,25 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 */
 	ofType<R>(type: Constructor<R>): Sequence<Narrowed<T, R>>;
 
-	ofType(type: keyof TypeNames | Constructor<unknown>): Sequence<unknown> {
+	/**
+	 * Keeps only the elements of the given type, written as a type.
+	 *
+	 * @template R Type to keep.
+	 * @returns A deferred sequence narrowed to that type.
+	 * @throws {Error} When the call was not resolved at compile time.
+	 */
+	ofType<R>(): Sequence<Narrowed<T, R>>;
+
+	ofType(type?: keyof TypeNames | Constructor<unknown>): Sequence<unknown> {
 		const source: Iterable<T> = this.source;
-		const matches: Predicate<unknown> =
-			SequenceCollection.resolveTypeTest(type);
+
+		// Resolved now rather than on the first read, and deliberately: an
+		// unresolved type argument is a build that is wired wrong, not data that
+		// is wrong, and there is nothing to gain by discovering it later.
+		const matches: Predicate<unknown> = SequenceCollection.resolveTypeTest(
+			type,
+			'ofType',
+		);
 
 		return SequenceCollection.deferred<unknown>(
 			{
@@ -2227,11 +2242,27 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 */
 	cast<R>(type: Constructor<R>): Sequence<R>;
 
-	cast(type: keyof TypeNames | Constructor<unknown>): Sequence<unknown> {
+	/**
+	 * Re-types the whole sequence to the given type, written as a type.
+	 *
+	 * @template R Type every element must be.
+	 * @returns A deferred sequence typed as that type.
+	 * @throws {Error} When the call was not resolved at compile time.
+	 */
+	cast<R>(): Sequence<R>;
+
+	cast(type?: keyof TypeNames | Constructor<unknown>): Sequence<unknown> {
 		const source: Iterable<T> = this.source;
-		const matches: Predicate<unknown> =
-			SequenceCollection.resolveTypeTest(type);
-		const expected: string = typeof type === 'string' ? type : type.name;
+		const matches: Predicate<unknown> = SequenceCollection.resolveTypeTest(
+			type,
+			'cast',
+		);
+
+		// Present by now: the line above is what refuses a missing token, and it
+		// throws rather than returning.
+		const present = type as keyof TypeNames | Constructor<unknown>;
+		const expected: string =
+			typeof present === 'string' ? present : present.name;
 		const knownCount: () => number | null = this.countResolver;
 
 		return SequenceCollection.deferred<unknown>(
@@ -2274,8 +2305,20 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 * @returns A predicate telling whether a value is of that type.
 	 */
 	private static resolveTypeTest(
-		type: keyof TypeNames | Constructor<unknown>,
+		type: keyof TypeNames | Constructor<unknown> | undefined,
+		operator: string,
 	): Predicate<unknown> {
+		// The type argument form, arriving unresolved. From here the two ways
+		// that can happen are indistinguishable, so both are named: the plugin
+		// was not wired up, or it was and the type had no runtime form to test
+		// for. Refused rather than guessed, because every guess available here —
+		// keeping everything, keeping nothing — is silently wrong.
+		if (type === undefined) {
+			throw new Error(
+				`${operator}<T>() was not resolved at compile time. Either the @fulcro/collections transformer did not run over this file, or T has no runtime representation — an interface leaves nothing to test for, so pass a class, a typeof name, or use where() with a predicate.`,
+			);
+		}
+
 		if (typeof type !== 'string') {
 			return (item): boolean => item instanceof type;
 		}

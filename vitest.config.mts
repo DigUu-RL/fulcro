@@ -1,5 +1,6 @@
 import { defineConfig, type ViteUserConfig } from 'vitest/config';
 
+import { vite as collectionsTransformer } from '@fulcro/collections/unplugin';
 import { vite as reflectTransformer } from '@fulcro/reflect/unplugin';
 
 /**
@@ -30,10 +31,14 @@ import { vite as reflectTransformer } from '@fulcro/reflect/unplugin';
 const project = (name: string): ViteUserConfig => ({
 	root: `packages/${name}`,
 
-	// The type aware utilities are resolved by the transformer, which needs a
-	// type checker. Without this plugin the suites would exercise only their
-	// runtime fallbacks, and `defaultOf` would throw.
-	plugins: [reflectTransformer()],
+	// The type aware utilities are resolved by a transformer, which needs a type
+	// checker. Without these the suites would exercise only the runtime
+	// fallbacks: `defaultOf` would throw, and so would `ofType<T>()`.
+	//
+	// Both are applied to every project, and they do not interfere: each claims
+	// only the calls whose declarations it can trace back to its own package, so
+	// a project using neither is left untouched by both.
+	plugins: [reflectTransformer(), collectionsTransformer()],
 
 	// The `@/*` alias is declared once, in the tsconfig of each package, and
 	// read back from there rather than repeated as a Vite alias — so a path the

@@ -261,6 +261,95 @@ describe('cast', () => {
 	});
 });
 
+describe('ofType and cast, written as a type', () => {
+	/**
+	 * These run with the `@fulcro/collections` transformer applied, because the
+	 * harness wires it into every project — so they exercise the real path a
+	 * consumer who wired it up gets, not a simulation of it.
+	 */
+
+	class Admin {
+		constructor(public readonly name: string) {}
+	}
+
+	interface Account {
+		readonly id: number;
+	}
+
+	it('should resolve a primitive type argument', () => {
+		const mixed: unknown[] = ['a', 1, 'b'];
+
+		// No token written anywhere: the transformer turned the type argument
+		// into one. Without it this call would throw.
+		const shouted = SequenceCollection.from(mixed)
+			.ofType<string>()
+			.select((value) => value.toUpperCase());
+
+		expect(shouted.toArray()).toEqual(['A', 'B']);
+	});
+
+	it('should resolve a class type argument', () => {
+		const mixed: unknown[] = [new Admin('root'), 'nobody'];
+
+		const names = SequenceCollection.from(mixed)
+			.ofType<Admin>()
+			.select((admin) => admin.name);
+
+		expect(names.toArray()).toEqual(['root']);
+	});
+
+	it('should resolve the same two forms through cast', () => {
+		const strings: unknown[] = ['a', 'b'];
+		const admins: unknown[] = [new Admin('root')];
+
+		expect(SequenceCollection.from(strings).cast<string>().toArray()).toEqual([
+			'a',
+			'b',
+		]);
+		expect(
+			SequenceCollection.from(admins)
+				.cast<Admin>()
+				.select((admin) => admin.name)
+				.toArray(),
+		).toEqual(['root']);
+	});
+
+	it('should refuse a type with no runtime form', () => {
+		// An interface leaves nothing behind to test for, so the transformer has
+		// no honest token to emit and leaves the call alone. What arrives at the
+		// runtime is indistinguishable from a build with no plugin at all, so the
+		// message has to name both.
+		const values: unknown[] = [{ id: 1 }];
+
+		expect(() => SequenceCollection.from(values).ofType<Account>()).toThrow(
+			/was not resolved at compile time/,
+		);
+	});
+
+	it('should say both reasons a call could have arrived unresolved', () => {
+		const values: unknown[] = [{ id: 1 }];
+
+		expect(() => SequenceCollection.from(values).cast<Account>()).toThrow(
+			/transformer did not run.*or T has no runtime representation/s,
+		);
+	});
+
+	it('should refuse before reading anything', () => {
+		// A wiring error, not a data error: there is nothing to gain by letting
+		// the chain be built and failing on the first read instead.
+		let pulled = 0;
+		const source = {
+			*[Symbol.iterator](): Iterator<unknown> {
+				pulled++;
+				yield { id: 1 };
+			},
+		};
+
+		expect(() => SequenceCollection.from(source).ofType<Account>()).toThrow();
+		expect(pulled).toBe(0);
+	});
+});
+
 describe('topBy', () => {
 	it('should return the largest keys, largest first', () => {
 		const players: readonly Player[] = [

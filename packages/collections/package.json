@@ -22,6 +22,14 @@
 			"types": "./dist/async.d.ts",
 			"default": "./dist/async.js"
 		},
+		"./transformer": {
+			"types": "./dist/transformer/index.d.ts",
+			"default": "./dist/transformer/index.js"
+		},
+		"./unplugin": {
+			"types": "./dist/unplugin/index.d.mts",
+			"default": "./dist/unplugin/index.mjs"
+		},
 		"./package.json": "./package.json"
 	},
 	"files": [
@@ -47,5 +55,16 @@
 	"homepage": "https://github.com/DigUu-RL/fulcro/tree/main/packages/collections#readme",
 	"bugs": {
 		"url": "https://github.com/DigUu-RL/fulcro/issues"
+	},
+	"dependencies": {
+		"@fulcro/transform-core": "^0.3.0"
+	},
+	"peerDependencies": {
+		"typescript": ">=5.3.3 <7"
+	},
+	"peerDependenciesMeta": {
+		"typescript": {
+			"optional": true
+		}
 	}
 }

@@ -160,9 +160,63 @@ One deliberate disagreement with the language: `ofType('object')` does **not**
 match `null`, though `typeof null` is `'object'`. A sequence narrowed to objects
 that then throws on a property access would be a trap.
 
-Neither reads the _declared_ type of your elements — this package depends on
-nothing and knows nothing about the compiler — so a type that leaves no runtime
-trace, such as an interface, cannot be filtered by name.
+#### Writing the type as a type
+
+With this package's transformer wired up, both take the type directly:
+
+```ts
+values.ofType<string>(); // Sequence<string>
+values.ofType<Admin>(); // Sequence<Admin>
+values.cast<Admin>(); // throws on the first that is not one
+```
+
+It resolves the type argument at compile time into the same token the other
+forms take — `ofType<string>()` is emitted as `ofType('string')`, and
+`ofType<Admin>()` as `ofType(Admin)`. Nothing about the runtime changes.
+
+The plugin is **optional**, which is the difference from `@fulcro/reflect`:
+every operator here works without it, and only these no-argument forms need it.
+Wire it the same way:
+
+```json
+{ "plugins": [{ "transform": "@fulcro/collections/transformer" }] }
+```
+
+```ts
+// vite.config.ts
+import { vite as fulcroCollections } from '@fulcro/collections/unplugin';
+```
+
+Both can sit beside `@fulcro/reflect`'s plugin. Each rewrites only the calls it
+can trace back to its own package, and neither knows the other exists.
+
+**Only a primitive or a class can be resolved**, because only those leave
+something behind to test for. An interface does not:
+
+```ts
+interface Account {
+	id: number;
+}
+
+values.ofType<Account>(); // throws
+```
+
+```text
+Error: ofType<T>() was not resolved at compile time. Either the
+@fulcro/collections transformer did not run over this file, or T has no runtime
+representation — an interface leaves nothing to test for, so pass a class, a
+typeof name, or use where() with a predicate.
+```
+
+The message names both causes on purpose: from inside the running program they
+are indistinguishable, and guessing between them would be worse than saying so.
+It throws when the chain is **built**, not when it is first read — a call that
+was never resolved is a build wired wrong, not data gone wrong, and there is
+nothing to gain by finding out later.
+
+One more thing the transformer cannot rescue: a class brought in with
+`import type` is erased before the code runs, so it is refused too, with a
+message telling you to import it normally.
 
 ### Taking a slice
 

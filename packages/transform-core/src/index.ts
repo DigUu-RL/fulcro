@@ -23,6 +23,7 @@ export {
 	type TransformCoreOptions,
 } from '@/program';
 export {
+	type CallForm,
 	type CallRewriter,
 	IDENTIFIER_PATTERN,
 	isOwnedCall,

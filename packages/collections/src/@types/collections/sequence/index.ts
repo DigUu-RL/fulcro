@@ -871,6 +871,24 @@ export interface Sequence<T> extends Iterable<T> {
 	ofType<R>(type: Constructor<R>): Sequence<Narrowed<T, R>>;
 
 	/**
+	 * Keeps only the elements of the given type, written as a type.
+	 *
+	 * Needs the transformer of this package, which resolves the type argument
+	 * into the same token the other two forms take. It is the only part of
+	 * `@fulcro/collections` that does, and it refuses at runtime rather than
+	 * guessing when the transformer has not run.
+	 *
+	 * Only a type with a runtime form can be resolved: a primitive, or a class.
+	 * An interface leaves nothing behind to test for, so filter by a class, by a
+	 * `typeof` name, or with a predicate through {@link Sequence.where}.
+	 *
+	 * @template R Type to keep.
+	 * @returns A deferred sequence narrowed to that type.
+	 * @throws {Error} When the call was not resolved at compile time.
+	 */
+	ofType<R>(): Sequence<Narrowed<T, R>>;
+
+	/**
 	 * Re-types the whole sequence, refusing to do so if any element disagrees.
 	 *
 	 * The counterpart of {@link Sequence.ofType}: where that one filters, this
@@ -900,6 +918,19 @@ export interface Sequence<T> extends Iterable<T> {
 	 * @throws {TypeError} When an element is not an instance, as it is read.
 	 */
 	cast<R>(type: Constructor<R>): Sequence<R>;
+
+	/**
+	 * Re-types the whole sequence to the given type, written as a type.
+	 *
+	 * Needs the transformer of this package, exactly as {@link Sequence.ofType}
+	 * does, and refuses at runtime the same way when it has not run.
+	 *
+	 * @template R Type every element must be.
+	 * @returns A deferred sequence typed as that type.
+	 * @throws {Error} When the call was not resolved at compile time.
+	 * @throws {TypeError} When an element is not of that type, as it is read.
+	 */
+	cast<R>(): Sequence<R>;
 
 	/**
 	 * Takes the elements with the largest keys, in descending order.

@@ -32,6 +32,17 @@ export interface RewriteContext {
 	readonly visit: (node: typescript.Node) => typescript.Node;
 }
 
+/**
+ * How a rewritten call is written at the call site.
+ *
+ * A free function is reached through an identifier the consumer imported; a
+ * method is reached through whatever expression it is called on, so there is no
+ * import to follow and the receiver could be anything. Both are resolved the
+ * same way in the end — by following the symbol back to its declaration — but
+ * the node to ask about differs.
+ */
+export type CallForm = 'function' | 'method';
+
 /** Rewrites the calls of a single utility. */
 export interface CallRewriter {
 	/** Name the exported function is called by. */
@@ -39,6 +50,15 @@ export interface CallRewriter {
 
 	/** Path segment identifying the module that declares it. */
 	readonly moduleSegment: string;
+
+	/**
+	 * Shape of the call, defaulting to a free function.
+	 *
+	 * `'method'` claims `something.name(…)` rather than `name(…)`, which is what
+	 * lets a library rewrite calls on its own types — `sequence.ofType<T>()` —
+	 * where nothing was imported by that name.
+	 */
+	readonly callForm?: CallForm;
 
 	/**
 	 * Rewrites one call.
@@ -93,12 +113,26 @@ export const isOwnedCall = (
 	checker: typescript.TypeChecker,
 	rewriter: CallRewriter,
 ): boolean => {
-	if (!typescript.isIdentifier(call.expression)) return false;
-	if (call.expression.text !== rewriter.functionName) return false;
+	// The node carrying the name differs between the two forms: an identifier
+	// standing on its own, or the member half of a property access. Everything
+	// after this point is the same question asked of that node.
+	// `MemberName` rather than `Identifier`: a property access can also name a
+	// private member, which carries a `text` like any other and simply never
+	// matches one of ours.
+	const named: typescript.MemberName | null =
+		rewriter.callForm === 'method'
+			? typescript.isPropertyAccessExpression(call.expression)
+				? call.expression.name
+				: null
+			: typescript.isIdentifier(call.expression)
+				? call.expression
+				: null;
 
-	const symbol: typescript.Symbol | undefined = checker.getSymbolAtLocation(
-		call.expression,
-	);
+	if (named === null) return false;
+	if (named.text !== rewriter.functionName) return false;
+
+	const symbol: typescript.Symbol | undefined =
+		checker.getSymbolAtLocation(named);
 
 	const resolved: typescript.Symbol | undefined =
 		symbol !== undefined && (symbol.flags & typescript.SymbolFlags.Alias) !== 0
