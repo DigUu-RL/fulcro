@@ -109,6 +109,22 @@ It is configured once per package on npmjs.com — repository `DigUu-RL/fulcro`,
 workflow `release.yml`. npm does not validate that configuration when it is
 saved, so a mistake in it only surfaces on the run that uses it.
 
+**A package with no trusted publisher configured fails like this**, and it is
+worth knowing by sight, because it reads like a bug in the repository:
+
+```text
+E404: Not Found - PUT https://registry.npmjs.org/@fulcro%2fcollections
+The requested resource '@fulcro/collections@0.2.0' could not be found or you
+do not have permission to access it.
+```
+
+npm returns 404 rather than 401 for a scoped package you cannot write to, so
+this is what "no credential" looks like. Not a missing package, and not a build
+problem — the run has nothing to authenticate with. The fix is on npmjs.com, not
+in this repository: open each package's settings page and add the trusted
+publisher. The line above about the configuration only surfacing on the run that
+uses it applies to a wrong configuration too — the symptom is identical.
+
 #### The first publish cannot use it
 
 A trusted publisher is configured on a package's own settings page, and a

@@ -64,6 +64,64 @@ jobs:
           console.log(`npm ${version} supports trusted publishing.`);
           NODE
 
+      # A package that has never been published has no settings page, so it has
+      # no trusted publisher, so this workflow has no way to authenticate for
+      # it. npm answers that with `E404 ... PUT`, which reads like a bug in the
+      # repository and is not one. Caught here instead, before anything is
+      # published, and said in words.
+      - name: Refuse a first publish
+        run: |
+          node - <<'NODE'
+          const { execSync } = require('node:child_process');
+
+          const workspaces = JSON.parse(
+            execSync('npm pkg get name --workspaces --json', { encoding: 'utf8' }),
+          );
+
+          const names = Object.values(workspaces).filter(
+            (name) => typeof name === 'string',
+          );
+
+          // Wrapped, because `node -` reads stdin as CommonJS and top level
+          // await is not available there.
+          const main = async () => {
+          const missing = [];
+
+          for (const name of names) {
+            const response = await fetch(
+              `https://registry.npmjs.org/${name.replace('/', '%2f')}`,
+            );
+
+            if (response.status === 404) missing.push(name);
+          }
+
+          if (missing.length > 0) {
+            console.error(
+              [
+                'These packages have never been published, and this workflow cannot be',
+                'the thing that publishes them first:',
+                '',
+                ...missing.map((name) => `  - ${name}`),
+                '',
+                'A trusted publisher is configured on a package’s own settings page on',
+                'npmjs.com, and that page does not exist until the package does. Publish',
+                'the first version from a machine with `npm login`, using `npm run release`,',
+                'then configure the trusted publisher for it. See "The first publish cannot',
+                'use it" in the README.',
+              ].join('\n'),
+            );
+            process.exit(1);
+          }
+
+          console.log(`Every package already exists: ${names.join(', ')}.`);
+          };
+
+          main().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
+
       - name: Install
         run: npm ci
 
