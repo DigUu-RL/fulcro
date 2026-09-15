@@ -97,10 +97,34 @@ lived OIDC token, npm verifies it came from this repository and this workflow
 file, and grants publish rights for that run alone. Nothing to store, rotate, or
 leak.
 
-It has to be configured once per package on npmjs.com — repository
-`DigUu-RL/fulcro`, workflow `release.yml` — and npm does not validate that
-configuration when it is saved, so the first run is where a mistake in it shows
-up.
+It is configured once per package on npmjs.com — repository `DigUu-RL/fulcro`,
+workflow `release.yml`. npm does not validate that configuration when it is
+saved, so a mistake in it only surfaces on the run that uses it.
+
+#### The first publish cannot use it
+
+A trusted publisher is configured on a package's own settings page, and a
+package only exists once something has been published to it. npm has no way to
+declare one in advance — unlike PyPI, where this is allowed — so the first
+version of each package has to be published another way, and the workflow can
+only take over afterwards.
+
+Done from a machine rather than from CI, so that no token is created, stored as
+a secret, or has to be remembered and revoked later:
+
+```sh
+npm login                 # interactive, through the browser
+npm run release           # builds, runs nothing else, publishes all four
+git push --follow-tags    # the tags `changeset publish` just created
+```
+
+With two-factor authentication on the account, npm asks for the one-time code
+during the publish; `npx changeset publish --otp=123456` passes it directly if
+the prompt gets in the way.
+
+Then configure the trusted publisher on each of the four packages, and every
+release after this one goes through the workflow with nothing to authenticate by
+hand.
 
 ## Emitted output never belongs beside a source
 
