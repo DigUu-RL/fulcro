@@ -8,6 +8,13 @@
  */
 export { defaultOf } from '@/functions/utils/defaultOf';
 export { type NameAccessor, nameOf } from '@/functions/utils/nameOf';
+export { type SwitchCase, switchFor } from '@/functions/utils/switchFor';
+export {
+	type Failure,
+	type Result,
+	type Success,
+	tryCatch,
+} from '@/functions/utils/tryCatch';
 export {
 	ANONYMOUS_NAME,
 	type DeclarationSite,

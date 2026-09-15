@@ -1,15 +1,29 @@
 # @fulcro/reflect
 
-`nameOf`, `typeOf` and `defaultOf` — three utilities that answer questions
-TypeScript erases on its way to JavaScript. No dependencies.
+Utilities for the things TypeScript erases, plus a couple of runtime helpers
+that pair with them. No dependencies.
 
 ```ts
-import { defaultOf, nameOf, typeOf } from '@fulcro/reflect';
+import {
+	defaultOf,
+	nameOf,
+	switchFor,
+	tryCatch,
+	typeOf,
+} from '@fulcro/reflect';
 ```
 
-Each one works on its own, and gets sharper when the project compiles through
-[`@fulcro/transformer`](../transformer). What changes with the transformer is
-spelled out per utility below, and summarised at the end.
+The package holds two kinds of thing, and it is worth knowing which is which.
+
+**`nameOf`, `typeOf` and `defaultOf` are type aware.** Each works on its own and
+gets sharper when the project compiles through
+[`@fulcro/transformer`](../transformer); `defaultOf` requires it outright. What
+changes with the transformer is spelled out per utility below, and summarised in
+a table at the end.
+
+**`switchFor` and `tryCatch` are plain runtime helpers.** No compiler
+involvement, nothing to configure, identical behaviour with or without the
+transformer.
 
 ## `nameOf`
 
@@ -107,6 +121,85 @@ instead of nesting forever.
 there is genuinely nothing for a plain function to inspect. Without the
 transformer the call throws, deliberately — a default it cannot compute would be
 a lie, and failing loudly at the call site beats handing back a wrong value.
+
+## `switchFor`
+
+Choosing between branches by condition, as an expression rather than as a
+statement.
+
+```ts
+const label = switchFor(
+	order,
+	[
+		{ when: (o) => o.total > 1000, then: () => 'large' },
+		{ when: (o) => o.items.length === 0, then: () => 'empty' },
+	],
+	() => 'standard',
+);
+```
+
+A native `switch` compares one value against constants and runs statements, so
+it cannot initialise a `const` or fill a property — which is how chains of
+nested ternaries get written. This takes a predicate per branch and evaluates to
+a result instead.
+
+Branches are tested in order, the first match wins, and the rest are never
+evaluated — neither their conditions nor their bodies. `otherwise` is required
+rather than optional, which is what guarantees a result: an unmatched value
+returns its fallback instead of `undefined`, so `R` never has to be widened to
+admit a gap that would only show up at runtime.
+
+One limit: `when` is a plain predicate, so it picks the branch without narrowing
+the value inside `then`. A branch needing the narrowed type has to assert it.
+Narrowing per branch would mean inferring the cases as a tuple of individually
+typed guards — a considerably heavier API than this one.
+
+## `tryCatch`
+
+The outcome of an operation as a value, instead of as control flow.
+
+```ts
+const result = await tryCatch(() => fetch(url));
+
+if (result.error !== null) return fallback;
+
+use(result.data);
+```
+
+**Prefer the callback form.** Passing a promise that already exists cannot catch
+anything the expression throws on its way to producing it — in
+`tryCatch(risky())`, `risky` runs first, and a synchronous throw inside it
+escapes before `tryCatch` is ever called. The callback form moves that call
+inside the `try`, which is the only way to cover both the synchronous and the
+asynchronous failure of one operation. The promise form is still accepted, and
+reads better when the promise is already in hand.
+
+**Discriminate on `error`, never on `data`.** `0`, `''` and `null` are perfectly
+good results, and `if (result.data)` reports every one of them as a failure.
+Checking `result.error === null` narrows the union properly:
+
+```ts
+if (result.error === null) {
+	result.data; // T, not T | null
+}
+```
+
+**`E` defaults to `unknown`, not to `Error`.** JavaScript lets any value be
+thrown, so typing the error as an `Error` would be a claim this function cannot
+keep — `result.error.message` would read `undefined` whenever something threw a
+string. Narrow it at the use site, or pass the type explicitly when you own
+every throw site:
+
+```ts
+const result = await tryCatch<User, ApiError>(() => api.load(id));
+```
+
+A thrown `null` or `undefined` — legal, however pathological — is wrapped in an
+`Error` carrying the original value as its `cause`, because storing it as it
+came would make the failure indistinguishable from a success.
+
+`tryCatch` always returns a promise, including for a fully synchronous
+operation.
 
 ## With and without the transformer
 

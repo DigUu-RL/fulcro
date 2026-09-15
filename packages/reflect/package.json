@@ -1,12 +1,15 @@
 {
 	"name": "@fulcro/reflect",
 	"version": "0.0.0",
-	"description": "Type aware `nameOf`, `typeOf` and `defaultOf`, resolved at compile time by @fulcro/transformer.",
+	"description": "Type aware nameOf, typeOf and defaultOf, resolved at compile time by @fulcro/transformer, plus the switchFor and tryCatch runtime helpers.",
 	"keywords": [
 		"nameof",
 		"typeof",
 		"default",
 		"reflection",
+		"result",
+		"try-catch",
+		"switch",
 		"typescript"
 	],
 	"license": "ISC",

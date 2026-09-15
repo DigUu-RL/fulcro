@@ -226,13 +226,34 @@ describe('@fulcro/collections', () => {
 });
 
 describe('@fulcro/reflect', () => {
-	it('should expose the three utilities and the constant they report', async () => {
+	it('should expose the type aware utilities and the constant they report', async () => {
 		const entry = await import('@fulcro/reflect');
 
 		expect(typeof entry.nameOf).toBe('function');
 		expect(typeof entry.typeOf).toBe('function');
 		expect(typeof entry.defaultOf).toBe('function');
 		expect(entry.ANONYMOUS_NAME).toBe('(anonymous)');
+	});
+
+	it('should expose the runtime helpers', async () => {
+		const entry = await import('@fulcro/reflect');
+
+		expect(typeof entry.switchFor).toBe('function');
+		expect(typeof entry.tryCatch).toBe('function');
+	});
+
+	it('should hand back working helpers through the published entry point', async () => {
+		const { switchFor, tryCatch } = await import('@fulcro/reflect');
+
+		expect(
+			switchFor(10, [{ when: (n) => n > 5, then: () => 'big' }], () => 'small'),
+		).toBe('big');
+
+		const failed = await tryCatch(() => {
+			throw new Error('boom');
+		});
+
+		expect((failed.error as Error).message).toBe('boom');
 	});
 
 	it('should answer at runtime, without the transformer', async () => {

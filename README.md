@@ -8,7 +8,7 @@ here; the packages under `packages/` are.
 | Package                                       | What it is                                                         | Runtime deps                  |
 | --------------------------------------------- | ------------------------------------------------------------------ | ----------------------------- |
 | [`@fulcro/collections`](packages/collections) | Lazily evaluated sequences with a composable query operator set    | none                          |
-| [`@fulcro/reflect`](packages/reflect)         | `nameOf`, `typeOf`, `defaultOf`                                    | none                          |
+| [`@fulcro/reflect`](packages/reflect)         | `nameOf`, `typeOf`, `defaultOf`, plus `switchFor` and `tryCatch`   | none                          |
 | [`@fulcro/transformer`](packages/transformer) | Compile-time resolution of those three, for `tsc` and for bundlers | `unplugin`, peer `typescript` |
 
 `@fulcro/collections` stands alone. `@fulcro/reflect` works on its own and gets
