@@ -34,5 +34,14 @@
 	},
 	"engines": {
 		"node": ">=22"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/DigUu-RL/fulcro.git",
+		"directory": "packages/reflect"
+	},
+	"homepage": "https://github.com/DigUu-RL/fulcro/tree/main/packages/reflect#readme",
+	"bugs": {
+		"url": "https://github.com/DigUu-RL/fulcro/issues"
 	}
 }

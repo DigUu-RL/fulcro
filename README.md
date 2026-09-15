@@ -1,5 +1,7 @@
 # fulcro
 
+[![CI](https://github.com/DigUu-RL/fulcro/actions/workflows/ci.yml/badge.svg)](https://github.com/DigUu-RL/fulcro/actions/workflows/ci.yml)
+
 Development root for the `@fulcro` packages. Private — nothing is published from
 here; the packages under `packages/` are.
 

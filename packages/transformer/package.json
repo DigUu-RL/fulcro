@@ -47,5 +47,14 @@
 	},
 	"engines": {
 		"node": ">=22"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/DigUu-RL/fulcro.git",
+		"directory": "packages/transformer"
+	},
+	"homepage": "https://github.com/DigUu-RL/fulcro/tree/main/packages/transformer#readme",
+	"bugs": {
+		"url": "https://github.com/DigUu-RL/fulcro/issues"
 	}
 }
