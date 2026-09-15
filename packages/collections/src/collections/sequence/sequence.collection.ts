@@ -1,9 +1,13 @@
 import {
 	Accumulator,
 	Action,
+	Constructor,
+	Narrowed,
+	OptionalSelector,
 	Predicate,
 	ResultSelector,
 	Selector,
+	TypeNames,
 } from '@/@types';
 import { Group } from '@/@types/collections/group';
 import { OrderedSequence } from '@/@types/collections/ordered';
@@ -2133,5 +2137,359 @@ export class SequenceCollection<T> implements Sequence<T> {
 			},
 			() => count,
 		);
+	}
+
+	/**
+	 * Projects and filters in a single pass, keeping the results the projection
+	 * actually produced.
+	 *
+	 * @template R Type produced by the projection.
+	 * @param selector Projection returning a value, or nothing.
+	 * @returns A deferred sequence with the values the projection produced.
+	 */
+	choose<R>(selector: OptionalSelector<T, R>): Sequence<NonNullable<R>> {
+		const source: Iterable<T> = this.source;
+
+		return SequenceCollection.deferred(
+			{
+				*[Symbol.iterator](): Iterator<NonNullable<R>> {
+					for (const item of source) {
+						const projected: R | null | undefined = selector(item);
+
+						// Only nullish results are dropped. `0`, `''` and `false` are
+						// answers like any other, and a projection that meant to
+						// discard them has to say so.
+						if (projected !== null && projected !== undefined) {
+							yield projected as NonNullable<R>;
+						}
+					}
+				},
+			},
+			UNKNOWN_COUNT,
+		);
+	}
+
+	/**
+	 * Keeps only the elements of a given runtime type, narrowing the sequence
+	 * to it.
+	 *
+	 * @template K Name of the primitive type.
+	 * @param type Name of the type, or constructor, to keep.
+	 * @returns A deferred sequence narrowed to that type.
+	 */
+	ofType<K extends keyof TypeNames>(
+		type: K,
+	): Sequence<Narrowed<T, TypeNames[K]>>;
+
+	/**
+	 * Keeps only the elements built from a given class.
+	 *
+	 * @template R Type produced by the constructor.
+	 * @param type Constructor the elements are tested against.
+	 * @returns A deferred sequence narrowed to that type.
+	 */
+	ofType<R>(type: Constructor<R>): Sequence<Narrowed<T, R>>;
+
+	ofType(type: keyof TypeNames | Constructor<unknown>): Sequence<unknown> {
+		const source: Iterable<T> = this.source;
+		const matches: Predicate<unknown> =
+			SequenceCollection.resolveTypeTest(type);
+
+		return SequenceCollection.deferred<unknown>(
+			{
+				*[Symbol.iterator](): Iterator<unknown> {
+					for (const item of source) {
+						if (matches(item)) yield item;
+					}
+				},
+			},
+			UNKNOWN_COUNT,
+		);
+	}
+
+	/**
+	 * Re-types the whole sequence, refusing to do so if any element disagrees.
+	 *
+	 * @template K Name of the primitive type.
+	 * @param type Name of the type every element must have.
+	 * @returns A deferred sequence typed as that type.
+	 * @throws {TypeError} When an element is not of that type, as it is read.
+	 */
+	cast<K extends keyof TypeNames>(type: K): Sequence<TypeNames[K]>;
+
+	/**
+	 * Re-types the whole sequence to a class.
+	 *
+	 * @template R Type produced by the constructor.
+	 * @param type Constructor every element must be an instance of.
+	 * @returns A deferred sequence typed as that type.
+	 * @throws {TypeError} When an element is not an instance, as it is read.
+	 */
+	cast<R>(type: Constructor<R>): Sequence<R>;
+
+	cast(type: keyof TypeNames | Constructor<unknown>): Sequence<unknown> {
+		const source: Iterable<T> = this.source;
+		const matches: Predicate<unknown> =
+			SequenceCollection.resolveTypeTest(type);
+		const expected: string = typeof type === 'string' ? type : type.name;
+		const knownCount: () => number | null = this.countResolver;
+
+		return SequenceCollection.deferred<unknown>(
+			{
+				*[Symbol.iterator](): Iterator<unknown> {
+					let index = 0;
+
+					for (const item of source) {
+						if (!matches(item)) {
+							// The position is part of the message on purpose: knowing
+							// that one record out of a hundred thousand is wrong is
+							// not actionable on its own.
+							const found: string = SequenceCollection.describeType(item);
+
+							throw new TypeError(
+								`cast('${expected}') found a ${found} at index ${index}.`,
+							);
+						}
+
+						index++;
+						yield item;
+					}
+				},
+			},
+			// Nothing is dropped, so the source count is the result count — for
+			// as long as the cast holds.
+			knownCount,
+		);
+	}
+
+	/**
+	 * Builds the test behind {@link SequenceCollection.ofType} and
+	 * {@link SequenceCollection.cast}.
+	 *
+	 * Resolved once rather than per element: which of the two forms applies is
+	 * a property of the argument, and re-deciding it inside the loop would be a
+	 * branch paid for on every element of the sequence.
+	 *
+	 * @param type Name of a primitive type, or a constructor.
+	 * @returns A predicate telling whether a value is of that type.
+	 */
+	private static resolveTypeTest(
+		type: keyof TypeNames | Constructor<unknown>,
+	): Predicate<unknown> {
+		if (typeof type !== 'string') {
+			return (item): boolean => item instanceof type;
+		}
+
+		// `typeof null` is `'object'`, which is the one answer the language
+		// gives that nobody filtering by type wants: a sequence narrowed to
+		// objects that then throws on a property access would be a trap.
+		if (type === 'object') {
+			return (item): boolean => item !== null && typeof item === 'object';
+		}
+
+		return (item): boolean => typeof item === type;
+	}
+
+	/**
+	 * Names the type of a value, for an error message.
+	 *
+	 * @param value Value being described.
+	 * @returns The name of its class where it has one, otherwise what `typeof`
+	 * answers.
+	 */
+	private static describeType(value: unknown): string {
+		if (value === null) return 'null';
+
+		if (typeof value === 'object') {
+			const named = value.constructor as { name?: string } | undefined;
+
+			return named?.name ?? 'object';
+		}
+
+		return typeof value;
+	}
+
+	/**
+	 * Takes the elements with the largest keys, in descending order.
+	 *
+	 * @template K Type of the compared key.
+	 * @param keySelector Projection returning the key of each element.
+	 * @param count How many elements to keep.
+	 * @returns A deferred sequence with at most `count` elements.
+	 */
+	topBy<K>(keySelector: Selector<T, K>, count: number): Sequence<T> {
+		const source: Iterable<T> = this.source;
+		const knownCount: () => number | null = this.countResolver;
+
+		return SequenceCollection.deferred(
+			{
+				*[Symbol.iterator](): Iterator<T> {
+					if (count <= 0) return;
+
+					yield* SequenceCollection.resolveTop(source, keySelector, count);
+				},
+			},
+			() => {
+				const total: number | null = knownCount();
+
+				return total === null ? null : Math.min(total, Math.max(count, 0));
+			},
+		);
+	}
+
+	/**
+	 * Runs an action for every element as it passes, yielding it unchanged.
+	 *
+	 * @param action Action executed for each element.
+	 * @returns A deferred sequence with the same elements.
+	 */
+	tap(action: Action<T>): Sequence<T> {
+		const source: Iterable<T> = this.source;
+
+		return SequenceCollection.deferred(
+			{
+				*[Symbol.iterator](): Iterator<T> {
+					let index = 0;
+
+					for (const item of source) {
+						action(item, index++);
+						yield item;
+					}
+				},
+			},
+			() => this.knownCount,
+		);
+	}
+
+	/**
+	 * Finds the elements with the largest keys, largest first.
+	 *
+	 * Keeps a min heap of the best `count` seen so far, so that the element to
+	 * beat is always at its root and the rest of the window never has to be
+	 * looked at. Every element after the first `count` costs one comparison
+	 * when it loses — which is the common case — and `log count` when it wins.
+	 *
+	 * The heap holds positions rather than elements, so that the cached keys
+	 * stay addressable by index and a key is extracted exactly once per
+	 * element. That matters most for the keys that are expensive to read, which
+	 * are the ones worth sorting by.
+	 *
+	 * @template T Type of the elements.
+	 * @template K Type of the compared key.
+	 * @param source Elements being searched.
+	 * @param keySelector Projection returning the key of each element.
+	 * @param count How many elements to keep.
+	 * @returns The elements, largest key first, ties in arrival order.
+	 */
+	private static resolveTop<T, K>(
+		source: Iterable<T>,
+		keySelector: Selector<T, K>,
+		count: number,
+	): T[] {
+		const elements: T[] = [];
+		const keys: K[] = [];
+
+		/** Positions of the current best elements, worst of them at the root. */
+		const heap: number[] = [];
+
+		/**
+		 * Whether the element at `left` is the worse of the two, and so the one
+		 * to discard first.
+		 *
+		 * Ordering is by key descending; equal keys fall back to arrival order,
+		 * which is what keeps this agreeing with `orderByDescending().take()`
+		 * down to which of two tied elements survives.
+		 *
+		 * @param left Position of the left element.
+		 * @param right Position of the right element.
+		 * @returns `true` when the left element is worse.
+		 */
+		const worse = (left: number, right: number): boolean => {
+			const leftKey: K = keys[left];
+			const rightKey: K = keys[right];
+
+			if (leftKey < rightKey) return true;
+			if (leftKey > rightKey) return false;
+
+			// Tied: the one that arrived later is the one to lose.
+			return left > right;
+		};
+
+		const siftUp = (start: number): void => {
+			let child: number = start;
+
+			while (child > 0) {
+				const parent: number = (child - 1) >> 1;
+
+				if (!worse(heap[child], heap[parent])) break;
+
+				// Swapped through a temporary rather than by destructuring, which
+				// would allocate an array on every level of every sift.
+				const held: number = heap[parent];
+				heap[parent] = heap[child];
+				heap[child] = held;
+
+				child = parent;
+			}
+		};
+
+		const siftDown = (start: number): void => {
+			let parent: number = start;
+
+			for (;;) {
+				const left: number = parent * 2 + 1;
+				const right: number = left + 1;
+				let smallest: number = parent;
+
+				if (left < heap.length && worse(heap[left], heap[smallest])) {
+					smallest = left;
+				}
+
+				if (right < heap.length && worse(heap[right], heap[smallest])) {
+					smallest = right;
+				}
+
+				if (smallest === parent) break;
+
+				const held: number = heap[parent];
+				heap[parent] = heap[smallest];
+				heap[smallest] = held;
+
+				parent = smallest;
+			}
+		};
+
+		for (const item of source) {
+			const position: number = elements.length;
+
+			if (heap.length < count) {
+				elements.push(item);
+				keys.push(keySelector(item));
+				heap.push(position);
+				siftUp(heap.length - 1);
+				continue;
+			}
+
+			const key: K = keySelector(item);
+
+			// One comparison decides the common case. A key equal to the weakest
+			// loses, because the incumbent arrived first — the same tie-break the
+			// sort uses. Only a winner is stored, so a sequence far larger than
+			// `count` never grows the arrays past the elements that mattered.
+			if (!(key > keys[heap[0]])) continue;
+
+			elements.push(item);
+			keys.push(key);
+			heap[0] = position;
+			siftDown(0);
+		}
+
+		// The heap is ordered enough to know its worst, not enough to be read in
+		// order. Sorting `count` of them at the end is `O(count log count)`, and
+		// `count` is the small number here.
+		return heap
+			.slice()
+			.sort((left, right) => (worse(left, right) ? 1 : -1))
+			.map((position) => elements[position]);
 	}
 }

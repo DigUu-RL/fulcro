@@ -1,9 +1,13 @@
 import {
 	Accumulator,
 	Action,
+	Constructor,
+	Narrowed,
+	OptionalSelector,
 	Predicate,
 	ResultSelector,
 	Selector,
+	TypeNames,
 } from '@/@types';
 import { Group } from '@/@types/collections/group';
 import { OrderedSequence } from '@/@types/collections/ordered';
@@ -809,4 +813,125 @@ export interface Sequence<T> extends Iterable<T> {
 	 * sample of one says nothing about the spread it was drawn from.
 	 */
 	sampleStandardDeviation(selector?: Selector<T, number>): number;
+
+	/**
+	 * Projects and filters in a single pass, keeping the results the projection
+	 * actually produced.
+	 *
+	 * The projection returns `null` or `undefined` for an element it has
+	 * nothing to say about, and those elements are dropped. It replaces the
+	 * `where().select()` pair in the case where the condition and the
+	 * projection are the same piece of work — looking a value up, parsing it,
+	 * reading an optional field — and where splitting them means doing that
+	 * work twice.
+	 *
+	 * @template R Type produced by the projection.
+	 * @param selector Projection returning a value, or nothing.
+	 * @returns A deferred sequence with the values the projection produced.
+	 */
+	choose<R>(selector: OptionalSelector<T, R>): Sequence<NonNullable<R>>;
+
+	/**
+	 * Keeps only the elements of a given runtime type, narrowing the sequence
+	 * to it.
+	 *
+	 * Both a filter and a narrowing: a `Sequence<string | number>` filtered by
+	 * `'string'` is a `Sequence<string>` afterwards, with no cast written by
+	 * the caller.
+	 *
+	 * The type is named by the same string `typeof` answers with, or by a
+	 * constructor for a class. Nothing here reads the declared type of the
+	 * elements — this package has no dependency on the compiler — so a type
+	 * that leaves no runtime trace, such as an interface, cannot be filtered
+	 * by. `null` is never matched by `'object'`, which is the one place this
+	 * deliberately disagrees with `typeof`.
+	 *
+	 * Use {@link Sequence.cast} instead when an element of another type means
+	 * the data is wrong rather than merely uninteresting: this one drops such
+	 * an element silently, which is the right answer only when the sequence is
+	 * expected to be mixed.
+	 *
+	 * @template K Name of the primitive type.
+	 * @param type Name of the type to keep.
+	 * @returns A deferred sequence narrowed to that type.
+	 */
+	ofType<K extends keyof TypeNames>(
+		type: K,
+	): Sequence<Narrowed<T, TypeNames[K]>>;
+
+	/**
+	 * Keeps only the elements built from a given class, narrowing the sequence
+	 * to it.
+	 *
+	 * @template R Type produced by the constructor.
+	 * @param type Constructor the elements are tested against with
+	 * `instanceof`.
+	 * @returns A deferred sequence narrowed to that type.
+	 */
+	ofType<R>(type: Constructor<R>): Sequence<Narrowed<T, R>>;
+
+	/**
+	 * Re-types the whole sequence, refusing to do so if any element disagrees.
+	 *
+	 * The counterpart of {@link Sequence.ofType}: where that one filters, this
+	 * one asserts. Every element has to be of the given type, and the first
+	 * that is not throws rather than being skipped — which is what makes this
+	 * the operator to reach for when a wrong element means the data is broken
+	 * and silence would be the worst outcome.
+	 *
+	 * The check happens while the sequence is being read, not when it is
+	 * described, so the throw arrives at the element that caused it and carries
+	 * its position.
+	 *
+	 * @template K Name of the primitive type.
+	 * @param type Name of the type every element must have.
+	 * @returns A deferred sequence typed as that type.
+	 * @throws {TypeError} When an element is not of that type, as it is read.
+	 */
+	cast<K extends keyof TypeNames>(type: K): Sequence<TypeNames[K]>;
+
+	/**
+	 * Re-types the whole sequence to a class, refusing to do so if any element
+	 * is not an instance of it.
+	 *
+	 * @template R Type produced by the constructor.
+	 * @param type Constructor every element must be an instance of.
+	 * @returns A deferred sequence typed as that type.
+	 * @throws {TypeError} When an element is not an instance, as it is read.
+	 */
+	cast<R>(type: Constructor<R>): Sequence<R>;
+
+	/**
+	 * Takes the elements with the largest keys, in descending order.
+	 *
+	 * Answers what `orderByDescending(...).take(count)` answers, element for
+	 * element and tie for tie, without sorting what it is going to discard: it
+	 * keeps a window of the best `count` seen so far, which costs
+	 * `O(n log count)` comparisons instead of `O(n log n)`. On a hundred
+	 * thousand elements for a top ten that is the difference between roughly
+	 * thirty thousand comparisons and over a million.
+	 *
+	 * Keys are compared with `<` and `>`, as everywhere else in the library,
+	 * and elements with equal keys keep the order they arrived in.
+	 *
+	 * @template K Type of the compared key.
+	 * @param keySelector Projection returning the key of each element.
+	 * @param count How many elements to keep.
+	 * @returns A deferred sequence with at most `count` elements, largest key
+	 * first.
+	 */
+	topBy<K>(keySelector: Selector<T, K>, count: number): Sequence<T>;
+
+	/**
+	 * Runs an action for every element as it passes, yielding it unchanged.
+	 *
+	 * For looking inside a chain — logging, counting, setting a breakpoint —
+	 * without collapsing it into a terminal operator and losing the laziness.
+	 * The action runs as each element is pulled, so a sequence nobody iterates
+	 * runs it for nothing.
+	 *
+	 * @param action Action executed for each element.
+	 * @returns A deferred sequence with the same elements.
+	 */
+	tap(action: Action<T>): Sequence<T>;
 }

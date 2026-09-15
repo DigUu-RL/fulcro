@@ -18,6 +18,57 @@ export type Predicate<T> = (value: T) => boolean;
 export type Selector<T, R> = (value: T) => R;
 
 /**
+ * Projects an element into another shape, or into nothing at all.
+ *
+ * `null` and `undefined` mean "no result for this element" rather than being
+ * results in their own right, which is what lets a projection also decide what
+ * to drop.
+ *
+ * @template T Type of the source element.
+ * @template R Type produced by the projection.
+ * @param value Element being projected.
+ * @returns The projected value, or `null` or `undefined` to skip the element.
+ */
+export type OptionalSelector<T, R> = (value: T) => R | null | undefined;
+
+/**
+ * The primitive type names `typeof` answers with, mapped to what each one
+ * means as a type.
+ *
+ * Used to filter a sequence by a runtime type without a schema or a compiler
+ * plugin: the name is the same string the language itself uses.
+ */
+export interface TypeNames {
+	string: string;
+	number: number;
+	bigint: bigint;
+	boolean: boolean;
+	symbol: symbol;
+	function: (...args: never[]) => unknown;
+	object: object | null;
+	undefined: undefined;
+}
+
+/**
+ * Anything that can be called with `new`, used to filter a sequence by class.
+ *
+ * @template T Type produced by the constructor.
+ */
+export type Constructor<T> = abstract new (...args: never[]) => T;
+
+/**
+ * Narrows `T` to the members assignable to `R`, keeping `R` when the two have
+ * nothing in common.
+ *
+ * The fallback is what makes filtering a `Sequence<unknown>` useful: `Extract`
+ * alone would answer `never` there, leaving a sequence that cannot be read.
+ *
+ * @template T Type being narrowed.
+ * @template R Type narrowed to.
+ */
+export type Narrowed<T, R> = Extract<T, R> extends never ? R : Extract<T, R>;
+
+/**
  * Compares two elements in order to sort them.
  *
  * @template T Type of the compared elements.
