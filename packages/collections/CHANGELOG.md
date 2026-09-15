@@ -1,5 +1,47 @@
 # @fulcro/collections
 
+## 0.3.0
+
+### Minor Changes
+
+- cd517e0: Five operators: `choose`, `ofType`, `cast`, `topBy` and `tap`.
+
+  `topBy(keySelector, count)` answers what `orderByDescending(...).take(count)`
+  answers — same elements, same order, ties broken the same way — while keeping
+  only a window of the best `count` seen so far. Measured over a hundred thousand
+  records for a top ten: 201,400 key comparisons against 4,532,640 for the sort.
+
+  `choose` projects and filters in one pass, for the case where the condition and
+  the projection are the same work. `ofType` narrows a mixed sequence to one
+  runtime type and `cast` does the same but throws on the first element that does
+  not fit. `tap` observes a chain without consuming it.
+
+- 597a05c: Each library now ships its own compile time transformer.
+
+  `@fulcro/reflect` exposes `@fulcro/reflect/transformer` and
+  `@fulcro/reflect/unplugin`. Installing the package is enough; there is no second
+  thing to install and no way to end up with the utilities but not the transformer
+  that resolves them.
+
+  **Breaking, and released as a minor**, which the pre-1.0 convention allows.
+  Point the `plugins` entry of your tsconfig at `@fulcro/reflect/transformer`
+  instead of `@fulcro/transformer`, and import bundler adapters from
+  `@fulcro/reflect/unplugin`. The transformer itself is unchanged — same options,
+  same emitted code.
+
+  **This release also repairs 0.2.1.** That version declares a peer dependency on
+  `@fulcro/transformer`, which no longer exists on the registry, so
+  `npm install @fulcro/reflect` fails outright with a 404 rather than merely
+  warning. There is no peer here to go missing.
+
+  `@fulcro/transformer` is gone. It was a peer dependency, which npm installs and
+  Yarn does not, so a project could get the utilities with nothing to resolve them
+  and no error to say so; and it versioned separately, so `reflect@0.3` with
+  `transformer@0.2` was an installable, broken pair.
+
+  `@fulcro/transform-core` is new, and holds the machinery that belongs to no
+  library in particular. You never install it directly.
+
 ## 0.2.1
 
 No changes in this release.
