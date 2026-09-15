@@ -41,6 +41,21 @@ const project = (name: string): ViteUserConfig => ({
 		name,
 		globals: true,
 		include: ['src/**/*.spec.ts', 'src/**/*.test.ts'],
+
+		// Vitest prints a hint on every run suggesting `fsModuleCache: true`.
+		// Do not take it. The cache keys on the content of the source files, and
+		// the plugin above rewrites those files based on code that lives in this
+		// same repository — so a change to the transformer leaves every cached
+		// transform untouched and the suites go on asserting against output the
+		// transformer no longer produces.
+		//
+		// This was measured, not assumed. With the cache on, breaking the
+		// `defaultOf` rewriter outright — making it decline every call — left all
+		// 31 reflect tests passing. With it off, the same break failed 11 of them
+		// with the error the runtime fallback is supposed to throw.
+		//
+		// A few seconds a run is not worth a suite that lies about the one
+		// component this repository exists to build.
 	},
 });
 

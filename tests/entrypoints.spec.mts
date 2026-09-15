@@ -2,8 +2,9 @@ import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 
 /**
  * Entry point suite.
@@ -60,44 +61,69 @@ const manifestOf = (name: string): { manifest: Manifest; root: string } => {
 	};
 };
 
-/** One entry of the file list `npm pack --dry-run --json` reports. */
-interface PackedFile {
-	readonly path: string;
+/** One package, as `npm pack --dry-run --json` reports it. */
+interface PackReport {
+	readonly name: string;
+	readonly files: readonly { readonly path: string }[];
 }
 
-/** Tarball contents per package, computed once and reused. */
+/** Root of the workspace, which this file sits one level below. */
+const WORKSPACE_ROOT = path.resolve(
+	path.dirname(fileURLToPath(import.meta.url)),
+	'..',
+);
+
+/** Tarball contents per package name, filled once before the suite runs. */
 const packed = new Map<string, readonly string[]>();
 
 /**
- * Lists what a package would actually publish.
+ * Asks npm what every package would publish.
  *
- * Deliberately asked of `npm` rather than checked against the working tree.
+ * Deliberately asked of npm rather than checked against the working tree.
  * `files`, `.npmignore` and the entries npm always adds or always drops decide
  * the tarball between them, and the result is regularly not what the directory
  * looks like: a `files` list that forgets `dist` leaves every built file sitting
  * right there on disk while the published package contains none of them.
  *
- * @param root Directory of the package.
- * @returns Paths the tarball would contain, as npm spells them.
+ * One invocation covers the whole workspace. It used to be one per package,
+ * inside the tests that needed it, and that spent four npm startups where one
+ * would do — enough, on a cold Windows runner, for the first of them to pass the
+ * default five second timeout on its own.
  */
-const packedFiles = (root: string): readonly string[] => {
-	const cached: readonly string[] | undefined = packed.get(root);
-
-	if (cached !== undefined) return cached;
-
-	const output: string = execSync('npm pack --dry-run --json', {
-		cwd: root,
+const readPackedFiles = (): void => {
+	const output: string = execSync('npm pack --dry-run --json --workspaces', {
+		cwd: WORKSPACE_ROOT,
 		encoding: 'utf8',
 		stdio: ['ignore', 'pipe', 'ignore'],
 	});
 
-	const [report] = JSON.parse(output) as [{ files: readonly PackedFile[] }];
-	const files: readonly string[] = report.files.map((file) => file.path);
+	for (const report of JSON.parse(output) as readonly PackReport[])
+		packed.set(
+			report.name,
+			report.files.map((file) => file.path),
+		);
+};
 
-	packed.set(root, files);
+/**
+ * Paths the tarball of a package would contain.
+ *
+ * @param name Name of the package.
+ * @returns The paths, as npm spells them.
+ */
+const packedFiles = (name: string): readonly string[] => {
+	const files: readonly string[] | undefined = packed.get(name);
+
+	if (files === undefined)
+		throw new Error(
+			`npm pack reported nothing for ${name}. Is it still a workspace?`,
+		);
 
 	return files;
 };
+
+// Generous, because it spawns npm over the whole workspace and a cold runner
+// takes its time. It runs once for the file, so the cost is paid once.
+beforeAll(readPackedFiles, 120_000);
 
 /**
  * Rewrites a manifest path the way npm spells it inside a tarball.
@@ -127,7 +153,7 @@ const exportedPaths = (node: unknown): string[] => {
 };
 
 describe.each(PACKAGE_NAMES)('%s, as a consumer sees it', (name) => {
-	const { manifest, root } = manifestOf(name);
+	const { manifest } = manifestOf(name);
 
 	it('should resolve by name to the manifest it declares', () => {
 		expect(manifest.name).toBe(name);
@@ -140,7 +166,7 @@ describe.each(PACKAGE_NAMES)('%s, as a consumer sees it', (name) => {
 		// make the assertion below pass without checking anything.
 		expect(paths.length).toBeGreaterThan(0);
 
-		const shipped: readonly string[] = packedFiles(root);
+		const shipped: readonly string[] = packedFiles(name);
 
 		for (const exported of paths)
 			expect(
@@ -150,7 +176,7 @@ describe.each(PACKAGE_NAMES)('%s, as a consumer sees it', (name) => {
 	});
 
 	it('should publish the files main and types point at', () => {
-		const shipped: readonly string[] = packedFiles(root);
+		const shipped: readonly string[] = packedFiles(name);
 
 		for (const field of [manifest.main, manifest.types]) {
 			expect(field).toBeDefined();
@@ -169,7 +195,7 @@ describe.each(PACKAGE_NAMES)('%s, as a consumer sees it', (name) => {
 
 	it('should carry the licence it declares', () => {
 		expect(manifest.license).toBe('ISC');
-		expect(packedFiles(root)).toContain('LICENSE');
+		expect(packedFiles(name)).toContain('LICENSE');
 	});
 });
 
