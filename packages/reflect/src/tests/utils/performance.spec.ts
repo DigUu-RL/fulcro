@@ -88,20 +88,41 @@ describe('what the transformer leaves behind', () => {
 });
 
 describe('typeOf', () => {
-	it('should inspect a value without walking anything unbounded', () => {
-		// The prototype chain is the only thing traversed, and it is short.
-		const instance = new Admin();
+	it.each([
+		['a small object', { a: 1 }],
+		[
+			'an object with five thousand keys',
+			Object.fromEntries([...Array(5_000).keys()].map((key) => [key, key])),
+		],
+		['an array of a hundred thousand', [...Array(100_000).keys()]],
+	])('should touch %s a fixed number of times', (_label, value) => {
+		// Counted, not timed. This used to compare `typeOf` against a bare
+		// `Object.getPrototypeOf` and demand it stay within sixty times an
+		// intrinsic that is very nearly free — a ratio bounded by no constant,
+		// which duly failed on one runner out of four while the code was fine.
+		//
+		// A Proxy answers the real question directly: inspection reads the value
+		// three times whatever is inside it, so its cost cannot grow with the
+		// data.
+		let reads = 0;
 
-		const inspecting: number = timed(() => {
-			typeOf(instance);
+		const watched = new Proxy(value, {
+			get(target, key, receiver) {
+				reads++;
+				return Reflect.get(target, key, receiver);
+			},
+			ownKeys(target) {
+				// Enumerating the keys would make the cost grow with the value,
+				// which is the thing being ruled out. Counted heavily so it cannot
+				// hide among the handful of legitimate reads.
+				reads += 1_000;
+				return Reflect.ownKeys(target);
+			},
 		});
 
-		const baseline: number = timed(() => {
-			Object.getPrototypeOf(instance);
-		});
+		typeOf(watched);
 
-		// The prototype chain is the only thing walked, and it is three deep.
-		expect(inspecting).toBeLessThan(baseline * 60);
+		expect(reads).toBeLessThanOrEqual(5);
 	});
 
 	it('should not read the contents of what it inspects', () => {

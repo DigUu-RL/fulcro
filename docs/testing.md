@@ -147,6 +147,36 @@ costs, because the transformer turned it into one_ — and a loaded machine scal
 both sides equally. Prefer this shape to a bare number wherever the comparison
 can be constructed.
 
+### The baseline has to be comparable
+
+A baseline fixes the machine, not a bad choice of comparison. `typeOf` was once
+required to stay within sixty times a bare `Object.getPrototypeOf` — an
+intrinsic so cheap it is very nearly free. Nothing bounds the ratio between a
+function that builds a result and a single intrinsic by any constant, so the
+number was arbitrary, and it failed on one runner out of four while the code was
+perfectly fine.
+
+The question it was reaching for — _does inspection walk the value?_ — has a
+deterministic answer. A `Proxy` counts the accesses:
+
+```ts
+let reads = 0;
+const watched = new Proxy(value, {
+	get: (t, k, r) => (reads++, Reflect.get(t, k, r)),
+	ownKeys: (t) => ((reads += 1_000), Reflect.ownKeys(t)),
+});
+
+typeOf(watched);
+
+expect(reads).toBeLessThanOrEqual(5);
+```
+
+Three accesses for a one-key object, three for one with five thousand keys,
+three for an array of a hundred thousand. Constant, on every machine.
+
+**Before writing a ratio, ask whether the thing can be counted instead.** It
+usually can, and counting is never flaky.
+
 ## Microtasks over timers
 
 Where a test is about _scheduling_ rather than duration, advance microtask turns
