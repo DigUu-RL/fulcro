@@ -60,12 +60,22 @@ array-backed one does not.
 
 ## Operators
 
-| Deferred                                | Immediate                                 |
-| --------------------------------------- | ----------------------------------------- |
-| `where` `select` `selectMany`           | `first` `firstOrNull` `last` `lastOrNull` |
-| `take` `skip` `distinct`                | `count` `any` `sum` `average` `min` `max` |
-| `union` `intersect` `join`              | `toArray` `toMap` `forEach` `aggregate`   |
-| `groupBy` `orderBy` `orderByDescending` |                                           |
+| Deferred                                                  | Immediate                                             |
+| --------------------------------------------------------- | ----------------------------------------------------- |
+| `where` `select` `selectMany`                             | `first` `firstOrNull` `last` `lastOrNull`             |
+| `take` `skip` `takeWhile` `skipWhile`                     | `single` `singleOrNull` `elementAt` `elementAtOrNull` |
+| `takeLast` `skipLast` `chunk` `windowed`                  | `count` `countBy` `any` `all` `contains`              |
+| `distinct` `distinctBy` `reverse`                         | `sum` `average` `min` `max` `minBy` `maxBy`           |
+| `union` `unionBy` `intersect` `intersectBy`               | `median` `percentile` `standardDeviation`             |
+| `except` `exceptBy` `concat` `zip`                        | `sampleStandardDeviation` `sequenceEqual`             |
+| `append` `prepend` `defaultIfEmpty`                       | `toArray` `toMap` `toLookup` `toSet`                  |
+| `join` `groupJoin` `groupBy` `groupAdjacent`              | `forEach` `aggregate` `partition`                     |
+| `orderBy` `orderByDescending` `scan` `pairwise` `memoize` |                                                       |
+
+Two static factories build a sequence from nothing: `SequenceCollection.range`
+and `SequenceCollection.repeat`. Both generate as they are read, so a million of
+either costs nothing until something asks, and both report their count without
+generating any of it.
 
 `orderBy` and `orderByDescending` return an `OrderedSequence<T>`, which adds
 `thenBy` and `thenByDescending`. Secondary criteria are only consulted when the
@@ -78,6 +88,73 @@ twice per comparison, which would grow as `O(n log n)`.
 `groupBy` yields `Group<K, T>`, which is itself a full sequence carrying a `key`,
 so operators chain straight onto a group. Keys come out in the order they were
 first seen.
+
+## Laziness has a second edge, and `memoize` is the guard
+
+A sequence over a generator, or any other single-pass source, **yields nothing
+on a second traversal** — and says nothing about it, because an exhausted
+iterator is indistinguishable from an empty one:
+
+```ts
+const query = SequenceCollection.from(rows()).select(expensive);
+
+query.count(); // reads the generator, runs `expensive` per row
+query.toArray(); // [] — the generator is spent
+```
+
+A chain iterated twice also runs its projections twice, which is fine until the
+projection is a parse or a request.
+
+`memoize` fixes both. Elements are remembered as they are read, so the sequence
+becomes repeatable and the work behind it happens once:
+
+```ts
+const kept = query.memoize();
+
+kept.count(); // reads it once
+kept.toArray(); // every row, and `expensive` never ran again
+```
+
+The cost is memory — everything pulled through is held — and it is paid only for
+the part actually consumed.
+
+## Beyond LINQ
+
+A handful of operators that earn their place by doing something the standard set
+cannot.
+
+`partition` splits by a condition **in one traversal**, where two `where` calls
+read the source twice:
+
+```ts
+const [active, archived] = users.partition((user) => user.active);
+```
+
+`scan` is `aggregate` that shows its work — a running total rather than only the
+final one. It emits one value per element and not the seed, so it stays the same
+length as its source:
+
+```ts
+SequenceCollection.from([1, 2, 3]).scan(0, (total, n) => total + n);
+// 1, 3, 6
+```
+
+`windowed` and `pairwise` yield overlapping runs, for comparing an element with
+what came before it:
+
+```ts
+readings.pairwise().select(([previous, current]) => current - previous);
+```
+
+`groupAdjacent` groups **consecutive** elements sharing a key, starting a new
+group whenever the key changes — so the same key can open several. It buffers
+only the run in hand, which `groupBy` cannot do, and fits data already in order.
+
+And four statistics beside `sum`, `average`, `min` and `max`: `median`,
+`percentile`, `standardDeviation` and `sampleStandardDeviation`. The two
+deviations are separate names rather than one with a flag: they divide by `n`
+and by `n - 1`, the answers diverge most exactly when the data is small, and a
+quiet default would be wrong half the time.
 
 ## Types
 
