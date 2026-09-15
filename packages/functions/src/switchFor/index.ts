@@ -126,21 +126,67 @@ export type ExhaustiveCases<T extends PropertyKey, R> = {
  * @returns The result of the branch that handled the value, the result of
  * `otherwise`, or `undefined` when nothing matched and no fallback was given.
  */
-export function switchFor<T extends PropertyKey, R>(
-	value: T,
-	cases: ExhaustiveCases<T, R>,
-): R;
+// The order of these three is load bearing, and the exhaustive one comes last
+// on purpose. When no overload matches, TypeScript reports the failure of the
+// last candidate taking that many arguments — so with the exhaustive form
+// earlier, forgetting an enum member produced a complaint about `SwitchCase`,
+// pointing at the predicate form the caller was not using. Last, it produces
+// the one that names the member:
+//
+//   Property '[Status.Archived]' is missing in type '{ 0: …; 1: … }'
+//   but required in type 'ExhaustiveCases<Status, string>'.
+//
+// The diagnostic is the whole reason this form exists, so it is worth ordering
+// for. Which overload a valid call resolves to is unaffected: an array of
+// branches and a record of them are not assignable to one another.
 
+/**
+ * Chooses between branches by condition, falling back when none matches.
+ *
+ * @template T Type of the evaluated value.
+ * @template R Type produced by every branch.
+ * @param value Value being evaluated.
+ * @param cases Branches, tested in order; the first match wins.
+ * @param otherwise Produces the result when no branch matches.
+ * @returns The result of the matching branch, or of `otherwise`.
+ */
 export function switchFor<T, R>(
 	value: T,
 	cases: readonly SwitchCase<T, R>[],
 	otherwise: (value: T) => R,
 ): R;
 
+/**
+ * Chooses between branches by condition, with nothing to fall back on.
+ *
+ * @template T Type of the evaluated value.
+ * @template R Type produced by every branch.
+ * @param value Value being evaluated.
+ * @param cases Branches, tested in order; the first match wins.
+ * @returns The result of the matching branch, or `undefined` when none matched.
+ */
 export function switchFor<T, R>(
 	value: T,
 	cases: readonly SwitchCase<T, R>[],
 ): R | undefined;
+
+/**
+ * Chooses between one branch per member of a closed set, checked exhaustively.
+ *
+ * Leaving a member out does not compile, and neither does adding a branch for
+ * something that is not a member. No fallback is accepted, deliberately: a
+ * fallback is what would absorb a newly added member in silence.
+ *
+ * @template T Union being matched, typically an enum.
+ * @template R Type produced by every branch.
+ * @param value Value being evaluated.
+ * @param cases One branch per member of `T`.
+ * @returns The result of the branch handling the value.
+ */
+export function switchFor<T extends PropertyKey, R>(
+	value: T,
+	cases: ExhaustiveCases<T, R>,
+): R;
 
 export function switchFor<T, R>(
 	value: T,

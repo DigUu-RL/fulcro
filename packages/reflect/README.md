@@ -1,16 +1,33 @@
 # @fulcro/reflect
 
 `nameOf`, `typeOf` and `defaultOf` — three utilities that answer questions
-TypeScript erases on its way to JavaScript. No dependencies.
+TypeScript erases on its way to JavaScript.
+
+```sh
+npm install @fulcro/reflect
+```
+
+[`@fulcro/transformer`](../transformer) comes with it, as a peer dependency npm
+installs for you. **It is not optional, and the split between the two is not a
+menu.** These utilities are named for what they read, and what they read is the
+type — which exists only while the compiler is running. Without the transformer
+the package still loads and still answers, but it answers from the value in
+front of it: `typeOf` reports a runtime shape with `declared` reading `null`,
+`nameOf` falls back to parsing the closure and is at the mercy of a minifier,
+and `defaultOf` throws, because a default it cannot compute would be a lie.
+
+That is a fallback, not a mode to choose. The two packages are separate so the
+transformer's own dependencies stay out of anything that only imports these
+functions at runtime — not so that either half is usable alone.
 
 ```ts
 import { defaultOf, nameOf, typeOf } from '@fulcro/reflect';
 ```
 
-Each works on its own and gets sharper when the project compiles through
-[`@fulcro/transformer`](../transformer); `defaultOf` requires it outright. What
-changes with the transformer is spelled out per utility below, and summarised in
-a table at the end.
+What each utility gains from the transformer is spelled out below, and
+summarised in a table at the end. Wiring it into a build takes one entry in a
+tsconfig or one plugin in a bundler; see
+[`@fulcro/transformer`](../transformer).
 
 Looking for `switchFor` or `tryCatch`? They moved to
 [`@fulcro/functions`](../functions). Neither has anything to do with the

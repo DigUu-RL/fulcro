@@ -25,6 +25,17 @@ npm install --save-dev @fulcro/transformer
 `ts.Symbol` and `ts.Type` objects out of your program, and those only match when
 both sides are the same copy of the compiler.
 
+**TypeScript 5.3 up to, but not including, 7.** That upper bound is not caution;
+7.x is the native port, and its package no longer exposes the compiler API this
+is built on. `createProgram`, `getTypeChecker`, `visitEachChild`, `createPrinter`
+and the custom transformer pipeline are all absent from its entry point, with
+only a set of `./unstable/*` APIs in their place. Nothing here can run on it
+yet, and the range says so rather than letting an install succeed into a
+transformer that cannot start.
+
+The runtime half — [`@fulcro/reflect`](../reflect) — is unaffected and works on
+any version, in its fallback behaviour.
+
 Then wire it into whichever of the two build paths you use.
 
 ---
