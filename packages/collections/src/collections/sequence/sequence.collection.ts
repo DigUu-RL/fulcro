@@ -966,10 +966,11 @@ export class SequenceCollection<T> implements Sequence<T> {
 		for (const item of this.source) {
 			if (predicate !== undefined && !predicate(item)) continue;
 
-			if (seen)
+			if (seen) {
 				throw new Error(
 					'single() found more than one element matching the condition.',
 				);
+			}
 
 			found = item;
 			seen = true;
@@ -1065,5 +1066,332 @@ export class SequenceCollection<T> implements Sequence<T> {
 			if (a.done === true || b.done === true) return a.done === b.done;
 			if (a.value !== b.value) return false;
 		}
+	}
+
+	/**
+	 * Removes the elements that also appear in another sequence.
+	 *
+	 * @param second Sequence whose elements are removed from this one.
+	 * @returns A deferred sequence with the distinct elements not in `second`.
+	 */
+	except(second: Iterable<T>): Sequence<T> {
+		const source: Iterable<T> = this.source;
+
+		return SequenceCollection.deferred(
+			{
+				*[Symbol.iterator](): Iterator<T> {
+					// Read in full before the first element is yielded: absence
+					// from a set cannot be established from a prefix of it.
+					const excluded = new Set<T>(second);
+					const seen = new Set<T>();
+
+					for (const item of source) {
+						if (excluded.has(item) || seen.has(item)) continue;
+
+						seen.add(item);
+						yield item;
+					}
+				},
+			},
+			UNKNOWN_COUNT,
+		);
+	}
+
+	/**
+	 * Appends another sequence to this one, keeping every element.
+	 *
+	 * @param second Sequence appended to this one.
+	 * @returns A deferred sequence with the elements of both, in order.
+	 */
+	concat(second: Iterable<T>): Sequence<T> {
+		const source: Iterable<T> = this.source;
+		const knownCount: () => number | null = this.countResolver;
+
+		return SequenceCollection.deferred(
+			{
+				*[Symbol.iterator](): Iterator<T> {
+					yield* source;
+					yield* second;
+				},
+			},
+			() => {
+				const left: number | null = knownCount();
+				const right: number | null =
+					SequenceCollection.resolveKnownCount(second);
+
+				return left === null || right === null ? null : left + right;
+			},
+		);
+	}
+
+	/**
+	 * Takes the leading elements while a condition holds.
+	 *
+	 * @param predicate Condition the leading elements satisfy.
+	 * @returns A deferred sequence with the leading matching elements.
+	 */
+	takeWhile(predicate: Predicate<T>): Sequence<T> {
+		const source: Iterable<T> = this.source;
+
+		return SequenceCollection.deferred(
+			{
+				*[Symbol.iterator](): Iterator<T> {
+					for (const item of source) {
+						if (!predicate(item)) return;
+
+						yield item;
+					}
+				},
+			},
+			UNKNOWN_COUNT,
+		);
+	}
+
+	/**
+	 * Bypasses the leading elements while a condition holds.
+	 *
+	 * @param predicate Condition the bypassed leading elements satisfy.
+	 * @returns A deferred sequence with the remaining elements.
+	 */
+	skipWhile(predicate: Predicate<T>): Sequence<T> {
+		const source: Iterable<T> = this.source;
+
+		return SequenceCollection.deferred(
+			{
+				*[Symbol.iterator](): Iterator<T> {
+					let skipping = true;
+
+					for (const item of source) {
+						// Once one element has failed the condition, the rest are
+						// kept whether or not they would have satisfied it.
+						if (skipping && predicate(item)) continue;
+
+						skipping = false;
+						yield item;
+					}
+				},
+			},
+			UNKNOWN_COUNT,
+		);
+	}
+
+	/**
+	 * Takes the trailing elements of the sequence.
+	 *
+	 * @param count Maximum amount of trailing elements to take.
+	 * @returns A deferred sequence with at most `count` trailing elements.
+	 */
+	takeLast(count: number): Sequence<T> {
+		const source: Iterable<T> = this.source;
+		const knownCount: () => number | null = this.countResolver;
+
+		return SequenceCollection.deferred(
+			{
+				*[Symbol.iterator](): Iterator<T> {
+					if (count <= 0) return;
+
+					// A window of `count`, not the whole sequence: the source may
+					// be far larger than memory and only its tail is wanted.
+					const window: T[] = [];
+
+					for (const item of source) {
+						window.push(item);
+
+						if (window.length > count) window.shift();
+					}
+
+					yield* window;
+				},
+			},
+			() => {
+				const total: number | null = knownCount();
+
+				return total === null ? null : Math.min(total, Math.max(count, 0));
+			},
+		);
+	}
+
+	/**
+	 * Drops the trailing elements of the sequence.
+	 *
+	 * @param count Amount of trailing elements to drop.
+	 * @returns A deferred sequence without the last `count` elements.
+	 */
+	skipLast(count: number): Sequence<T> {
+		const source: Iterable<T> = this.source;
+		const knownCount: () => number | null = this.countResolver;
+
+		return SequenceCollection.deferred(
+			{
+				*[Symbol.iterator](): Iterator<T> {
+					if (count <= 0) {
+						yield* source;
+						return;
+					}
+
+					// Each element is held back until `count` more have arrived,
+					// which is what proves it was not one of the last ones.
+					const pending: T[] = [];
+
+					for (const item of source) {
+						pending.push(item);
+
+						if (pending.length > count) yield pending.shift() as T;
+					}
+				},
+			},
+			() => {
+				const total: number | null = knownCount();
+
+				return total === null ? null : Math.max(0, total - Math.max(count, 0));
+			},
+		);
+	}
+
+	/**
+	 * Splits the sequence into arrays of a fixed size.
+	 *
+	 * @param size Amount of elements per chunk.
+	 * @returns A deferred sequence of arrays.
+	 * @throws {Error} When `size` is not a positive integer.
+	 */
+	chunk(size: number): Sequence<T[]> {
+		if (!Number.isInteger(size) || size < 1)
+			throw new Error(
+				`chunk(${size}) needs a positive integer: a chunk of no elements would never end the sequence.`,
+			);
+
+		const source: Iterable<T> = this.source;
+		const knownCount: () => number | null = this.countResolver;
+
+		return SequenceCollection.deferred<T[]>(
+			{
+				*[Symbol.iterator](): Iterator<T[]> {
+					let current: T[] = [];
+
+					for (const item of source) {
+						current.push(item);
+
+						if (current.length === size) {
+							yield current;
+							current = [];
+						}
+					}
+
+					// Whatever is left is yielded short rather than padded: a
+					// padded chunk could not be told from a full one.
+					if (current.length > 0) yield current;
+				},
+			},
+			() => {
+				const total: number | null = knownCount();
+
+				return total === null ? null : Math.ceil(total / size);
+			},
+		);
+	}
+
+	/**
+	 * Reverses the order of the sequence.
+	 *
+	 * @returns A deferred sequence with the elements in reverse order.
+	 */
+	reverse(): Sequence<T> {
+		const source: Iterable<T> = this.source;
+		const knownCount: () => number | null = this.countResolver;
+
+		return SequenceCollection.deferred(
+			{
+				*[Symbol.iterator](): Iterator<T> {
+					// The one operator here that cannot stream: the last element is
+					// needed first. Deferred still, so nothing is read until the
+					// result is iterated.
+					const materialized: T[] = SequenceCollection.materialize(source);
+
+					for (let index = materialized.length - 1; index >= 0; index--)
+						yield materialized[index];
+				},
+			},
+			knownCount,
+		);
+	}
+
+	/**
+	 * Merges two sequences position by position.
+	 *
+	 * @template S Type of the elements of the second sequence.
+	 * @template R Type of the produced results.
+	 * @param second Sequence merged with this one.
+	 * @param resultSelector Projection merging each pair.
+	 * @returns A deferred sequence with one result per pair.
+	 */
+	zip<S, R>(
+		second: Iterable<S>,
+		resultSelector: ResultSelector<T, S, R>,
+	): Sequence<R> {
+		const source: Iterable<T> = this.source;
+		const knownCount: () => number | null = this.countResolver;
+
+		return SequenceCollection.deferred<R>(
+			{
+				*[Symbol.iterator](): Iterator<R> {
+					const left: Iterator<T> = source[Symbol.iterator]();
+					const right: Iterator<S> = second[Symbol.iterator]();
+
+					for (;;) {
+						const a: IteratorResult<T> = left.next();
+						const b: IteratorResult<S> = right.next();
+
+						// Whichever runs out first ends it, so the longer sequence
+						// is never pulled past the pairing.
+						if (a.done === true || b.done === true) return;
+
+						yield resultSelector(a.value, b.value);
+					}
+				},
+			},
+			() => {
+				const left: number | null = knownCount();
+				const right: number | null =
+					SequenceCollection.resolveKnownCount(second);
+
+				return left === null || right === null ? null : Math.min(left, right);
+			},
+		);
+	}
+
+	/**
+	 * Adds elements to the end of the sequence.
+	 *
+	 * @param values Elements appended, in the order given.
+	 * @returns A deferred sequence ending with those elements.
+	 */
+	append(...values: readonly T[]): Sequence<T> {
+		return this.concat(values);
+	}
+
+	/**
+	 * Adds elements to the start of the sequence.
+	 *
+	 * @param values Elements prepended, in the order given.
+	 * @returns A deferred sequence starting with those elements.
+	 */
+	prepend(...values: readonly T[]): Sequence<T> {
+		const source: Iterable<T> = this.source;
+		const knownCount: () => number | null = this.countResolver;
+
+		return SequenceCollection.deferred(
+			{
+				*[Symbol.iterator](): Iterator<T> {
+					yield* values;
+					yield* source;
+				},
+			},
+			() => {
+				const total: number | null = knownCount();
+
+				return total === null ? null : total + values.length;
+			},
+		);
 	}
 }

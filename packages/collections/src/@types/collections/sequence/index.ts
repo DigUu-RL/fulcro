@@ -385,4 +385,129 @@ export interface Sequence<T> extends Iterable<T> {
 	 * @returns `true` when both yield equal elements in the same order.
 	 */
 	sequenceEqual(second: Iterable<T>): boolean;
+
+	/**
+	 * Removes the elements that also appear in another sequence.
+	 *
+	 * The result is distinct, as it is for {@link Sequence.union} and
+	 * {@link Sequence.intersect}: these are set operations, and a set does not
+	 * hold an element twice.
+	 *
+	 * `second` is read in full on the first element pulled, because there is no
+	 * way to know whether an element is absent from it without having seen all
+	 * of it.
+	 *
+	 * @param second Sequence whose elements are removed from this one.
+	 * @returns A deferred sequence with the distinct elements not in `second`.
+	 */
+	except(second: Iterable<T>): Sequence<T>;
+
+	/**
+	 * Appends another sequence to this one, keeping every element.
+	 *
+	 * Unlike {@link Sequence.union}, duplicates survive — this is
+	 * concatenation, not a set operation.
+	 *
+	 * @param second Sequence appended to this one.
+	 * @returns A deferred sequence with the elements of both, in order.
+	 */
+	concat(second: Iterable<T>): Sequence<T>;
+
+	/**
+	 * Takes the leading elements while a condition holds.
+	 *
+	 * Stops at the first element that fails, and never looks past it — which is
+	 * what separates this from {@link Sequence.where}, where a later match
+	 * would still be kept.
+	 *
+	 * @param predicate Condition the leading elements satisfy.
+	 * @returns A deferred sequence with the leading matching elements.
+	 */
+	takeWhile(predicate: Predicate<T>): Sequence<T>;
+
+	/**
+	 * Bypasses the leading elements while a condition holds.
+	 *
+	 * Once an element fails the condition it and everything after it is kept,
+	 * whether or not they would have satisfied it.
+	 *
+	 * @param predicate Condition the bypassed leading elements satisfy.
+	 * @returns A deferred sequence with the remaining elements.
+	 */
+	skipWhile(predicate: Predicate<T>): Sequence<T>;
+
+	/**
+	 * Takes the trailing elements of the sequence.
+	 *
+	 * Holds at most `count` elements at a time rather than the whole sequence,
+	 * so it stays usable on a source far larger than memory.
+	 *
+	 * @param count Maximum amount of trailing elements to take. Values lower
+	 * than or equal to `0` produce an empty sequence.
+	 * @returns A deferred sequence with at most `count` trailing elements.
+	 */
+	takeLast(count: number): Sequence<T>;
+
+	/**
+	 * Drops the trailing elements of the sequence.
+	 *
+	 * @param count Amount of trailing elements to drop.
+	 * @returns A deferred sequence without the last `count` elements.
+	 */
+	skipLast(count: number): Sequence<T>;
+
+	/**
+	 * Splits the sequence into arrays of a fixed size.
+	 *
+	 * The final chunk holds whatever is left and may be shorter; no padding is
+	 * added, since a padded chunk would be indistinguishable from a full one.
+	 *
+	 * @param size Amount of elements per chunk.
+	 * @returns A deferred sequence of arrays.
+	 * @throws {Error} When `size` is not a positive integer.
+	 */
+	chunk(size: number): Sequence<T[]>;
+
+	/**
+	 * Reverses the order of the sequence.
+	 *
+	 * The only operator here that cannot stay lazy: the last element is needed
+	 * first, so the source is read in full before anything is yielded.
+	 *
+	 * @returns A deferred sequence with the elements in reverse order.
+	 */
+	reverse(): Sequence<T>;
+
+	/**
+	 * Merges two sequences position by position.
+	 *
+	 * Stops as soon as either runs out, so the result is as long as the shorter
+	 * of the two and the longer one is never read past that point.
+	 *
+	 * @template S Type of the elements of the second sequence.
+	 * @template R Type of the produced results.
+	 * @param second Sequence merged with this one.
+	 * @param resultSelector Projection merging each pair.
+	 * @returns A deferred sequence with one result per pair.
+	 */
+	zip<S, R>(
+		second: Iterable<S>,
+		resultSelector: ResultSelector<T, S, R>,
+	): Sequence<R>;
+
+	/**
+	 * Adds elements to the end of the sequence.
+	 *
+	 * @param values Elements appended, in the order given.
+	 * @returns A deferred sequence ending with those elements.
+	 */
+	append(...values: readonly T[]): Sequence<T>;
+
+	/**
+	 * Adds elements to the start of the sequence.
+	 *
+	 * @param values Elements prepended, in the order given.
+	 * @returns A deferred sequence starting with those elements.
+	 */
+	prepend(...values: readonly T[]): Sequence<T>;
 }
