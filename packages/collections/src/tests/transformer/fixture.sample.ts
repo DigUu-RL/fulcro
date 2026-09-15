@@ -48,6 +48,36 @@ export const explicit = (): unknown =>
 export const chained = (): unknown =>
 	SequenceCollection.from(values).ofType<string>().cast<string>().toArray();
 
-/** Unresolvable: an interface has no runtime form, so this is left alone. */
+/** An interface, written out as the checks its properties imply. */
 export const accounts = (): unknown =>
 	SequenceCollection.from(values).ofType<Account>().toArray();
+
+/** A record with an optional field, a nested object and an array. */
+export interface Order {
+	readonly id: number;
+	readonly note?: string;
+	readonly tags: string[];
+	readonly customer: { readonly email: string };
+	readonly status: 'pending' | 'paid';
+	readonly placedAt: Date;
+}
+
+export const orders = (): unknown =>
+	SequenceCollection.from(values).ofType<Order>().toArray();
+
+/** A tuple of fixed length. */
+export const pairs = (): unknown =>
+	SequenceCollection.from(values).ofType<[string, number]>().toArray();
+
+/** A union of literals. */
+export const statuses = (): unknown =>
+	SequenceCollection.from(values).ofType<'pending' | 'paid'>().toArray();
+
+/** Recursive: deliberately out of scope, so this one is still refused. */
+export interface Tree {
+	readonly value: number;
+	readonly children: Tree[];
+}
+
+export const trees = (): unknown =>
+	SequenceCollection.from(values).ofType<Tree>().toArray();

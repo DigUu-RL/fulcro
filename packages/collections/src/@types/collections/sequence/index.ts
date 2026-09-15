@@ -8,6 +8,8 @@ import {
 	ResultSelector,
 	Selector,
 	TypeNames,
+	TypeTest,
+	TypeToken,
 } from '@/@types';
 import { Group } from '@/@types/collections/group';
 import { OrderedSequence } from '@/@types/collections/ordered';
@@ -889,6 +891,24 @@ export interface Sequence<T> extends Iterable<T> {
 	ofType<R>(): Sequence<Narrowed<T, R>>;
 
 	/**
+	 * Keeps only the elements passing a test over their shape.
+	 *
+	 * What the transformer emits for a type with no single runtime token, and
+	 * writable by hand for one it refuses:
+	 *
+	 * ```ts
+	 * values.ofType<Account>({
+	 * 	matches: (value) => typeof (value as Account)?.id === 'number',
+	 * });
+	 * ```
+	 *
+	 * @template R Type a passing value is taken to be.
+	 * @param test Test over the shape of each element.
+	 * @returns A deferred sequence narrowed to that type.
+	 */
+	ofType<R>(test: TypeTest<R>): Sequence<Narrowed<T, R>>;
+
+	/**
 	 * Re-types the whole sequence, refusing to do so if any element disagrees.
 	 *
 	 * The counterpart of {@link Sequence.ofType}: where that one filters, this
@@ -931,6 +951,16 @@ export interface Sequence<T> extends Iterable<T> {
 	 * @throws {TypeError} When an element is not of that type, as it is read.
 	 */
 	cast<R>(): Sequence<R>;
+
+	/**
+	 * Re-types the whole sequence, refusing any element failing a shape test.
+	 *
+	 * @template R Type every element must be.
+	 * @param test Test over the shape of each element.
+	 * @returns A deferred sequence typed as that type.
+	 * @throws {TypeError} When an element fails the test, as it is read.
+	 */
+	cast<R>(test: TypeTest<R>): Sequence<R>;
 
 	/**
 	 * Takes the elements with the largest keys, in descending order.

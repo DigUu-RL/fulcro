@@ -2,6 +2,8 @@ import typescript from 'typescript';
 
 import { RewriteContext } from '@fulcro/transform-core';
 
+import { buildStructuralTest } from '@/transformer/structural';
+
 /**
  * Turning a written type into a runtime test.
  *
@@ -130,8 +132,10 @@ const isValueInScope = (
 export const resolveTypeToken = (
 	typeArgument: typescript.TypeNode,
 	call: typescript.CallExpression,
-	{ checker, factory }: RewriteContext,
+	context: RewriteContext,
 ): Resolution => {
+	const { checker, factory } = context;
+
 	const type: typescript.Type = checker.getTypeFromTypeNode(typeArgument);
 
 	const primitive: string | null = primitiveNameOf(type);
@@ -164,8 +168,22 @@ export const resolveTypeToken = (
 		typescript.TypeFormatFlags.NoTruncation,
 	);
 
+	// No single thing to point at, but the type still has a shape, and the
+	// checker knows it completely from here. Tried last: a token is cheaper to
+	// run and stricter than any shape check, so it wins wherever it exists.
+	const structural: typescript.Expression | null = buildStructuralTest(
+		type,
+		written,
+		call,
+		context,
+	);
+
+	if (structural !== null) {
+		return { kind: 'resolved', token: structural };
+	}
+
 	return {
 		kind: 'unsupported',
-		reason: `${written} has no runtime representation, so nothing can test for it. Only primitives and classes can be resolved; pass a type guard to \`where\` instead.`,
+		reason: `${written} cannot be checked at runtime. Recursive types, index signatures and unresolved generics are not written out; pass a test of your own, or use \`where\` with a predicate.`,
 	};
 };

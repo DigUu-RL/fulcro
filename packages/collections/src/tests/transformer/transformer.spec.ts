@@ -99,17 +99,6 @@ describe('ofType at compile time', () => {
 	it('should leave a call that was already given a token alone', () => {
 		expect(emitted).toMatch(/\.ofType\(['"]number['"]\)/);
 	});
-
-	it('should resolve every call it claims', () => {
-		// One unresolved call is expected — the interface below — and exactly
-		// one. A second would mean a form that should have been rewritten was
-		// quietly skipped, which is the failure this whole suite exists to catch
-		// and the one that looks like nothing at compile time.
-		const unresolved: number = (emitted.match(/\.(ofType|cast)\(\)/g) ?? [])
-			.length;
-
-		expect(unresolved).toBe(1);
-	});
 });
 
 describe('cast at compile time', () => {
@@ -122,15 +111,96 @@ describe('cast at compile time', () => {
 	});
 });
 
-describe('what it refuses to resolve', () => {
-	it('should leave an interface untouched, for the runtime to refuse', () => {
-		// An interface has no runtime form, so there is no honest token to emit.
-		// The call is left as written and reaches a runtime that throws naming
-		// both reasons it could have arrived unresolved.
-		const accounts: string =
-			emitted.slice(emitted.indexOf('export const accounts')) ?? '';
+describe('an interface, written out as checks', () => {
+	/**
+	 * Reads back the line the fixture emitted for one export.
+	 *
+	 * @param name Name of the exported constant.
+	 * @returns That line of the emitted JavaScript.
+	 */
+	const lineFor = (name: string): string => {
+		const line: string | undefined = emitted
+			.split('\n')
+			.find((candidate) => candidate.includes(`export const ${name} `));
 
-		expect(accounts).toContain('.ofType()');
+		if (line === undefined) {
+			throw new Error(`The fixture emitted nothing for ${name}.`);
+		}
+
+		return line;
+	};
+
+	it('should check each declared property', () => {
+		const line: string = lineFor('accounts');
+
+		expect(line).toContain('typeof v === "object"');
+		expect(line).toContain('typeof v.id === "number"');
+	});
+
+	it('should reject null before reading a property off it', () => {
+		// `typeof null` is `'object'`, so without this the check would go on to
+		// read a property of null and throw instead of answering.
+		expect(lineFor('accounts')).toContain('v !== null');
+	});
+
+	it('should allow an optional property to be absent', () => {
+		expect(lineFor('orders')).toContain(
+			'(v.note === undefined || typeof v.note === "string")',
+		);
+	});
+
+	it('should check every element of an array, not just that it is one', () => {
+		expect(lineFor('orders')).toContain(
+			'Array.isArray(v.tags) && v.tags.every(e0 => typeof e0 === "string")',
+		);
+	});
+
+	it('should descend into a nested object', () => {
+		expect(lineFor('orders')).toContain('typeof v.customer.email === "string"');
+	});
+
+	it('should compare a union of literals against each one', () => {
+		expect(lineFor('orders')).toContain(
+			'(v.status === "pending" || v.status === "paid")',
+		);
+	});
+
+	it('should use instanceof for a built-in class', () => {
+		// `Date` is declared as an interface beside a separate constructor, so
+		// the class flag alone misses it — and the shape path then writes out a
+		// check for all fifty of its methods, including a symbol-keyed one whose
+		// compiler spelling cannot appear in source at all.
+		expect(lineFor('orders')).toContain('v.placedAt instanceof Date');
+		expect(lineFor('orders')).not.toContain('__@');
+	});
+
+	it('should pin the length of a tuple', () => {
+		expect(lineFor('pairs')).toContain('v.length === 2');
+		expect(lineFor('pairs')).toContain('typeof v[0] === "string"');
+		expect(lineFor('pairs')).toContain('typeof v[1] === "number"');
+	});
+
+	it('should carry the type as written, for the error cast throws', () => {
+		expect(lineFor('accounts')).toContain('name: "Account"');
+	});
+});
+
+describe('what it still refuses', () => {
+	it('should refuse a type that contains itself', () => {
+		// Writing a recursive type out does not terminate. The named-function
+		// form that would handle it is deliberately out of scope, so the call is
+		// left for the runtime to reject rather than half-checked.
+		expect(emitted).toMatch(/export const trees [^\n]*\.ofType\(\)/);
+	});
+
+	it('should resolve everything else it was given', () => {
+		// Exactly one unresolved call in the whole fixture. A second would mean a
+		// form was quietly skipped, which is the failure that looks like nothing
+		// at compile time.
+		const unresolved: number = (emitted.match(/\.(ofType|cast)\(\)/g) ?? [])
+			.length;
+
+		expect(unresolved).toBe(1);
 	});
 });
 

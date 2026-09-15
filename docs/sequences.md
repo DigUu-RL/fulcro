@@ -190,16 +190,77 @@ import { vite as fulcroCollections } from '@fulcro/collections/unplugin';
 Both can sit beside `@fulcro/reflect`'s plugin. Each rewrites only the calls it
 can trace back to its own package, and neither knows the other exists.
 
-**Only a primitive or a class can be resolved**, because only those leave
-something behind to test for. An interface does not:
+#### An interface works too — it gets written out
+
+A primitive becomes a `typeof` name and a class becomes its constructor. An
+interface has neither, but it still has a **shape**, and the compiler knows it
+completely. So the transformer writes the check out:
 
 ```ts
-interface Account {
+interface Order {
 	id: number;
+	note?: string;
+	tags: string[];
+	customer: { email: string };
+	status: 'pending' | 'paid';
+	placedAt: Date;
 }
 
-values.ofType<Account>(); // throws
+orders.ofType<Order>();
 ```
+
+becomes, near enough:
+
+```js
+orders.ofType({
+	name: 'Order',
+	matches: (v) =>
+		v !== null &&
+		typeof v === 'object' &&
+		typeof v.id === 'number' &&
+		(v.note === undefined || typeof v.note === 'string') &&
+		Array.isArray(v.tags) &&
+		v.tags.every((e) => typeof e === 'string') &&
+		v.customer !== null &&
+		typeof v.customer === 'object' &&
+		typeof v.customer.email === 'string' &&
+		(v.status === 'pending' || v.status === 'paid') &&
+		v.placedAt instanceof Date,
+});
+```
+
+Which makes `cast<T>()` a **validator for untrusted data, derived from the type
+itself**:
+
+```ts
+const orders = SequenceCollection.from(await response.json())
+	.cast<Order>()
+	.toArray();
+```
+
+`response.json()` hands back `any`. That line is the last place the data is
+unchecked — and the schema is the interface you already wrote, so it cannot
+drift out of step with it the way a hand-maintained one does.
+
+Covered: primitives, literals, unions, intersections, objects and interfaces
+nested to any depth, optional properties, arrays (every element, not a sample),
+fixed-length tuples, classes, and `Date`, `Map`, `Set`, `RegExp` and friends by
+`instanceof`.
+
+**Extra properties are accepted**, because structural typing accepts them. An
+object carrying more than `Order` requires is still an `Order`, and rejecting it
+would make this disagree with the compiler that produced it.
+
+#### What it refuses, and why that is the point
+
+A check that answers "yes" to the wrong thing is worse than no check: it is
+false confidence exactly where the data is least trustworthy. So anything the
+transformer cannot write out completely, it refuses — there is no partial or
+optimistic check anywhere in it.
+
+Refused: types that contain themselves, index signatures, unresolved generics,
+and a class brought in with `import type`, which is erased before the emitted
+code could reference it.
 
 ```text
 Error: ofType<T>() was not resolved at compile time. Either the
@@ -211,12 +272,27 @@ typeof name, or use where() with a predicate.
 The message names both causes on purpose: from inside the running program they
 are indistinguishable, and guessing between them would be worse than saying so.
 It throws when the chain is **built**, not when it is first read — a call that
-was never resolved is a build wired wrong, not data gone wrong, and there is
-nothing to gain by finding out later.
+was never resolved is a build wired wrong, not data gone wrong.
 
-One more thing the transformer cannot rescue: a class brought in with
-`import type` is erased before the code runs, so it is refused too, with a
-message telling you to import it normally.
+For a refused type, write the check yourself and pass it in the same shape:
+
+```ts
+values.ofType<Tree>({
+	name: 'Tree',
+	matches: (v) => isTree(v),
+});
+```
+
+#### What it costs
+
+A shape check is **O(size of the value)** per element, not a constant: every
+field of every record, and every element of every array inside it. That is the
+honest price of actually checking, and on a hundred thousand records with nested
+line items it is real work — measured at about what the same check written by
+hand costs, which is the most that can be asked of it.
+
+It short-circuits on the first clause that fails, and it is lazy like everything
+else, so `cast<Order>().take(5)` validates five records rather than all of them.
 
 ### Taking a slice
 

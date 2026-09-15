@@ -335,6 +335,120 @@ describe('ofType and cast', () => {
 	});
 });
 
+describe('the shape check the transformer writes', () => {
+	/** The record the generated check is written for. */
+	interface Shaped {
+		readonly id: number;
+		readonly region: string;
+		readonly status: 'pending' | 'paid' | 'shipped';
+		readonly total: number;
+		readonly placedAt: Date;
+		readonly items: readonly LineItem[];
+		readonly reference: string | null;
+	}
+
+	it('should read its source exactly once', () => {
+		let pulled = 0;
+
+		SequenceCollection.from(counted(orders, () => pulled++))
+			.ofType<Shaped>()
+			.toArray();
+
+		expect(pulled).toBe(SIZE);
+	});
+
+	it('should stop where a bounded chain stops', () => {
+		// The check is the expensive part, so it matters that a chain asking for
+		// five records does not validate a hundred thousand.
+		let pulled = 0;
+
+		SequenceCollection.from(counted(orders, () => pulled++))
+			.ofType<Shaped>()
+			.take(5)
+			.toArray();
+
+		expect(pulled).toBe(5);
+	});
+
+	it('should cost about what the same check written by hand costs', () => {
+		// A ratio, not a budget: what is asserted is that the generated code is
+		// not doing something pathological, and a loaded machine scales both
+		// sides. The hand-written version below checks exactly the same clauses.
+		const byHand = (value: unknown): boolean => {
+			const order = value as Shaped;
+
+			return (
+				order !== null &&
+				typeof order === 'object' &&
+				typeof order.id === 'number' &&
+				typeof order.region === 'string' &&
+				(order.status === 'pending' ||
+					order.status === 'paid' ||
+					order.status === 'shipped') &&
+				typeof order.total === 'number' &&
+				order.placedAt instanceof Date &&
+				Array.isArray(order.items) &&
+				order.items.every(
+					(item) =>
+						item !== null &&
+						typeof item === 'object' &&
+						typeof item.sku === 'string' &&
+						typeof item.quantity === 'number',
+				) &&
+				(order.reference === null || typeof order.reference === 'string')
+			);
+		};
+
+		const handStart: number = performance.now();
+		const byHandKept: number = orders.filter(byHand).length;
+		const hand: number = Math.max(performance.now() - handStart, 1);
+
+		const generatedStart: number = performance.now();
+		const generatedKept: number = SequenceCollection.from(orders)
+			.ofType<Shaped>()
+			.count();
+		const generated: number = performance.now() - generatedStart;
+
+		// Both have to agree on the answer before their costs mean anything.
+		expect(generatedKept).toBe(byHandKept);
+		expect(generatedKept).toBe(SIZE);
+		expect(generated).toBeLessThan(hand * 5);
+	});
+
+	it('should stay within a generous ceiling over a hundred thousand records', () => {
+		const started: number = performance.now();
+
+		const kept: number = SequenceCollection.from(orders)
+			.ofType<Shaped>()
+			.count();
+
+		// A smoke ceiling. Validating every field of every record, including the
+		// nested line items, is real work — this exists to catch the regression
+		// that turns it into minutes, not to detect a ten percent slowdown.
+		expect(performance.now() - started).toBeLessThan(3_000);
+		expect(kept).toBe(SIZE);
+	});
+
+	it('should reject on the first clause that fails, not after all of them', () => {
+		// The generated check is a chain of `&&`, so a value failing its first
+		// clause must not go on to read the rest. Counted through a getter that
+		// should never run.
+		let readLater = 0;
+
+		const wrong = {
+			id: 'not a number',
+			get region(): string {
+				readLater++;
+				return 'north';
+			},
+		};
+
+		SequenceCollection.from([wrong]).ofType<Shaped>().toArray();
+
+		expect(readLater).toBe(0);
+	});
+});
+
 describe('tap', () => {
 	it('should add no traversal of its own', () => {
 		let pulled = 0;

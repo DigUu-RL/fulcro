@@ -314,39 +314,147 @@ describe('ofType and cast, written as a type', () => {
 		).toEqual(['root']);
 	});
 
-	it('should refuse a type with no runtime form', () => {
-		// An interface leaves nothing behind to test for, so the transformer has
-		// no honest token to emit and leaves the call alone. What arrives at the
-		// runtime is indistinguishable from a build with no plugin at all, so the
-		// message has to name both.
-		const values: unknown[] = [{ id: 1 }];
+	it('should accept an interface, checked by its shape', () => {
+		// No token exists for an interface, so the transformer writes out the
+		// checks its properties imply instead.
+		const values: unknown[] = [{ id: 1 }, 'not an account', { id: 'wrong' }];
 
-		expect(() => SequenceCollection.from(values).ofType<Account>()).toThrow(
-			/was not resolved at compile time/,
-		);
+		const accounts = SequenceCollection.from(values)
+			.ofType<Account>()
+			.select((account) => account.id);
+
+		expect(accounts.toArray()).toEqual([1]);
 	});
 
-	it('should say both reasons a call could have arrived unresolved', () => {
-		const values: unknown[] = [{ id: 1 }];
+	it('should refuse a type that contains itself', () => {
+		interface Tree {
+			readonly value: number;
+			readonly children: Tree[];
+		}
 
-		expect(() => SequenceCollection.from(values).cast<Account>()).toThrow(
-			/transformer did not run.*or T has no runtime representation/s,
+		// Writing a recursive type out does not terminate, so it stays refused —
+		// and refused loudly, which is the whole contract.
+		const values: unknown[] = [{ value: 1, children: [] }];
+
+		expect(() => SequenceCollection.from(values).ofType<Tree>()).toThrow(
+			/cannot be checked at runtime|was not resolved at compile time/,
 		);
 	});
 
 	it('should refuse before reading anything', () => {
 		// A wiring error, not a data error: there is nothing to gain by letting
 		// the chain be built and failing on the first read instead.
+		interface Tree {
+			readonly value: number;
+			readonly children: Tree[];
+		}
+
 		let pulled = 0;
 		const source = {
 			*[Symbol.iterator](): Iterator<unknown> {
 				pulled++;
-				yield { id: 1 };
+				yield { value: 1, children: [] };
 			},
 		};
 
-		expect(() => SequenceCollection.from(source).ofType<Account>()).toThrow();
+		expect(() => SequenceCollection.from(source).ofType<Tree>()).toThrow();
 		expect(pulled).toBe(0);
+	});
+});
+
+describe('the shape check the transformer writes', () => {
+	/**
+	 * A record with one of everything worth checking: a required primitive, an
+	 * optional one, an array, a nested object, a union of literals and a class.
+	 */
+	interface Order {
+		readonly id: number;
+		readonly note?: string;
+		readonly tags: string[];
+		readonly customer: { readonly email: string };
+		readonly status: 'pending' | 'paid';
+		readonly placedAt: Date;
+	}
+
+	/** A value that satisfies every clause, for the cases below to spoil. */
+	const valid = (): Record<string, unknown> => ({
+		id: 1,
+		tags: ['a'],
+		customer: { email: 'a@b.c' },
+		status: 'pending',
+		placedAt: new Date(),
+	});
+
+	/**
+	 * Runs one value through the check.
+	 *
+	 * @param value Value being tested.
+	 * @returns Whether the check kept it.
+	 */
+	const accepts = (value: unknown): boolean =>
+		SequenceCollection.from([value]).ofType<Order>().count() === 1;
+
+	it('should accept a value that satisfies every clause', () => {
+		expect(accepts(valid())).toBe(true);
+	});
+
+	it('should accept an optional property being absent', () => {
+		expect(accepts({ ...valid(), note: undefined })).toBe(true);
+		expect(accepts({ ...valid(), note: 'a note' })).toBe(true);
+	});
+
+	it('should accept extra properties, as structural typing does', () => {
+		// Rejecting them would make this disagree with the compiler that produced
+		// it: an object with more than `Order` requires is still an `Order`.
+		expect(accepts({ ...valid(), somethingElse: 42 })).toBe(true);
+	});
+
+	// The direction that matters. A check that answers `true` too readily passes
+	// every test above while being worthless, so each clause is spoiled on its
+	// own and has to be the one that rejects.
+	it.each([
+		['a missing required property', () => ({ ...valid(), id: undefined })],
+		['a required property of the wrong type', () => ({ ...valid(), id: '1' })],
+		['an optional property of the wrong type', () => ({ ...valid(), note: 7 })],
+		['an array that is not one', () => ({ ...valid(), tags: 'a' })],
+		['an array with a wrong element', () => ({ ...valid(), tags: ['a', 2] })],
+		['a nested object missing its field', () => ({ ...valid(), customer: {} })],
+		[
+			'a nested object of the wrong type',
+			() => ({ ...valid(), customer: 'a@b.c' }),
+		],
+		['a value outside the union', () => ({ ...valid(), status: 'shipped' })],
+		[
+			'a class field that is not an instance',
+			() => ({
+				...valid(),
+				placedAt: '2020-01-01',
+			}),
+		],
+		['null', () => null],
+		['a primitive', () => 'an order'],
+		['an array', () => []],
+	])('should reject %s', (_label, build) => {
+		expect(accepts(build())).toBe(false);
+	});
+
+	it('should not throw on null while reading a property off it', () => {
+		// `typeof null` is `'object'`, so a check that tested the type before
+		// ruling out null would read a property of null and crash rather than
+		// answering.
+		expect(() => accepts(null)).not.toThrow();
+	});
+
+	it('should name the type in the error cast throws', () => {
+		expect(() =>
+			SequenceCollection.from([valid(), 'not an order'])
+				.cast<Order>()
+				.toArray(),
+		).toThrow(/cast\('Order'\)/);
+	});
+
+	it('should check every element of an array, not just the first', () => {
+		expect(accepts({ ...valid(), tags: ['a', 'b', 'c', 4] })).toBe(false);
 	});
 });
 

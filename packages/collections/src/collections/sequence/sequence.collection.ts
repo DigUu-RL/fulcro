@@ -8,6 +8,8 @@ import {
 	ResultSelector,
 	Selector,
 	TypeNames,
+	TypeTest,
+	TypeToken,
 } from '@/@types';
 import { Group } from '@/@types/collections/group';
 import { OrderedSequence } from '@/@types/collections/ordered';
@@ -2199,7 +2201,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 */
 	ofType<R>(): Sequence<Narrowed<T, R>>;
 
-	ofType(type?: keyof TypeNames | Constructor<unknown>): Sequence<unknown> {
+	ofType(type?: TypeToken): Sequence<unknown> {
 		const source: Iterable<T> = this.source;
 
 		// Resolved now rather than on the first read, and deliberately: an
@@ -2251,7 +2253,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 */
 	cast<R>(): Sequence<R>;
 
-	cast(type?: keyof TypeNames | Constructor<unknown>): Sequence<unknown> {
+	cast(type?: TypeToken): Sequence<unknown> {
 		const source: Iterable<T> = this.source;
 		const matches: Predicate<unknown> = SequenceCollection.resolveTypeTest(
 			type,
@@ -2260,9 +2262,9 @@ export class SequenceCollection<T> implements Sequence<T> {
 
 		// Present by now: the line above is what refuses a missing token, and it
 		// throws rather than returning.
-		const present = type as keyof TypeNames | Constructor<unknown>;
-		const expected: string =
-			typeof present === 'string' ? present : present.name;
+		const expected: string = SequenceCollection.describeExpected(
+			type as TypeToken,
+		);
 		const knownCount: () => number | null = this.countResolver;
 
 		return SequenceCollection.deferred<unknown>(
@@ -2305,7 +2307,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 * @returns A predicate telling whether a value is of that type.
 	 */
 	private static resolveTypeTest(
-		type: keyof TypeNames | Constructor<unknown> | undefined,
+		type: TypeToken | undefined,
 		operator: string,
 	): Predicate<unknown> {
 		// The type argument form, arriving unresolved. From here the two ways
@@ -2317,6 +2319,16 @@ export class SequenceCollection<T> implements Sequence<T> {
 			throw new Error(
 				`${operator}<T>() was not resolved at compile time. Either the @fulcro/collections transformer did not run over this file, or T has no runtime representation — an interface leaves nothing to test for, so pass a class, a typeof name, or use where() with a predicate.`,
 			);
+		}
+
+		// A shape test, which is what the transformer emits for a type with no
+		// single runtime token. Checked before the constructor case because a
+		// class is a function and this is an object, so the two can never be
+		// confused either way round.
+		if (SequenceCollection.isTypeTest(type)) {
+			const { matches } = type;
+
+			return (item): boolean => matches(item);
 		}
 
 		if (typeof type !== 'string') {
@@ -2331,6 +2343,32 @@ export class SequenceCollection<T> implements Sequence<T> {
 		}
 
 		return (item): boolean => typeof item === type;
+	}
+
+	/**
+	 * Tells whether a token is a shape test rather than a name or a class.
+	 *
+	 * @param type Token handed to the operator.
+	 * @returns `true` when the token carries its own test.
+	 */
+	private static isTypeTest(type: TypeToken): type is TypeTest<unknown> {
+		return (
+			typeof type === 'object' &&
+			type !== null &&
+			typeof (type as TypeTest<unknown>).matches === 'function'
+		);
+	}
+
+	/**
+	 * Names what a token was asking for, for the error `cast` throws.
+	 *
+	 * @param type Token handed to the operator.
+	 * @returns The type as written, where it is known.
+	 */
+	private static describeExpected(type: TypeToken): string {
+		if (SequenceCollection.isTypeTest(type)) return type.name ?? 'the type';
+
+		return typeof type === 'string' ? type : type.name;
 	}
 
 	/**

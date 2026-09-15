@@ -57,6 +57,55 @@ export interface TypeNames {
 export type Constructor<T> = abstract new (...args: never[]) => T;
 
 /**
+ * A test deciding whether a value is of some type, by looking at its shape.
+ *
+ * This is what the transformer of this package emits for a type that has no
+ * single runtime token — an interface, an object literal type, a union — after
+ * reading the type at compile time and writing out the checks its properties
+ * imply.
+ *
+ * Deliberately an object rather than a bare function. A class is a function
+ * too, and telling one from a predicate at runtime is guesswork that breaks on
+ * transpiled classes; a wrapper makes the two impossible to confuse.
+ *
+ * It is also usable by hand, and is the escape hatch for a type the transformer
+ * refuses: write the check yourself and the operators treat it exactly the same.
+ *
+ * @template R Type a passing value is taken to be.
+ */
+export interface TypeTest<R> {
+	/**
+	 * Decides whether a value is an `R`.
+	 *
+	 * @param value Value being tested.
+	 * @returns `true` when the value is of that type.
+	 */
+	readonly matches: (value: unknown) => boolean;
+
+	/**
+	 * Name of the type, for the error `cast` throws.
+	 *
+	 * The transformer fills it in with the type as written, so the message names
+	 * `Account` rather than something generic.
+	 */
+	readonly name?: string;
+
+	/** Present so a structural test cannot be mistaken for anything else. */
+	readonly __fulcroTypeTest?: true;
+}
+
+/**
+ * Everything `ofType` and `cast` accept as "the type to look for".
+ *
+ * Three forms, in increasing order of what they can express: the name `typeof`
+ * answers with, a class to test with `instanceof`, or a test over the shape.
+ *
+ * @template R Type being looked for.
+ */
+export type TypeToken<R = unknown> =
+	keyof TypeNames | Constructor<R> | TypeTest<R>;
+
+/**
  * Narrows `T` to the members assignable to `R`, keeping `R` when the two have
  * nothing in common.
  *
