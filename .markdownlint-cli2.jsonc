@@ -1,0 +1,18 @@
+// Which files `npm run lint:md` reads. The rules themselves live in
+// .markdownlint.jsonc, which markdownlint-cli2 picks up on its own.
+{
+	"globs": ["**/*.md"],
+
+	"ignores": [
+		"node_modules",
+		"**/dist",
+
+		// Written by changesets from the changeset files, then re-wrapped by
+		// Prettier. Every complaint here is a property of that format rather
+		// than of anything anyone wrote: each release repeats `### Minor
+		// Changes`, which is MD024, and Prettier wraps prose at 80 columns
+		// inside a list item indented by two, which is MD013 at 82. Editing
+		// either back would last until the next `changeset version`.
+		"**/CHANGELOG.md",
+	],
+}

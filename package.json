@@ -13,6 +13,7 @@
 		"test:watch": "npm run build && vitest --configLoader native",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
+		"lint:md": "npx --yes markdownlint-cli2",
 		"changeset": "changeset",
 		"version-packages": "changeset version && npm install --package-lock-only",
 		"release": "npm run build && changeset publish"
