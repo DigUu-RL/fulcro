@@ -119,7 +119,11 @@ written to by merging a pull request from `dev`.
 ```text
 dev  ──┬── CI on every push
        │
+       ├── Prepare release ── version bump pushed back to dev
+       │
        └── pull request ──▶ main ── CI ──▶ Release ──▶ npm
+              │
+              └── Release readiness: refuses shipped changes with no bump
 ```
 
 ## Releasing
@@ -128,13 +132,24 @@ Changes that should reach a release are described with
 [changesets](https://github.com/changesets/changesets), on `dev`:
 
 ```sh
-npx changeset              # describe what changed and how far it moves
-npm run version-packages   # apply the pending changesets to the manifests
-git commit -am "Release"   # review the diff first
+npx changeset   # describe what changed and how far it moves
 ```
 
-Then open a pull request to `main`. **Merging it publishes**, once CI has passed
-on `main`.
+When it is time to cut a release, run the **Prepare release** workflow from the
+Actions tab. It applies the pending changesets to the manifests, refreshes the
+lockfile and pushes the result to `dev`, then prints the resulting versions and
+a link to open the pull request.
+
+Open that pull request yourself. **This matters:** anything done with
+`GITHUB_TOKEN` does not trigger further workflows — GitHub refuses, to stop a
+run from setting itself off forever — so a pull request opened by the workflow
+would run neither CI nor `Release readiness`. A person opening it is what makes
+the checks run.
+
+**Merging it publishes**, once CI has passed on `main`.
+
+`npm run version-packages` still does the same thing locally, for when that is
+easier.
 
 Publishing is irreversible — a name is taken for good and a version can never be
 reused — so automating it needs a reason to be safe, and there is one:
