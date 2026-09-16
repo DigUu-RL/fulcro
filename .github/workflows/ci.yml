@@ -1,9 +1,14 @@
 name: CI
 
+# Work happens on `dev` and reaches `main` only through a pull request, so both
+# branches are watched. The run on `main` is not redundant with the one on the
+# pull request: it is the run the release waits on, and it sees the merge commit
+# rather than the merge preview.
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   pull_request:
+    branches: [main]
 
 # A newer push to the same branch makes the run already in flight pointless.
 concurrency:

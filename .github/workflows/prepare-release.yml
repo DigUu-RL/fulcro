@@ -1,0 +1,123 @@
+name: Prepare release
+
+# Applies the pending changesets to the manifests and pushes the result to
+# `dev`, so the version bump is already in place when the pull request to
+# `main` is opened — and the release that runs after the merge has something to
+# publish.
+#
+# **It deliberately stops short of opening that pull request.** Anything done
+# with `GITHUB_TOKEN` does not trigger further workflows: GitHub refuses, to
+# stop a run from setting itself off forever, and there is no opting out. A pull
+# request opened here would therefore run neither CI nor `Release readiness`,
+# and would be merged with none of the gates this repository exists to keep. The
+# link at the end of the run opens it in one click, and a person opening it is
+# what makes the checks run.
+#
+# Manual rather than automatic on every push, because when to cut a release is a
+# decision, and because this pushes to the branch being worked on.
+on:
+  workflow_dispatch:
+
+permissions:
+  # Pushes the version commit back to `dev`.
+  contents: write
+
+jobs:
+  version:
+    name: apply the pending changesets
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: dev
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      # Answered before anything is changed, so a run with nothing to do says so
+      # rather than producing an empty commit.
+      - name: Check for pending changesets
+        id: pending
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+
+          const pending = fs
+            .readdirSync('.changeset')
+            .filter((file) => file.endsWith('.md') && file !== 'README.md');
+
+          const summary = pending.length
+            ? `${pending.length} pending changeset(s): ${pending.join(', ')}`
+            : 'No pending changesets.';
+
+          console.log(summary);
+
+          fs.appendFileSync(
+            process.env.GITHUB_OUTPUT,
+            `count=${pending.length}\n`,
+          );
+          NODE
+
+      - name: Apply them
+        if: steps.pending.outputs.count != '0'
+        run: npm run version-packages
+
+      - name: Commit and push
+        if: steps.pending.outputs.count != '0'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          # `version-packages` also refreshes the lockfile, so everything it
+          # touched goes in together.
+          git add -A
+
+          # Nothing to commit is not a failure: the changesets could have been
+          # applied already and pushed by hand.
+          if git diff --cached --quiet; then
+            echo 'The manifests were already up to date.'
+            exit 0
+          fi
+
+          git commit -m 'Version packages'
+          git push origin HEAD:dev
+
+      - name: Say what to do next
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const { execSync } = require('node:child_process');
+
+          const versions = execSync('npm pkg get name version --workspaces --json', {
+            encoding: 'utf8',
+          });
+
+          const lines = Object.values(JSON.parse(versions)).map(
+            (pkg) => `| \`${pkg.name}\` | ${pkg.version} |`,
+          );
+
+          const repository = process.env.GITHUB_REPOSITORY;
+
+          fs.appendFileSync(
+            process.env.GITHUB_STEP_SUMMARY,
+            [
+              '## Versions on `dev`',
+              '',
+              '| Package | Version |',
+              '| --- | --- |',
+              ...lines,
+              '',
+              `[Open the pull request to \`main\`](https://github.com/${repository}/compare/main...dev?expand=1)`,
+              '',
+              'Opening it yourself is what makes CI and `Release readiness` run:',
+              'a pull request created by this workflow would trigger neither.',
+              'Merging it publishes whatever versions are new to the registry.',
+            ].join('\n'),
+          );
+          NODE

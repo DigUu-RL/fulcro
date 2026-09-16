@@ -1,9 +1,22 @@
 name: Release
 
-# Deliberately manual. Publishing is irreversible — a name is taken for good and
-# a version can never be reused — so it is never something a merge does on its
-# own. Version the packages locally with `npm run version-packages`, review the
-# manifests and changelogs that produces, commit, and then run this.
+# Runs when CI has finished successfully on `main`, which in practice means a
+# pull request from `dev` has just been merged.
+#
+# Publishing is irreversible — a name is taken for good and a version can never
+# be reused — so automating it needs a reason to be safe, and there is one:
+# `changeset publish` only publishes versions that are **not already on the
+# registry**. A merge carrying no version bump therefore publishes nothing at
+# all. What decides whether a release happens is the version in the manifests,
+# which is reviewed in the pull request like any other change, and not the act
+# of merging.
+#
+# Gated on the whole CI matrix rather than on this workflow's own test run.
+# Those are not the same thing: the matrix covers two Node lines and two
+# operating systems, and a failure on one of them has been Windows-only before
+# now. The build and test steps below stay as a second line of defence, since a
+# run that reaches the publish step must not depend on having read the status of
+# another workflow correctly.
 #
 # This cannot publish a package for the very first time. Trusted publishing is
 # configured on a package's own settings page, and a package only exists once
@@ -13,6 +26,13 @@ name: Release
 # README. From the second onwards, this workflow is the only thing that needs
 # publish rights, and it holds none of its own.
 on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+  # Kept as an escape hatch: a release that failed after CI had already passed
+  # would otherwise need an empty commit to retry.
   workflow_dispatch:
 
 permissions:
@@ -27,8 +47,20 @@ jobs:
     name: publish to npm
     runs-on: ubuntu-latest
 
+    # `workflow_run` fires whatever CI concluded, failure included, so the
+    # conclusion has to be read rather than assumed. A manual dispatch has no
+    # such event to read and is allowed through on its own.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
     steps:
       - uses: actions/checkout@v7
+        with:
+          # The exact commit CI passed on, not whatever `main` points at by now.
+          # A second merge landing while this runs would otherwise publish code
+          # nothing had tested.
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
 
       - uses: actions/setup-node@v7
         with:
@@ -137,5 +169,8 @@ jobs:
       - name: Publish
         run: npx changeset publish
 
+      # `--tags` rather than `--follow-tags`. The checkout above pins an explicit
+      # commit, so this runs on a detached HEAD, and `--follow-tags` would try to
+      # push the current branch as well — which is not one.
       - name: Push the tags
-        run: git push --follow-tags
+        run: git push --tags
