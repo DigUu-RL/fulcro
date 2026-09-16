@@ -3,6 +3,7 @@ import {
 	AsyncAction,
 	AsyncOptionalSelector,
 	AsyncPredicate,
+	AsyncResultSelector,
 	AsyncSelector,
 	ConcurrencyOptions,
 	Constructor,
@@ -14,6 +15,19 @@ import {
 	TypeToken,
 } from '@/@types';
 import { AsyncSequence } from '@/@types/collections/async';
+import { Group } from '@/@types/collections/group';
+import { Sequence } from '@/@types/collections/sequence';
+import { createGroup } from '@/collections/factories';
+// Imported through the barrel rather than the class file, because loading it is
+// what registers the factories `createGroup` resolves through.
+//
+// This is the one edge from the asynchronous half to the synchronous one, and
+// it is deliberate: `groupAdjacent` and `groupJoin` hand back the same `Group`
+// and `Sequence` the synchronous operators do, since a run and a set of matches
+// are both already in hand and nothing about them is waiting. The cost is that
+// a bundle importing only `@fulcro/collections/async` now carries the
+// synchronous sequence as well.
+import { SequenceCollection } from '@/collections/sequence';
 import { assertConcurrency, mapConcurrent } from '@/functions/concurrency';
 import { TopWindow } from '@/functions/ranking';
 import {
@@ -1012,6 +1026,1139 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	 * @param action Action executed for each element.
 	 * @returns A deferred sequence with the same elements.
 	 */
+	/**
+	 * Sums the numeric values of the sequence.
+	 *
+	 * @param selector Optional projection returning the value of each element.
+	 * @param options Cancellation for this consumption.
+	 * @returns The total, or `0` when nothing arrived.
+	 */
+	async sum(
+		selector?: AsyncSelector<T, number>,
+		options?: TerminalOptions,
+	): Promise<number> {
+		let total = 0;
+
+		for await (const item of this.source) {
+			AsyncSequenceCollection.checkAborted(options);
+			total += await AsyncSequenceCollection.valueOf(item, selector);
+		}
+
+		return total;
+	}
+
+	/**
+	 * Averages the numeric values of the sequence.
+	 *
+	 * @param selector Optional projection returning the value of each element.
+	 * @param options Cancellation for this consumption.
+	 * @returns The arithmetic mean.
+	 * @throws {Error} When the sequence is empty.
+	 */
+	async average(
+		selector?: AsyncSelector<T, number>,
+		options?: TerminalOptions,
+	): Promise<number> {
+		let total = 0;
+		let count = 0;
+
+		for await (const item of this.source) {
+			AsyncSequenceCollection.checkAborted(options);
+			total += await AsyncSequenceCollection.valueOf(item, selector);
+			count++;
+		}
+
+		if (count === 0) throw new Error('average() needs at least one element.');
+
+		return total / count;
+	}
+
+	/**
+	 * Finds the smallest numeric value of the sequence.
+	 *
+	 * @param selector Optional projection returning the value of each element.
+	 * @param options Cancellation for this consumption.
+	 * @returns The smallest value.
+	 * @throws {Error} When the sequence is empty.
+	 */
+	async min(
+		selector?: AsyncSelector<T, number>,
+		options?: TerminalOptions,
+	): Promise<number> {
+		return AsyncSequenceCollection.extreme(
+			this.source,
+			selector,
+			options,
+			'min',
+			(candidate, best) => candidate < best,
+		);
+	}
+
+	/**
+	 * Finds the largest numeric value of the sequence.
+	 *
+	 * @param selector Optional projection returning the value of each element.
+	 * @param options Cancellation for this consumption.
+	 * @returns The largest value.
+	 * @throws {Error} When the sequence is empty.
+	 */
+	async max(
+		selector?: AsyncSelector<T, number>,
+		options?: TerminalOptions,
+	): Promise<number> {
+		return AsyncSequenceCollection.extreme(
+			this.source,
+			selector,
+			options,
+			'max',
+			(candidate, best) => candidate > best,
+		);
+	}
+
+	/**
+	 * Finds the element with the smallest key.
+	 *
+	 * @template K Type of the compared key.
+	 * @param keySelector Projection returning the key of each element.
+	 * @param options Cancellation for this consumption.
+	 * @returns The element whose key is smallest.
+	 * @throws {Error} When the sequence is empty.
+	 */
+	async minBy<K>(
+		keySelector: AsyncSelector<T, K>,
+		options?: TerminalOptions,
+	): Promise<T> {
+		return AsyncSequenceCollection.extremeBy(
+			this.source,
+			keySelector,
+			options,
+			'minBy',
+			(candidate, best) => candidate < best,
+		);
+	}
+
+	/**
+	 * Finds the element with the largest key.
+	 *
+	 * @template K Type of the compared key.
+	 * @param keySelector Projection returning the key of each element.
+	 * @param options Cancellation for this consumption.
+	 * @returns The element whose key is largest.
+	 * @throws {Error} When the sequence is empty.
+	 */
+	async maxBy<K>(
+		keySelector: AsyncSelector<T, K>,
+		options?: TerminalOptions,
+	): Promise<T> {
+		return AsyncSequenceCollection.extremeBy(
+			this.source,
+			keySelector,
+			options,
+			'maxBy',
+			(candidate, best) => candidate > best,
+		);
+	}
+
+	/**
+	 * Determines whether the sequence contains a value.
+	 *
+	 * @param value Value looked for.
+	 * @param options Cancellation for this consumption.
+	 * @returns `true` when it was found.
+	 */
+	async contains(value: T, options?: TerminalOptions): Promise<boolean> {
+		for await (const item of this.source) {
+			AsyncSequenceCollection.checkAborted(options);
+
+			// Stops here rather than draining what is left: the answer cannot
+			// change, and the source may not end.
+			if (item === value) return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Returns the only element of the sequence.
+	 *
+	 * @param options Cancellation for this consumption.
+	 * @returns The single element.
+	 * @throws {Error} When the sequence is empty or holds more than one element.
+	 */
+	async single(options?: TerminalOptions): Promise<T> {
+		const only: T | typeof NOT_FOUND = await AsyncSequenceCollection.only(
+			this.source,
+			options,
+			'single',
+		);
+
+		if (only === NOT_FOUND) throw new Error('single() found no element.');
+
+		return only as T;
+	}
+
+	/**
+	 * Returns the only element of the sequence, or `null` when it is empty.
+	 *
+	 * @param options Cancellation for this consumption.
+	 * @returns The single element, or `null`.
+	 * @throws {Error} When the sequence holds more than one element.
+	 */
+	async singleOrNull(options?: TerminalOptions): Promise<T | null> {
+		const only: T | typeof NOT_FOUND = await AsyncSequenceCollection.only(
+			this.source,
+			options,
+			'singleOrNull',
+		);
+
+		return only === NOT_FOUND ? null : (only as T);
+	}
+
+	/**
+	 * Returns the element at a position.
+	 *
+	 * @param index Zero based position.
+	 * @param options Cancellation for this consumption.
+	 * @returns The element.
+	 * @throws {Error} When the index is out of range.
+	 */
+	async elementAt(index: number, options?: TerminalOptions): Promise<T> {
+		const found: T | null = await this.elementAtOrNull(index, options);
+
+		if (found === null) {
+			throw new Error(`elementAt(${index}) is out of range.`);
+		}
+
+		return found;
+	}
+
+	/**
+	 * Determines whether two sequences hold the same elements in the same order.
+	 *
+	 * @param second Sequence compared with this one.
+	 * @param options Cancellation for this consumption.
+	 * @returns `true` when they match.
+	 */
+	async sequenceEqual(
+		second: Iterable<T> | AsyncIterable<T>,
+		options?: TerminalOptions,
+	): Promise<boolean> {
+		// Walked in step and stopped at the first difference, rather than reading
+		// either side to the end to find out.
+		const other = (
+			Symbol.asyncIterator in Object(second)
+				? (second as AsyncIterable<T>)[Symbol.asyncIterator]()
+				: (second as Iterable<T>)[Symbol.iterator]()
+		) as AsyncIterator<T> | Iterator<T>;
+
+		for await (const item of this.source) {
+			AsyncSequenceCollection.checkAborted(options);
+
+			const next = await other.next();
+
+			if (next.done === true || next.value !== item) return false;
+		}
+
+		return (await other.next()).done === true;
+	}
+
+	/**
+	 * Counts how many elements share each key.
+	 *
+	 * @template K Type of the key.
+	 * @param keySelector Projection returning the key of each element.
+	 * @param options Cancellation for this consumption.
+	 * @returns The counts per key.
+	 */
+	async countBy<K>(
+		keySelector: AsyncSelector<T, K>,
+		options?: TerminalOptions,
+	): Promise<Map<K, number>> {
+		const counts = new Map<K, number>();
+
+		for await (const item of this.source) {
+			AsyncSequenceCollection.checkAborted(options);
+
+			const key: K = await keySelector(item);
+
+			counts.set(key, (counts.get(key) ?? 0) + 1);
+		}
+
+		return counts;
+	}
+
+	/**
+	 * Materializes the sequence into a map, one element per key.
+	 *
+	 * @template K Type of the key.
+	 * @template R Type of the stored value.
+	 * @param keySelector Projection returning the key of each element.
+	 * @param elementSelector Optional projection of the stored value.
+	 * @param options Cancellation for this consumption.
+	 * @returns The map.
+	 * @throws {Error} When two elements share a key.
+	 */
+	async toMap<K, R = T>(
+		keySelector: AsyncSelector<T, K>,
+		elementSelector?: AsyncSelector<T, R>,
+		options?: TerminalOptions,
+	): Promise<Map<K, R>> {
+		const mapped = new Map<K, R>();
+
+		for await (const item of this.source) {
+			AsyncSequenceCollection.checkAborted(options);
+
+			const key: K = await keySelector(item);
+
+			if (mapped.has(key)) {
+				throw new Error(
+					`toMap() found two elements with the key ${String(key)}.`,
+				);
+			}
+
+			mapped.set(
+				key,
+				elementSelector === undefined
+					? (item as unknown as R)
+					: await elementSelector(item),
+			);
+		}
+
+		return mapped;
+	}
+
+	/**
+	 * Materializes the sequence into a map, grouping elements by key.
+	 *
+	 * @template K Type of the key.
+	 * @template R Type of the stored value.
+	 * @param keySelector Projection returning the key of each element.
+	 * @param elementSelector Optional projection of the stored value.
+	 * @param options Cancellation for this consumption.
+	 * @returns The map.
+	 */
+	async toLookup<K, R = T>(
+		keySelector: AsyncSelector<T, K>,
+		elementSelector?: AsyncSelector<T, R>,
+		options?: TerminalOptions,
+	): Promise<Map<K, R[]>> {
+		const mapped = new Map<K, R[]>();
+
+		for await (const item of this.source) {
+			AsyncSequenceCollection.checkAborted(options);
+
+			const key: K = await keySelector(item);
+
+			const value: R =
+				elementSelector === undefined
+					? (item as unknown as R)
+					: await elementSelector(item);
+
+			const bucket: R[] | undefined = mapped.get(key);
+
+			if (bucket === undefined) {
+				mapped.set(key, [value]);
+				continue;
+			}
+
+			bucket.push(value);
+		}
+
+		return mapped;
+	}
+
+	/**
+	 * Measures how far the values spread around their mean, over the whole
+	 * population.
+	 *
+	 * @param selector Optional projection returning the value of each element.
+	 * @param options Cancellation for this consumption.
+	 * @returns The population standard deviation.
+	 * @throws {Error} When the sequence is empty.
+	 */
+	async standardDeviation(
+		selector?: AsyncSelector<T, number>,
+		options?: TerminalOptions,
+	): Promise<number> {
+		const { count, squares } = await AsyncSequenceCollection.spread(
+			this.source,
+			selector,
+			options,
+		);
+
+		if (count === 0) {
+			throw new Error('standardDeviation() needs at least one element.');
+		}
+
+		return Math.sqrt(squares / count);
+	}
+
+	/**
+	 * Measures how far the values spread around their mean, treating the
+	 * sequence as a sample.
+	 *
+	 * @param selector Optional projection returning the value of each element.
+	 * @param options Cancellation for this consumption.
+	 * @returns The sample standard deviation.
+	 * @throws {Error} When the sequence holds fewer than two elements.
+	 */
+	async sampleStandardDeviation(
+		selector?: AsyncSelector<T, number>,
+		options?: TerminalOptions,
+	): Promise<number> {
+		const { count, squares } = await AsyncSequenceCollection.spread(
+			this.source,
+			selector,
+			options,
+		);
+
+		if (count < 2) {
+			throw new Error(
+				'sampleStandardDeviation() needs at least two elements: a sample of one says nothing about the spread it was drawn from.',
+			);
+		}
+
+		return Math.sqrt(squares / (count - 1));
+	}
+
+	/**
+	 * Reads the numeric value of an element.
+	 *
+	 * @template V Type of the element.
+	 * @param item Element being read.
+	 * @param selector Optional projection returning its value.
+	 * @returns The value.
+	 */
+	private static async valueOf<V>(
+		item: V,
+		selector?: AsyncSelector<V, number>,
+	): Promise<number> {
+		return selector === undefined
+			? (item as unknown as number)
+			: await selector(item);
+	}
+
+	/**
+	 * Finds the extreme numeric value of a source.
+	 *
+	 * @template V Type of the elements.
+	 * @param source Source being read.
+	 * @param selector Optional projection returning the value of each element.
+	 * @param options Cancellation for this consumption.
+	 * @param operator Name of the calling operator, for the error.
+	 * @param wins Whether a candidate beats the incumbent.
+	 * @returns The extreme value.
+	 * @throws {Error} When the source is empty.
+	 */
+	private static async extreme<V>(
+		source: AsyncIterable<V>,
+		selector: AsyncSelector<V, number> | undefined,
+		options: TerminalOptions | undefined,
+		operator: string,
+		wins: (candidate: number, best: number) => boolean,
+	): Promise<number> {
+		let best: number | typeof NOT_FOUND = NOT_FOUND;
+
+		for await (const item of source) {
+			AsyncSequenceCollection.checkAborted(options);
+
+			const value: number = await AsyncSequenceCollection.valueOf(
+				item,
+				selector,
+			);
+
+			if (best === NOT_FOUND || wins(value, best as number)) best = value;
+		}
+
+		if (best === NOT_FOUND) {
+			throw new Error(`${operator}() needs at least one element.`);
+		}
+
+		return best as number;
+	}
+
+	/**
+	 * Finds the element of a source whose key is extreme.
+	 *
+	 * A tie leaves the incumbent in place, so the first of several equal keys is
+	 * the one returned — the same rule the synchronous operators keep.
+	 *
+	 * @template V Type of the elements.
+	 * @template K Type of the compared key.
+	 * @param source Source being read.
+	 * @param keySelector Projection returning the key of each element.
+	 * @param options Cancellation for this consumption.
+	 * @param operator Name of the calling operator, for the error.
+	 * @param wins Whether a candidate key beats the incumbent.
+	 * @returns The element.
+	 * @throws {Error} When the source is empty.
+	 */
+	private static async extremeBy<V, K>(
+		source: AsyncIterable<V>,
+		keySelector: AsyncSelector<V, K>,
+		options: TerminalOptions | undefined,
+		operator: string,
+		wins: (candidate: K, best: K) => boolean,
+	): Promise<V> {
+		let best: V | typeof NOT_FOUND = NOT_FOUND;
+		let bestKey: K | typeof NOT_FOUND = NOT_FOUND;
+
+		for await (const item of source) {
+			AsyncSequenceCollection.checkAborted(options);
+
+			const key: K = await keySelector(item);
+
+			if (bestKey === NOT_FOUND || wins(key, bestKey as K)) {
+				best = item;
+				bestKey = key;
+			}
+		}
+
+		if (best === NOT_FOUND) {
+			throw new Error(`${operator}() needs at least one element.`);
+		}
+
+		return best as V;
+	}
+
+	/**
+	 * Reads at most two elements, which is all either `single` operator needs.
+	 *
+	 * @template V Type of the elements.
+	 * @param source Source being read.
+	 * @param options Cancellation for this consumption.
+	 * @param operator Name of the calling operator, for the error.
+	 * @returns The only element, or the sentinel when there was none.
+	 * @throws {Error} When a second element arrives.
+	 */
+	private static async only<V>(
+		source: AsyncIterable<V>,
+		options: TerminalOptions | undefined,
+		operator: string,
+	): Promise<V | typeof NOT_FOUND> {
+		let found: V | typeof NOT_FOUND = NOT_FOUND;
+
+		for await (const item of source) {
+			AsyncSequenceCollection.checkAborted(options);
+
+			// Thrown at the second element rather than after counting them all:
+			// the answer is settled, and the source may not end.
+			if (found !== NOT_FOUND) {
+				throw new Error(`${operator}() found more than one element.`);
+			}
+
+			found = item;
+		}
+
+		return found;
+	}
+
+	/**
+	 * Accumulates the count and the squared deviations of a source.
+	 *
+	 * Uses Welford's method, which folds each value in as it arrives rather than
+	 * collecting them to compute a mean and revisiting them — so a stream is
+	 * measured without being held, and the arithmetic stays stable on values far
+	 * from zero, where the textbook formula loses precision to cancellation.
+	 *
+	 * @template V Type of the elements.
+	 * @param source Source being read.
+	 * @param selector Optional projection returning the value of each element.
+	 * @param options Cancellation for this consumption.
+	 * @returns How many values arrived and the sum of their squared deviations.
+	 */
+	private static async spread<V>(
+		source: AsyncIterable<V>,
+		selector: AsyncSelector<V, number> | undefined,
+		options: TerminalOptions | undefined,
+	): Promise<{ count: number; squares: number }> {
+		let count = 0;
+		let mean = 0;
+		let squares = 0;
+
+		for await (const item of source) {
+			AsyncSequenceCollection.checkAborted(options);
+
+			const value: number = await AsyncSequenceCollection.valueOf(
+				item,
+				selector,
+			);
+
+			count++;
+
+			const delta: number = value - mean;
+
+			mean += delta / count;
+			squares += delta * (value - mean);
+		}
+
+		return { count, squares };
+	}
+
+	/**
+	 * Reads a source of either kind into an array.
+	 *
+	 * Used by the operators whose second argument has to be in hand before the
+	 * first element can be yielded. What it holds is bounded by that argument,
+	 * never by the sequence it is called on.
+	 *
+	 * @template V Type of the elements.
+	 * @param source Source being read.
+	 * @returns Everything it produced.
+	 */
+	private static async collect<V>(
+		source: Iterable<V> | AsyncIterable<V>,
+	): Promise<V[]> {
+		const collected: V[] = [];
+
+		if (Symbol.asyncIterator in Object(source)) {
+			for await (const item of source as AsyncIterable<V>) collected.push(item);
+
+			return collected;
+		}
+
+		for (const item of source as Iterable<V>) collected.push(item);
+
+		return collected;
+	}
+
+	/**
+	 * Indexes a source by a key, for the join operators.
+	 *
+	 * @template I Type of the indexed elements.
+	 * @template K Type of the key.
+	 * @param source Source being indexed.
+	 * @param keySelector Projection returning the key of each element.
+	 * @returns The elements grouped by key.
+	 */
+	private static async index<I, K>(
+		source: Iterable<I> | AsyncIterable<I>,
+		keySelector: AsyncSelector<I, K>,
+	): Promise<Map<K, I[]>> {
+		const indexed = new Map<K, I[]>();
+
+		for (const item of await AsyncSequenceCollection.collect(source)) {
+			const key: K = await keySelector(item);
+			const bucket: I[] | undefined = indexed.get(key);
+
+			if (bucket === undefined) {
+				indexed.set(key, [item]);
+				continue;
+			}
+
+			bucket.push(item);
+		}
+
+		return indexed;
+	}
+
+	/**
+	 * Appends values to the end of the sequence.
+	 *
+	 * @param values Values to yield after the source is exhausted.
+	 * @returns A deferred sequence ending with them.
+	 */
+	append(...values: readonly T[]): AsyncSequence<T> {
+		const source: AsyncIterable<T> = this.source;
+
+		return AsyncSequenceCollection.deferred<T>({
+			async *[Symbol.asyncIterator](): AsyncIterator<T> {
+				yield* source;
+				yield* values;
+			},
+		});
+	}
+
+	/**
+	 * Puts values in front of the sequence.
+	 *
+	 * @param values Values to yield first.
+	 * @returns A deferred sequence starting with them.
+	 */
+	prepend(...values: readonly T[]): AsyncSequence<T> {
+		const source: AsyncIterable<T> = this.source;
+
+		return AsyncSequenceCollection.deferred<T>({
+			async *[Symbol.asyncIterator](): AsyncIterator<T> {
+				// Before the source is touched at all, so a stream that has to be
+				// opened is not opened to answer with something already known.
+				yield* values;
+				yield* source;
+			},
+		});
+	}
+
+	/**
+	 * Yields a fallback when the sequence turns out to be empty.
+	 *
+	 * @param fallback Value yielded when nothing arrived.
+	 * @returns A deferred sequence that is never empty.
+	 */
+	defaultIfEmpty(fallback: T): AsyncSequence<T> {
+		const source: AsyncIterable<T> = this.source;
+
+		return AsyncSequenceCollection.deferred<T>({
+			async *[Symbol.asyncIterator](): AsyncIterator<T> {
+				let seen = false;
+
+				for await (const item of source) {
+					seen = true;
+					yield item;
+				}
+
+				if (!seen) yield fallback;
+			},
+		});
+	}
+
+	/**
+	 * Pairs each element with the one before it.
+	 *
+	 * @returns A deferred sequence of consecutive pairs.
+	 */
+	pairwise(): AsyncSequence<[T, T]> {
+		const source: AsyncIterable<T> = this.source;
+
+		return AsyncSequenceCollection.deferred<[T, T]>({
+			async *[Symbol.asyncIterator](): AsyncIterator<[T, T]> {
+				// Held as a sentinel rather than as `undefined`, so an element that
+				// is itself `undefined` still opens a pair.
+				let previous: T | typeof NOT_FOUND = NOT_FOUND;
+
+				for await (const item of source) {
+					if (previous !== NOT_FOUND) yield [previous as T, item];
+
+					previous = item;
+				}
+			},
+		});
+	}
+
+	/**
+	 * Yields overlapping runs of a fixed size.
+	 *
+	 * @param size Amount of elements per window.
+	 * @returns A deferred sequence of windows.
+	 * @throws {Error} When `size` is not a positive integer.
+	 */
+	windowed(size: number): AsyncSequence<T[]> {
+		if (!Number.isInteger(size) || size <= 0) {
+			throw new Error('windowed() takes a positive integer size.');
+		}
+
+		const source: AsyncIterable<T> = this.source;
+
+		return AsyncSequenceCollection.deferred<T[]>({
+			async *[Symbol.asyncIterator](): AsyncIterator<T[]> {
+				const window: T[] = [];
+
+				for await (const item of source) {
+					window.push(item);
+
+					if (window.length > size) window.shift();
+					// Copied on the way out: the window keeps moving, and a consumer
+					// holding what it was handed must not watch it change.
+					if (window.length === size) yield [...window];
+				}
+			},
+		});
+	}
+
+	/**
+	 * Takes the trailing elements of the sequence.
+	 *
+	 * @param count Amount of trailing elements to take.
+	 * @returns A deferred sequence with at most `count` elements.
+	 */
+	takeLast(count: number): AsyncSequence<T> {
+		const source: AsyncIterable<T> = this.source;
+
+		return AsyncSequenceCollection.deferred<T>({
+			async *[Symbol.asyncIterator](): AsyncIterator<T> {
+				if (count <= 0) return;
+
+				const window: T[] = [];
+
+				for await (const item of source) {
+					window.push(item);
+
+					if (window.length > count) window.shift();
+				}
+
+				yield* window;
+			},
+		});
+	}
+
+	/**
+	 * Drops the trailing elements of the sequence.
+	 *
+	 * @param count Amount of trailing elements to drop.
+	 * @returns A deferred sequence without them.
+	 */
+	skipLast(count: number): AsyncSequence<T> {
+		const source: AsyncIterable<T> = this.source;
+
+		return AsyncSequenceCollection.deferred<T>({
+			async *[Symbol.asyncIterator](): AsyncIterator<T> {
+				if (count <= 0) {
+					yield* source;
+					return;
+				}
+
+				// An element is released once `count` more have arrived behind it,
+				// which is what lets this stream where `takeLast` cannot.
+				const held: T[] = [];
+
+				for await (const item of source) {
+					held.push(item);
+
+					if (held.length > count) yield held.shift() as T;
+				}
+			},
+		});
+	}
+
+	/**
+	 * Groups consecutive elements sharing a key.
+	 *
+	 * @template K Type of the grouping key.
+	 * @param keySelector Projection returning the key of each element.
+	 * @returns A deferred sequence of groups.
+	 */
+	groupAdjacent<K>(
+		keySelector: AsyncSelector<T, K>,
+	): AsyncSequence<Group<K, T>> {
+		const source: AsyncIterable<T> = this.source;
+
+		return AsyncSequenceCollection.deferred<Group<K, T>>({
+			async *[Symbol.asyncIterator](): AsyncIterator<Group<K, T>> {
+				let currentKey: K | typeof NOT_FOUND = NOT_FOUND;
+				let run: T[] = [];
+
+				for await (const item of source) {
+					const key: K = await keySelector(item);
+
+					if (currentKey === NOT_FOUND) {
+						currentKey = key;
+						run = [item];
+						continue;
+					}
+
+					if (key === currentKey) {
+						run.push(item);
+						continue;
+					}
+
+					yield createGroup(currentKey as K, run);
+
+					currentKey = key;
+					run = [item];
+				}
+
+				if (currentKey !== NOT_FOUND) yield createGroup(currentKey as K, run);
+			},
+		});
+	}
+
+	/**
+	 * Merges this sequence with another, pairwise.
+	 *
+	 * @template S Type of the elements of the second sequence.
+	 * @template R Type of the merged result.
+	 * @param second Sequence paired with this one.
+	 * @param resultSelector Merges each pair.
+	 * @returns A deferred sequence of merged results.
+	 */
+	zip<S, R>(
+		second: Iterable<S> | AsyncIterable<S>,
+		resultSelector: AsyncResultSelector<T, S, R>,
+	): AsyncSequence<R> {
+		const source: AsyncIterable<T> = this.source;
+
+		return AsyncSequenceCollection.deferred<R>({
+			async *[Symbol.asyncIterator](): AsyncIterator<R> {
+				// Pulled in step rather than one side being read first, which is what
+				// lets an endless source be zipped with a finite one.
+				const other = (
+					Symbol.asyncIterator in Object(second)
+						? (second as AsyncIterable<S>)[Symbol.asyncIterator]()
+						: (second as Iterable<S>)[Symbol.iterator]()
+				) as AsyncIterator<S> | Iterator<S>;
+
+				for await (const item of source) {
+					const next = await other.next();
+
+					if (next.done === true) return;
+
+					yield await resultSelector(item, next.value);
+				}
+			},
+		});
+	}
+
+	/**
+	 * Keeps the elements that are not in another sequence.
+	 *
+	 * @param second Sequence whose elements are excluded.
+	 * @returns A deferred sequence with the distinct remaining elements.
+	 */
+	except(second: Iterable<T> | AsyncIterable<T>): AsyncSequence<T> {
+		const source: AsyncIterable<T> = this.source;
+
+		return AsyncSequenceCollection.deferred<T>({
+			async *[Symbol.asyncIterator](): AsyncIterator<T> {
+				const excluded = new Set(await AsyncSequenceCollection.collect(second));
+				const seen = new Set<T>();
+
+				for await (const item of source) {
+					if (excluded.has(item) || seen.has(item)) continue;
+
+					seen.add(item);
+					yield item;
+				}
+			},
+		});
+	}
+
+	/**
+	 * Keeps the elements whose key is not in another sequence.
+	 *
+	 * @template K Type of the compared key.
+	 * @param second Keys to exclude.
+	 * @param keySelector Projection returning the key of each element.
+	 * @returns A deferred sequence with the remaining elements.
+	 */
+	exceptBy<K>(
+		second: Iterable<K> | AsyncIterable<K>,
+		keySelector: AsyncSelector<T, K>,
+	): AsyncSequence<T> {
+		const source: AsyncIterable<T> = this.source;
+
+		return AsyncSequenceCollection.deferred<T>({
+			async *[Symbol.asyncIterator](): AsyncIterator<T> {
+				const excluded = new Set(await AsyncSequenceCollection.collect(second));
+				const seen = new Set<K>();
+
+				for await (const item of source) {
+					const key: K = await keySelector(item);
+
+					if (excluded.has(key) || seen.has(key)) continue;
+
+					seen.add(key);
+					yield item;
+				}
+			},
+		});
+	}
+
+	/**
+	 * Keeps only the elements present in both sequences.
+	 *
+	 * @param second Sequence intersected with this one.
+	 * @returns A deferred sequence with the distinct common elements.
+	 */
+	intersect(second: Iterable<T> | AsyncIterable<T>): AsyncSequence<T> {
+		const source: AsyncIterable<T> = this.source;
+
+		return AsyncSequenceCollection.deferred<T>({
+			async *[Symbol.asyncIterator](): AsyncIterator<T> {
+				const wanted = new Set(await AsyncSequenceCollection.collect(second));
+				const seen = new Set<T>();
+
+				for await (const item of source) {
+					if (!wanted.has(item) || seen.has(item)) continue;
+
+					seen.add(item);
+					yield item;
+				}
+			},
+		});
+	}
+
+	/**
+	 * Keeps only the elements whose key is present in both.
+	 *
+	 * @template K Type of the compared key.
+	 * @param second Keys to keep.
+	 * @param keySelector Projection returning the key of each element.
+	 * @returns A deferred sequence with the matching elements.
+	 */
+	intersectBy<K>(
+		second: Iterable<K> | AsyncIterable<K>,
+		keySelector: AsyncSelector<T, K>,
+	): AsyncSequence<T> {
+		const source: AsyncIterable<T> = this.source;
+
+		return AsyncSequenceCollection.deferred<T>({
+			async *[Symbol.asyncIterator](): AsyncIterator<T> {
+				const wanted = new Set(await AsyncSequenceCollection.collect(second));
+				const seen = new Set<K>();
+
+				for await (const item of source) {
+					const key: K = await keySelector(item);
+
+					if (!wanted.has(key) || seen.has(key)) continue;
+
+					seen.add(key);
+					yield item;
+				}
+			},
+		});
+	}
+
+	/**
+	 * Concatenates with another sequence, discarding duplicates.
+	 *
+	 * @param second Sequence appended to this one.
+	 * @returns A deferred sequence with the distinct elements of both.
+	 */
+	union(second: Iterable<T> | AsyncIterable<T>): AsyncSequence<T> {
+		const source: AsyncIterable<T> = this.source;
+
+		return AsyncSequenceCollection.deferred<T>({
+			async *[Symbol.asyncIterator](): AsyncIterator<T> {
+				const seen = new Set<T>();
+
+				for await (const item of source) {
+					if (seen.has(item)) continue;
+
+					seen.add(item);
+					yield item;
+				}
+
+				// Read only once this sequence is exhausted, so the second side is
+				// never held while the first is still arriving.
+				for (const item of await AsyncSequenceCollection.collect(second)) {
+					if (seen.has(item)) continue;
+
+					seen.add(item);
+					yield item;
+				}
+			},
+		});
+	}
+
+	/**
+	 * Concatenates with another sequence, discarding duplicate keys.
+	 *
+	 * @template K Type of the compared key.
+	 * @param second Sequence appended to this one.
+	 * @param keySelector Projection returning the key of each element.
+	 * @returns A deferred sequence with one element per distinct key.
+	 */
+	unionBy<K>(
+		second: Iterable<T> | AsyncIterable<T>,
+		keySelector: AsyncSelector<T, K>,
+	): AsyncSequence<T> {
+		const source: AsyncIterable<T> = this.source;
+
+		return AsyncSequenceCollection.deferred<T>({
+			async *[Symbol.asyncIterator](): AsyncIterator<T> {
+				const seen = new Set<K>();
+
+				for await (const item of source) {
+					const key: K = await keySelector(item);
+
+					if (seen.has(key)) continue;
+
+					seen.add(key);
+					yield item;
+				}
+
+				for (const item of await AsyncSequenceCollection.collect(second)) {
+					const key: K = await keySelector(item);
+
+					if (seen.has(key)) continue;
+
+					seen.add(key);
+					yield item;
+				}
+			},
+		});
+	}
+
+	/**
+	 * Correlates this sequence with another by a key.
+	 *
+	 * @template I Type of the inner elements.
+	 * @template K Type of the correlated key.
+	 * @template R Type of the merged result.
+	 * @param innerCollection Sequence joined to this one.
+	 * @param outerKeySelector Key of each element of this sequence.
+	 * @param innerKeySelector Key of each inner element.
+	 * @param resultSelector Merges a matching pair.
+	 * @returns A deferred sequence of merged results.
+	 */
+	join<I, K, R>(
+		innerCollection: Iterable<I> | AsyncIterable<I>,
+		outerKeySelector: AsyncSelector<T, K>,
+		innerKeySelector: AsyncSelector<I, K>,
+		resultSelector: AsyncResultSelector<T, I, R>,
+	): AsyncSequence<R> {
+		const source: AsyncIterable<T> = this.source;
+
+		return AsyncSequenceCollection.deferred<R>({
+			async *[Symbol.asyncIterator](): AsyncIterator<R> {
+				// Indexed once rather than scanned per outer element, which is the
+				// difference between one pass over the inner side and one per
+				// element of a stream that may never end.
+				const indexed = await AsyncSequenceCollection.index(
+					innerCollection,
+					innerKeySelector,
+				);
+
+				for await (const outer of source) {
+					const matches: I[] | undefined = indexed.get(
+						await outerKeySelector(outer),
+					);
+
+					if (matches === undefined) continue;
+
+					for (const inner of matches) yield await resultSelector(outer, inner);
+				}
+			},
+		});
+	}
+
+	/**
+	 * Correlates this sequence with another, grouping the matches.
+	 *
+	 * @template I Type of the inner elements.
+	 * @template K Type of the correlated key.
+	 * @template R Type of the merged result.
+	 * @param innerCollection Sequence joined to this one.
+	 * @param outerKeySelector Key of each element of this sequence.
+	 * @param innerKeySelector Key of each inner element.
+	 * @param resultSelector Merges an element with its matches.
+	 * @returns A deferred sequence of merged results.
+	 */
+	groupJoin<I, K, R>(
+		innerCollection: Iterable<I> | AsyncIterable<I>,
+		outerKeySelector: AsyncSelector<T, K>,
+		innerKeySelector: AsyncSelector<I, K>,
+		resultSelector: (outer: T, inner: Sequence<I>) => R | PromiseLike<R>,
+	): AsyncSequence<R> {
+		const source: AsyncIterable<T> = this.source;
+
+		return AsyncSequenceCollection.deferred<R>({
+			async *[Symbol.asyncIterator](): AsyncIterator<R> {
+				const indexed = await AsyncSequenceCollection.index(
+					innerCollection,
+					innerKeySelector,
+				);
+
+				for await (const outer of source) {
+					const matches: I[] = indexed.get(await outerKeySelector(outer)) ?? [];
+
+					// An ordinary synchronous sequence: the matches are already in
+					// hand, so nothing about them is waiting on anything.
+					yield await resultSelector(outer, SequenceCollection.from(matches));
+				}
+			},
+		});
+	}
+
 	tap(action: AsyncAction<T>): AsyncSequence<T> {
 		const source: AsyncIterable<T> = this.source;
 

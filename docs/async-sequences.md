@@ -216,16 +216,68 @@ so there is nothing to read ahead of time.
 
 ## Operators
 
-| Deferred                               | Terminal                                  |
-| -------------------------------------- | ----------------------------------------- |
-| `where` `select` `selectMany`          | `toArray` `toSet` `count`                 |
-| `take` `skip` `takeWhile` `skipWhile`  | `any` `all`                               |
-| `distinct` `distinctBy` `concat`       | `first` `firstOrNull` `last` `lastOrNull` |
-| `chunk` `scan`                         | `elementAtOrNull` `forEach` `aggregate`   |
-| `choose` `ofType` `cast` `topBy` `tap` |                                           |
+| Deferred                                      | Terminal                                  |
+| --------------------------------------------- | ----------------------------------------- |
+| `where` `select` `selectMany`                 | `toArray` `toSet` `count`                 |
+| `take` `skip` `takeWhile` `skipWhile`         | `any` `all` `contains`                    |
+| `takeLast` `skipLast`                         | `first` `firstOrNull` `last` `lastOrNull` |
+| `distinct` `distinctBy` `concat`              | `single` `singleOrNull`                   |
+| `chunk` `scan` `windowed` `pairwise`          | `elementAt` `elementAtOrNull`             |
+| `append` `prepend` `defaultIfEmpty`           | `sum` `average` `min` `max`               |
+| `choose` `ofType` `cast` `topBy` `tap`        | `minBy` `maxBy` `sequenceEqual`           |
+| `groupAdjacent` `zip`                         | `countBy` `toMap` `toLookup`              |
+| `except` `exceptBy` `intersect` `intersectBy` | `standardDeviation`                       |
+| `union` `unionBy` `join` `groupJoin`          | `sampleStandardDeviation`                 |
+|                                               | `forEach` `aggregate`                     |
 
 Plus the concurrent forms: `selectAwait`, `whereAwait`, `chooseAwait`,
 `topByAwait` and the terminal `forEachAwait`.
+
+### What is deliberately missing
+
+Six operators of the synchronous sequence are **not** here, and their absence is
+the design rather than a gap: `orderBy`, `orderByDescending`, `reverse`,
+`groupBy`, `median` and `percentile`.
+
+Every one of them has to hold the entire source before it can produce anything.
+`orderBy` cannot emit a first element until the last has arrived; `groupBy`
+cannot close a group until it knows no more members are coming. Offering them
+with the same shape as the rest would be a memory trap wearing an ordinary
+operator's clothes — fine on the fixture in a test, ruinous on the feed in
+production.
+
+When you want them, say so out loud:
+
+```ts
+const sorted = SequenceCollection.from(await stream.toArray()).orderBy(
+	(row) => row.name,
+);
+```
+
+`toArray()` is where holding everything becomes visible, which is exactly where
+it belongs.
+
+Two that do stream are worth knowing as the answers to the same questions:
+**`groupAdjacent`** groups consecutive elements and closes a run as soon as the
+key changes, and **`topBy`** ranks without sorting, holding a window rather than
+the stream.
+
+### Which of these actually stream
+
+Most hold nothing beyond a window. Three are worth calling out.
+
+**`takeLast` cannot yield before the source ends** — nothing knows the last ten
+of something still arriving. What it does keep bounded is memory: ten elements,
+not the stream. Its sibling `skipLast` _does_ stream, releasing an element once
+`count` more have arrived behind it.
+
+**The set operations and joins read their argument first**, whole, before
+yielding anything. What that bounds is the sequence you pass in, never the one
+you called it on — so a stream belongs on the outside of a `join`, and a
+reasonably sized collection on the inside.
+
+**`countBy` and `toLookup` grow with the number of distinct keys.** Counting by
+category over an endless feed is fine; counting by identifier is not.
 
 ## Validating a stream as it arrives
 

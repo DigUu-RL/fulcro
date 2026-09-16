@@ -3,6 +3,7 @@ import {
 	AsyncAction,
 	AsyncOptionalSelector,
 	AsyncPredicate,
+	AsyncResultSelector,
 	AsyncSelector,
 	ConcurrencyOptions,
 	Constructor,
@@ -11,6 +12,8 @@ import {
 	TypeNames,
 	TypeTest,
 } from '@/@types';
+import { Group } from '@/@types/collections/group';
+import { Sequence } from '@/@types/collections/sequence';
 
 /**
  * A lazily evaluated sequence whose elements are not all available yet.
@@ -513,4 +516,444 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * @returns A deferred sequence with the same elements.
 	 */
 	tap(action: AsyncAction<T>): AsyncSequence<T>;
+
+	/**
+	 * Appends values to the end of the sequence.
+	 *
+	 * @param values Values to yield after the source is exhausted.
+	 * @returns A deferred sequence ending with them.
+	 */
+	append(...values: readonly T[]): AsyncSequence<T>;
+
+	/**
+	 * Puts values in front of the sequence.
+	 *
+	 * They are yielded before the source is pulled at all, which on a stream
+	 * that has to be opened is the difference between a header arriving now and
+	 * arriving after a round trip.
+	 *
+	 * @param values Values to yield first.
+	 * @returns A deferred sequence starting with them.
+	 */
+	prepend(...values: readonly T[]): AsyncSequence<T>;
+
+	/**
+	 * Yields a fallback when the sequence turns out to be empty.
+	 *
+	 * @param fallback Value yielded when nothing arrived.
+	 * @returns A deferred sequence that is never empty.
+	 */
+	defaultIfEmpty(fallback: T): AsyncSequence<T>;
+
+	/**
+	 * Pairs each element with the one before it.
+	 *
+	 * Holds one element, whatever the length of the stream — the natural way to
+	 * turn arriving readings into differences between them.
+	 *
+	 * @returns A deferred sequence of consecutive pairs, one shorter than the
+	 * source.
+	 */
+	pairwise(): AsyncSequence<[T, T]>;
+
+	/**
+	 * Yields overlapping runs of a fixed size.
+	 *
+	 * Holds `size` elements, not the stream.
+	 *
+	 * @param size Amount of elements per window.
+	 * @returns A deferred sequence of windows.
+	 * @throws {Error} When `size` is not a positive integer.
+	 */
+	windowed(size: number): AsyncSequence<T[]>;
+
+	/**
+	 * Takes the trailing elements of the sequence.
+	 *
+	 * Holds `count` elements rather than the stream, but it cannot yield any of
+	 * them before the source ends — nothing can know the last ten of something
+	 * still arriving. It therefore never completes over an endless source.
+	 *
+	 * @param count Amount of trailing elements to take.
+	 * @returns A deferred sequence with at most `count` elements.
+	 */
+	takeLast(count: number): AsyncSequence<T>;
+
+	/**
+	 * Drops the trailing elements of the sequence.
+	 *
+	 * Unlike {@link AsyncSequence.takeLast} this one streams: it yields an
+	 * element as soon as `count` more have arrived behind it, so it holds a
+	 * window rather than waiting for the end.
+	 *
+	 * @param count Amount of trailing elements to drop.
+	 * @returns A deferred sequence without them.
+	 */
+	skipLast(count: number): AsyncSequence<T>;
+
+	/**
+	 * Groups consecutive elements sharing a key.
+	 *
+	 * The grouping operator that belongs on a stream. A new group opens whenever
+	 * the key changes, so the same key can open several — and only the run in
+	 * hand is held, which is what `groupBy` cannot do and why `groupBy` is not
+	 * offered here.
+	 *
+	 * @template K Type of the grouping key.
+	 * @param keySelector Projection returning the key of each element.
+	 * @returns A deferred sequence of groups, in the order the runs arrived.
+	 */
+	groupAdjacent<K>(
+		keySelector: AsyncSelector<T, K>,
+	): AsyncSequence<Group<K, T>>;
+
+	/**
+	 * Merges this sequence with another, pairwise.
+	 *
+	 * Both sides are pulled in step and it stops at the shorter, so an endless
+	 * source zipped with a finite one finishes.
+	 *
+	 * @template S Type of the elements of the second sequence.
+	 * @template R Type of the merged result.
+	 * @param second Sequence paired with this one.
+	 * @param resultSelector Merges each pair.
+	 * @returns A deferred sequence of merged results.
+	 */
+	zip<S, R>(
+		second: Iterable<S> | AsyncIterable<S>,
+		resultSelector: AsyncResultSelector<T, S, R>,
+	): AsyncSequence<R>;
+
+	/**
+	 * Keeps the elements that are not in another sequence.
+	 *
+	 * The other sequence is read into a set before anything is yielded, so what
+	 * is held is bounded by **it** rather than by the stream. That is the same
+	 * bargain the synchronous operator makes, and it is why passing a stream as
+	 * the argument is a bad idea while being one yourself is fine.
+	 *
+	 * @param second Sequence whose elements are excluded.
+	 * @returns A deferred sequence with the distinct remaining elements.
+	 */
+	except(second: Iterable<T> | AsyncIterable<T>): AsyncSequence<T>;
+
+	/**
+	 * Keeps the elements whose key is not in another sequence.
+	 *
+	 * @template K Type of the compared key.
+	 * @param second Keys to exclude.
+	 * @param keySelector Projection returning the key of each element.
+	 * @returns A deferred sequence with the remaining elements.
+	 */
+	exceptBy<K>(
+		second: Iterable<K> | AsyncIterable<K>,
+		keySelector: AsyncSelector<T, K>,
+	): AsyncSequence<T>;
+
+	/**
+	 * Keeps only the elements present in both sequences.
+	 *
+	 * @param second Sequence intersected with this one.
+	 * @returns A deferred sequence with the distinct common elements.
+	 */
+	intersect(second: Iterable<T> | AsyncIterable<T>): AsyncSequence<T>;
+
+	/**
+	 * Keeps only the elements whose key is present in both.
+	 *
+	 * @template K Type of the compared key.
+	 * @param second Keys to keep.
+	 * @param keySelector Projection returning the key of each element.
+	 * @returns A deferred sequence with the matching elements.
+	 */
+	intersectBy<K>(
+		second: Iterable<K> | AsyncIterable<K>,
+		keySelector: AsyncSelector<T, K>,
+	): AsyncSequence<T>;
+
+	/**
+	 * Concatenates with another sequence, discarding duplicates.
+	 *
+	 * @param second Sequence appended to this one.
+	 * @returns A deferred sequence with the distinct elements of both.
+	 */
+	union(second: Iterable<T> | AsyncIterable<T>): AsyncSequence<T>;
+
+	/**
+	 * Concatenates with another sequence, discarding duplicate keys.
+	 *
+	 * @template K Type of the compared key.
+	 * @param second Sequence appended to this one.
+	 * @param keySelector Projection returning the key of each element.
+	 * @returns A deferred sequence with one element per distinct key.
+	 */
+	unionBy<K>(
+		second: Iterable<T> | AsyncIterable<T>,
+		keySelector: AsyncSelector<T, K>,
+	): AsyncSequence<T>;
+
+	/**
+	 * Correlates this sequence with another by a key, one result per matching
+	 * pair.
+	 *
+	 * The inner side is indexed before anything is yielded — once, not once per
+	 * outer element — so what is held is bounded by the inner sequence while the
+	 * outer one streams past it. Which side to pass matters: the stream belongs
+	 * on the outside.
+	 *
+	 * @template I Type of the inner elements.
+	 * @template K Type of the correlated key.
+	 * @template R Type of the merged result.
+	 * @param innerCollection Sequence joined to this one.
+	 * @param outerKeySelector Key of each element of this sequence.
+	 * @param innerKeySelector Key of each inner element.
+	 * @param resultSelector Merges a matching pair.
+	 * @returns A deferred sequence of merged results.
+	 */
+	join<I, K, R>(
+		innerCollection: Iterable<I> | AsyncIterable<I>,
+		outerKeySelector: AsyncSelector<T, K>,
+		innerKeySelector: AsyncSelector<I, K>,
+		resultSelector: AsyncResultSelector<T, I, R>,
+	): AsyncSequence<R>;
+
+	/**
+	 * Correlates this sequence with another, one result per outer element with
+	 * its matches grouped — a left join.
+	 *
+	 * @template I Type of the inner elements.
+	 * @template K Type of the correlated key.
+	 * @template R Type of the merged result.
+	 * @param innerCollection Sequence joined to this one.
+	 * @param outerKeySelector Key of each element of this sequence.
+	 * @param innerKeySelector Key of each inner element.
+	 * @param resultSelector Merges an element with its matches, which arrive as
+	 * an ordinary synchronous sequence since they are already in hand.
+	 * @returns A deferred sequence of merged results.
+	 */
+	groupJoin<I, K, R>(
+		innerCollection: Iterable<I> | AsyncIterable<I>,
+		outerKeySelector: AsyncSelector<T, K>,
+		innerKeySelector: AsyncSelector<I, K>,
+		resultSelector: (outer: T, inner: Sequence<I>) => R | PromiseLike<R>,
+	): AsyncSequence<R>;
+
+	/**
+	 * Sums the numeric values of the sequence.
+	 *
+	 * @param selector Optional projection returning the value of each element.
+	 * @param options Cancellation for this consumption.
+	 * @returns A promise of the total, or `0` when nothing arrived.
+	 */
+	sum(
+		selector?: AsyncSelector<T, number>,
+		options?: TerminalOptions,
+	): Promise<number>;
+
+	/**
+	 * Averages the numeric values of the sequence.
+	 *
+	 * @param selector Optional projection returning the value of each element.
+	 * @param options Cancellation for this consumption.
+	 * @returns A promise of the arithmetic mean.
+	 * @throws {Error} When the sequence is empty.
+	 */
+	average(
+		selector?: AsyncSelector<T, number>,
+		options?: TerminalOptions,
+	): Promise<number>;
+
+	/**
+	 * Finds the smallest numeric value of the sequence.
+	 *
+	 * @param selector Optional projection returning the value of each element.
+	 * @param options Cancellation for this consumption.
+	 * @returns A promise of the smallest value.
+	 * @throws {Error} When the sequence is empty.
+	 */
+	min(
+		selector?: AsyncSelector<T, number>,
+		options?: TerminalOptions,
+	): Promise<number>;
+
+	/**
+	 * Finds the largest numeric value of the sequence.
+	 *
+	 * @param selector Optional projection returning the value of each element.
+	 * @param options Cancellation for this consumption.
+	 * @returns A promise of the largest value.
+	 * @throws {Error} When the sequence is empty.
+	 */
+	max(
+		selector?: AsyncSelector<T, number>,
+		options?: TerminalOptions,
+	): Promise<number>;
+
+	/**
+	 * Finds the element with the smallest key.
+	 *
+	 * @template K Type of the compared key.
+	 * @param keySelector Projection returning the key of each element.
+	 * @param options Cancellation for this consumption.
+	 * @returns A promise of the element whose key is smallest.
+	 * @throws {Error} When the sequence is empty.
+	 */
+	minBy<K>(
+		keySelector: AsyncSelector<T, K>,
+		options?: TerminalOptions,
+	): Promise<T>;
+
+	/**
+	 * Finds the element with the largest key.
+	 *
+	 * @template K Type of the compared key.
+	 * @param keySelector Projection returning the key of each element.
+	 * @param options Cancellation for this consumption.
+	 * @returns A promise of the element whose key is largest.
+	 * @throws {Error} When the sequence is empty.
+	 */
+	maxBy<K>(
+		keySelector: AsyncSelector<T, K>,
+		options?: TerminalOptions,
+	): Promise<T>;
+
+	/**
+	 * Determines whether the sequence contains a value.
+	 *
+	 * Stops at the first match, so it does not read a stream it has already
+	 * answered from.
+	 *
+	 * @param value Value looked for.
+	 * @param options Cancellation for this consumption.
+	 * @returns A promise of whether it was found.
+	 */
+	contains(value: T, options?: TerminalOptions): Promise<boolean>;
+
+	/**
+	 * Returns the only element of the sequence.
+	 *
+	 * Stops at the second element, since by then the answer is settled.
+	 *
+	 * @param options Cancellation for this consumption.
+	 * @returns A promise of the single element.
+	 * @throws {Error} When the sequence is empty or holds more than one element.
+	 */
+	single(options?: TerminalOptions): Promise<T>;
+
+	/**
+	 * Returns the only element of the sequence, or `null` when it is empty.
+	 *
+	 * @param options Cancellation for this consumption.
+	 * @returns A promise of the single element, or `null`.
+	 * @throws {Error} When the sequence holds more than one element.
+	 */
+	singleOrNull(options?: TerminalOptions): Promise<T | null>;
+
+	/**
+	 * Returns the element at a position.
+	 *
+	 * @param index Zero based position.
+	 * @param options Cancellation for this consumption.
+	 * @returns A promise of the element.
+	 * @throws {Error} When the index is out of range.
+	 */
+	elementAt(index: number, options?: TerminalOptions): Promise<T>;
+
+	/**
+	 * Determines whether two sequences hold the same elements in the same order.
+	 *
+	 * Both are pulled in step and it stops at the first difference, rather than
+	 * reading either to the end to find out.
+	 *
+	 * @param second Sequence compared with this one.
+	 * @param options Cancellation for this consumption.
+	 * @returns A promise of whether they match.
+	 */
+	sequenceEqual(
+		second: Iterable<T> | AsyncIterable<T>,
+		options?: TerminalOptions,
+	): Promise<boolean>;
+
+	/**
+	 * Counts how many elements share each key.
+	 *
+	 * What it holds is bounded by the amount of **distinct keys**, not by the
+	 * stream — which is what makes counting a category over an endless feed
+	 * reasonable and counting an identifier not.
+	 *
+	 * @template K Type of the key.
+	 * @param keySelector Projection returning the key of each element.
+	 * @param options Cancellation for this consumption.
+	 * @returns A promise of the counts per key.
+	 */
+	countBy<K>(
+		keySelector: AsyncSelector<T, K>,
+		options?: TerminalOptions,
+	): Promise<Map<K, number>>;
+
+	/**
+	 * Materializes the sequence into a map, one element per key.
+	 *
+	 * @template K Type of the key.
+	 * @template R Type of the stored value. Defaults to `T`.
+	 * @param keySelector Projection returning the key of each element.
+	 * @param elementSelector Optional projection of the stored value. Pass
+	 * `undefined` to reach `options` without one.
+	 * @param options Cancellation for this consumption.
+	 * @returns A promise of the map.
+	 * @throws {Error} When two elements share a key.
+	 */
+	toMap<K, R = T>(
+		keySelector: AsyncSelector<T, K>,
+		elementSelector?: AsyncSelector<T, R>,
+		options?: TerminalOptions,
+	): Promise<Map<K, R>>;
+
+	/**
+	 * Materializes the sequence into a map, grouping elements by key.
+	 *
+	 * @template K Type of the key.
+	 * @template R Type of the stored value. Defaults to `T`.
+	 * @param keySelector Projection returning the key of each element.
+	 * @param elementSelector Optional projection of the stored value. Pass
+	 * `undefined` to reach `options` without one.
+	 * @param options Cancellation for this consumption.
+	 * @returns A promise of the map.
+	 */
+	toLookup<K, R = T>(
+		keySelector: AsyncSelector<T, K>,
+		elementSelector?: AsyncSelector<T, R>,
+		options?: TerminalOptions,
+	): Promise<Map<K, R[]>>;
+
+	/**
+	 * Measures how far the values spread around their mean, treating the
+	 * sequence as the whole population.
+	 *
+	 * Accumulated in a single pass rather than by collecting the values and
+	 * revisiting them, so a stream is measured without being held.
+	 *
+	 * @param selector Optional projection returning the value of each element.
+	 * @param options Cancellation for this consumption.
+	 * @returns A promise of the population standard deviation.
+	 * @throws {Error} When the sequence is empty.
+	 */
+	standardDeviation(
+		selector?: AsyncSelector<T, number>,
+		options?: TerminalOptions,
+	): Promise<number>;
+
+	/**
+	 * Measures how far the values spread around their mean, treating the
+	 * sequence as a sample of a larger population.
+	 *
+	 * @param selector Optional projection returning the value of each element.
+	 * @param options Cancellation for this consumption.
+	 * @returns A promise of the sample standard deviation.
+	 * @throws {Error} When the sequence holds fewer than two elements.
+	 */
+	sampleStandardDeviation(
+		selector?: AsyncSelector<T, number>,
+		options?: TerminalOptions,
+	): Promise<number>;
 }
