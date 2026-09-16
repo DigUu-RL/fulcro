@@ -9,13 +9,18 @@
 export { as } from '@/functions/utils/as';
 export { defaultOf } from '@/functions/utils/defaultOf';
 export { is, type TypeTest } from '@/functions/utils/is';
+export { keysOf } from '@/functions/utils/keysOf';
 export { type NameAccessor, nameOf } from '@/functions/utils/nameOf';
+export { type PathAccessor, pathOf } from '@/functions/utils/pathOf';
+export { pathsOf, type TypePath } from '@/functions/utils/pathsOf';
 export {
 	ANONYMOUS_NAME,
 	type DeclarationSite,
 	type DeclaredKind,
+	type DeclaredMember,
 	type DeclaredType,
 	type TypeId,
+	type TypeMetadata,
 	type TypeOf,
 	typeOf,
 } from '@/functions/utils/typeOf';
