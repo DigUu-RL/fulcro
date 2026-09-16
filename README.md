@@ -111,10 +111,21 @@ That matters most in `@fulcro/collections`, where the calls are **methods**:
 `ofType` is not imported by anyone, so it is claimed by following the method
 symbol back to the `Sequence` declaration.
 
+## Branches
+
+Work happens on **`dev`**. `main` is what has been released, and it is only ever
+written to by merging a pull request from `dev`.
+
+```text
+dev  ──┬── CI on every push
+       │
+       └── pull request ──▶ main ── CI ──▶ Release ──▶ npm
+```
+
 ## Releasing
 
 Changes that should reach a release are described with
-[changesets](https://github.com/changesets/changesets):
+[changesets](https://github.com/changesets/changesets), on `dev`:
 
 ```sh
 npx changeset              # describe what changed and how far it moves
@@ -122,10 +133,26 @@ npm run version-packages   # apply the pending changesets to the manifests
 git commit -am "Release"   # review the diff first
 ```
 
-Then run the **Release** workflow from the Actions tab. It is manual on purpose:
-publishing is irreversible — a name is taken for good and a version can never be
-reused — so it is never something a merge does on its own. The workflow builds,
-runs the whole suite, and only then publishes.
+Then open a pull request to `main`. **Merging it publishes**, once CI has passed
+on `main`.
+
+Publishing is irreversible — a name is taken for good and a version can never be
+reused — so automating it needs a reason to be safe, and there is one:
+`changeset publish` only publishes versions that are **not already on the
+registry**. A merge carrying no version bump publishes nothing. What decides
+whether a release happens is the version in the manifests, reviewed in the pull
+request like any other change, and not the act of merging.
+
+The release waits on the **whole CI matrix**, not on its own test run: two Node
+lines and two operating systems, because a failure on one of them has been
+Windows-only before now. It then builds and runs the suite again itself, so that
+reaching the publish step never depends on having read another workflow's status
+correctly.
+
+**A pull request that changes shipped code without moving a version is
+refused**, by the `Release readiness` check. That combination is the one way the
+automatic release fails without failing: everything goes green and npm never
+sees the change.
 
 **Four of the five packages share one version**, as a `fixed` group in
 `.changeset/config.json`. `@fulcro/parallel` is outside it and versions on its

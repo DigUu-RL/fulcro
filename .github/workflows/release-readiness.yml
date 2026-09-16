@@ -1,0 +1,109 @@
+name: Release readiness
+
+# Guards the one way the automatic release fails without failing.
+#
+# `changeset publish` only publishes versions that are not already on the
+# registry. That is what makes releasing on merge safe — but it is also why a
+# pull request that changes published source without bumping a version merges
+# green, releases green, and never reaches npm. Nothing goes red; the change
+# simply is not there.
+#
+# So: if a pull request touches code that ships, some package version has to
+# move. Tests, fixtures and everything outside `src` are ignored, since none of
+# them end up in a tarball.
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  versions:
+    name: version bumped for shipped changes
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Both sides of the comparison have to be reachable, and a shallow
+          # clone has only one of them.
+          fetch-depth: 0
+
+      - name: Compare against the base
+        env:
+          BASE: ${{ github.base_ref }}
+        run: |
+          node - <<'NODE'
+          const { execSync } = require('node:child_process');
+
+          const base = `origin/${process.env.BASE}`;
+
+          const run = (command) =>
+            execSync(command, { encoding: 'utf8' }).trim();
+
+          const changed = run(`git diff --name-only ${base}...HEAD`)
+            .split('\n')
+            .filter(Boolean);
+
+          /** Files that end up inside a published tarball. */
+          const shipped = changed.filter(
+            (file) =>
+              /^packages\/[^/]+\/src\//.test(file) && !file.includes('/tests/'),
+          );
+
+          if (shipped.length === 0) {
+            console.log('No shipped source changed; nothing to release.');
+            process.exit(0);
+          }
+
+          /**
+           * Reads the declared version of a package on one side of the diff.
+           *
+           * @param ref Commit to read at.
+           * @param manifest Path of the manifest.
+           * @returns The version, or null when the file is not there.
+           */
+          const versionAt = (ref, manifest) => {
+            try {
+              return JSON.parse(run(`git show ${ref}:${manifest}`)).version;
+            } catch {
+              return null;
+            }
+          };
+
+          const manifests = run('git ls-files packages/*/package.json')
+            .split('\n')
+            .filter(Boolean);
+
+          const bumped = manifests.filter(
+            (manifest) =>
+              versionAt(base, manifest) !== versionAt('HEAD', manifest),
+          );
+
+          if (bumped.length > 0) {
+            console.log(`Versions moved: ${bumped.join(', ')}.`);
+            process.exit(0);
+          }
+
+          console.error(
+            [
+              'This pull request changes code that ships, but no package version',
+              'moved:',
+              '',
+              ...shipped.slice(0, 20).map((file) => `  - ${file}`),
+              shipped.length > 20 ? `  … and ${shipped.length - 20} more` : '',
+              '',
+              'Merging it would release nothing. `changeset publish` skips versions',
+              'that already exist, so the run would go green and npm would never see',
+              'the change.',
+              '',
+              'On `dev`: describe the change with `npx changeset`, apply it with',
+              '`npm run version-packages`, commit, and push.',
+            ]
+              .filter(Boolean)
+              .join('\n'),
+          );
+
+          process.exit(1);
+          NODE
