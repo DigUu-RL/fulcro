@@ -1,5 +1,11 @@
 # @fulcro/reflect
 
+## 0.6.0
+
+### Patch Changes
+
+- @fulcro/transform-core@0.6.0
+
 ## 0.5.0
 
 ### Patch Changes

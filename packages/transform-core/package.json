@@ -1,6 +1,6 @@
 {
 	"name": "@fulcro/transform-core",
-	"version": "0.5.0",
+	"version": "0.6.0",
 	"description": "Shared machinery behind the Fulcro compile time transformers. Installed for you; not meant to be depended on directly.",
 	"keywords": [
 		"typescript",
