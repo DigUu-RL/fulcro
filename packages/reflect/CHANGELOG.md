@@ -1,5 +1,12 @@
 # @fulcro/reflect
 
+## 0.4.0
+
+### Patch Changes
+
+- Updated dependencies [e11c9a5]
+  - @fulcro/transform-core@0.4.0
+
 ## 0.3.0
 
 ### Minor Changes
