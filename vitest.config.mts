@@ -82,7 +82,28 @@ const entryPoints = (): ViteUserConfig => ({
 	test: {
 		name: 'entrypoints',
 		globals: true,
-		include: ['tests/**/*.spec.mts'],
+		// The root of `tests` only: the folders below it are their own projects,
+		// and running them under this name would misdescribe what they check.
+		include: ['tests/*.spec.mts'],
+	},
+});
+
+/**
+ * The compile time plugins applied together, as a consumer using both
+ * libraries applies them.
+ *
+ * Its own project rather than part of the entry point suite: what it checks is
+ * not a published surface but whether two transformers can walk one tree
+ * without treading on each other. It applies them itself, so no plugin is wired
+ * in here.
+ *
+ * @returns The project configuration.
+ */
+const transformers = (): ViteUserConfig => ({
+	test: {
+		name: 'transformers',
+		globals: true,
+		include: ['tests/transformers/**/*.spec.mts'],
 	},
 });
 
@@ -94,6 +115,7 @@ export default defineConfig({
 			project('parallel'),
 			project('reflect'),
 			entryPoints(),
+			transformers(),
 		],
 	},
 });
