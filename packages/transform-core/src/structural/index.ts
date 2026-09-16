@@ -1,6 +1,7 @@
 import typescript from 'typescript';
 
-import { RewriteContext } from '@fulcro/transform-core';
+import { RewriteContext } from '@/shared';
+import { buildExplainer } from '@/structural/explain';
 
 /**
  * Writing out the checks a type implies.
@@ -34,6 +35,53 @@ import { RewriteContext } from '@fulcro/transform-core';
  * `null` from here, and the call is left unresolved for the runtime to reject
  * out loud. There is no partial or optimistic check anywhere in this file.
  */
+
+/**
+ * A test deciding whether a value is of some type, by looking at its shape.
+ *
+ * What this module emits, and what the runtime halves of `ofType`, `cast`, `is`
+ * and `as` receive. Declared here because more than one library consumes it;
+ * each also re-exports a structurally identical one of its own, so nothing a
+ * consumer imports depends on this package.
+ *
+ * @template R Type a passing value is taken to be.
+ */
+export interface TypeTest<R> {
+	/**
+	 * Decides whether a value is an `R`.
+	 *
+	 * @param value Value being tested.
+	 * @returns `true` when the value is of that type.
+	 */
+	readonly matches: (value: unknown) => boolean;
+
+	/**
+	 * Names where a value stopped being an `R`.
+	 *
+	 * Emitted only where the answer is worth the code — a failing `as<T>()`
+	 * needs to say which field was wrong, while a filter only needs yes or no.
+	 * Runs after `matches` has already refused, so the happy path never pays
+	 * for it.
+	 *
+	 * @param value Value that failed.
+	 * @returns The path and reason, or `null` if it cannot say.
+	 */
+	readonly explain?: (value: unknown) => string | null;
+
+	/** Name of the type, as it was written. */
+	readonly name?: string;
+}
+
+/** What a caller wants emitted beyond the yes-or-no check. */
+export interface StructuralOptions {
+	/**
+	 * Also emit a walker naming where a value stopped matching.
+	 *
+	 * Worth it where a refusal has to be actionable — a failing `as<T>()` — and
+	 * not where the answer is only ever used as a filter.
+	 */
+	readonly explain?: boolean;
+}
 
 /** How deep a type may nest before this gives up rather than grinding on. */
 const MAX_DEPTH = 12;
@@ -770,6 +818,7 @@ export const buildStructuralTest = (
 	written: string,
 	at: typescript.Node,
 	context: RewriteContext,
+	options: StructuralOptions = {},
 ): typescript.Expression | null => {
 	const { factory } = context;
 
@@ -793,12 +842,47 @@ export const buildStructuralTest = (
 
 	if (body === null) return null;
 
+	// Built only where it is asked for. A filter needs yes or no, and emitting a
+	// second walker at every one of those call sites would double the code for
+	// a message nobody reads.
+	const explainer: typescript.Expression | null =
+		options.explain === true
+			? buildExplainer(
+					type,
+					written,
+					at,
+					context.checker,
+					factory,
+					// Handed the same yes-or-no builder the fast check uses, so the
+					// two can never disagree about what counts as a match. A separate
+					// generation, since the walker and the check number their own
+					// helpers independently.
+					(inner, value) =>
+						checkFor(
+							inner,
+							value,
+							{
+								context,
+								at,
+								open: new Set(),
+								recursive: generation.recursive,
+								declared: new Map(),
+								counter: generation.counter,
+							},
+							0,
+						),
+				)
+			: null;
+
 	const test: typescript.Expression = factory.createObjectLiteralExpression(
 		[
 			factory.createPropertyAssignment(
 				'name',
 				factory.createStringLiteral(written),
 			),
+			...(explainer === null
+				? []
+				: [factory.createPropertyAssignment('explain', explainer)]),
 			factory.createPropertyAssignment(
 				'matches',
 				factory.createArrowFunction(

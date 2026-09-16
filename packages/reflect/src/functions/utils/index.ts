@@ -6,7 +6,9 @@
  * modules below export more than this — `resolveCallableId`, for one, which
  * `nameOf` needs from `typeOf` and nobody else has any use for.
  */
+export { as } from '@/functions/utils/as';
 export { defaultOf } from '@/functions/utils/defaultOf';
+export { is, type TypeTest } from '@/functions/utils/is';
 export { type NameAccessor, nameOf } from '@/functions/utils/nameOf';
 export {
 	ANONYMOUS_NAME,

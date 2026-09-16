@@ -32,6 +32,11 @@ export {
 	utilityModuleSegment,
 } from '@/shared';
 export {
+	buildStructuralTest,
+	type StructuralOptions,
+	type TypeTest,
+} from '@/structural';
+export {
 	createTransformer,
 	type TransformerFactory,
 	type TransformerOptions,

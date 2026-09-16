@@ -1,8 +1,6 @@
 import typescript from 'typescript';
 
-import { RewriteContext } from '@fulcro/transform-core';
-
-import { buildStructuralTest } from '@/transformer/structural';
+import { buildStructuralTest, RewriteContext } from '@fulcro/transform-core';
 
 /**
  * Turning a written type into a runtime test.
