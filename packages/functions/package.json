@@ -1,6 +1,6 @@
 {
 	"name": "@fulcro/functions",
-	"version": "0.7.0",
+	"version": "0.8.0",
 	"description": "Runtime helpers turning control flow into values: an exhaustive switchFor and a throwing-free tryCatch.",
 	"keywords": [
 		"switch",
