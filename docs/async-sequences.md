@@ -216,13 +216,76 @@ so there is nothing to read ahead of time.
 
 ## Operators
 
-| Deferred                              | Terminal                                  |
-| ------------------------------------- | ----------------------------------------- |
-| `where` `select` `selectMany`         | `toArray` `toSet` `count`                 |
-| `take` `skip` `takeWhile` `skipWhile` | `any` `all`                               |
-| `distinct` `distinctBy` `concat`      | `first` `firstOrNull` `last` `lastOrNull` |
-| `chunk` `scan`                        | `elementAtOrNull` `forEach` `aggregate`   |
+| Deferred                               | Terminal                                  |
+| -------------------------------------- | ----------------------------------------- |
+| `where` `select` `selectMany`          | `toArray` `toSet` `count`                 |
+| `take` `skip` `takeWhile` `skipWhile`  | `any` `all`                               |
+| `distinct` `distinctBy` `concat`       | `first` `firstOrNull` `last` `lastOrNull` |
+| `chunk` `scan`                         | `elementAtOrNull` `forEach` `aggregate`   |
+| `choose` `ofType` `cast` `topBy` `tap` |                                           |
 
-Concurrency — running several elements at once rather than one at a time — is
-the next piece, and has its own operators. Until then, `select` awaits one
-element before pulling the next.
+Plus the concurrent forms: `selectAwait`, `whereAwait`, `chooseAwait`,
+`topByAwait` and the terminal `forEachAwait`.
+
+## Validating a stream as it arrives
+
+`cast<T>()` is here too, and this is where it earns the most. Untrusted data
+usually arrives asynchronously — a paginated API, a file being read, a queue —
+and the synchronous path would mean collecting all of it in memory first, which
+is the thing this type exists to avoid.
+
+```ts
+const orders = AsyncSequenceCollection.from(paginatedOrders()).cast<Order>();
+
+for await (const order of orders) {
+	// `order` is an `Order`, checked, one page at a time.
+}
+```
+
+It refuses **at the element that failed**, so a bad page is caught without the
+rest of the feed being fetched:
+
+```text
+TypeError: cast('Order') found a string at index 2.
+```
+
+`ofType<T>()` is the same check used to filter rather than to refuse. Both take
+a `typeof` name, a class, a test you write, or — with the package's transformer
+wired up — the type itself, interfaces included. The full account of what is
+covered and what is refused is in
+[sequences.md](./sequences.md#validating-by-type-oftypet-and-castt); it behaves
+identically here.
+
+## `topBy` on a stream
+
+Ranking normally means sorting, and sorting means having everything. `topBy`
+keeps a window of the best `count` seen so far instead, so what it holds is
+bounded by `count` and not by the length of the stream:
+
+```ts
+const busiest = await AsyncSequenceCollection.from(everyRequest())
+	.topBy((request) => request.duration, 10)
+	.toArray();
+```
+
+A hundred thousand elements for a top ten holds ten. It does have to reach the
+end before it can answer — nothing can know the top ten of a stream that has not
+finished — so put a `take` in front of an endless one.
+
+`topByAwait` extracts several keys at once, for a key that has to be fetched
+rather than read. Ties still break on **arrival**, which is recorded before the
+keys are extracted: concurrent work finishes in an order that has nothing to do
+with the input, and letting that decide would make the answer depend on which
+lookup happened to be quickest.
+
+## `choose` and `tap`
+
+`choose` projects and filters in one pass, awaiting one element at a time;
+`chooseAwait` runs several projections at once. The concurrency limit counts
+projections **in flight**, not results kept — dropping a result does not free a
+slot, or the limit would quietly depend on how much the projection discards.
+
+`tap` observes without consuming, and **awaits** the action before handing the
+element on. That is deliberate: an action that writes somewhere should hold the
+stream where it is rather than falling behind the elements it is meant to be
+observing.

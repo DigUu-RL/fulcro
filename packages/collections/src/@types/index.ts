@@ -184,6 +184,20 @@ export type AsyncPredicate<T> = (value: T) => boolean | PromiseLike<boolean>;
 export type AsyncSelector<T, R> = (value: T) => R | PromiseLike<R>;
 
 /**
+ * Projects an element into another shape, or into nothing, possibly after
+ * waiting.
+ *
+ * @template T Type of the source element.
+ * @template R Type produced by the projection.
+ * @param value Element being projected.
+ * @returns The projected value, or `null` or `undefined` to skip the element,
+ * or a promise of either.
+ */
+export type AsyncOptionalSelector<T, R> = (
+	value: T,
+) => R | null | undefined | PromiseLike<R | null | undefined>;
+
+/**
  * Consumes an element together with its positional index, possibly after
  * waiting.
  *

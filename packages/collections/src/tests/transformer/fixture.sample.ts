@@ -1,4 +1,5 @@
 import { SequenceCollection } from '@fulcro/collections';
+import { AsyncSequenceCollection } from '@fulcro/collections/async';
 
 /**
  * Fixture compiled by the transformer suite.
@@ -81,3 +82,17 @@ export interface Tree {
 
 export const trees = (): unknown =>
 	SequenceCollection.from(values).ofType<Tree>().toArray();
+
+/**
+ * The asynchronous sequence, which declares the same two operators in a
+ * sibling module — the case a segment naming only `sequence` would miss.
+ */
+const streamed = async function* (): AsyncGenerator<unknown> {
+	yield* values;
+};
+
+export const streamedOrders = (): unknown =>
+	AsyncSequenceCollection.from(streamed()).cast<Order>();
+
+export const streamedStrings = (): unknown =>
+	AsyncSequenceCollection.from(streamed()).ofType<string>();

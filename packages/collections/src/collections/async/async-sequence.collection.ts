@@ -1,13 +1,26 @@
 import {
 	AsyncAccumulator,
 	AsyncAction,
+	AsyncOptionalSelector,
 	AsyncPredicate,
 	AsyncSelector,
 	ConcurrencyOptions,
+	Constructor,
+	Narrowed,
+	Predicate,
 	TerminalOptions,
+	TypeNames,
+	TypeTest,
+	TypeToken,
 } from '@/@types';
 import { AsyncSequence } from '@/@types/collections/async';
 import { assertConcurrency, mapConcurrent } from '@/functions/concurrency';
+import { TopWindow } from '@/functions/ranking';
+import {
+	describeExpected,
+	describeType,
+	resolveTypeTest,
+} from '@/functions/types';
 
 /**
  * Marks the absence of an element, so that one which is itself `null` or
@@ -729,5 +742,291 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 		}
 
 		return accumulator;
+	}
+
+	/**
+	 * Projects and filters in a single pass, keeping what the projection
+	 * produced.
+	 *
+	 * @template R Type produced by the projection.
+	 * @param selector Projection returning a value, or nothing.
+	 * @returns A deferred sequence with the values the projection produced.
+	 */
+	choose<R>(
+		selector: AsyncOptionalSelector<T, R>,
+	): AsyncSequence<NonNullable<R>> {
+		const source: AsyncIterable<T> = this.source;
+
+		return AsyncSequenceCollection.deferred<NonNullable<R>>({
+			async *[Symbol.asyncIterator](): AsyncIterator<NonNullable<R>> {
+				for await (const item of source) {
+					const projected: R | null | undefined = await selector(item);
+
+					// Only nullish results are dropped. `0`, `''` and `false` are
+					// answers like any other.
+					if (projected !== null && projected !== undefined) {
+						yield projected as NonNullable<R>;
+					}
+				}
+			},
+		});
+	}
+
+	/**
+	 * Projects and filters with several projections in flight at once.
+	 *
+	 * @template R Type produced by the projection.
+	 * @param selector Projection returning a value, or nothing.
+	 * @param options How many to run at a time, and whether order is kept.
+	 * @returns A deferred sequence with the values the projection produced.
+	 */
+	chooseAwait<R>(
+		selector: AsyncOptionalSelector<T, R>,
+		options: ConcurrencyOptions,
+	): AsyncSequence<NonNullable<R>> {
+		// Thrown here rather than on first iteration, so a bad limit fails where
+		// it was written instead of somewhere down the chain.
+		assertConcurrency('chooseAwait', options.concurrency);
+
+		const projected: AsyncIterable<R | null | undefined> = mapConcurrent(
+			this.source,
+			selector,
+			options,
+		);
+
+		return AsyncSequenceCollection.deferred<NonNullable<R>>({
+			async *[Symbol.asyncIterator](): AsyncIterator<NonNullable<R>> {
+				// Filtered after the concurrent stage rather than inside it: the
+				// limit counts projections in flight, and dropping a result must
+				// not change how many of those there are.
+				for await (const result of projected) {
+					if (result !== null && result !== undefined) {
+						yield result as NonNullable<R>;
+					}
+				}
+			},
+		});
+	}
+
+	/**
+	 * Keeps only the elements of a given runtime type.
+	 *
+	 * @template K Name of the primitive type.
+	 * @param type Name of the type, a constructor, or a shape test.
+	 * @returns A deferred sequence narrowed to that type.
+	 */
+	ofType<K extends keyof TypeNames>(
+		type: K,
+	): AsyncSequence<Narrowed<T, TypeNames[K]>>;
+
+	/**
+	 * Keeps only the elements built from a given class.
+	 *
+	 * @template R Type produced by the constructor.
+	 * @param type Constructor the elements are tested against.
+	 * @returns A deferred sequence narrowed to that type.
+	 */
+	ofType<R>(type: Constructor<R>): AsyncSequence<Narrowed<T, R>>;
+
+	/**
+	 * Keeps only the elements passing a test over their shape.
+	 *
+	 * @template R Type a passing value is taken to be.
+	 * @param test Test over the shape of each element.
+	 * @returns A deferred sequence narrowed to that type.
+	 */
+	ofType<R>(test: TypeTest<R>): AsyncSequence<Narrowed<T, R>>;
+
+	/**
+	 * Keeps only the elements of the given type, written as a type.
+	 *
+	 * @template R Type to keep.
+	 * @returns A deferred sequence narrowed to that type.
+	 */
+	ofType<R>(): AsyncSequence<Narrowed<T, R>>;
+
+	ofType(type?: TypeToken): AsyncSequence<unknown> {
+		const source: AsyncIterable<T> = this.source;
+
+		// Resolved now rather than on the first read: an unresolved type
+		// argument is a build wired wrong, not data that is wrong.
+		const matches: Predicate<unknown> = resolveTypeTest(type, 'ofType');
+
+		return AsyncSequenceCollection.deferred<unknown>({
+			async *[Symbol.asyncIterator](): AsyncIterator<unknown> {
+				for await (const item of source) {
+					if (matches(item)) yield item;
+				}
+			},
+		});
+	}
+
+	/**
+	 * Re-types the sequence, refusing any element that disagrees.
+	 *
+	 * @template K Name of the primitive type.
+	 * @param type Name of the type every element must have.
+	 * @returns A deferred sequence typed as that type.
+	 */
+	cast<K extends keyof TypeNames>(type: K): AsyncSequence<TypeNames[K]>;
+
+	/**
+	 * Re-types the sequence to a class.
+	 *
+	 * @template R Type produced by the constructor.
+	 * @param type Constructor every element must be an instance of.
+	 * @returns A deferred sequence typed as that type.
+	 */
+	cast<R>(type: Constructor<R>): AsyncSequence<R>;
+
+	/**
+	 * Re-types the sequence, checking each element against a shape test.
+	 *
+	 * @template R Type every element must be.
+	 * @param test Test over the shape of each element.
+	 * @returns A deferred sequence typed as that type.
+	 */
+	cast<R>(test: TypeTest<R>): AsyncSequence<R>;
+
+	/**
+	 * Re-types the sequence to the given type, written as a type.
+	 *
+	 * @template R Type every element must be.
+	 * @returns A deferred sequence typed as that type.
+	 */
+	cast<R>(): AsyncSequence<R>;
+
+	cast(type?: TypeToken): AsyncSequence<unknown> {
+		const source: AsyncIterable<T> = this.source;
+		const matches: Predicate<unknown> = resolveTypeTest(type, 'cast');
+		const expected: string = describeExpected(type as TypeToken);
+
+		return AsyncSequenceCollection.deferred<unknown>({
+			async *[Symbol.asyncIterator](): AsyncIterator<unknown> {
+				let index = 0;
+
+				for await (const item of source) {
+					if (!matches(item)) {
+						// Thrown at the element that failed, so a bad page of a feed
+						// is caught without the rest of it being read.
+						throw new TypeError(
+							`cast('${expected}') found a ${describeType(item)} at index ${index}.`,
+						);
+					}
+
+					index++;
+					yield item;
+				}
+			},
+		});
+	}
+
+	/**
+	 * Takes the elements with the largest keys, in descending order.
+	 *
+	 * @template K Type of the compared key.
+	 * @param keySelector Projection returning the key of each element.
+	 * @param count How many elements to keep.
+	 * @returns A deferred sequence with at most `count` elements.
+	 */
+	topBy<K>(keySelector: AsyncSelector<T, K>, count: number): AsyncSequence<T> {
+		const source: AsyncIterable<T> = this.source;
+
+		return AsyncSequenceCollection.deferred<T>({
+			async *[Symbol.asyncIterator](): AsyncIterator<T> {
+				if (count <= 0) return;
+
+				const window = new TopWindow<T, K>(count);
+				let arrival = 0;
+
+				for await (const item of source) {
+					window.offer(item, await keySelector(item), arrival++);
+				}
+
+				yield* window.drain();
+			},
+		});
+	}
+
+	/**
+	 * The same, extracting several keys at once.
+	 *
+	 * @template K Type of the compared key.
+	 * @param keySelector Projection returning the key of each element.
+	 * @param count How many elements to keep.
+	 * @param options How many keys to extract at a time.
+	 * @returns A deferred sequence with at most `count` elements.
+	 */
+	topByAwait<K>(
+		keySelector: AsyncSelector<T, K>,
+		count: number,
+		options: ConcurrencyOptions,
+	): AsyncSequence<T> {
+		assertConcurrency('topByAwait', options.concurrency);
+
+		const source: AsyncIterable<T> = this.source;
+
+		return AsyncSequenceCollection.deferred<T>({
+			async *[Symbol.asyncIterator](): AsyncIterator<T> {
+				if (count <= 0) return;
+
+				// Numbered before the keys are extracted, not after. Concurrent
+				// work finishes out of order, and ties break on arrival — so
+				// recording the position later would let the order keys happened
+				// to complete in decide which of two equal elements survives.
+				let arrival = 0;
+
+				const numbered: AsyncIterable<{
+					readonly item: T;
+					readonly arrival: number;
+				}> = {
+					async *[Symbol.asyncIterator]() {
+						for await (const item of source) yield { item, arrival: arrival++ };
+					},
+				};
+
+				const keyed = mapConcurrent(
+					numbered,
+					async (entry) => ({
+						item: entry.item,
+						arrival: entry.arrival,
+						key: await keySelector(entry.item),
+					}),
+					options,
+				);
+
+				const window = new TopWindow<T, K>(count);
+
+				for await (const entry of keyed) {
+					window.offer(entry.item, entry.key, entry.arrival);
+				}
+
+				yield* window.drain();
+			},
+		});
+	}
+
+	/**
+	 * Runs an action for every element as it passes, yielding it unchanged.
+	 *
+	 * @param action Action executed for each element.
+	 * @returns A deferred sequence with the same elements.
+	 */
+	tap(action: AsyncAction<T>): AsyncSequence<T> {
+		const source: AsyncIterable<T> = this.source;
+
+		return AsyncSequenceCollection.deferred<T>({
+			async *[Symbol.asyncIterator](): AsyncIterator<T> {
+				let index = 0;
+
+				for await (const item of source) {
+					// Awaited before the element is handed on, so an action that
+					// waits holds the stream where it is rather than letting it run
+					// ahead of the observation.
+					await action(item, index++);
+					yield item;
+				}
+			},
+		});
 	}
 }

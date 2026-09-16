@@ -30,15 +30,20 @@ import { Resolution, resolveTypeToken } from '@/transformer/resolve';
  */
 
 /**
- * Path segment identifying the module declaring the sequence operators.
+ * Path segment identifying the modules declaring the sequence operators.
+ *
+ * Deliberately the folder above both of them: `ofType` and `cast` are declared
+ * once on `Sequence` and once on `AsyncSequence`, in sibling folders, and a
+ * consumer reasonably expects the same operator to behave the same whichever
+ * one they are holding.
  *
  * Tied to the folder layout `@fulcro/collections` publishes: after resolution
- * the declarations live at `@types/collections/sequence` inside its built
- * output. Moving that folder silently stops the rewriting — a mismatch does not
- * fail loudly on its own, the calls are simply left alone and the runtime
- * refuses them. The compile fixture is what catches it.
+ * the declarations live under `@types/collections` inside its built output.
+ * Moving that folder silently stops the rewriting — a mismatch does not fail
+ * loudly on its own, the calls are simply left alone and the runtime refuses
+ * them. The compile fixture is what catches it.
  */
-const SEQUENCE_MODULE_SEGMENT = path.join('@types', 'collections', 'sequence');
+const SEQUENCE_MODULE_SEGMENT = path.join('@types', 'collections');
 
 /**
  * Builds the rewriter for one of the two operators.

@@ -1,10 +1,15 @@
 import {
 	AsyncAccumulator,
 	AsyncAction,
+	AsyncOptionalSelector,
 	AsyncPredicate,
 	AsyncSelector,
 	ConcurrencyOptions,
+	Constructor,
+	Narrowed,
 	TerminalOptions,
+	TypeNames,
+	TypeTest,
 } from '@/@types';
 
 /**
@@ -336,4 +341,176 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 		callback: AsyncAccumulator<A, T>,
 		options?: TerminalOptions,
 	): Promise<A>;
+
+	/**
+	 * Projects and filters in a single pass, keeping what the projection
+	 * produced.
+	 *
+	 * The projection is awaited for one element at a time, which is what keeps
+	 * the back pressure of the source intact. Use
+	 * {@link AsyncSequence.chooseAwait} to run several at once.
+	 *
+	 * @template R Type produced by the projection.
+	 * @param selector Projection returning a value, or nothing.
+	 * @returns A deferred sequence with the values the projection produced.
+	 */
+	choose<R>(
+		selector: AsyncOptionalSelector<T, R>,
+	): AsyncSequence<NonNullable<R>>;
+
+	/**
+	 * Projects and filters with several projections in flight at once.
+	 *
+	 * @template R Type produced by the projection.
+	 * @param selector Projection returning a value, or nothing.
+	 * @param options How many to run at a time, and whether order is kept.
+	 * @returns A deferred sequence with the values the projection produced.
+	 * @throws {Error} When the concurrency is not a positive integer.
+	 */
+	chooseAwait<R>(
+		selector: AsyncOptionalSelector<T, R>,
+		options: ConcurrencyOptions,
+	): AsyncSequence<NonNullable<R>>;
+
+	/**
+	 * Keeps only the elements of a given runtime type, narrowing the sequence.
+	 *
+	 * There is no `Await` counterpart, and there is nothing missing: deciding a
+	 * type is work the runtime does on the spot, with nothing to wait for, so
+	 * concurrency would add machinery around no waiting at all.
+	 *
+	 * @template K Name of the primitive type.
+	 * @param type Name of the type to keep.
+	 * @returns A deferred sequence narrowed to that type.
+	 */
+	ofType<K extends keyof TypeNames>(
+		type: K,
+	): AsyncSequence<Narrowed<T, TypeNames[K]>>;
+
+	/**
+	 * Keeps only the elements built from a given class.
+	 *
+	 * @template R Type produced by the constructor.
+	 * @param type Constructor the elements are tested against.
+	 * @returns A deferred sequence narrowed to that type.
+	 */
+	ofType<R>(type: Constructor<R>): AsyncSequence<Narrowed<T, R>>;
+
+	/**
+	 * Keeps only the elements passing a test over their shape.
+	 *
+	 * @template R Type a passing value is taken to be.
+	 * @param test Test over the shape of each element.
+	 * @returns A deferred sequence narrowed to that type.
+	 */
+	ofType<R>(test: TypeTest<R>): AsyncSequence<Narrowed<T, R>>;
+
+	/**
+	 * Keeps only the elements of the given type, written as a type.
+	 *
+	 * Needs the transformer of this package, which resolves the type argument
+	 * into a runtime test — writing an interface out as the checks its
+	 * properties imply.
+	 *
+	 * @template R Type to keep.
+	 * @returns A deferred sequence narrowed to that type.
+	 * @throws {Error} When the call was not resolved at compile time.
+	 */
+	ofType<R>(): AsyncSequence<Narrowed<T, R>>;
+
+	/**
+	 * Re-types the sequence, refusing any element that disagrees.
+	 *
+	 * The operator this exists for: a stream of records from somewhere that
+	 * cannot be trusted, checked against a type as it arrives rather than after
+	 * being collected. It refuses at the element that failed, so a bad page is
+	 * caught without the whole feed being read first.
+	 *
+	 * @template K Name of the primitive type.
+	 * @param type Name of the type every element must have.
+	 * @returns A deferred sequence typed as that type.
+	 * @throws {TypeError} When an element is not of that type, as it is read.
+	 */
+	cast<K extends keyof TypeNames>(type: K): AsyncSequence<TypeNames[K]>;
+
+	/**
+	 * Re-types the sequence to a class.
+	 *
+	 * @template R Type produced by the constructor.
+	 * @param type Constructor every element must be an instance of.
+	 * @returns A deferred sequence typed as that type.
+	 * @throws {TypeError} When an element is not an instance, as it is read.
+	 */
+	cast<R>(type: Constructor<R>): AsyncSequence<R>;
+
+	/**
+	 * Re-types the sequence, checking each element against a shape test.
+	 *
+	 * @template R Type every element must be.
+	 * @param test Test over the shape of each element.
+	 * @returns A deferred sequence typed as that type.
+	 * @throws {TypeError} When an element fails the test, as it is read.
+	 */
+	cast<R>(test: TypeTest<R>): AsyncSequence<R>;
+
+	/**
+	 * Re-types the sequence to the given type, written as a type.
+	 *
+	 * @template R Type every element must be.
+	 * @returns A deferred sequence typed as that type.
+	 * @throws {Error} When the call was not resolved at compile time.
+	 * @throws {TypeError} When an element fails the check, as it is read.
+	 */
+	cast<R>(): AsyncSequence<R>;
+
+	/**
+	 * Takes the elements with the largest keys, in descending order.
+	 *
+	 * Keeps a window of the best `count` seen so far rather than collecting the
+	 * source and sorting it, so the memory it holds is bounded by `count` and
+	 * not by the length of the stream.
+	 *
+	 * It does have to reach the end before it can answer — nothing can know the
+	 * top ten of a stream that has not finished — so it never completes over an
+	 * endless source. Put a `take` in front of one.
+	 *
+	 * @template K Type of the compared key.
+	 * @param keySelector Projection returning the key of each element.
+	 * @param count How many elements to keep.
+	 * @returns A deferred sequence with at most `count` elements.
+	 */
+	topBy<K>(keySelector: AsyncSelector<T, K>, count: number): AsyncSequence<T>;
+
+	/**
+	 * The same, extracting several keys at once.
+	 *
+	 * For a key that has to be fetched or computed rather than read. The window
+	 * stays bounded and ties still break on arrival order, which is recorded
+	 * before the keys are extracted rather than after — otherwise finishing out
+	 * of order would quietly change the answer.
+	 *
+	 * @template K Type of the compared key.
+	 * @param keySelector Projection returning the key of each element.
+	 * @param count How many elements to keep.
+	 * @param options How many keys to extract at a time.
+	 * @returns A deferred sequence with at most `count` elements.
+	 * @throws {Error} When the concurrency is not a positive integer.
+	 */
+	topByAwait<K>(
+		keySelector: AsyncSelector<T, K>,
+		count: number,
+		options: ConcurrencyOptions,
+	): AsyncSequence<T>;
+
+	/**
+	 * Runs an action for every element as it passes, yielding it unchanged.
+	 *
+	 * Awaited one element at a time, so an action that waits holds the stream
+	 * where it is instead of racing ahead of it — which is usually the point of
+	 * looking inside an asynchronous chain.
+	 *
+	 * @param action Action executed for each element.
+	 * @returns A deferred sequence with the same elements.
+	 */
+	tap(action: AsyncAction<T>): AsyncSequence<T>;
 }

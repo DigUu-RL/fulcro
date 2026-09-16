@@ -38,11 +38,13 @@ const compileFixture = (): string => {
 	const program: ts.Program = ts.createProgram([FIXTURE_PATH], {
 		target: ts.ScriptTarget.ES2022,
 		module: ts.ModuleKind.ESNext,
-		// Required: an ESNext module defaults to the classic resolution, which
-		// never looks for an `index.ts` inside a directory, and the import of the
-		// fixture would silently resolve to nothing — leaving the transformer
-		// with symbols it cannot trace back to our modules.
-		moduleResolution: ts.ModuleResolutionKind.Node10,
+		// `Bundler`, and the choice matters. An ESNext module defaults to the
+		// classic resolution, which finds nothing at all. `Node10` finds the main
+		// entry but not the `exports` subpaths, so `@fulcro/collections/async`
+		// resolved to nothing — and a type the checker cannot see is a call the
+		// transformer cannot claim, silently. The fixture compiled, the emitted
+		// code kept `.cast()` unresolved, and nothing said why.
+		moduleResolution: ts.ModuleResolutionKind.Bundler,
 		strict: true,
 		noEmitOnError: false,
 		skipLibCheck: true,
@@ -201,6 +203,25 @@ describe('what it still refuses', () => {
 			.length;
 
 		expect(unresolved).toBe(1);
+	});
+});
+
+describe('the asynchronous sequence', () => {
+	it('should resolve a primitive there too', () => {
+		// Declared in a sibling module to the synchronous one. A rewriter that
+		// named only the `sequence` folder would leave every asynchronous call
+		// unresolved, and say nothing about it.
+		expect(emitted).toMatch(/streamedStrings[^\n]*\.ofType\(['"]string['"]\)/);
+	});
+
+	it('should write an interface out there too', () => {
+		const line: string | undefined = emitted
+			.split('\n')
+			.find((candidate) => candidate.includes('streamedOrders'));
+
+		expect(line).toContain('name: "Order"');
+		expect(line).toContain('typeof v.id === "number"');
+		expect(line).toContain('v.placedAt instanceof Date');
 	});
 });
 
