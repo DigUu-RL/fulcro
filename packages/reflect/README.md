@@ -149,6 +149,38 @@ there is genuinely nothing for a plain function to inspect. Without the
 transformer the call throws, deliberately — a default it cannot compute would be
 a lie, and failing loudly at the call site beats handing back a wrong value.
 
+## `is` and `as`
+
+The language's `as` asserts without checking — `payload as Order` compiles
+whatever `payload` turns out to be, and the mistake surfaces later, somewhere
+else, as a property of `undefined`. These two do the check it cannot.
+
+```ts
+if (is<Order>(payload)) {
+	payload.total; // narrowed, and actually verified
+}
+
+const order = as<Order>(await response.json());
+```
+
+`is` is a type guard, for branching. `as` returns the value unchanged — the same
+object, not a copy — and throws when it does not match, for stopping.
+
+The transformer writes the check out from the type: every property, nested
+objects, every element of an array. A failing `as` names **where** it stopped
+matching rather than only that it did:
+
+```text
+TypeError: as<Order>() refused a value: customer.email: expected string, got number
+```
+
+That message comes from a second walker emitted beside the check, which runs
+only once the check has already refused — so a value that passes never pays for
+it, and `is` does not carry one at all.
+
+Index signatures and unresolved generics are refused, loudly. Write the test
+yourself and pass it in as a second argument for those.
+
 ## With and without the transformer
 
 |                            | Without                             | With the transformer                                          |

@@ -8,7 +8,9 @@ import {
 // again, which TypeScript reads as an alias defined in terms of itself.
 export type { TransformerOptions } from '@fulcro/transform-core';
 
+import { asRewriter } from '@/transformer/as';
 import { defaultOfRewriter } from '@/transformer/defaultOf';
+import { isRewriter } from '@/transformer/is';
 import { nameOfRewriter } from '@/transformer/nameOf';
 import { typeOfRewriter } from '@/transformer/typeOf';
 
@@ -54,6 +56,8 @@ export const REWRITERS: readonly CallRewriter[] = [
 	nameOfRewriter,
 	typeOfRewriter,
 	defaultOfRewriter,
+	isRewriter,
+	asRewriter,
 ];
 
 /**

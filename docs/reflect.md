@@ -173,6 +173,70 @@ setFilters(defaultOf<Filters>());
 Add a required field to `Order` and every one of those follows. A hand-written
 `{ id: 0, items: [] }` does not, and the compiler will not tell you.
 
+## `is` and `as` — checking a value against a type
+
+TypeScript's `as` is an **assertion, not a check**. `payload as Order` compiles
+whatever `payload` turns out to be, and the mistake surfaces later, somewhere
+else, as a property of `undefined`.
+
+These two do the check the language cannot: the transformer reads the type while
+the compiler still has it and writes the test out — every property, nested
+objects, every element of an array.
+
+```ts
+if (is<Order>(payload)) {
+	payload.total; // narrowed, and actually verified
+}
+
+const order = as<Order>(await response.json());
+```
+
+`is` is a **type guard**, for when a failure should branch the program. `as`
+returns the value — the same object, not a copy — and throws when it does not
+match, for when a failure should stop it.
+
+### The message names where it failed
+
+```text
+TypeError: as<Order>() refused a value: customer.email: expected string, got number
+TypeError: as<Order>() refused a value: items[3].quantity: expected number, got undefined
+```
+
+Told only _"not an Order"_ about a record with forty fields, you would be no
+better off than before the check existed. So the transformer emits a second
+walker beside the fast check, purely to answer **where**. It runs only once the
+check has already refused, so a value that passes never pays for it — and only
+`as` gets one, since a branch needs yes or no.
+
+Where a type is more than the walker can describe precisely — an intersection, a
+tuple, a union of object shapes — it names the type expected at that path rather
+than guessing at a field. Vague beats wrong: a path is a promise about where the
+problem is, and inventing one sends someone to the wrong field.
+
+### What can be checked
+
+The same set the sequences check, since it is the same generator: primitives,
+literals, unions, intersections, objects and interfaces nested to any depth,
+optional properties, arrays, fixed-length tuples, classes, the built-in classes
+by `instanceof`, and types that contain themselves. Extra properties are
+accepted, because structural typing accepts them.
+
+Refused, and loudly: index signatures and unresolved generics. For those, write
+the test and pass it in:
+
+```ts
+is<Settings>(value, {
+	name: 'Settings',
+	matches: (v) => looksLikeSettings(v),
+});
+```
+
+### Both need the transformer
+
+Without it the call refuses rather than guessing. A check that answers `true`
+for the wrong thing is worse than no check at all — it is false confidence at
+exactly the boundary where the data is least trustworthy.
+
 ## The transformer is not optional
 
 These utilities are named for what they read, and what they read is the _type_ —
