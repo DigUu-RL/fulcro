@@ -1,5 +1,20 @@
 # @fulcro/collections
 
+## 0.8.1
+
+### Patch Changes
+
+- b41f509: Documentation only, plus a regression test for the two plugins together.
+
+  The documentation index described the library as it stood two releases ago: it
+  mentioned none of `is`, `as`, `cast`, `ofType`, `topBy` or `choose`, so the most
+  distinctive thing here — a runtime check derived from the type you already wrote
+  — was invisible from the front door.
+
+  Nothing in the packages changed.
+
+- @fulcro/transform-core@0.8.1
+
 ## 0.8.0
 
 ### Minor Changes
