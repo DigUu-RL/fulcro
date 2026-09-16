@@ -449,6 +449,121 @@ describe('the shape check the transformer writes', () => {
 	});
 });
 
+describe('a recursive shape check', () => {
+	/** A comment tree, the shape recursive checking exists for. */
+	interface Comment {
+		readonly id: number;
+		readonly text: string;
+		readonly replies: Comment[];
+	}
+
+	/**
+	 * Builds a tree of a given breadth and depth.
+	 *
+	 * @param depth How many levels down to go.
+	 * @param breadth How many replies each level carries.
+	 * @param next Counter handing out ids.
+	 * @returns The root comment.
+	 */
+	const treeOf = (
+		depth: number,
+		breadth: number,
+		next: { value: number },
+	): Comment => ({
+		id: next.value++,
+		text: `comment ${next.value}`,
+		replies:
+			depth === 0
+				? []
+				: Array.from({ length: breadth }, () =>
+						treeOf(depth - 1, breadth, next),
+					),
+	});
+
+	let forest: readonly Comment[] = [];
+
+	beforeAll(() => {
+		// A thousand trees of about forty nodes each, so the check is exercised
+		// on real nesting rather than on a flat record wearing a recursive type.
+		forest = Array.from({ length: 1_000 }, () => treeOf(4, 2, { value: 0 }));
+	});
+
+	it('should declare its function once, not once per element', () => {
+		// The point of hoisting the recursive check into an expression that runs
+		// where the call sits. Building it per element would be invisible in the
+		// results and ruinous in the cost, so it is counted: the type argument is
+		// resolved once, and the sequence is built once.
+		let built = 0;
+
+		const observed: Iterable<Comment> = {
+			*[Symbol.iterator](): Iterator<Comment> {
+				built++;
+				yield* forest;
+			},
+		};
+
+		const kept: number = SequenceCollection.from(observed)
+			.ofType<Comment>()
+			.count();
+
+		expect(kept).toBe(forest.length);
+		expect(built).toBe(1);
+	});
+
+	it('should read its source exactly once', () => {
+		let pulled = 0;
+
+		SequenceCollection.from(counted(forest, () => pulled++))
+			.ofType<Comment>()
+			.toArray();
+
+		expect(pulled).toBe(forest.length);
+	});
+
+	it('should stop where a bounded chain stops', () => {
+		let pulled = 0;
+
+		SequenceCollection.from(counted(forest, () => pulled++))
+			.ofType<Comment>()
+			.take(3)
+			.toArray();
+
+		expect(pulled).toBe(3);
+	});
+
+	it('should give up on a bad branch without walking the rest of the tree', () => {
+		// Short-circuiting matters more here than anywhere else: a tree is large,
+		// and a check that evaluated every branch before answering would pay the
+		// full cost of a value it had already ruled out.
+		let readLater = 0;
+
+		const wrong = {
+			id: 'not a number',
+			get text(): string {
+				readLater++;
+				return 'never read';
+			},
+		};
+
+		SequenceCollection.from([wrong]).ofType<Comment>().toArray();
+
+		expect(readLater).toBe(0);
+	});
+
+	it('should stay within a generous ceiling over a forest', () => {
+		const started: number = performance.now();
+
+		const kept: number = SequenceCollection.from(forest)
+			.ofType<Comment>()
+			.count();
+
+		// A smoke ceiling. Walking every node of a thousand trees is real work;
+		// this is here to catch the regression that turns it into minutes.
+		expect(performance.now() - started).toBeLessThan(3_000);
+		expect(kept).toBe(forest.length);
+	});
+});
+
 describe('tap', () => {
 	it('should add no traversal of its own', () => {
 		let pulled = 0;

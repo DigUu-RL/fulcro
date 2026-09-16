@@ -247,6 +247,47 @@ nested to any depth, optional properties, arrays (every element, not a sample),
 fixed-length tuples, classes, and `Date`, `Map`, `Set`, `RegExp` and friends by
 `instanceof`.
 
+#### Types that contain themselves
+
+A comment tree, a folder structure, a category with subcategories — these are
+ordinary shapes, and they are covered. A type that refers back to itself becomes
+a function that calls itself:
+
+```ts
+interface Comment {
+	id: number;
+	text: string;
+	replies: Comment[];
+}
+
+comments.cast<Comment>();
+```
+
+```js
+comments.cast(
+	(() => {
+		const check0 = (r) =>
+			r !== null &&
+			typeof r === 'object' &&
+			typeof r.id === 'number' &&
+			typeof r.text === 'string' &&
+			Array.isArray(r.replies) &&
+			r.replies.every((e) => check0(e));
+
+		return { name: 'Comment', matches: (v) => check0(v) };
+	})(),
+);
+```
+
+The function is built **once**, where the call sits — not per element — and it
+adds no name to your scope. Cycles running through a second type work the same
+way: `Author` holding `Post[]` holding an `Author` is one cycle and gets one
+function.
+
+It descends the whole value, so a reply four levels down with a wrong field is
+rejected like any other. The depth it can handle is the depth your runtime's
+call stack can handle, which for realistic trees is not a limit you will meet.
+
 **Extra properties are accepted**, because structural typing accepts them. An
 object carrying more than `Order` requires is still an `Order`, and rejecting it
 would make this disagree with the compiler that produced it.
@@ -258,9 +299,8 @@ false confidence exactly where the data is least trustworthy. So anything the
 transformer cannot write out completely, it refuses — there is no partial or
 optimistic check anywhere in it.
 
-Refused: types that contain themselves, index signatures, unresolved generics,
-and a class brought in with `import type`, which is erased before the emitted
-code could reference it.
+Refused: index signatures, unresolved generics, and a class brought in with
+`import type`, which is erased before the emitted code could reference it.
 
 ```text
 Error: ofType<T>() was not resolved at compile time. Either the

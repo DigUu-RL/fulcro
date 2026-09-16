@@ -187,12 +187,59 @@ describe('an interface, written out as checks', () => {
 	});
 });
 
+describe('a type that contains itself', () => {
+	/**
+	 * Reads back the emitted code for one export, which for a recursive type
+	 * spans several lines.
+	 *
+	 * @param name Name of the exported constant.
+	 * @returns Everything from that export up to the next one.
+	 */
+	const blockFor = (name: string): string => {
+		const start: number = emitted.indexOf(`export const ${name} `);
+
+		if (start === -1) {
+			throw new Error(`The fixture emitted nothing for ${name}.`);
+		}
+
+		const next: number = emitted.indexOf('export const ', start + 1);
+
+		return next === -1 ? emitted.slice(start) : emitted.slice(start, next);
+	};
+
+	it('should become a function that calls itself', () => {
+		const block: string = blockFor('trees');
+
+		// A name to call is the whole reason this form exists: the reference that
+		// closes the cycle is met while the body is still being written.
+		expect(block).toMatch(/const (check\d+) = \w+ =>/);
+		expect(block).toMatch(/\.every\(\w+ => check\d+\(\w+\)\)/);
+	});
+
+	it('should declare it once, where the call sits', () => {
+		// Inside an expression that runs where the call is, not once per element
+		// and not as a name added to the surrounding scope.
+		expect(blockFor('trees')).toContain('(() => {');
+		expect(blockFor('trees')).toContain('return { name: "Tree"');
+	});
+
+	it('should follow a cycle that runs through a second type', () => {
+		const block: string = blockFor('authors');
+
+		// `Author` refers to `Post` which refers back to `Author`. Neither is
+		// recursive on its own, and a search that only looked one level down
+		// would write both out inline and never terminate.
+		expect(block).toMatch(/const check\d+ =/);
+		expect(block).toContain('name: "Author"');
+		expect(block).toContain('typeof');
+	});
+});
+
 describe('what it still refuses', () => {
-	it('should refuse a type that contains itself', () => {
-		// Writing a recursive type out does not terminate. The named-function
-		// form that would handle it is deliberately out of scope, so the call is
-		// left for the runtime to reject rather than half-checked.
-		expect(emitted).toMatch(/export const trees [^\n]*\.ofType\(\)/);
+	it('should refuse an index signature', () => {
+		// Arbitrary keys mean there is no fixed set of properties to check, and
+		// a check over no properties would accept any object at all.
+		expect(emitted).toMatch(/export const settings [^\n]*\.ofType\(\)/);
 	});
 
 	it('should resolve everything else it was given', () => {

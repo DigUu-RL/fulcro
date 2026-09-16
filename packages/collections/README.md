@@ -259,6 +259,11 @@ nested to any depth, optional properties, arrays, fixed-length tuples, classes,
 and the built-in classes by `instanceof`. Extra properties are accepted, because
 structural typing accepts them.
 
+**Types that contain themselves are covered too** — a comment tree, a folder
+structure, a category with subcategories. One that refers back to itself becomes
+a function that calls itself, built once where the call sits rather than per
+element, and it descends the whole value.
+
 ### What it refuses, and why that is the point
 
 A check that answers yes to the wrong thing is worse than no check: it is false
@@ -266,11 +271,10 @@ confidence exactly where the data is least trustworthy. So anything the plugin
 cannot write out completely, it refuses — there is no partial or optimistic
 check anywhere in it.
 
-Refused: recursive types, index signatures, unresolved generics, and a class
-imported with `import type`, which is erased before the emitted code could
-reference it. Those throw when the chain is **built**, naming both reasons a
-call could have arrived unresolved, because from inside a running program they
-are indistinguishable.
+Refused: index signatures, unresolved generics, and a class imported with
+`import type`, which is erased before the emitted code could reference it. Those
+throw when the chain is **built**, naming both reasons a call could have arrived
+unresolved, because from inside a running program they are indistinguishable.
 
 For a refused type, write the check and pass it in the same shape:
 

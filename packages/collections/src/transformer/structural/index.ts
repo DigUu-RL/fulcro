@@ -49,8 +49,35 @@ interface Generation {
 	/** Types currently being written out, to catch a type that contains itself. */
 	readonly open: Set<typescript.Type>;
 
-	/** How many parameter names have been handed out, to keep them distinct. */
+	/**
+	 * Types that take part in a cycle, found before anything is written.
+	 *
+	 * Each of these becomes a named function that can call itself; everything
+	 * else stays an inline expression, which is both cheaper to run and what
+	 * makes the emitted check readable for the ordinary case.
+	 */
+	readonly recursive: ReadonlySet<typescript.Type>;
+
+	/** The function each recursive type was given, by the order they were met. */
+	readonly declared: Map<typescript.Type, RecursiveCheck>;
+
+	/** How many names have been handed out, to keep them distinct. */
 	counter: { value: number };
+}
+
+/** A check hoisted into a named function so that it can call itself. */
+interface RecursiveCheck {
+	/** Name the function is declared and called by. */
+	readonly name: string;
+
+	/**
+	 * Body of the function, filled in once it has been written.
+	 *
+	 * Absent while the type is still being written out — which is exactly the
+	 * window a recursive reference falls into, and why the name has to exist
+	 * before the body does.
+	 */
+	body?: typescript.Expression;
 }
 
 /**
@@ -174,6 +201,97 @@ const admitsUndefined = (type: typescript.Type): boolean =>
 	has(type, typescript.TypeFlags.Undefined) ||
 	(type.isUnion() &&
 		type.types.some((member) => has(member, typescript.TypeFlags.Undefined)));
+
+/**
+ * Lists the types a type is built out of, for the cycle search.
+ *
+ * Deliberately stops where the writer stops: a class is tested with
+ * `instanceof` and a function by `typeof`, so neither is descended into and
+ * neither can put a type in a cycle it does not really have.
+ *
+ * @param type Type being taken apart.
+ * @param checker Checker of the program being compiled.
+ * @param at Node the lookups happen from.
+ * @returns The types it refers to.
+ */
+const partsOf = (
+	type: typescript.Type,
+	checker: typescript.TypeChecker,
+	at: typescript.Node,
+): readonly typescript.Type[] => {
+	if (type.isUnionOrIntersection()) return type.types;
+
+	if (!has(type, typescript.TypeFlags.Object)) return [];
+
+	if (checker.isArrayType(type) || checker.isTupleType(type)) {
+		return checker.getTypeArguments(type as typescript.TypeReference);
+	}
+
+	const symbol: typescript.Symbol | undefined = type.getSymbol();
+
+	if (
+		symbol !== undefined &&
+		((symbol.flags & typescript.SymbolFlags.Class) !== 0 ||
+			GLOBAL_CLASSES.has(symbol.getName()))
+	) {
+		return [];
+	}
+
+	if (
+		type.getCallSignatures().length > 0 ||
+		type.getConstructSignatures().length > 0
+	) {
+		return [];
+	}
+
+	return type
+		.getProperties()
+		.map((property) => checker.getTypeOfSymbolAtLocation(property, at));
+};
+
+/**
+ * Finds the types that take part in a cycle.
+ *
+ * Run before a single node is built, because whether a type needs to become a
+ * function is a property of the whole graph and cannot be decided from inside
+ * a depth-first walk of it: by the time a cycle is met, the type that closes it
+ * has already been written out inline.
+ *
+ * @param root Type the call asked for.
+ * @param checker Checker of the program being compiled.
+ * @param at Node the lookups happen from.
+ * @returns Every type that refers back to itself, directly or through others.
+ */
+const findRecursive = (
+	root: typescript.Type,
+	checker: typescript.TypeChecker,
+	at: typescript.Node,
+): ReadonlySet<typescript.Type> => {
+	const recursive = new Set<typescript.Type>();
+	const finished = new Set<typescript.Type>();
+	const path = new Set<typescript.Type>();
+
+	const visit = (type: typescript.Type): void => {
+		// Met again on the way down: this is the type the cycle closes on.
+		if (path.has(type)) {
+			recursive.add(type);
+			return;
+		}
+
+		if (finished.has(type)) return;
+
+		path.add(type);
+
+		for (const part of partsOf(type, checker, at)) visit(part);
+
+		path.delete(type);
+		finished.add(type);
+	};
+
+	visit(root);
+
+	return recursive;
+};
 
 /**
  * Tells whether a name is usable as a value where the call sits.
@@ -319,13 +437,94 @@ const checkFor = (
 		return typeofIs(factory, value, 'symbol');
 	}
 
-	// A type that contains itself. Writing it out would not terminate, and the
-	// named-function form that would handle it is deliberately out of scope.
-	if (generation.open.has(type)) return null;
-
 	if (!has(type, typescript.TypeFlags.Object)) return null;
 
+	// A type that refers back to itself. It becomes a function so that the
+	// reference has a name to call, and every mention of it — the first one
+	// included — becomes a call to that name.
+	if (generation.recursive.has(type)) {
+		return checkThroughFunction(type, value, generation, depth);
+	}
+
+	// Belt and braces. The cycle search above should have caught anything that
+	// could re-enter, so reaching here means it missed one, and writing it out
+	// would not terminate.
+	if (generation.open.has(type)) return null;
+
 	return checkForObject(type, value, generation, depth);
+};
+
+/**
+ * Writes a recursive type as a named function, and refers to it by name.
+ *
+ * The name is registered **before** the body is written, which is the whole
+ * trick: the reference that closes the cycle is met while the body is still
+ * being built, and it needs something to call.
+ *
+ * @param type Type being checked for.
+ * @param value Expression the check is applied to.
+ * @param generation State of the generation.
+ * @param depth How deep into the type this is.
+ * @returns A call to the function, or `null` when the body cannot be written.
+ */
+const checkThroughFunction = (
+	type: typescript.Type,
+	value: typescript.Expression,
+	generation: Generation,
+	depth: number,
+): typescript.Expression | null => {
+	const { factory } = generation.context;
+
+	const existing: RecursiveCheck | undefined = generation.declared.get(type);
+
+	if (existing !== undefined) {
+		return factory.createCallExpression(
+			factory.createIdentifier(existing.name),
+			undefined,
+			[value],
+		);
+	}
+
+	const declaration: RecursiveCheck = {
+		name: `check${generation.counter.value++}`,
+	};
+
+	generation.declared.set(type, declaration);
+
+	// Written against its own parameter rather than against the caller's
+	// expression, because the same body serves every call site.
+	const parameter: string = `r${generation.counter.value++}`;
+
+	const body: typescript.Expression | null = checkForObject(
+		type,
+		factory.createIdentifier(parameter),
+		generation,
+		// Reset: the depth cap is there to stop an unbounded walk, and a
+		// recursive type is bounded by the function call rather than by how deep
+		// the writer went to reach it.
+		0,
+	);
+
+	if (body === null) {
+		// Nothing can be emitted, so the half-registered name must go with it.
+		generation.declared.delete(type);
+		return null;
+	}
+
+	declaration.body = factory.createArrowFunction(
+		undefined,
+		undefined,
+		[factory.createParameterDeclaration(undefined, undefined, parameter)],
+		undefined,
+		factory.createToken(typescript.SyntaxKind.EqualsGreaterThanToken),
+		body,
+	);
+
+	return factory.createCallExpression(
+		factory.createIdentifier(declaration.name),
+		undefined,
+		[value],
+	);
 };
 
 /**
@@ -578,6 +777,8 @@ export const buildStructuralTest = (
 		context,
 		at,
 		open: new Set(),
+		recursive: findRecursive(type, context.checker, at),
+		declared: new Map(),
 		counter: { value: 0 },
 	};
 
@@ -592,7 +793,7 @@ export const buildStructuralTest = (
 
 	if (body === null) return null;
 
-	return factory.createObjectLiteralExpression(
+	const test: typescript.Expression = factory.createObjectLiteralExpression(
 		[
 			factory.createPropertyAssignment(
 				'name',
@@ -611,5 +812,51 @@ export const buildStructuralTest = (
 			),
 		],
 		false,
+	);
+
+	if (generation.declared.size === 0) return test;
+
+	// Recursive types need somewhere to live that is evaluated once rather than
+	// per element, and that does not add a name to the surrounding scope. The
+	// functions are hoisted into a block that runs where the call sits and hands
+	// back the test itself.
+	const statements: typescript.Statement[] = [];
+
+	for (const declaration of generation.declared.values()) {
+		if (declaration.body === undefined) continue;
+
+		statements.push(
+			factory.createVariableStatement(
+				undefined,
+				factory.createVariableDeclarationList(
+					[
+						factory.createVariableDeclaration(
+							declaration.name,
+							undefined,
+							undefined,
+							declaration.body,
+						),
+					],
+					typescript.NodeFlags.Const,
+				),
+			),
+		);
+	}
+
+	statements.push(factory.createReturnStatement(test));
+
+	return factory.createCallExpression(
+		factory.createParenthesizedExpression(
+			factory.createArrowFunction(
+				undefined,
+				undefined,
+				[],
+				undefined,
+				factory.createToken(typescript.SyntaxKind.EqualsGreaterThanToken),
+				factory.createBlock(statements, true),
+			),
+		),
+		undefined,
+		[],
 	);
 };

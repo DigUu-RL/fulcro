@@ -74,7 +74,7 @@ export const pairs = (): unknown =>
 export const statuses = (): unknown =>
 	SequenceCollection.from(values).ofType<'pending' | 'paid'>().toArray();
 
-/** Recursive: deliberately out of scope, so this one is still refused. */
+/** Recursive: written as a function that calls itself. */
 export interface Tree {
 	readonly value: number;
 	readonly children: Tree[];
@@ -82,6 +82,31 @@ export interface Tree {
 
 export const trees = (): unknown =>
 	SequenceCollection.from(values).ofType<Tree>().toArray();
+
+/** Mutually recursive, where the cycle runs through a second type. */
+export interface Author {
+	readonly name: string;
+	readonly posts: Post[];
+}
+
+export interface Post {
+	readonly title: string;
+	readonly author: Author;
+}
+
+export const authors = (): unknown =>
+	SequenceCollection.from(values).ofType<Author>().toArray();
+
+/**
+ * An index signature: still refused, and deliberately. Arbitrary keys mean
+ * there is no fixed set of properties to write checks for.
+ */
+export interface Settings {
+	readonly [key: string]: string;
+}
+
+export const settings = (): unknown =>
+	SequenceCollection.from(values).ofType<Settings>().toArray();
 
 /**
  * The asynchronous sequence, which declares the same two operators in a

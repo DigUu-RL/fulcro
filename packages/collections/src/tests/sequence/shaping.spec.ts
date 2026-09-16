@@ -326,17 +326,16 @@ describe('ofType and cast, written as a type', () => {
 		expect(accounts.toArray()).toEqual([1]);
 	});
 
-	it('should refuse a type that contains itself', () => {
-		interface Tree {
-			readonly value: number;
-			readonly children: Tree[];
+	it('should refuse an index signature', () => {
+		interface Settings {
+			readonly [key: string]: string;
 		}
 
-		// Writing a recursive type out does not terminate, so it stays refused —
-		// and refused loudly, which is the whole contract.
-		const values: unknown[] = [{ value: 1, children: [] }];
+		// Arbitrary keys leave no fixed set of properties to check, and a check
+		// over no properties would accept any object at all.
+		const values: unknown[] = [{ theme: 'dark' }];
 
-		expect(() => SequenceCollection.from(values).ofType<Tree>()).toThrow(
+		expect(() => SequenceCollection.from(values).ofType<Settings>()).toThrow(
 			/cannot be checked at runtime|was not resolved at compile time/,
 		);
 	});
@@ -344,21 +343,167 @@ describe('ofType and cast, written as a type', () => {
 	it('should refuse before reading anything', () => {
 		// A wiring error, not a data error: there is nothing to gain by letting
 		// the chain be built and failing on the first read instead.
-		interface Tree {
-			readonly value: number;
-			readonly children: Tree[];
+		interface Settings {
+			readonly [key: string]: string;
 		}
 
 		let pulled = 0;
 		const source = {
 			*[Symbol.iterator](): Iterator<unknown> {
 				pulled++;
-				yield { value: 1, children: [] };
+				yield { theme: 'dark' };
 			},
 		};
 
-		expect(() => SequenceCollection.from(source).ofType<Tree>()).toThrow();
+		expect(() => SequenceCollection.from(source).ofType<Settings>()).toThrow();
 		expect(pulled).toBe(0);
+	});
+});
+
+describe('a type that contains itself', () => {
+	/** A comment tree, which is the shape this exists for. */
+	interface Comment {
+		readonly id: number;
+		readonly text: string;
+		readonly replies: Comment[];
+	}
+
+	/** Mutually recursive: the cycle runs through a second type. */
+	interface Author {
+		readonly name: string;
+		readonly posts: Post[];
+	}
+
+	interface Post {
+		readonly title: string;
+		readonly author: Author;
+	}
+
+	/**
+	 * Runs one value through the check.
+	 *
+	 * @param value Value being tested.
+	 * @returns Whether the check kept it.
+	 */
+	const accepts = (value: unknown): boolean =>
+		SequenceCollection.from([value]).ofType<Comment>().count() === 1;
+
+	it('should accept a tree that is valid all the way down', () => {
+		expect(
+			accepts({
+				id: 1,
+				text: 'top',
+				replies: [
+					{ id: 2, text: 'reply', replies: [] },
+					{
+						id: 3,
+						text: 'another',
+						replies: [{ id: 4, text: 'deep', replies: [] }],
+					},
+				],
+			}),
+		).toBe(true);
+	});
+
+	it('should accept a leaf', () => {
+		expect(accepts({ id: 1, text: 'alone', replies: [] })).toBe(true);
+	});
+
+	// The direction that matters. A recursive check that stopped descending
+	// after the first level would pass every test above while being worthless,
+	// so each of these is wrong only at a depth the check has to reach.
+	it.each([
+		[
+			'one level down',
+			{ id: 1, text: 'a', replies: [{ id: 'wrong', text: 'b', replies: [] }] },
+		],
+		[
+			'two levels down',
+			{
+				id: 1,
+				text: 'a',
+				replies: [
+					{ id: 2, text: 'b', replies: [{ id: 3, text: 4, replies: [] }] },
+				],
+			},
+		],
+		[
+			'three levels down',
+			{
+				id: 1,
+				text: 'a',
+				replies: [
+					{
+						id: 2,
+						text: 'b',
+						replies: [{ id: 3, text: 'c', replies: [{ id: 4, text: 'd' }] }],
+					},
+				],
+			},
+		],
+		[
+			'in the array itself, deep down',
+			{
+				id: 1,
+				text: 'a',
+				replies: [{ id: 2, text: 'b', replies: 'not an array' }],
+			},
+		],
+	])('should reject a value wrong %s', (_label, value) => {
+		expect(accepts(value)).toBe(false);
+	});
+
+	it('should follow a cycle that runs through a second type', () => {
+		const author: unknown = {
+			name: 'someone',
+			posts: [
+				{
+					title: 'a post',
+					author: { name: 'someone', posts: [] },
+				},
+			],
+		};
+
+		const wrong: unknown = {
+			name: 'someone',
+			posts: [{ title: 'a post', author: { name: 7, posts: [] } }],
+		};
+
+		const kept = (value: unknown): number =>
+			SequenceCollection.from([value]).ofType<Author>().count();
+
+		expect(kept(author)).toBe(1);
+		expect(kept(wrong)).toBe(0);
+	});
+
+	it('should handle a tree deep enough to rule out an unrolled check', () => {
+		// A check written out to a fixed depth rather than as a function would
+		// either refuse this or quietly stop looking partway down.
+		let deepest: Comment = { id: 100, text: 'bottom', replies: [] };
+
+		for (let level = 99; level >= 0; level--) {
+			deepest = { id: level, text: `level ${level}`, replies: [deepest] };
+		}
+
+		expect(accepts(deepest)).toBe(true);
+
+		// And the same tree with the very bottom spoiled has to be rejected,
+		// which is what proves it really went all the way down.
+		let broken: unknown = { id: 100, text: 7, replies: [] };
+
+		for (let level = 99; level >= 0; level--) {
+			broken = { id: level, text: `level ${level}`, replies: [broken] };
+		}
+
+		expect(accepts(broken)).toBe(false);
+	});
+
+	it('should name the type in the error cast throws', () => {
+		expect(() =>
+			SequenceCollection.from([{ id: 1, text: 'a', replies: [] }, 'wrong'])
+				.cast<Comment>()
+				.toArray(),
+		).toThrow(/cast\('Comment'\)/);
 	});
 });
 
