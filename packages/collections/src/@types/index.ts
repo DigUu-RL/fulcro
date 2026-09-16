@@ -150,6 +150,21 @@ export type Action<T> = (value: T, index: number) => void;
 export type ResultSelector<O, I, R> = (outer: O, inner: I) => R;
 
 /**
+ * Merges a pair of correlated elements, possibly after waiting.
+ *
+ * @template O Type of the outer element.
+ * @template I Type of the inner element.
+ * @template R Type of the produced result.
+ * @param outer Element coming from the outer sequence.
+ * @param inner Element coming from the inner sequence.
+ * @returns The merged result, or a promise of it.
+ */
+export type AsyncResultSelector<O, I, R> = (
+	outer: O,
+	inner: I,
+) => R | PromiseLike<R>;
+
+/**
  * Accumulates a sequence into a single value.
  *
  * @template A Type of the accumulated value.
