@@ -67,6 +67,9 @@ It does not apply when:
   is being written; this skill reads what came out.
 - **The request is the warnings as a body of work.** That is
   `.claude/skills/fix-warnings/SKILL.md`.
+- **The request is what a unit still owes its suites.** This skill reports a
+  missing suite as one finding among many;
+  `.claude/skills/test-gap/SKILL.md` enumerates the scenarios inside it.
 - **The request is to write or review a skill.** That is
   `.claude/skills/skill-authoring/SKILL.md`, which has its own checklist.
 - **Nothing has changed.** Say so and stop.
@@ -404,6 +407,8 @@ recommendation and does not run them.
 - `docs/testing.md` — the full testing standard.
 - `.claude/skills/verify/SKILL.md` — whether the checks pass.
 - `.claude/skills/diagnose/SKILL.md` — one defect, taken to its cause.
+- `.claude/skills/test-gap/SKILL.md` — the scenarios a unit still owes its
+  suites.
 - `.claude/skills/implement-feature/SKILL.md` — the contract while the code is
   being written.
 - `tools/claude/skill-evals/fulcro-review.eval.json` — these examples as data.
