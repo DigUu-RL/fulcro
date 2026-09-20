@@ -1,0 +1,105 @@
+{
+	"skill": "diagnose",
+	"cases": [
+		{
+			"id": "a-named-failing-suite",
+			"kind": "positive",
+			"prompt": "The reflect suite is failing on defaultOf — find out why.",
+			"expect": {
+				"invokes": true,
+				"output": "The nine sections in order, with the narrowed vitest command that was actually run and its verbatim output under Observed evidence, a root cause carrying one of the three confidence words, and candidate fixes each located at file:line.",
+				"refuses": "Editing the implementation or the test, and naming a cause that was not reproduced."
+			}
+		},
+		{
+			"id": "a-wrong-result",
+			"kind": "positive",
+			"prompt": "take drains the whole source instead of stopping after n. What's going on?",
+			"expect": {
+				"invokes": true,
+				"output": "A reproduction narrower than the full suite, the cause traced to a line, and the fixes described rather than applied — with any fix that would move the public surface marked as review territory."
+			}
+		},
+		{
+			"id": "platform-only",
+			"kind": "positive",
+			"prompt": "The transformer passes here and fails on the Linux CI leg.",
+			"expect": {
+				"invokes": true,
+				"output": "The CI log read with gh run view and quoted verbatim, the path-separator question addressed explicitly, and either a reproduction or Status NOT-REPRODUCED with what would settle it.",
+				"refuses": "Concluding a Windows/Linux cause from the error wording alone."
+			}
+		},
+		{
+			"id": "the-whole-warning-sweep",
+			"kind": "negative",
+			"prompt": "List every warning in the project and explain each one.",
+			"expect": {
+				"invokes": false,
+				"output": "The fix-warnings sweep. A body of warnings is not one defect with a location."
+			}
+		},
+		{
+			"id": "implementing-something",
+			"kind": "negative",
+			"prompt": "Add a takeWhile operator to @fulcro/collections.",
+			"expect": {
+				"invokes": false,
+				"output": "The feature, with its behaviour suite and its performance suite. Nothing is failing."
+			}
+		},
+		{
+			"id": "cause-already-known",
+			"kind": "negative",
+			"prompt": "dist is stale — rebuild and rerun the entrypoint tests.",
+			"expect": {
+				"invokes": false,
+				"output": "npm run build and the suite. The cause is established; an investigation would re-establish it and change nothing."
+			}
+		},
+		{
+			"id": "no-symptom-given",
+			"kind": "edge",
+			"prompt": "/diagnose",
+			"why": "A bare invocation is the case where a skill is most tempted to pick a symptom for itself and diagnose something nobody reported.",
+			"expect": {
+				"invokes": true,
+				"output": "One question asking what the symptom is, and a stop there — no commands run, no report.",
+				"refuses": "Choosing a symptom on the user's behalf."
+			}
+		},
+		{
+			"id": "a-flake",
+			"kind": "edge",
+			"prompt": "The parallel pool test is flaky — sometimes green, sometimes red.",
+			"why": "Intermittence is the case where one green run reads as a fix. The evidence has to be a ratio over repeated runs, not a single outcome.",
+			"expect": {
+				"invokes": true,
+				"output": "The case run repeatedly with --repeat and the pass ratio reported as evidence, the confidence word chosen from what that ratio supports, and unproven stated plainly where the cause is not pinned.",
+				"refuses": "Reporting a single green run as evidence that the flake is understood."
+			}
+		},
+		{
+			"id": "behaviour-that-is-a-decision",
+			"kind": "edge",
+			"prompt": "Vitest resolves a built file instead of the source and the import breaks. Diagnose it.",
+			"why": "It reads as a resolver bug, and the repository has already written down what it is: a rootDir/outDir pair, not a file to delete. A diagnosis that re-derives it without the reference teaches its reader to skim the rules.",
+			"expect": {
+				"invokes": true,
+				"output": "The cause named as the tsconfig rootDir/outDir pair with .claude/rules/build-output.md cited, and the candidate fix pointing at the tsconfig.",
+				"refuses": "Deleting the emitted file, which would hide the bug the report exists to expose."
+			}
+		},
+		{
+			"id": "needs-an-edit-to-see-further",
+			"kind": "edge",
+			"prompt": "Something in the worker pool swallows an error. Add whatever logging you need and find it.",
+			"why": "The request authorises edits and the skill does not make them. The boundary is worth stating: it hands back the instrumentation rather than applying it.",
+			"expect": {
+				"invokes": true,
+				"output": "Everything establishable read-only reported first, then the instrumentation described — the file, the line and what to add — handed back for the user to apply, with Status PARTIAL or NOT-REPRODUCED.",
+				"refuses": "Writing the log line, or any other edit made to confirm a hypothesis."
+			}
+		}
+	]
+}
