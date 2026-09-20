@@ -1,0 +1,13 @@
+{
+	"rule": "concurrency.md",
+	"loads": [
+		"packages/parallel/src/pool/index.ts",
+		"packages/parallel/src/index.ts",
+		"packages/collections/src/collections/async/async-sequence.collection.ts"
+	],
+	"ignores": [
+		"packages/collections/src/collections/sequence/sequence.collection.ts",
+		"packages/functions/src/index.ts"
+	],
+	"why": "The async collections sit inside a package the rule otherwise says nothing about, so the synchronous sequence next door is the path that proves the scope is a scope."
+}

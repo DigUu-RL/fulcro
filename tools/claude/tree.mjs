@@ -219,6 +219,86 @@ export const skillsOf = (root = repositoryRoot) => {
 };
 
 /**
+ * One rule as it sits on disk.
+ *
+ * `frontmatter` is read for every rule, present or not: a rule with no block
+ * is loaded always, which is a decision rather than an omission, and the
+ * validator reports on both.
+ *
+ * @typedef {{
+ *   file: string,
+ *   path: string,
+ *   source: string,
+ *   frontmatter: ReturnType<typeof frontmatterOf>,
+ * }} Rule
+ */
+
+/**
+ * Reads every rule under `.claude/rules`, index excluded.
+ *
+ * @param {string} [root] The repository root.
+ * @returns {Rule[]} The rules, ordered by file name.
+ */
+export const rulesOf = (root = repositoryRoot) => {
+	const base = path.join(root, '.claude', 'rules');
+
+	if (!exists(base)) return [];
+
+	return fs
+		.readdirSync(base)
+		.filter((file) => file.endsWith('.md') && file !== 'README.md')
+		.sort()
+		.map((file) => {
+			const full = path.join(base, file);
+			const source = fs.readFileSync(full, 'utf8');
+
+			return { file, path: full, source, frontmatter: frontmatterOf(source) };
+		});
+};
+
+/**
+ * One rule fixture, as read from `tools/claude/rule-fixtures`.
+ *
+ * @typedef {{
+ *   file: string,
+ *   path: string,
+ *   document: Record<string, unknown> | null,
+ *   problem: string | null,
+ * }} RuleFixture
+ */
+
+/**
+ * Reads every rule fixture.
+ *
+ * @param {string} [root] The repository root.
+ * @returns {RuleFixture[]} The fixtures, ordered by file name.
+ */
+export const ruleFixturesOf = (root = repositoryRoot) => {
+	const base = path.join(root, 'tools', 'claude', 'rule-fixtures');
+
+	if (!exists(base)) return [];
+
+	return fs
+		.readdirSync(base)
+		.filter((file) => file.endsWith('.fixture.json'))
+		.sort()
+		.map((file) => {
+			const full = path.join(base, file);
+
+			try {
+				return {
+					file,
+					path: full,
+					document: JSON.parse(fs.readFileSync(full, 'utf8')),
+					problem: null,
+				};
+			} catch (failure) {
+				return { file, path: full, document: null, problem: `${failure}` };
+			}
+		});
+};
+
+/**
  * One eval suite, as read from `tools/claude/skill-evals`.
  *
  * `cases` is whatever the file contained; validating its shape belongs to the

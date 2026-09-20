@@ -127,12 +127,15 @@ duration is not evidence — it describes the machine.
 
 ## Navigation
 
-- `.claude/rules/` — detailed invariants, path-scoped.
+- `.claude/rules/` — detailed invariants, path-scoped by a `paths` block in
+  the frontmatter; `tools/claude/rule-fixtures/` proves each scope loads where
+  it says it does.
 - `.claude/hooks/` — the invariants a session cannot talk its way out of,
   enforced by Claude Code itself; `tests/hooks/` is their suite.
 - `.claude/skills/` — workflows.
-- `tools/claude/` — the validators of everything above, and the eval suites in
-  `tools/claude/skill-evals/`; `tests/claude/` is their suite. They run on a
+- `tools/claude/` — the validators of everything above, the eval suites in
+  `tools/claude/skill-evals/` and the rule fixtures in
+  `tools/claude/rule-fixtures/`; `tests/claude/` is their suite. They run on a
   bare checkout, with no dependency beyond Node.
 - `.roadmap/` — the implementation plan, and not part of the checkout:
   `.gitignore` keeps it local. `.roadmap/MASTER-ROADMAP.md` is the ordering,

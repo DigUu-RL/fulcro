@@ -302,6 +302,229 @@ describe('what the contract and the rules name', () => {
 	});
 });
 
+/**
+ * A tree with the settings and a guard already in order, so that what a rule
+ * case reports is the rule.
+ *
+ * @param rules How the index lists the rule files it knows about.
+ * @returns The tree.
+ */
+const ruled = (rules: string[] = []): Tree => {
+	const fixture = configured();
+
+	hook(fixture, 'protect-publish');
+	fixture.write(
+		'.claude/settings.json',
+		settings(['.claude/hooks/protect-publish.mjs']),
+	);
+	fixture.write(
+		'.claude/rules/README.md',
+		`# Rules\n\n${rules.map((file) => `- \`${file}\``).join('\n')}\n`,
+	);
+
+	return fixture;
+};
+
+/**
+ * Writes a rule, and the source file a fixture for it points at.
+ *
+ * @param fixture The tree.
+ * @param file The rule's file name.
+ * @param frontmatter The lines of the block, or nothing for an unscoped rule.
+ */
+const rule = (fixture: Tree, file: string, frontmatter?: string): void => {
+	fixture.write(
+		`.claude/rules/${file}`,
+		`${frontmatter === undefined ? '' : `---\n${frontmatter}\n---\n\n`}# ${file}\n\n**Scope:** somewhere\n`,
+	);
+};
+
+describe('the frontmatter of a rule', () => {
+	it('accepts a scope whose fixture holds up', () => {
+		const fixture = ruled(['collections-performance.md']);
+
+		rule(
+			fixture,
+			'collections-performance.md',
+			'paths:\n  - packages/collections/src/**/*.ts',
+		);
+		fixture.write('packages/collections/src/index.ts', 'export {};\n');
+		fixture.write('packages/parallel/src/index.ts', 'export {};\n');
+		fixture.write(
+			'tools/claude/rule-fixtures/collections-performance.fixture.json',
+			JSON.stringify({
+				rule: 'collections-performance.md',
+				loads: ['packages/collections/src/index.ts'],
+				ignores: ['packages/parallel/src/index.ts'],
+			}),
+		);
+
+		expect(rules(fixture.root)).toEqual([]);
+		expect(rules(fixture.root, 'warning')).toEqual([]);
+	});
+
+	it('reports a key Claude Code does not read', () => {
+		const fixture = ruled(['general.md']);
+
+		rule(fixture, 'general.md', 'description: how code is written');
+
+		expect(rules(fixture.root)).toEqual(['rule-frontmatter-unknown-key']);
+	});
+
+	it('reports a scope pointing at a directory that is not there', () => {
+		const fixture = ruled(['concurrency.md']);
+
+		rule(fixture, 'concurrency.md', 'paths:\n  - packages/concurrency/**/*.ts');
+
+		expect(rules(fixture.root)).toEqual([
+			'rule-paths-missing',
+			'rule-fixture-missing',
+		]);
+	});
+
+	it('leaves a rule with no block alone, because it loads always', () => {
+		const fixture = ruled(['git.md']);
+
+		rule(fixture, 'git.md');
+
+		expect(rules(fixture.root)).toEqual([]);
+	});
+
+	it('warns when two rules say the same thing word for word', () => {
+		const fixture = ruled(['general.md', 'git.md']);
+		const paragraph =
+			'A name that has to be decoded is a name the next reader guesses at, and the guess is wrong exactly where it matters.';
+
+		fixture.write(
+			'.claude/rules/general.md',
+			`# General\n\n**Scope:** everywhere\n\n${paragraph}\n`,
+		);
+		fixture.write(
+			'.claude/rules/git.md',
+			`# Git\n\n**Scope:** everywhere\n\n${paragraph}\n`,
+		);
+
+		expect(rules(fixture.root, 'warning')).toEqual(['rule-duplicate']);
+	});
+});
+
+describe('the fixtures behind a path-scoped rule', () => {
+	/**
+	 * A tree with one scoped rule and two files to point a fixture at.
+	 *
+	 * @returns The tree.
+	 */
+	const scoped = (): Tree => {
+		const fixture = ruled(['transformers.md']);
+
+		rule(
+			fixture,
+			'transformers.md',
+			'paths:\n  - packages/*/src/transformer/**/*.ts',
+		);
+		fixture.write('packages/reflect/src/transformer/index.ts', 'export {};\n');
+		fixture.write('packages/reflect/src/index.ts', 'export {};\n');
+
+		return fixture;
+	};
+
+	it('reports a scoped rule with nothing proving it', () => {
+		expect(rules(scoped().root)).toEqual(['rule-fixture-missing']);
+	});
+
+	it('reports a file the rule would not in fact be loaded for', () => {
+		const fixture = scoped();
+
+		fixture.write(
+			'tools/claude/rule-fixtures/transformers.fixture.json',
+			JSON.stringify({
+				rule: 'transformers.md',
+				loads: ['packages/reflect/src/index.ts'],
+			}),
+		);
+
+		expect(rules(fixture.root)).toEqual(['fixture-not-loaded']);
+	});
+
+	it('reports a file the rule would be loaded for and must not be', () => {
+		const fixture = scoped();
+
+		fixture.write(
+			'tools/claude/rule-fixtures/transformers.fixture.json',
+			JSON.stringify({
+				rule: 'transformers.md',
+				loads: ['packages/reflect/src/transformer/index.ts'],
+				ignores: ['packages/reflect/src/transformer/index.ts'],
+			}),
+		);
+
+		expect(rules(fixture.root)).toEqual(['fixture-loaded']);
+	});
+
+	it('reports a path that is not in the repository at all', () => {
+		const fixture = scoped();
+
+		fixture.write(
+			'tools/claude/rule-fixtures/transformers.fixture.json',
+			JSON.stringify({
+				rule: 'transformers.md',
+				loads: ['packages/reflect/src/transformer/renamed.ts'],
+			}),
+		);
+
+		expect(rules(fixture.root)).toEqual(['fixture-path-missing']);
+	});
+
+	it('reports a fixture that proves nothing, and one named for the wrong rule', () => {
+		const empty = scoped();
+
+		empty.write(
+			'tools/claude/rule-fixtures/transformers.fixture.json',
+			JSON.stringify({ rule: 'transformers.md', loads: [] }),
+		);
+
+		expect(rules(empty.root)).toEqual(['fixture-empty']);
+
+		const misnamed = scoped();
+
+		misnamed.write(
+			'tools/claude/rule-fixtures/transformer.fixture.json',
+			JSON.stringify({
+				rule: 'transformers.md',
+				loads: ['packages/reflect/src/transformer/index.ts'],
+			}),
+		);
+
+		expect(rules(misnamed.root)).toEqual(['fixture-file-name']);
+	});
+
+	it('reports one naming a rule that is not scoped, or not there', () => {
+		const fixture = ruled(['git.md']);
+
+		rule(fixture, 'git.md');
+		fixture.write(
+			'tools/claude/rule-fixtures/git.fixture.json',
+			JSON.stringify({ rule: 'git.md', loads: [] }),
+		);
+
+		expect(rules(fixture.root)).toEqual(['fixture-unknown-rule']);
+	});
+
+	it('reports one that is not JSON', () => {
+		const fixture = scoped();
+
+		fixture.write(
+			'tools/claude/rule-fixtures/transformers.fixture.json',
+			'{ "rule": }\n',
+		);
+
+		expect(rules(fixture.root)).toEqual([
+			'fixture-unreadable',
+			'rule-fixture-missing',
+		]);
+	});
+});
+
 describe('this repository', () => {
 	it('passes its own validator, warnings included', () => {
 		expect(validateConfig()).toEqual([]);

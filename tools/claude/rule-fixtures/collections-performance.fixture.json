@@ -1,0 +1,14 @@
+{
+	"rule": "collections-performance.md",
+	"loads": [
+		"packages/collections/src/collections/sequence/sequence.collection.ts",
+		"packages/collections/src/collections/async/async-sequence.collection.ts",
+		"packages/collections/src/index.ts"
+	],
+	"ignores": [
+		"packages/parallel/src/pool/index.ts",
+		"packages/reflect/src/index.ts",
+		"tests/entrypoints.spec.mts"
+	],
+	"why": "The laziness rules are about the operators, so the rule follows the package rather than the word `sequence`: a sequence built in another package is not subject to it, and the async collections are."
+}

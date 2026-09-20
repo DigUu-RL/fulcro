@@ -18,8 +18,16 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+import { matchedBy } from './glob.mjs';
 import { error, report, warning } from './report.mjs';
-import { displayed, exists, repositoryRoot, settingsOf } from './tree.mjs';
+import {
+	displayed,
+	exists,
+	repositoryRoot,
+	ruleFixturesOf,
+	rulesOf,
+	settingsOf,
+} from './tree.mjs';
 import { claimingProse, missingReferences } from './validate-skills.mjs';
 
 /**
@@ -30,6 +38,38 @@ import { claimingProse, missingReferences } from './validate-skills.mjs';
  * plumbing — and nothing runs them directly.
  */
 const LIBRARIES = new Set(['command-line.mjs', 'hook.mjs']);
+
+/**
+ * The frontmatter keys a rule may set.
+ *
+ * One, deliberately. `paths` is what decides whether the rule is put in front
+ * of a session working on a given file, and it is the only key of a rule this
+ * repository relies on Claude Code reading. A second key added for the
+ * convenience of a human reader would be ignored in silence if Claude Code
+ * does not know it, which is the failure the rest of this file exists to
+ * catch — a heading in the body says the same thing and is read by everyone.
+ */
+const RULE_KEYS = new Set(['paths']);
+
+/**
+ * The paragraphs of a rule that are prose rather than structure.
+ *
+ * Headings, table rows, list entries and fenced blocks repeat across files for
+ * good reasons — two rules both listing `**Scope:**`, two tables sharing a
+ * column header. A paragraph of prose repeated word for word in two rules is
+ * the duplication the acceptance criteria ask about: one of the two will be
+ * updated and the other will go on saying the old thing.
+ *
+ * @param {string} body The rule below its frontmatter.
+ * @returns {string[]} The paragraphs, whitespace normalised.
+ */
+const proseParagraphs = (body) =>
+	claimingProse(body)
+		.split(/\n\s*\n/)
+		.map((paragraph) => paragraph.replace(/\s+/g, ' ').trim())
+		.filter(
+			(paragraph) => paragraph.length >= 80 && !/^[|\-*>#]/.test(paragraph),
+		);
 
 /**
  * Every hook event of a settings document, flattened.
@@ -280,15 +320,13 @@ const checkRules = (root) => {
 		);
 	}
 
-	for (const file of fs
-		.readdirSync(directory)
-		.filter((name) => name.endsWith('.md'))) {
-		const at = `.claude/rules/${file}`;
-		const source = fs.readFileSync(path.join(directory, file), 'utf8');
+	/** @type {Map<string, string>} */
+	const paragraphs = new Map();
 
-		if (file === 'README.md') continue;
+	for (const rule of rulesOf(root)) {
+		const at = `.claude/rules/${rule.file}`;
 
-		if (listing !== null && !listing.includes(file)) {
+		if (listing !== null && !listing.includes(rule.file)) {
 			findings.push(
 				error(
 					'rule-unlisted',
@@ -298,7 +336,7 @@ const checkRules = (root) => {
 			);
 		}
 
-		if (!/\*\*Scope:\*\*/.test(source)) {
+		if (!/\*\*Scope:\*\*/.test(rule.source)) {
 			findings.push(
 				warning(
 					'rule-scope',
@@ -307,6 +345,228 @@ const checkRules = (root) => {
 				),
 			);
 		}
+
+		findings.push(...checkRuleFrontmatter(rule, at, root));
+
+		for (const paragraph of proseParagraphs(rule.frontmatter.body)) {
+			const seen = paragraphs.get(paragraph);
+
+			if (seen === undefined) {
+				paragraphs.set(paragraph, rule.file);
+				continue;
+			}
+
+			findings.push(
+				warning(
+					'rule-duplicate',
+					at,
+					`Repeats a paragraph of \`${seen}\` word for word; one of the two will be updated and the other will not.`,
+				),
+			);
+		}
+	}
+
+	return findings;
+};
+
+/**
+ * Checks the frontmatter of one rule, and the scope it declares.
+ *
+ * @param {import('./tree.mjs').Rule} rule The rule.
+ * @param {string} at The path as a report spells it.
+ * @param {string} root The repository root.
+ * @returns {import('./report.mjs').Finding[]} What was found.
+ */
+const checkRuleFrontmatter = (rule, at, root) => {
+	const findings = [];
+	const block = rule.frontmatter;
+
+	// A rule without a block is loaded for every session, which is the shape
+	// the short, always-relevant rules take.
+	if (!block.present) return findings;
+
+	for (const problem of block.problems) {
+		findings.push(error('rule-frontmatter-unreadable', at, problem));
+	}
+
+	for (const key of block.order) {
+		if (RULE_KEYS.has(key)) continue;
+
+		findings.push(
+			error(
+				'rule-frontmatter-unknown-key',
+				`${at} (${key})`,
+				'Not a key a rule takes; an invented key is ignored in silence and the rule loads as if it were never scoped.',
+			),
+		);
+	}
+
+	const value = block.values.paths;
+
+	if (value === undefined) return findings;
+
+	const globs = Array.isArray(value) ? value : [`${value}`];
+
+	if (globs.length === 0) {
+		return [
+			...findings,
+			error(
+				'rule-paths-empty',
+				`${at} (paths)`,
+				'`paths` is empty, which scopes the rule to nothing.',
+			),
+		];
+	}
+
+	for (const glob of globs) {
+		const base = glob.split(/[*?[]/)[0].replace(/\/[^/]*$/, '');
+
+		if (base === '' || exists(path.join(root, base))) continue;
+
+		findings.push(
+			error(
+				'rule-paths-missing',
+				`${at} (paths)`,
+				`\`${glob}\` is scoped to \`${base}\`, which does not exist.`,
+			),
+		);
+	}
+
+	return findings;
+};
+
+/**
+ * Checks the fixtures that prove each path-scoped rule loads where it should.
+ *
+ * @param {string} root The repository root.
+ * @returns {import('./report.mjs').Finding[]} What was found.
+ */
+const checkRuleFixtures = (root) => {
+	const findings = [];
+
+	/** @type {Map<string, string[]>} */
+	const scoped = new Map();
+
+	for (const rule of rulesOf(root)) {
+		const value = rule.frontmatter.values.paths;
+
+		if (value === undefined) continue;
+
+		scoped.set(rule.file, Array.isArray(value) ? value : [`${value}`]);
+	}
+
+	const covered = new Set();
+
+	for (const fixture of ruleFixturesOf(root)) {
+		const where = `tools/claude/rule-fixtures/${fixture.file}`;
+
+		if (fixture.problem !== null || fixture.document === null) {
+			findings.push(
+				error(
+					'fixture-unreadable',
+					where,
+					`Not readable as JSON: ${fixture.problem}.`,
+				),
+			);
+
+			continue;
+		}
+
+		const named = fixture.document.rule;
+		const expected = `${fixture.file.replace(/\.fixture\.json$/, '')}.md`;
+
+		if (typeof named !== 'string' || !scoped.has(named)) {
+			findings.push(
+				error(
+					'fixture-unknown-rule',
+					where,
+					`\`rule\` names \`${named}\`, which is not a path-scoped rule in \`.claude/rules\`.`,
+				),
+			);
+
+			continue;
+		}
+
+		if (named !== expected) {
+			findings.push(
+				error(
+					'fixture-file-name',
+					where,
+					`Holds the fixture of \`${named}\`; the file is named for \`${expected}\`.`,
+				),
+			);
+		}
+
+		covered.add(named);
+
+		const globs = /** @type {string[]} */ (scoped.get(named));
+		const loads = fixture.document.loads;
+		const ignores = fixture.document.ignores;
+
+		if (!Array.isArray(loads) || loads.length === 0) {
+			findings.push(
+				error(
+					'fixture-empty',
+					where,
+					'`loads` names no file, so nothing here proves the rule is reached at all.',
+				),
+			);
+		}
+
+		for (const [key, entries] of [
+			['loads', loads],
+			['ignores', ignores],
+		]) {
+			for (const entry of Array.isArray(entries) ? entries : []) {
+				const target = `${entry}`;
+
+				if (!exists(path.join(root, ...target.split('/')))) {
+					findings.push(
+						error(
+							'fixture-path-missing',
+							`${where} (${key})`,
+							`\`${target}\` is not in the repository; a glob proved against a file that is not there is proved against nothing.`,
+						),
+					);
+
+					continue;
+				}
+
+				const matched = matchedBy(globs, target);
+
+				if (key === 'loads' && !matched) {
+					findings.push(
+						error(
+							'fixture-not-loaded',
+							`${where} (loads)`,
+							`\`${named}\` would not be loaded for \`${target}\`; its \`paths\` do not match it.`,
+						),
+					);
+				}
+
+				if (key === 'ignores' && matched) {
+					findings.push(
+						error(
+							'fixture-loaded',
+							`${where} (ignores)`,
+							`\`${named}\` would be loaded for \`${target}\`, which the fixture says it must not be.`,
+						),
+					);
+				}
+			}
+		}
+	}
+
+	for (const rule of scoped.keys()) {
+		if (covered.has(rule)) continue;
+
+		findings.push(
+			error(
+				'rule-fixture-missing',
+				`.claude/rules/${rule}`,
+				`Scoped by \`paths\` with nothing proving it; write \`tools/claude/rule-fixtures/${rule.replace(/\.md$/, '')}.fixture.json\`.`,
+			),
+		);
 	}
 
 	return findings;
@@ -356,6 +616,7 @@ const checkReferences = (root) => {
 export const validateConfig = (root = repositoryRoot) => [
 	...checkSettings(root),
 	...checkRules(root),
+	...checkRuleFixtures(root),
 	...checkReferences(root),
 ];
 
