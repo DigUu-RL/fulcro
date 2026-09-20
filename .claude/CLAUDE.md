@@ -27,16 +27,16 @@ its own package.
 Run from the repository root. These are the scripts that exist today — read
 `package.json` before trusting any command that is not on this list.
 
-| Command                              | What it does                                                    |
-| ------------------------------------ | --------------------------------------------------------------- |
-| `npm run build`                      | Builds `@fulcro/transform-core` first, then every workspace      |
-| `npm run typecheck`                  | `tsc --noEmit` per package, then `tsconfig.tests.json`           |
-| `npm test`                           | Builds, then runs Vitest                                        |
-| `npx vitest run --configLoader native` | The suites without rebuilding                                  |
-| `npx eslint .`                       | Lint, including the local `brace-wrapped-branches` rule          |
+| Command                                   | What it does                                                |
+| ----------------------------------------- | ----------------------------------------------------------- |
+| `npm run build`                           | Builds `@fulcro/transform-core` first, then every workspace |
+| `npm run typecheck`                       | `tsc --noEmit` per package, then `tsconfig.tests.json`      |
+| `npm test`                                | Builds, then runs Vitest                                    |
+| `npx vitest run --configLoader native`    | The suites without rebuilding                               |
+| `npx eslint .`                            | Lint, including the local `brace-wrapped-branches` rule     |
 | `npm run format:check` / `npm run format` | Prettier check / write                                      |
-| `npx --yes markdownlint-cli2`        | Markdown lint (`.markdownlint-cli2.jsonc`)                       |
-| `npm run changeset`                  | Records a version bump for a shipped change                      |
+| `npx --yes markdownlint-cli2`             | Markdown lint (`.markdownlint-cli2.jsonc`)                  |
+| `npm run changeset`                       | Records a version bump for a shipped change                 |
 
 Each package builds with `tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json`.
 
@@ -55,7 +55,10 @@ Built output goes to each package's `dist/` and never beside its source. A
 - Work reaches `main` only through a pull request.
 - Releases are tagged and published from `main` only, by Changesets.
 - **Pushing and publishing stay human-controlled.** Never push, never run
-  `npm publish` or `changeset publish`, and never merge, without being asked.
+  `npm publish` or `changeset publish`, and never merge. This one is enforced
+  rather than trusted: the hooks in `.claude/hooks/` refuse those commands
+  before they run. A refusal is not a puzzle to solve — see
+  `.claude/rules/protected-operations.md` for how a human performs them.
 - A pull request that changes `packages/*/src/**` must carry a changeset, or
   the release-readiness workflow fails it. It would otherwise merge green and
   never reach npm.
@@ -72,7 +75,7 @@ Two kinds of suite, and they are not interchangeable:
   with the transformers applied and the `@/*` alias resolved from that
   package's tsconfig.
 - **Built-package entrypoint tests** — `tests/*.spec.mts`, run from the
-  repository root against the published surface, deliberately *without* the
+  repository root against the published surface, deliberately _without_ the
   transformers, so they assert the runtime fallback a consumer gets before
   wiring anything up. `tests/transformers/**` is its own project again, for the
   two plugins walking one tree together.
@@ -124,6 +127,8 @@ duration is not evidence — it describes the machine.
 ## Navigation
 
 - `.claude/rules/` — detailed invariants, path-scoped.
+- `.claude/hooks/` — the invariants a session cannot talk its way out of,
+  enforced by Claude Code itself; `tests/hooks/` is their suite.
 - `.claude/skills/` — workflows.
 - `.roadmap/` — the implementation plan; `MASTER-ROADMAP.md` is the ordering,
   `CHECKLIST-MASTER.md` the state, `features/` one spec per feature.

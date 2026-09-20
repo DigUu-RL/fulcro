@@ -2,5 +2,7 @@ node_modules/
 dist/
 package-lock.json
 
-# Written by the tooling, not by hand.
-.claude/
+# Written by the tooling, not by hand. Everything else under `.claude` is —
+# the hooks are code this repository runs on every tool call, and the rules are
+# prose someone maintains, so both are formatted like the rest of the source.
+.claude/settings.local.json

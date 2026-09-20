@@ -2,7 +2,8 @@
 	"extends": "./tsconfig.base.json",
 	"compilerOptions": {
 		"noEmit": true,
-		"declaration": false
+		"declaration": false,
+		"allowJs": true
 	},
 	"include": ["tests/**/*", "vitest.config.mts"]
 }

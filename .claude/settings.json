@@ -1,0 +1,52 @@
+{
+	"$schema": "https://json.schemastore.org/claude-code-settings.json",
+	"permissions": {
+		"deny": [
+			"Bash(git push:*)",
+			"Bash(git reset --hard:*)",
+			"Bash(git clean:*)",
+			"Bash(npm publish:*)",
+			"Bash(pnpm publish:*)",
+			"Bash(yarn publish:*)",
+			"Bash(npm run release:*)",
+			"Bash(changeset publish:*)",
+			"Bash(npx changeset publish:*)",
+			"Bash(gh pr merge:*)",
+			"PowerShell(git push:*)",
+			"PowerShell(git reset --hard:*)",
+			"PowerShell(git clean:*)",
+			"PowerShell(npm publish:*)",
+			"PowerShell(npm run release:*)",
+			"PowerShell(changeset publish:*)",
+			"PowerShell(gh pr merge:*)"
+		]
+	},
+	"hooks": {
+		"PreToolUse": [
+			{
+				"matcher": "Bash|PowerShell",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node .claude/hooks/protect-publish.mjs"
+					},
+					{
+						"type": "command",
+						"command": "node .claude/hooks/block-destructive.mjs"
+					}
+				]
+			}
+		],
+		"PostToolUse": [
+			{
+				"matcher": "Edit|MultiEdit|Write|NotebookEdit",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node .claude/hooks/post-edit-check.mjs"
+					}
+				]
+			}
+		]
+	}
+}

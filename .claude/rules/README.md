@@ -9,9 +9,10 @@ sequence of steps to follow on request is a skill, under `.claude/skills/`.
 
 ## Current rules
 
-| File                | Scope             | Invariant                                          |
-| ------------------- | ----------------- | -------------------------------------------------- |
-| `build-output.md`   | `packages/*`      | Built output lives in `dist/`, never beside source |
+| File                      | Scope         | Invariant                                             |
+| ------------------------- | ------------- | ----------------------------------------------------- |
+| `build-output.md`         | `packages/*`  | Built output lives in `dist/`, never beside source    |
+| `protected-operations.md` | every session | Push, publish, merge and discard are a human's to run |
 
 The architecture rules for the library proper arrive with F11; see
 `.roadmap/features/F11-architecture-rules.md`.

@@ -107,6 +107,25 @@ const transformers = (): ViteUserConfig => ({
 	},
 });
 
+/**
+ * The repository's own safety hooks.
+ *
+ * Its own project for the same reason the transformers have one: what it
+ * checks is not the library at all. These suites call the guards under
+ * `.claude/hooks` directly — a guard is a function from a command line to a
+ * reason — so the blocking behaviour is verifiable without a model, without a
+ * session and without running any of the commands in question.
+ *
+ * @returns The project configuration.
+ */
+const hooks = (): ViteUserConfig => ({
+	test: {
+		name: 'hooks',
+		globals: true,
+		include: ['tests/hooks/**/*.spec.mts'],
+	},
+});
+
 export default defineConfig({
 	test: {
 		projects: [
@@ -116,6 +135,7 @@ export default defineConfig({
 			project('reflect'),
 			entryPoints(),
 			transformers(),
+			hooks(),
 		],
 	},
 });

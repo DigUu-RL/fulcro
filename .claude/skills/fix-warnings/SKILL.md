@@ -23,16 +23,16 @@ falha e seguir com o que der.
 
 Ordem, neste repositório:
 
-| # | Comando | O que revela |
-| - | ------- | ------------ |
-| 1 | `npm run build` | `tsc` (todas as flags do tsconfig), `tsc-alias`, avisos do transformer |
-| 2 | `npm run typecheck` | os mesmos checks sem emit, mais `tsconfig.tests.json` |
-| 3 | `npx vitest run --configLoader native` | warnings do runner, do Vite, dicas de config, `console.warn` das suítes, deprecações de API do Node |
-| 4 | `npx eslint .` | as regras do `eslint.config.mjs`, incluindo a regra local `local/brace-wrapped-branches` |
-| 5 | `npm run format:check` | arquivos fora do formato do Prettier |
-| 6 | `npx --yes markdownlint-cli2 "**/*.md" "#node_modules" "#**/dist"` | o `.markdownlint.jsonc` existe mas não tem script; rodar mesmo assim |
-| 7 | `npm ls --all` e a saída de `npm install` | `deprecated`, peer dependencies não satisfeitas, `EBADENGINE` |
-| 8 | `gh run view <id> --log` da última run de CI | warnings que só aparecem em Linux ou em outra versão do Node |
+| #   | Comando                                                            | O que revela                                                                                        |
+| --- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| 1   | `npm run build`                                                    | `tsc` (todas as flags do tsconfig), `tsc-alias`, avisos do transformer                              |
+| 2   | `npm run typecheck`                                                | os mesmos checks sem emit, mais `tsconfig.tests.json`                                               |
+| 3   | `npx vitest run --configLoader native`                             | warnings do runner, do Vite, dicas de config, `console.warn` das suítes, deprecações de API do Node |
+| 4   | `npx eslint .`                                                     | as regras do `eslint.config.mjs`, incluindo a regra local `local/brace-wrapped-branches`            |
+| 5   | `npm run format:check`                                             | arquivos fora do formato do Prettier                                                                |
+| 6   | `npx --yes markdownlint-cli2 "**/*.md" "#node_modules" "#**/dist"` | o `.markdownlint.jsonc` existe mas não tem script; rodar mesmo assim                                |
+| 7   | `npm ls --all` e a saída de `npm install`                          | `deprecated`, peer dependencies não satisfeitas, `EBADENGINE`                                       |
+| 8   | `gh run view <id> --log` da última run de CI                       | warnings que só aparecem em Linux ou em outra versão do Node                                        |
 
 Antes de rodar, conferir os `scripts` do `package.json` da raiz — se algum
 comando acima tiver mudado de nome, usar o do arquivo, não o da tabela.
