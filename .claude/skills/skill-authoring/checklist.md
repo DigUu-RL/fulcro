@@ -66,6 +66,9 @@ The thirteen, each present or deliberately answered:
 - [ ] At least one invocation that must trigger the skill.
 - [ ] At least one that must not.
 - [ ] At least one edge case — the near miss that shows where the boundary is.
+- [ ] All three written as data too, in
+      `tools/claude/skill-evals/<name>.eval.json`, each with the output shape
+      its run has to produce.
 
 ## Language
 
@@ -96,6 +99,7 @@ The thirteen, each present or deliberately answered:
 
 ## Repository hygiene
 
+- [ ] `npm run validate:claude` reports nothing.
 - [ ] `npm run format:check` passes.
 - [ ] `npx --yes markdownlint-cli2` passes.
 - [ ] The skill was invoked once, on one of its own positive examples, and

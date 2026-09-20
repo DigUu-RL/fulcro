@@ -132,7 +132,9 @@ missing part of the contract, not a stylistic choice.
 
 Then examples: at least one invocation that should trigger the skill and one
 that should not. They are the only part of a skill that says where its edge is,
-and F04's eval harness reads them.
+and they are written a second time as data, in
+`tools/claude/skill-evals/<name>.eval.json`, where a positive, a negative and
+an edge case can be counted.
 
 ## 4. Invocation policy
 
@@ -192,9 +194,9 @@ What moves out, into supporting files beside `SKILL.md`:
 - Anything only one branch of the skill needs — link it from that branch and
   let it be read only when that branch is taken.
 
-Every supporting file a skill names must exist. F04 validates this, and the
-failure mode without it is a skill confidently following a step that points at
-nothing.
+Every supporting file a skill names must exist.
+`tools/claude/validate-skills.mjs` checks this, and the failure mode without it
+is a skill confidently following a step that points at nothing.
 
 Dynamic context injection — pulling command output into the skill at load —
 is for deterministic, relevant snapshots only: a version, a file list, a
@@ -252,6 +254,9 @@ transcript that otherwise reads well:
 Before a skill is finished:
 
 - [ ] `checklist.md`, every box.
+- [ ] `npm run validate:claude` reports nothing for it — that is the
+      mechanical half: the frontmatter keys, the name, the files and scripts it
+      names, and the eval suite in `tools/claude/skill-evals/`.
 - [ ] Every command the skill names exists in `package.json` or in
       `.claude/CLAUDE.md`'s table, spelled as it is there.
 - [ ] Every file and skill the skill references exists.
@@ -268,6 +273,8 @@ Before a skill is finished:
   what no skill may do.
 - `checklist.md` — this standard as a review pass.
 - `templates/` — the three starting points.
+- `tools/claude/skill-evals/README.md` — the eval suites, and the shape of a
+  case.
 
 ## Examples
 

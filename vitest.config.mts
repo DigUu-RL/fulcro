@@ -126,6 +126,25 @@ const hooks = (): ViteUserConfig => ({
 	},
 });
 
+/**
+ * The validators of the repository's own `.claude` tree.
+ *
+ * Its own project, beside the hooks and for the same reason: what it checks is
+ * not the library. The suites build a `.claude` tree in a temporary directory
+ * and ask the validators what they found, so both halves of every check — what
+ * it refuses and what it must keep allowing — are exercised without a model and
+ * without this repository having to contain a broken skill.
+ *
+ * @returns The project configuration.
+ */
+const claude = (): ViteUserConfig => ({
+	test: {
+		name: 'claude',
+		globals: true,
+		include: ['tests/claude/**/*.spec.mts'],
+	},
+});
+
 export default defineConfig({
 	test: {
 		projects: [
@@ -136,6 +155,7 @@ export default defineConfig({
 			entryPoints(),
 			transformers(),
 			hooks(),
+			claude(),
 		],
 	},
 });

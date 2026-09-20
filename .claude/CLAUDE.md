@@ -36,6 +36,7 @@ Run from the repository root. These are the scripts that exist today — read
 | `npx eslint .`                            | Lint, including the local `brace-wrapped-branches` rule     |
 | `npm run format:check` / `npm run format` | Prettier check / write                                      |
 | `npx --yes markdownlint-cli2`             | Markdown lint (`.markdownlint-cli2.jsonc`)                  |
+| `npm run validate:claude`                 | Structural validation of the `.claude` tree                 |
 | `npm run changeset`                       | Records a version bump for a shipped change                 |
 
 Each package builds with `tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json`.
@@ -130,6 +131,9 @@ duration is not evidence — it describes the machine.
 - `.claude/hooks/` — the invariants a session cannot talk its way out of,
   enforced by Claude Code itself; `tests/hooks/` is their suite.
 - `.claude/skills/` — workflows.
+- `tools/claude/` — the validators of everything above, and the eval suites in
+  `tools/claude/skill-evals/`; `tests/claude/` is their suite. They run on a
+  bare checkout, with no dependency beyond Node.
 - `.roadmap/` — the implementation plan; `MASTER-ROADMAP.md` is the ordering,
   `CHECKLIST-MASTER.md` the state, `features/` one spec per feature.
 - `docs/` — library documentation, `docs/testing.md` for the testing standard.

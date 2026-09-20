@@ -63,6 +63,30 @@ jobs:
       - name: Test
         run: npx vitest run --configLoader native
 
+  claude:
+    name: .claude tree
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      # No install step, and no `cache: npm` to warm one: the validators are
+      # written against Node's standard library alone, so this job runs on a
+      # bare checkout. That is also the property being protected — a checker
+      # that needed the workspace installed could not report a `.claude` tree
+      # broken badly enough to break the install.
+      #
+      # Only the errors fail the job. The warnings — a skill with no eval
+      # suite, one longer than the guidance — are printed on every run and
+      # fail under `--strict`, so a skill written before the standard is
+      # visible without the whole repository waiting on it.
+      - name: Validate
+        run: npm run validate:claude
+
   quality:
     name: lint and formatting
     runs-on: ubuntu-latest

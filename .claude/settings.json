@@ -16,8 +16,11 @@
 			"PowerShell(git reset --hard:*)",
 			"PowerShell(git clean:*)",
 			"PowerShell(npm publish:*)",
+			"PowerShell(pnpm publish:*)",
+			"PowerShell(yarn publish:*)",
 			"PowerShell(npm run release:*)",
 			"PowerShell(changeset publish:*)",
+			"PowerShell(npx changeset publish:*)",
 			"PowerShell(gh pr merge:*)"
 		]
 	},

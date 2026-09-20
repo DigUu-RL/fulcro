@@ -11,6 +11,7 @@
 		"typecheck": "npm run typecheck --workspaces && tsc --noEmit -p tsconfig.tests.json",
 		"test": "npm run build && vitest run --configLoader native",
 		"test:watch": "npm run build && vitest --configLoader native",
+		"validate:claude": "node tools/claude/validate-skills.mjs && node tools/claude/validate-claude-config.mjs",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
 		"lint:md": "npx --yes markdownlint-cli2",
