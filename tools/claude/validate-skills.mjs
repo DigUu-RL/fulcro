@@ -30,6 +30,7 @@ import {
 	displayed,
 	evalsOf,
 	exists,
+	ignoredIn,
 	repositoryRoot,
 	scriptsOf,
 	skillsOf,
@@ -272,6 +273,38 @@ export const resolves = (reference, directory, root) => {
 };
 
 /**
+ * The references of a document that point at nothing.
+ *
+ * Shared with `validate-claude-config.mjs`, because the contract and the rules
+ * name files the same way a skill does and a reference is broken for the same
+ * reason in all three. What git deliberately keeps out of the checkout is not
+ * one of them — see `ignoredIn`.
+ *
+ * @param {string} prose The prose that makes claims about this repository.
+ * @param {string} directory The directory the document sits in.
+ * @param {string} root The repository root.
+ * @param {string} where The path as a report spells it.
+ * @returns {import('./report.mjs').Finding[]} One finding per dangling name.
+ */
+export const missingReferences = (prose, directory, root, where) => {
+	const unresolved = referencesIn(prose).filter(
+		(reference) => !resolves(reference, directory, root),
+	);
+
+	const ignored = ignoredIn(root, unresolved);
+
+	return unresolved
+		.filter((reference) => !ignored.has(reference))
+		.map((reference) =>
+			error(
+				'reference-missing',
+				where,
+				`Names \`${reference}\`, which is not in the repository.`,
+			),
+		);
+};
+
+/**
  * Checks the frontmatter of one skill.
  *
  * @param {import('./tree.mjs').Skill} skill The skill.
@@ -460,17 +493,7 @@ const checkBody = (skill, where, root, available) => {
 	const directory = path.join(root, '.claude', 'skills', skill.directory);
 	const prose = claimingProse(body);
 
-	for (const reference of referencesIn(prose)) {
-		if (resolves(reference, directory, root)) continue;
-
-		findings.push(
-			error(
-				'reference-missing',
-				where,
-				`Names \`${reference}\`, which is not in the repository.`,
-			),
-		);
-	}
+	findings.push(...missingReferences(prose, directory, root, where));
 
 	for (const match of body.matchAll(/npm run ([a-z][\w:-]*)/g)) {
 		if (available.scripts.has(match[1])) continue;

@@ -134,6 +134,8 @@ duration is not evidence — it describes the machine.
 - `tools/claude/` — the validators of everything above, and the eval suites in
   `tools/claude/skill-evals/`; `tests/claude/` is their suite. They run on a
   bare checkout, with no dependency beyond Node.
-- `.roadmap/` — the implementation plan; `MASTER-ROADMAP.md` is the ordering,
-  `CHECKLIST-MASTER.md` the state, `features/` one spec per feature.
+- `.roadmap/` — the implementation plan, and not part of the checkout:
+  `.gitignore` keeps it local. `.roadmap/MASTER-ROADMAP.md` is the ordering,
+  `.roadmap/CHECKLIST-MASTER.md` the state, `.roadmap/features/` one spec per
+  feature.
 - `docs/` — library documentation, `docs/testing.md` for the testing standard.

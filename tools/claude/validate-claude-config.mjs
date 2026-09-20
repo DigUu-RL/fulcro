@@ -20,7 +20,7 @@ import { pathToFileURL } from 'node:url';
 
 import { error, report, warning } from './report.mjs';
 import { displayed, exists, repositoryRoot, settingsOf } from './tree.mjs';
-import { claimingProse, referencesIn, resolves } from './validate-skills.mjs';
+import { claimingProse, missingReferences } from './validate-skills.mjs';
 
 /**
  * Hook modules that are libraries rather than guards.
@@ -341,17 +341,7 @@ const checkReferences = (root) => {
 		const where = displayed(root, file);
 		const prose = claimingProse(fs.readFileSync(file, 'utf8'));
 
-		for (const reference of referencesIn(prose)) {
-			if (resolves(reference, path.dirname(file), root)) continue;
-
-			findings.push(
-				error(
-					'reference-missing',
-					where,
-					`Names \`${reference}\`, which is not in the repository.`,
-				),
-			);
-		}
+		findings.push(...missingReferences(prose, path.dirname(file), root, where));
 	}
 
 	return findings;

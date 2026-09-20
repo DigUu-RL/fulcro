@@ -9,6 +9,7 @@
  * asserts on the findings.
  */
 
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -121,6 +122,51 @@ export const basenamesOf = (root = repositoryRoot) => {
 	basenames.set(root, found);
 
 	return found;
+};
+
+/**
+ * Which of these paths the repository deliberately keeps out of itself.
+ *
+ * A prompt may point at something that is not committed — `.roadmap/` is
+ * ignored here, and the planning tree it holds is a local working copy rather
+ * than part of the checkout. On the machine that wrote the sentence the file
+ * is right there, and on a clean checkout it is not, so a validator reading
+ * only the disk answers differently in the two places. That is exactly the
+ * failure this repository already learnt once, in the `.gitignore` comment
+ * about the thirteen tests: the first clean checkout is where a missing file
+ * is noticed.
+ *
+ * So the question is put to git, which is the only thing that knows the
+ * difference between a file that is missing and a file that was never meant
+ * to be there. Where git cannot answer — no repository, no git on the machine
+ * — nothing is ignored and every unresolved reference is reported, which is
+ * the stricter of the two answers.
+ *
+ * @param {string} root The repository root.
+ * @param {string[]} references The paths that did not resolve on disk.
+ * @returns {Set<string>} The ones an ignore rule accounts for.
+ */
+export const ignoredIn = (root, references) => {
+	if (references.length === 0) return new Set();
+
+	const asked = spawnSync('git', ['check-ignore', '--stdin'], {
+		cwd: root,
+		input: references.join('\n'),
+		encoding: 'utf8',
+	});
+
+	// 0 is "some are ignored", 1 is "none are". Anything else — 128 for no
+	// repository, or the spawn failing outright — leaves the set empty.
+	if (asked.error !== undefined || (asked.status !== 0 && asked.status !== 1)) {
+		return new Set();
+	}
+
+	return new Set(
+		(asked.stdout ?? '')
+			.split(/\r?\n/)
+			.map((line) => line.trim())
+			.filter((line) => line !== ''),
+	);
 };
 
 /**

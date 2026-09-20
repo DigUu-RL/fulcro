@@ -1,3 +1,5 @@
+import { spawnSync } from 'node:child_process';
+
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { validateConfig } from '../../tools/claude/validate-claude-config.mjs';
@@ -273,6 +275,30 @@ describe('what the contract and the rules name', () => {
 		);
 
 		expect(rules(fixture.root)).toEqual(['reference-missing']);
+	});
+
+	it('leaves alone a path the repository deliberately keeps out of itself', () => {
+		const fixture = configured();
+
+		hook(fixture, 'protect-publish');
+		fixture.write(
+			'.claude/settings.json',
+			settings(['.claude/hooks/protect-publish.mjs']),
+		);
+		fixture.write('.gitignore', '.roadmap/*\n');
+		fixture.write(
+			'.claude/CLAUDE.md',
+			'# Contract\n\nThe plan is `.roadmap/MASTER-ROADMAP.md`.\n',
+		);
+
+		// Without a repository there are no ignore rules to read, and the
+		// reference is reported — which is the answer a checker gives when it
+		// cannot tell a missing file from one that was never committed.
+		expect(rules(fixture.root)).toEqual(['reference-missing']);
+
+		spawnSync('git', ['init'], { cwd: fixture.root });
+
+		expect(rules(fixture.root)).toEqual([]);
 	});
 });
 
