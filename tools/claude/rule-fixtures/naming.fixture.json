@@ -1,0 +1,13 @@
+{
+	"rule": "naming.md",
+	"loads": [
+		"packages/collections/src/index.ts",
+		"packages/reflect/src/unplugin/index.mts",
+		"packages/parallel/src/index.ts"
+	],
+	"ignores": [
+		"tests/entrypoints.spec.mts",
+		"tools/claude/validate-claude-config.mjs"
+	],
+	"why": "The vocabulary is a promise to consumers, so the scope follows where an exported name is declared: package sources, both extensions. `tests/` imports those names and never coins one, and `tools/` is not shipped at all — a scope that reached either would put the rule in front of sessions that cannot break it."
+}
