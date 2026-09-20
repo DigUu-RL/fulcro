@@ -55,6 +55,20 @@ jobs:
       github.event.workflow_run.conclusion == 'success'
 
     steps:
+      # The dispatch form takes whatever branch the menu happened to be showing,
+      # and pointing it at `dev` publishes `dev` — code that no pull request has
+      # gated and that `main` may not contain. It has happened: a dispatch from
+      # `dev` published 0.9.0 a minute before the merge to `main` released it,
+      # and the automatic run then died on `E409 Cannot publish over previously
+      # staged version`. The trees matched that time. Nothing guaranteed it.
+      - name: Refuse to release from anywhere but main
+        if: >-
+          github.event_name == 'workflow_dispatch' &&
+          github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Released from ${{ github.ref }}. A release is cut from main: re-run this dispatch with main selected, or merge dev first."
+          exit 1
+
       - uses: actions/checkout@v7
         with:
           # The exact commit CI passed on, not whatever `main` points at by now.
@@ -166,6 +180,18 @@ jobs:
       - name: Test
         run: npx vitest run --configLoader native
 
+      # `changeset publish` tags what it published with `git tag <name> -m
+      # <name>`, and the `-m` makes it an *annotated* tag, which git refuses to
+      # write without a committer identity. A runner has none. Changesets does
+      # not read the exit code, so it reports "Created git tags." either way,
+      # and the push that follows finds nothing to push and says "Everything
+      # up-to-date" — which is how every release from 0.4.0 to 0.8.1 published
+      # correctly and tagged nothing at all.
+      - name: Identify the tagger
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
       - name: Publish
         run: npx changeset publish
 
@@ -174,3 +200,48 @@ jobs:
       # push the current branch as well — which is not one.
       - name: Push the tags
         run: git push --tags
+
+      # The step above is the one that was silently doing nothing, so it does
+      # not get to report its own success. Every version in the manifests is
+      # checked against the remote, which is the only place a tag is any use.
+      - name: Check every version is tagged
+        run: |
+          node - <<'NODE'
+          const { execSync } = require('node:child_process');
+
+          const run = (command) =>
+            execSync(command, { encoding: 'utf8' }).trim();
+
+          const workspaces = Object.values(
+            JSON.parse(run('npm pkg get name version --workspaces --json')),
+          );
+
+          const remote = new Set(
+            run('git ls-remote --tags origin')
+              .split('\n')
+              .filter(Boolean)
+              .map((line) => line.split('refs/tags/')[1])
+              .filter((tag) => tag && !tag.endsWith('^{}')),
+          );
+
+          const missing = workspaces
+            .map((pkg) => `${pkg.name}@${pkg.version}`)
+            .filter((tag) => !remote.has(tag));
+
+          if (missing.length > 0) {
+            console.error(
+              [
+                'These versions are in the manifests but carry no tag on the remote:',
+                '',
+                ...missing.map((tag) => `  - ${tag}`),
+                '',
+                'The publish itself may well have succeeded — check the registry before',
+                'retrying anything. What failed is the record of which commit each',
+                'version was built from.',
+              ].join('\n'),
+            );
+            process.exit(1);
+          }
+
+          console.log('Every version in the manifests is tagged on the remote.');
+          NODE
