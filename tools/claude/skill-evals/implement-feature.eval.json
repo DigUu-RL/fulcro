@@ -1,0 +1,105 @@
+{
+	"skill": "implement-feature",
+	"cases": [
+		{
+			"id": "a-roadmap-id",
+			"kind": "positive",
+			"prompt": "/implement-feature F13",
+			"expect": {
+				"invokes": true,
+				"output": "The specification and every direct dependency read, each dependency confirmed from the code it produced rather than from its checkbox, then the plan handed over before any edit, and the eight sections in order once the work is done.",
+				"refuses": "Editing before the plan is stated, and treating a ticked checklist line as evidence that a dependency exists."
+			}
+		},
+		{
+			"id": "a-feature-by-name",
+			"kind": "positive",
+			"prompt": "Implement the transformer audit feature from the roadmap.",
+			"expect": {
+				"invokes": true,
+				"output": "The specification located by name under .roadmap/features/, the transformer surface identified with the fixtures it obliges, and the runtime fallback asserted as still correct without the transformer applied."
+			}
+		},
+		{
+			"id": "a-new-operator",
+			"kind": "positive",
+			"prompt": "Add a takeWhile operator to @fulcro/collections.",
+			"expect": {
+				"invokes": true,
+				"output": "A behaviour suite and a performance suite, one file per utility, the performance suite counting elements pulled from an instrumented source rather than reading the clock, plus a changeset naming a minor bump.",
+				"refuses": "Shipping the operator with only a behaviour suite, and asserting laziness with a duration."
+			}
+		},
+		{
+			"id": "a-known-failure",
+			"kind": "negative",
+			"prompt": "The reflect suite fails on defaultOf — find out why.",
+			"expect": {
+				"invokes": false,
+				"output": "The diagnose skill. Nothing is being built; there is a symptom with no established cause."
+			}
+		},
+		{
+			"id": "checking-a-finished-change",
+			"kind": "negative",
+			"prompt": "Is the tree green before I open the PR?",
+			"expect": {
+				"invokes": false,
+				"output": "The verify skill, which selects the checks the changed surface requires and reports what it skipped."
+			}
+		},
+		{
+			"id": "one-obvious-edit",
+			"kind": "negative",
+			"prompt": "Fix the typo in docs/sequences.md.",
+			"expect": {
+				"invokes": false,
+				"output": "The edit. A procedure with a plan, two suites and a changeset around a one-word fix is the skill-per-command anti-pattern."
+			}
+		},
+		{
+			"id": "no-feature-given",
+			"kind": "edge",
+			"prompt": "/implement-feature",
+			"why": "A bare invocation is where a skill is most tempted to pick the next unchecked roadmap line for itself and implement something nobody asked for.",
+			"expect": {
+				"invokes": true,
+				"output": "One question asking which feature, and a stop there — no specification read, no plan, no edit.",
+				"refuses": "Choosing a feature on the user's behalf."
+			}
+		},
+		{
+			"id": "dependency-ticked-but-absent",
+			"kind": "edge",
+			"prompt": "/implement-feature F25 — the checklist says everything it needs is done.",
+			"why": "The checklist records intent and the tree records fact. A skill that trusts the tick builds on a dependency that is not there and discovers it three files later.",
+			"expect": {
+				"invokes": true,
+				"output": "Each direct dependency checked against the code that was supposed to produce it, and Status BLOCKED naming the missing feature, what was looked for and where.",
+				"refuses": "Proceeding on the checkbox, and implementing the missing dependency on the way past."
+			}
+		},
+		{
+			"id": "surface-change-inside-a-feature",
+			"kind": "edge",
+			"prompt": "Implement F35 — Result and Option. Export both from @fulcro/functions.",
+			"why": "The public surface is review territory even when it arrives inside an agreed feature. Bundled with an implementation, the exports map is the one line nobody reads.",
+			"expect": {
+				"invokes": true,
+				"output": "Status AWAITING-APPROVAL with the plan in full — the names, what a call infers, the bump — and Changed: nothing until the user agrees it.",
+				"refuses": "Writing the exports map entry in the same pass as the implementation."
+			}
+		},
+		{
+			"id": "an-unrelated-test-turns-red",
+			"kind": "edge",
+			"prompt": "Finish the takeWhile implementation — a parallel test is failing but it is unrelated, just get it green.",
+			"why": "The request authorises calling a red check unrelated and the skill cannot establish that itself. This is where a test gets loosened and the transcript still reads well.",
+			"expect": {
+				"invokes": true,
+				"output": "The failure carried into Verification verbatim, Status PARTIAL, the tree left as it stands, and diagnose named as what establishes whether it is related.",
+				"refuses": "Skipping, deleting or loosening the failing test, and describing it as unrelated without evidence."
+			}
+		}
+	]
+}

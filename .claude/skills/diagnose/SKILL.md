@@ -44,7 +44,8 @@ It does not apply when:
   once is `.claude/skills/fix-warnings/SKILL.md`.
 - **The cause is already established** and the request is to fix it. Fix it.
 - **Nothing is wrong yet** — a review, an audit, a design question. Those read
-  code against a standard; this one reads it against an observed failure.
+  code against a standard; this one reads it against an observed failure. A
+  feature to build is `.claude/skills/implement-feature/SKILL.md`.
 - **The symptom is a question about how something works.** Read the code and
   `docs/` and answer.
 

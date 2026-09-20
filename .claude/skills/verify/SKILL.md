@@ -59,6 +59,9 @@ It does not apply when:
   before changing anything.
 - **The request is one check.** `npm run format:check` is a command, not a
   workflow. Run it.
+- **The change has not been built yet.** Building it is
+  `.claude/skills/implement-feature/SKILL.md`, whose §4 invokes this skill once
+  the work is done.
 - **Nothing has changed since the last run.** Say what the last run found.
 
 ## Arguments
