@@ -14,4 +14,10 @@
 	// Prettier decides how table pipes line up, and re-aligns them on every
 	// write. There is nothing here for a second opinion to settle.
 	"MD060": false,
+
+	// Markdown has no way to size or centre an image, and a logo rendered at
+	// its natural 1254px is a black slab across the top of the page. These four
+	// elements are what a centred header needs and nothing more — prose stays
+	// Markdown, and anything beyond a banner should be argued for separately.
+	"MD033": { "allowed_elements": ["h1", "p", "a", "img"] },
 }

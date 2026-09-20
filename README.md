@@ -1,6 +1,15 @@
-# ![fulcro](icon.png)
+<h1 align="center">
+  <img src="icon.png" alt="fulcro" width="180" height="180" />
+</h1>
 
-[![CI](https://github.com/DigUu-RL/fulcro/actions/workflows/ci.yml/badge.svg)](https://github.com/DigUu-RL/fulcro/actions/workflows/ci.yml)
+<p align="center">
+  <a href="https://github.com/DigUu-RL/fulcro/actions/workflows/ci.yml">
+    <img
+      src="https://github.com/DigUu-RL/fulcro/actions/workflows/ci.yml/badge.svg"
+      alt="CI"
+    />
+  </a>
+</p>
 
 Development root for the `@fulcro` packages. Private — nothing is published from
 here; the packages under `packages/` are.
