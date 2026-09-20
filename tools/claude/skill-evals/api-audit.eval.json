@@ -1,0 +1,105 @@
+{
+	"skill": "api-audit",
+	"cases": [
+		{
+			"id": "an-exports-map-changed",
+			"kind": "positive",
+			"prompt": "I changed the exports map of @fulcro/parallel — what does a consumer see?",
+			"expect": {
+				"invokes": true,
+				"output": "npm run build first, then every path in exports, main and types resolved against dist, the map diffed against the package's last release tag, and the sections reported in order with the findings table ordered BLOCKER first and a bump line per package.",
+				"refuses": "Reading the source in place of the emitted declarations, and concluding anything about resolution without having built."
+			}
+		},
+		{
+			"id": "before-a-release",
+			"kind": "positive",
+			"prompt": "Audit the public API of @fulcro/collections before we release it.",
+			"expect": {
+				"invokes": true,
+				"output": "The baseline tag named (@fulcro/collections@0.9.0 or later), all four entry points resolved, the files allowlist checked with npm pack --dry-run, and bump_found compared against what .changeset/ claims.",
+				"refuses": "Publishing, packing a real tarball, or writing the changeset itself."
+			}
+		},
+		{
+			"id": "a-refactored-signature",
+			"kind": "positive",
+			"prompt": "Did the map refactor change what anything infers?",
+			"expect": {
+				"invokes": true,
+				"output": "What a call infers before and after, quoted from the .d.ts in dist on both sides rather than from the source, cited to .claude/rules/api-design.md, and the absent type-level test named as its own finding."
+			}
+		},
+		{
+			"id": "is-the-tree-green",
+			"kind": "negative",
+			"prompt": "Is everything green before I commit?",
+			"expect": {
+				"invokes": false,
+				"output": "The verify skill, which runs the checks and reports their exit statuses. This one builds only to have declarations to read and reports the surface."
+			}
+		},
+		{
+			"id": "review-the-branch",
+			"kind": "negative",
+			"prompt": "Review the branch before I open the pull request.",
+			"expect": {
+				"invokes": false,
+				"output": "The fulcro-review skill, which reads the diff against every contract. The surface is one of its dimensions; this skill is only the surface and is invoked when that is what the question is about."
+			}
+		},
+		{
+			"id": "designing-the-surface",
+			"kind": "negative",
+			"prompt": "Should we rename takeWhile to something clearer?",
+			"expect": {
+				"invokes": false,
+				"output": ".claude/rules/api-design.md on names being kept and the better name added alongside the old one. A surface proposal is a conversation, not an audit of what is written."
+			}
+		},
+		{
+			"id": "a-package-with-no-tag",
+			"kind": "edge",
+			"prompt": "Audit the API of the new package I just added.",
+			"why": "There is no previous release to diff against, and an audit with nothing to compare is where a version gets invented so that the run produces a comparison.",
+			"expect": {
+				"invokes": true,
+				"output": "git tag --list consulted, the absence of a tag stated, the whole surface reported as new under NOTE, and the entry points still resolved against dist and checked against tests/entrypoints.spec.mts.",
+				"refuses": "Inventing a previous version, or treating an unchanged-looking surface as compatible with nothing to compare it to."
+			}
+		},
+		{
+			"id": "nothing-renamed",
+			"kind": "edge",
+			"prompt": "No exported name changed, so the surface is the same — confirm it for the changeset.",
+			"why": "This is exactly the case api-design.md was written for: inference, overload order and the declaration output all move without a single name moving, and the request asks for the confirmation rather than the check.",
+			"expect": {
+				"invokes": true,
+				"output": "The names diffed and found equal, and then the inference, overload-order, type/runtime-parity and packaging dimensions worked anyway, each with the evidence read this run.",
+				"refuses": "Concluding the surface is unchanged because no name moved, and writing 'looks compatible' without naming what was resolved and compared."
+			}
+		},
+		{
+			"id": "the-build-fails",
+			"kind": "edge",
+			"prompt": "/api-audit collections",
+			"why": "Every claim this skill makes comes from dist, so a failed build leaves it with nothing to read and a strong pull toward auditing the source instead.",
+			"expect": {
+				"invokes": true,
+				"output": "Status BLOCKED, the build output verbatim, and a stop.",
+				"refuses": "Auditing the source as a substitute for the emitted declarations, and reporting a surface it did not resolve."
+			}
+		},
+		{
+			"id": "a-documented-exception",
+			"kind": "edge",
+			"prompt": "Audit collections — and note that its package.json still has no sideEffects field.",
+			"why": "It has the shape of a packaging finding and the manifest already carries the argument for it. An audit that re-reports a written-down decision trains its reader to skim.",
+			"expect": {
+				"invokes": true,
+				"output": "Nothing reported for the omitted sideEffects field, because the manifest's own comment explains it; the rest of the packaging dimension audited normally.",
+				"refuses": "Reporting a deliberate, documented omission as a finding."
+			}
+		}
+	]
+}
