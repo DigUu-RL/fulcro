@@ -19,6 +19,20 @@ class Admin extends User {
 	level = 1;
 }
 
+/** A shape with one of everything the generic form has a rule for. */
+interface Order {
+	readonly id: number;
+	note?: string;
+	readonly customer: {
+		readonly email: string;
+		readonly city: { name: string };
+	};
+	readonly items: readonly { readonly sku: string; readonly qty: number }[];
+	readonly status: 'pending' | 'paid';
+	readonly placedAt: Date;
+	readonly parent?: Order;
+}
+
 /**
  * Runtime suite for `typeOf`.
  *
@@ -149,5 +163,89 @@ describe('typeOf', () => {
 			default:
 				throw new Error(`unexpected ${inspected.typeId}`);
 		}
+	});
+});
+
+/**
+ * Compile-time suite for the generic form.
+ *
+ * It answers about a type rather than a value, so it is resolved entirely by
+ * the transformer and what is asserted here is what the transformer emitted.
+ */
+describe('typeOf<T>()', () => {
+	it('should name the type and how it was declared', () => {
+		const described = typeOf<Order>();
+
+		expect(described.name).toBe('Order');
+		expect(described.kind).toBe('interface');
+		expect(described.text).toBe('Order');
+	});
+
+	it('should point at where the type was declared', () => {
+		const site = typeOf<Order>().site;
+
+		expect(site).not.toBeNull();
+		expect(site?.path).toContain('typeOf.spec.ts');
+		expect(site?.line).toBeGreaterThan(0);
+	});
+
+	it('should list the members with their types', () => {
+		const members = typeOf<Order>().members;
+
+		expect(members.map((member) => member.name)).toEqual([
+			'id',
+			'note',
+			'customer',
+			'items',
+			'status',
+			'placedAt',
+			'parent',
+		]);
+
+		expect(members.find((member) => member.name === 'id')?.type).toBe('number');
+	});
+
+	it('should say which members are optional and which are readonly', () => {
+		// The two things a value can never report about itself: an object cannot
+		// tell you a property it happens to carry was declared optional.
+		const members = typeOf<Order>().members;
+
+		const byName = (name: string) =>
+			members.find((member) => member.name === name);
+
+		expect(byName('note')?.optional).toBe(true);
+		expect(byName('id')?.optional).toBe(false);
+		expect(byName('id')?.readonly).toBe(true);
+		expect(byName('note')?.readonly).toBe(false);
+	});
+
+	it('should report the branches of a union', () => {
+		const described = typeOf<'pending' | 'paid'>();
+
+		expect(described.union).toEqual(['"pending"', '"paid"']);
+		expect(described.members).toEqual([]);
+	});
+
+	it('should report the element of an array', () => {
+		expect(typeOf<string[]>().element).toBe('string');
+	});
+
+	it('should leave union and element null for an ordinary shape', () => {
+		const described = typeOf<Order>();
+
+		expect(described.union).toBeNull();
+		expect(described.element).toBeNull();
+	});
+
+	it('should still describe a value when given one', () => {
+		// The two forms answer different questions and both have to keep working.
+		expect(typeOf(42).typeId).toBe('integer');
+		expect(typeOf(undefined).typeId).toBe('undefined');
+	});
+
+	it('should refuse the generic form when nothing resolved it', () => {
+		expect(() => (typeOf as () => unknown)()).toThrow(
+			/was not resolved at compile time/,
+		);
 	});
 });
