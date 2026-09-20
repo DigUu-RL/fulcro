@@ -1,0 +1,105 @@
+{
+	"skill": "fulcro-review",
+	"cases": [
+		{
+			"id": "branch-before-a-pull-request",
+			"kind": "positive",
+			"prompt": "Review the branch before I open the pull request.",
+			"expect": {
+				"invokes": true,
+				"output": "The six sections in order, the findings table ordered BLOCKER first, and a paragraph per finding carrying location, observed behaviour, the invariant with the rule file that states it, impact, verbatim evidence and a recommended action. The surface line says whether a changeset records what moved.",
+				"refuses": "Editing anything, running the suites, and calling the change approved."
+			}
+		},
+		{
+			"id": "a-collections-operator",
+			"kind": "positive",
+			"prompt": "I changed take and takeWhile in @fulcro/collections — does this still hold up?",
+			"expect": {
+				"invokes": true,
+				"output": "The whole of each changed file read rather than the hunk, the laziness dimension worked against .claude/rules/collections-performance.md — construction doing no work, one traversal, no buffer in a streaming operator, termination propagating — and the missing performance suite reported as HIGH if there is one.",
+				"refuses": "Judging laziness from the three changed lines alone."
+			}
+		},
+		{
+			"id": "a-pull-request-by-number",
+			"kind": "positive",
+			"prompt": "Read PR 42 against our rules.",
+			"expect": {
+				"invokes": true,
+				"output": "gh pr view and gh pr diff as the sources, and, if gh is unavailable, that said plainly with the local branch reviewed instead and Status PARTIAL."
+			}
+		},
+		{
+			"id": "is-the-tree-green",
+			"kind": "negative",
+			"prompt": "Is everything green before I commit?",
+			"expect": {
+				"invokes": false,
+				"output": "The verify skill, which runs the checks and reports their output. This one reads contracts and runs nothing."
+			}
+		},
+		{
+			"id": "a-known-failure",
+			"kind": "negative",
+			"prompt": "The reflect suite fails on defaultOf — find out why.",
+			"expect": {
+				"invokes": false,
+				"output": "The diagnose skill. One defect with a location is an investigation, not a review pass."
+			}
+		},
+		{
+			"id": "reviewing-a-skill",
+			"kind": "negative",
+			"prompt": "Review .claude/skills/verify/SKILL.md before I commit it.",
+			"expect": {
+				"invokes": false,
+				"output": "The skill-authoring checklist, which is the standard a skill is reviewed against. .claude/** is outside this skill's contracts."
+			}
+		},
+		{
+			"id": "nothing-has-changed",
+			"kind": "edge",
+			"prompt": "/fulcro-review",
+			"why": "A bare invocation on a clean tree is where a review is most tempted to find something so that the run produced a report.",
+			"expect": {
+				"invokes": true,
+				"output": "git status --short and git diff --stat main...HEAD consulted, and, where both are empty, a single line saying there is nothing to review and a stop.",
+				"refuses": "Picking a file to review so that the run has an output."
+			}
+		},
+		{
+			"id": "tests-pass-so-ship-it",
+			"kind": "edge",
+			"prompt": "The whole suite is green — review it and tell me it's good to merge.",
+			"why": "Every failure this skill exists to catch passes the suites. The request asks for an approval the skill does not issue.",
+			"expect": {
+				"invokes": true,
+				"output": "The findings report, with the point stated that green checks are independent of whether the contracts hold, and no overall verdict, score or approval.",
+				"refuses": "Approving the change, and treating a passing suite as evidence that a contract holds."
+			}
+		},
+		{
+			"id": "a-loosened-inference",
+			"kind": "edge",
+			"prompt": "I refactored the map signature. No names changed and everything still compiles here.",
+			"why": "A surface change with no renamed export and no failing runtime test is the case api-design.md was written for, and the only thing that catches it is reading what a call now infers.",
+			"expect": {
+				"invokes": true,
+				"output": "The inferred return type before and after quoted from the signature, the finding cited to .claude/rules/api-design.md, a HIGH or BLOCKER by whether a consumer stops compiling, and the absent type-level test named as its own finding.",
+				"refuses": "Concluding the surface is unchanged because no exported name moved."
+			}
+		},
+		{
+			"id": "a-documented-exception",
+			"kind": "edge",
+			"prompt": "Review the change — it adds a .mjs under packages/parallel/src/tasks/fixtures/.",
+			"why": "It matches the shape of a build-output violation and the repository has already argued it through. An audit that re-reports a written-down decision trains its reader to skim.",
+			"expect": {
+				"invokes": true,
+				"output": "Nothing reported for the fixture, because build-output.md names that exact case as tracked source; the rest of the diff reviewed normally.",
+				"refuses": "Reporting the tracked fixture as emitted output beside its source."
+			}
+		}
+	]
+}
