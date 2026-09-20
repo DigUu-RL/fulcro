@@ -1,4 +1,4 @@
-# fulcro
+# ![fulcro](icon.png)
 
 [![CI](https://github.com/DigUu-RL/fulcro/actions/workflows/ci.yml/badge.svg)](https://github.com/DigUu-RL/fulcro/actions/workflows/ci.yml)
 
