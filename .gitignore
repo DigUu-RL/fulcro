@@ -1,5 +1,6 @@
 node_modules/
 dist/
+.roadmap/*
 
 # Emitted output never belongs beside a source. A build misconfigured on its
 # `rootDir` drops `.js` and `.d.ts` files right next to the `.ts` they came

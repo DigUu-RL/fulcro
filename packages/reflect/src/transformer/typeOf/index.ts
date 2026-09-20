@@ -9,6 +9,8 @@ import {
 	utilityModuleSegment,
 } from '@fulcro/transform-core';
 
+import { Member, membersOfType } from '@/transformer/describe';
+
 /**
  * Rewriter of `typeOf`.
  *
@@ -177,6 +179,97 @@ const buildDeclaredLiteral = (
 	);
 };
 
+/**
+ * Builds everything the compiler knows about a type, for `typeOf<T>()`.
+ *
+ * Built on the same literal the value form is given, plus the three things a
+ * value could never report: the members and whether each is optional, the
+ * branches of a union, and the element of an array.
+ *
+ * @param type Type being described.
+ * @param context Compilation in progress.
+ * @returns The literal.
+ */
+const buildMetadataLiteral = (
+	type: typescript.Type,
+	at: typescript.Node,
+	context: RewriteContext,
+): typescript.ObjectLiteralExpression => {
+	const { checker, factory } = context;
+
+	const declared: typescript.ObjectLiteralExpression = buildDeclaredLiteral(
+		type,
+		context,
+	);
+
+	const members: readonly Member[] = membersOfType(type, checker, at);
+
+	const union: readonly string[] | null = type.isUnion()
+		? type.types.map((member) => checker.typeToString(member))
+		: null;
+
+	const element: string | null = checker.isArrayType(type)
+		? checker.typeToString(
+				checker.getTypeArguments(type as typescript.TypeReference)[0],
+			)
+		: null;
+
+	return factory.createObjectLiteralExpression(
+		[
+			...declared.properties,
+			factory.createPropertyAssignment(
+				'members',
+				factory.createArrayLiteralExpression(
+					members.map((member) =>
+						factory.createObjectLiteralExpression(
+							[
+								factory.createPropertyAssignment(
+									'name',
+									factory.createStringLiteral(member.name),
+								),
+								factory.createPropertyAssignment(
+									'type',
+									factory.createStringLiteral(member.type),
+								),
+								factory.createPropertyAssignment(
+									'optional',
+									member.optional
+										? factory.createTrue()
+										: factory.createFalse(),
+								),
+								factory.createPropertyAssignment(
+									'readonly',
+									member.readonly
+										? factory.createTrue()
+										: factory.createFalse(),
+								),
+							],
+							false,
+						),
+					),
+					true,
+				),
+			),
+			factory.createPropertyAssignment(
+				'union',
+				union === null
+					? factory.createNull()
+					: factory.createArrayLiteralExpression(
+							union.map((branch) => factory.createStringLiteral(branch)),
+							false,
+						),
+			),
+			factory.createPropertyAssignment(
+				'element',
+				element === null
+					? factory.createNull()
+					: factory.createStringLiteral(element),
+			),
+		],
+		true,
+	);
+};
+
 /** Rewriter appending the declared type of the argument to a `typeOf` call. */
 export const typeOfRewriter: CallRewriter = {
 	functionName: 'typeOf',
@@ -186,6 +279,20 @@ export const typeOfRewriter: CallRewriter = {
 		call: typescript.CallExpression,
 		context: RewriteContext,
 	): typescript.Node | null => {
+		const [typeArgument] = call.typeArguments ?? [];
+
+		// `typeOf<T>()`: no value to inspect, so the whole call is replaced by
+		// what the compiler knows about the type. Told apart by having no
+		// argument rather than by the argument being `undefined`, because
+		// `typeOf(undefined)` is an ordinary call about the undefined value.
+		if (call.arguments.length === 0 && typeArgument !== undefined) {
+			return buildMetadataLiteral(
+				context.checker.getTypeFromTypeNode(typeArgument),
+				call,
+				context,
+			);
+		}
+
 		// Already carries its injected description, from a nested pass.
 		if (call.arguments.length !== 1) return null;
 

@@ -154,6 +154,90 @@ export interface DeclaredType {
 	readonly site: DeclarationSite | null;
 }
 
+/** One member a type declares, as the compiler describes it. */
+export interface DeclaredMember {
+	/** Name of the member. */
+	readonly name: string;
+
+	/** Its type, as the compiler renders it. */
+	readonly type: string;
+
+	/** Whether it may be absent. */
+	readonly optional: boolean;
+
+	/** Whether it is declared `readonly`. */
+	readonly readonly: boolean;
+}
+
+/**
+ * Everything the compiler knows about a type, reported without a value.
+ *
+ * The counterpart of {@link TypeOf}, which describes what a value *is* — this
+ * describes what a type *says*. They answer different questions and are not
+ * interchangeable: a value cannot tell you its members are optional, and a type
+ * cannot tell you whether the thing in front of you is `NaN`.
+ */
+export interface TypeMetadata {
+	/** The type exactly as the compiler renders it. */
+	readonly text: string;
+
+	/** Name of the type when it has one, `null` for an anonymous shape. */
+	readonly name: string | null;
+
+	/** How the type was declared. */
+	readonly kind: DeclaredKind;
+
+	/** Where it was declared, `null` for a built-in or anonymous type. */
+	readonly site: DeclarationSite | null;
+
+	/**
+	 * The members it declares, in the order they were written.
+	 *
+	 * Empty for a type with none — a primitive, a union, an array. This is what
+	 * a separate `membersOf<T>()` would have returned; one question, one place.
+	 */
+	readonly members: readonly DeclaredMember[];
+
+	/**
+	 * The branches of a union, rendered, or `null` when the type is not one.
+	 *
+	 * The question `members` cannot answer: a union has no members of its own,
+	 * and reporting an empty list would look like a shape with nothing in it.
+	 */
+	readonly union: readonly string[] | null;
+
+	/** The element type of an array, rendered, or `null` when it is not one. */
+	readonly element: string | null;
+}
+
+/**
+ * The two questions `typeOf` answers, which take different arguments and
+ * return different things.
+ *
+ * Kept as an explicit signature rather than overloads on a function
+ * declaration, so the arity check inside the implementation is the only place
+ * the two forms are told apart.
+ */
+export interface TypeOfSignature {
+	/**
+	 * Describes a type, without needing a value of it.
+	 *
+	 * @template T Type being described.
+	 * @returns Everything the compiler knows about it.
+	 * @throws {Error} When the call was not resolved at compile time.
+	 */
+	<T>(): TypeMetadata;
+
+	/**
+	 * Describes a value.
+	 *
+	 * @param value Value being inspected.
+	 * @param declared Appended by the transformer; never passed by hand.
+	 * @returns The description of the value.
+	 */
+	(value: unknown, declared?: DeclaredType): TypeOf;
+}
+
 /** Identifiers whose values are primitives. */
 const PRIMITIVE_IDS: ReadonlySet<TypeId> = new Set<TypeId>([
 	'null',
@@ -430,7 +514,21 @@ const isIterable = (value: unknown): boolean => {
  * by hand: the transformer appends it, and it stays `undefined` otherwise.
  * @returns The description of the value.
  */
-export const typeOf = (value: unknown, declared?: DeclaredType): TypeOf => {
+export const typeOf: TypeOfSignature = ((
+	...args: readonly unknown[]
+): TypeOf => {
+	// Zero arguments is the generic form, `typeOf<T>()`, arriving unresolved.
+	// It is told apart by arity rather than by the value being `undefined`,
+	// because `typeOf(undefined)` is a perfectly ordinary call that has to keep
+	// answering about the undefined value.
+	if (args.length === 0) {
+		throw new Error(
+			'typeOf<T>() was not resolved at compile time. Either the @fulcro/reflect transformer did not run over this file, or T is an unresolved generic. The form taking a value, typeOf(value), works without it.',
+		);
+	}
+
+	const [value, declared] = args as [unknown, DeclaredType | undefined];
+
 	const typeId: TypeId = resolveTypeId(value);
 
 	return {
@@ -442,4 +540,4 @@ export const typeOf = (value: unknown, declared?: DeclaredType): TypeOf => {
 		iterable: isIterable(value),
 		declared: declared ?? null,
 	};
-};
+}) as TypeOfSignature;

@@ -1,14 +1,24 @@
-# Reflection: `nameOf`, `typeOf`, `defaultOf`
+# Reflection
 
-Three utilities that answer questions TypeScript erases on its way to
-JavaScript.
+Eight utilities that answer questions TypeScript erases on its way to
+JavaScript: what a name was, what a type says, what is a valid empty value, and
+whether the thing in front of you really is what it claims.
 
 ```sh
 npm install @fulcro/reflect
 ```
 
 ```ts
-import { defaultOf, nameOf, typeOf } from '@fulcro/reflect';
+import {
+	as,
+	defaultOf,
+	is,
+	keysOf,
+	nameOf,
+	pathOf,
+	pathsOf,
+	typeOf,
+} from '@fulcro/reflect';
 ```
 
 One package: the compile time transformer ships inside it, as
@@ -172,6 +182,114 @@ setFilters(defaultOf<Filters>());
 
 Add a required field to `Order` and every one of those follows. A hand-written
 `{ id: 0, items: [] }` does not, and the compiler will not tell you.
+
+## `pathOf` — the whole path, not the last name
+
+`nameOf` answers with the last segment. `pathOf` answers with all of them:
+
+```ts
+nameOf(() => user.profile.email); // 'email'
+pathOf(() => user.profile.email); // 'profile.email'
+
+pathOf(() => order.items[0].sku); // 'items[0].sku'
+pathOf(() => order['customer'].email); // 'customer.email'
+```
+
+Which is what a form field name, a database column, a sort key or a translation
+key actually needs — the name alone loses where the value lives.
+
+**The root is dropped**, because the path is relative to it. The object being
+described is the form, the row, the document, and repeating whatever the local
+variable happened to be called would make the answer depend on that.
+
+The accessor is never invoked, so this is safe on a getter with side effects.
+With the transformer it becomes a literal before a minifier can rename
+anything; without it the source of the closure is parsed at runtime, which
+works and carries the same caveat `nameOf` does.
+
+## Describing a type without a value
+
+Three utilities answer questions about a **type**, with no value to inspect.
+All three need the transformer, and refuse without it.
+
+### `keysOf<T>()`
+
+```ts
+keysOf<Order>(); // ['id', 'customer', 'items', 'total']
+```
+
+For the lists a program keeps writing out by hand and forgetting to update: the
+columns of a table, the fields of a form, the properties to copy.
+
+**This is deliberately not `Object.keys`.** The keys of a value and the keys of
+a type are different questions: structural typing lets an object carry more than
+its type declares, which is exactly why `Object.keys` returns `string[]` rather
+than `(keyof T)[]`. Typing that cast as the narrower thing would be a lie of the
+same family as the language's own `as`. This one never looks at a value.
+
+### `typeOf<T>()`
+
+The counterpart of `typeOf(value)`. That one describes what a value **is**; this
+describes what a type **says**:
+
+```ts
+typeOf<Order>();
+// {
+//   text: 'Order', name: 'Order', kind: 'interface',
+//   site: { path: 'src/models/order.ts', line: 4, column: 1 },
+//   members: [
+//     { name: 'id',   type: 'number', optional: false, readonly: true },
+//     { name: 'note', type: 'string', optional: true,  readonly: false },
+//   ],
+//   union: null,
+//   element: null,
+// }
+```
+
+`members` is what a separate `membersOf<T>()` would have returned — one
+question, one place. `union` carries the branches when the type is one, and
+`element` the element type when it is an array; both are `null` otherwise,
+because an empty list would read as a shape with nothing in it.
+
+The two forms are told apart by having an argument or not, so `typeOf(undefined)`
+keeps describing the undefined value.
+
+### `pathsOf<T>()`
+
+Every leaf the type can be walked to:
+
+```ts
+pathsOf<Order>();
+// [
+//   { path: 'id',                    type: 'number', optional: false },
+//   { path: 'customer.email',        type: 'string', optional: false },
+//   { path: 'items[].sku',           type: 'string', optional: false },
+//   { path: 'status', type: '"pending" | "paid"',    optional: false },
+//   { path: 'placedAt',              type: 'Date',   optional: false },
+// ]
+```
+
+For anything that enumerates a shape rather than reads one value: the columns a
+report can sort by, the fields a form renders, the keys a translation file
+needs.
+
+**Three rules keep the answer useful**, and each exists because the version
+without it produces nonsense.
+
+A **primitive is a leaf.** Descending into one yields the whole of
+`String.prototype` — `customer.email.trimLeft` is a real property path and
+useless as a data path.
+
+A **known class is a leaf.** `placedAt` reports `Date`, not the fifty methods a
+date carries.
+
+**Recursion stops** at the repeat, naming the type at the end of the path. A
+type containing itself has infinitely many paths, and where the repeat begins is
+more honest than an arbitrary depth of it.
+
+A union of primitives is a leaf and reports the union. A union with an object in
+it is reported without being descended: there is no single path to promise when
+the shape depends on which branch a value took.
 
 ## `is` and `as` — checking a value against a type
 
