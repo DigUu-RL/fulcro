@@ -63,6 +63,12 @@ Built output goes to each package's `dist/` and never beside its source. A
 - A pull request that changes `packages/*/src/**` must carry a changeset, or
   the release-readiness workflow fails it. It would otherwise merge green and
   never reach npm.
+- A green tree is not a releasable tree. `/release-check` is the pass before
+  the pull request to `main`: it runs `/verify`, `/api-audit`, `/docs-sync` and
+  `/dependency-audit`, and then reads the part nothing else looks at — the
+  changesets, the versions against the registry and the tags, the `dist`
+  output, the `exports` and `files` lists, and what the release workflows
+  assume. It releases nothing.
 
 ## Testing
 
