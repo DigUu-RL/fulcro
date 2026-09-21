@@ -1,8 +1,8 @@
-<h1 align="center">
-  <img src="icon.png" alt="fulcro" width="180" height="180" />
+<h1 align="left">
+  <img src="icon-wide.png" alt="fulcro" width="80%" />
 </h1>
 
-<p align="center">
+<p align="left">
   <a href="https://github.com/DigUu-RL/fulcro/actions/workflows/ci.yml">
     <img
       src="https://github.com/DigUu-RL/fulcro/actions/workflows/ci.yml/badge.svg"
