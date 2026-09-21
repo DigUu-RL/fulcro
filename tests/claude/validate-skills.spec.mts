@@ -111,6 +111,48 @@ describe('the frontmatter', () => {
 		expect(rules(fixture.root, 'warning')).toContain('description-trigger');
 	});
 
+	it('refuses a quoted value YAML would reject, and loses no other key to it', () => {
+		const fixture = tree();
+
+		// Shell escaping, which is what a hand reaches for and what YAML has no
+		// use for: the value closes at `session'` and the rest is a syntax error.
+		fixture.skill(
+			'exports-audit',
+			`${WELL_FORMED}\nargument-hint: '[a package | this session'\\''s reports]'`,
+		);
+
+		expect(rules(fixture.root)).toEqual(['frontmatter-unreadable']);
+	});
+
+	it('refuses a plain value carrying a colon or a hash', () => {
+		const fixture = tree();
+
+		fixture.skill(
+			'exports-audit',
+			'name: exports-audit\ndescription: Audits the exports maps. Use when a surface changed: before a release.',
+		);
+		fixture.skill(
+			'entry-audit',
+			'name: entry-audit\ndescription: Counts the # of entry points. Use before a release.',
+		);
+
+		expect(rules(fixture.root)).toEqual([
+			'frontmatter-unreadable',
+			'frontmatter-unreadable',
+		]);
+	});
+
+	it('accepts the quoting and the colons that are actually valid', () => {
+		const fixture = tree();
+
+		fixture.skill(
+			'exports-audit',
+			`${WELL_FORMED}\nallowed-tools: Read, Bash(npx vitest run:*)\nargument-hint: '[a package | this session''s reports]'`,
+		);
+
+		expect(rules(fixture.root)).toEqual([]);
+	});
+
 	it('refuses a value of the wrong kind', () => {
 		const fixture = tree();
 

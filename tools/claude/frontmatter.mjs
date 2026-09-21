@@ -43,22 +43,102 @@ const unquoted = (text) => {
 };
 
 /**
- * Reads a scalar, turning the two literals YAML treats specially.
+ * Where a quoted scalar's closing quote is, or `-1` when it has none.
+ *
+ * `''` inside a single-quoted scalar is an escaped quote and not the end of
+ * it; `\"` is the same inside a double-quoted one.
+ *
+ * @param {string} text The trimmed scalar, opening quote included.
+ * @returns {number} The index of the closing quote.
+ */
+const closingQuote = (text) => {
+	const quote = text[0];
+
+	for (let at = 1; at < text.length; at += 1) {
+		if (quote === '"' && text[at] === '\\') {
+			at += 1;
+			continue;
+		}
+
+		if (text[at] !== quote) continue;
+		if (quote === "'" && text[at + 1] === "'") {
+			at += 1;
+			continue;
+		}
+
+		return at;
+	}
+
+	return -1;
+};
+
+/**
+ * Reads a scalar, reporting the shapes YAML reads differently than this does.
+ *
+ * The reporting is the point. Stripping the outer quotes with a regular
+ * expression and moving on accepts a value no YAML parser will, and the block
+ * is then lost whole — Claude Code falls back to the skill's directory name as
+ * its description, which is a skill that never triggers and never says why.
+ * Three shapes have done it here: shell escaping (`\'`) inside a single-quoted
+ * value, where YAML wants `''`; a plain scalar carrying `: `, which is a
+ * nested mapping; and a plain scalar carrying ` #`, which is a comment and
+ * drops everything after it in silence.
  *
  * Only `true` and `false` are converted. Numbers stay strings: no key in the
  * frontmatter contract takes one, and a version-looking value silently
  * becoming a float is a worse failure than a string nobody compares.
  *
  * @param {string} text The raw scalar.
- * @returns {string | boolean} The value.
+ * @param {string} key The key it belongs to, for the message.
+ * @returns {{ value: string | boolean, problem: string | null }} The value.
  */
-const scalar = (text) => {
+const scalar = (text, key) => {
 	const trimmed = text.trim();
 
-	if (trimmed === 'true') return true;
-	if (trimmed === 'false') return false;
+	if (trimmed === 'true') return { value: true, problem: null };
+	if (trimmed === 'false') return { value: false, problem: null };
 
-	return unquoted(trimmed);
+	if (trimmed.startsWith("'") || trimmed.startsWith('"')) {
+		const quote = trimmed[0];
+		const end = closingQuote(trimmed);
+
+		if (end < 0) {
+			return {
+				value: unquoted(trimmed),
+				problem: `\`${key}\` opens with ${quote} and never closes it, so YAML reads past the end of the block and discards every key in it.`,
+			};
+		}
+
+		if (end !== trimmed.length - 1) {
+			return {
+				value: unquoted(trimmed),
+				problem: `\`${key}\` closes its quote before the end of the value, and YAML then discards every key in the block. A ${quote} inside a ${quote}-quoted value is written ${quote}${quote}; \`\\${quote}\` is shell escaping and means nothing here.`,
+			};
+		}
+
+		const inner = trimmed.slice(1, end);
+
+		return {
+			value: quote === "'" ? inner.replaceAll("''", "'") : inner,
+			problem: null,
+		};
+	}
+
+	if (trimmed.includes(': ')) {
+		return {
+			value: trimmed,
+			problem: `\`${key}\` is unquoted and carries \`: \`, which YAML reads as a mapping inside a mapping rather than as text. Quote the value, or write the colon as a dash.`,
+		};
+	}
+
+	if (/\s#/.test(trimmed)) {
+		return {
+			value: trimmed,
+			problem: `\`${key}\` is unquoted and carries \` #\`, which starts a YAML comment: everything after it is dropped, and nothing says so.`,
+		};
+	}
+
+	return { value: trimmed, problem: null };
 };
 
 /**
@@ -155,7 +235,11 @@ export const frontmatterOf = (content) => {
 		} else if (raw.trim().startsWith('[') && raw.trim().endsWith(']')) {
 			values[key] = inlineList(raw.trim());
 		} else {
-			values[key] = scalar(raw);
+			const read = scalar(raw, key);
+
+			values[key] = read.value;
+
+			if (read.problem !== null) problems.push(read.problem);
 		}
 	}
 

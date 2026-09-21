@@ -1,6 +1,6 @@
 ---
 name: verify
-description: Runs the checks a change actually needs — build, typecheck, the affected Vitest projects, formatting, ESLint, and the specialised suites for transformers, entry points, performance and the `.claude` tree — and reports status, evidence, and every check that was skipped with its reason. Use when a change is ready to be checked: before a commit, before opening a pull request, or when asked whether the tree is green.
+description: Runs the checks a change actually needs — build, typecheck, the affected Vitest projects, formatting, ESLint, and the specialised suites for transformers, entry points, performance and the `.claude` tree — and reports status, evidence, and every check that was skipped with its reason. Use when a change is ready to be checked — before a commit, before opening a pull request, or when asked whether the tree is green.
 allowed-tools: Read, Grep, Glob, Bash(npm run build), Bash(npm run typecheck), Bash(npm run format:check), Bash(npm run lint:md), Bash(npm run validate:claude), Bash(npx vitest run:*), Bash(npx eslint:*), Bash(npm ls:*), Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git show:*)
 ---
 
