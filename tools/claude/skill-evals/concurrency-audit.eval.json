@@ -1,0 +1,125 @@
+{
+	"skill": "concurrency-audit",
+	"cases": [
+		{
+			"id": "does-the-bound-hold",
+			"kind": "positive",
+			"prompt": "Can the pool ever run more than `workers` tasks at once?",
+			"expect": {
+				"invokes": true,
+				"output": "The await points of `process` numbered with what is held at each, hazard 10 read against the dispatch site — whether the worker is marked busy in the same tick as the post — and either a finding carrying the ordered sequence that reaches limit + 1, or a clean row plus matrix row 3 reported as covered or not.",
+				"refuses": "Answering from the signature or from the fact that the suite passes: a bound is proven at its peak, and a suite asserting a total leaves row 3 uncovered whatever it is called."
+			}
+		},
+		{
+			"id": "cancellation-mid-task",
+			"kind": "positive",
+			"prompt": "I added an AbortSignal to the streaming path — is cancellation actually honoured while a worker is mid-task?",
+			"expect": {
+				"invokes": true,
+				"output": "Hazards 4 and 5 separated — queued work that must never start, and work in flight that must be told — each with the sequence, plus what the caller receives and what is released, and matrix rows 7 and 8 reported with where they are covered.",
+				"refuses": "Treating a run that stops handing out queued tasks as cancelled when its workers run to completion."
+			}
+		},
+		{
+			"id": "before-the-pull-request",
+			"kind": "positive",
+			"prompt": "This branch touches packages/parallel/src/pool — read it before I open the pull request.",
+			"expect": {
+				"invokes": true,
+				"output": "The seven sections: status, unit, the numbered model, findings each with a replayable sequence and the promise it breaks, the eight matrix rows with coverage, unproven concerns with the experiment that would settle them, and what was read.",
+				"refuses": "Applying the one-line `finally` that would close a hazard, or writing a test to prove one."
+			}
+		},
+		{
+			"id": "same-key-callers",
+			"kind": "positive",
+			"prompt": "Two callers ask this cache for the same key at the same time. Does the work happen twice?",
+			"expect": {
+				"invokes": true,
+				"output": "Hazard 15 with the sequence naming the await point between the miss and the write, the fix stated in words as storing the in-flight promise rather than the value, and matrix rows 4 and 5 as the pair that settles it.",
+				"refuses": "Reporting it as a generic race without naming the await point the second caller slips through."
+			}
+		},
+		{
+			"id": "the-suite-is-flaky",
+			"kind": "negative",
+			"prompt": "The parallel suite fails intermittently on CI — figure out what is wrong.",
+			"expect": {
+				"invokes": false,
+				"output": "The diagnose skill, which starts from a reproduction and works back to a cause. This audit is for code that passes."
+			}
+		},
+		{
+			"id": "is-the-tree-green",
+			"kind": "negative",
+			"prompt": "Run the checks and tell me whether everything passes before I commit.",
+			"expect": {
+				"invokes": false,
+				"output": "The verify skill, which runs the checks a change needs and reports their exit statuses."
+			}
+		},
+		{
+			"id": "what-does-the-pool-cost",
+			"kind": "negative",
+			"prompt": "How much does a pool of eight workers cost over a hundred thousand elements?",
+			"expect": {
+				"invokes": false,
+				"output": "The benchmark skill. A peak measured for its price rather than its correctness is a cost question, and this audit reports neither a duration nor a comparison."
+			}
+		},
+		{
+			"id": "write-the-abort-test",
+			"kind": "negative",
+			"prompt": "Write the abort-after-acquisition test for the pool.",
+			"expect": {
+				"invokes": false,
+				"output": "The implement-feature skill, working from this audit's matrix row 8. The audit reports the uncovered row; it does not write the suite."
+			}
+		},
+		{
+			"id": "a-race-with-no-await",
+			"kind": "edge",
+			"prompt": "There's a check and then a write to the same counter here — isn't that a race?",
+			"why": "JavaScript does not preempt between two synchronous statements, so a check and an act with no await point between them cannot interleave. Reporting one spends the credibility the fourteen real hazards rely on.",
+			"expect": {
+				"invokes": true,
+				"output": "The await points listed, the absence of one between the check and the act stated as the reason there is no finding, and — where a second caller could still reach the block through a callback — hazard 8 audited instead.",
+				"refuses": "Reporting a race window with no await point in its sequence."
+			}
+		},
+		{
+			"id": "clean-unit-uncovered-matrix",
+			"kind": "edge",
+			"prompt": "Audit the async sequence operators. I'm fairly sure they're fine — the suite is green.",
+			"why": "A unit can hold every one of the fifteen and still be reported as FINDINGS: a matrix covering only rows 1 and 2 means the failure paths have never been exercised, and a green suite is what that looks like from outside.",
+			"expect": {
+				"invokes": true,
+				"output": "Status FINDINGS with no hazard rows, the matrix showing rows 6, 7 and 8 uncovered at MEDIUM, and /test-gap named as what takes the gap further.",
+				"refuses": "Reporting CLEAN because no hazard was found while six of the eight scenarios have no suite."
+			}
+		},
+		{
+			"id": "the-documented-trade-off",
+			"kind": "edge",
+			"prompt": "The pool throws away every worker when a run is abandoned — that's a resource leak, isn't it?",
+			"why": "It is an argued decision with the reason written at the site: a worker cannot be asked to stop mid-task, only terminated. Re-reporting a documented trade-off teaches the reader to skim the report.",
+			"expect": {
+				"invokes": true,
+				"output": "The comment quoted, the behaviour recorded as deliberate rather than as a finding, and the audit continuing to the hazards the decision does not cover — the listeners registered per run, and what the next `ready()` starts from.",
+				"refuses": "Raising a documented exception as a finding to make the report look complete."
+			}
+		},
+		{
+			"id": "reading-cannot-settle-it",
+			"kind": "edge",
+			"prompt": "Does the worker's listener ever fire re-entrantly on Node but not in the browser?",
+			"why": "The answer depends on a platform scheduling detail that reading the unit cannot establish, and a hazard promoted to a finding without evidence is the failure this skill's output rule exists to prevent.",
+			"expect": {
+				"invokes": true,
+				"output": "The question placed under Unproven with the experiment that would answer it named — a counter incremented on entry and decremented on exit, run under both backends — and no severity attached to it.",
+				"refuses": "Promoting it to a finding, or dropping it silently because reading could not settle it."
+			}
+		}
+	]
+}
