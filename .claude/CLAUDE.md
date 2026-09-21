@@ -118,6 +118,16 @@ Any claim that something got faster needs deterministic evidence: a counted
 assertion, or a baseline measured in the same run on the same machine. A bare
 duration is not evidence — it describes the machine.
 
+## Documentation
+
+Nothing imports prose, so every check in this file can pass over a page that is
+wrong. A change under `packages/*/src/**` is therefore not finished when its
+suites are green: it is finished when `/docs-sync` has been run over the pages
+describing it and reports what it found — whether or not the change edited a
+page. The `implement-feature` skill runs it as a verification step, and where a
+page and the code disagree the report says which one is wrong rather than
+editing the page to agree.
+
 ## Language
 
 - Claude Code skill instructions are written in **English**, always.

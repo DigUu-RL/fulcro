@@ -1,0 +1,135 @@
+{
+	"skill": "docs-sync",
+	"cases": [
+		{
+			"id": "the-feature-is-finished",
+			"kind": "positive",
+			"prompt": "takeWhile is implemented and both suites pass. Anything left before I commit?",
+			"expect": {
+				"invokes": true,
+				"output": "The audit run without being asked for it by name, scoped to the pages describing `@fulcro/collections` and to the new surface: check 1 on whether any page mentions the operator, check 6 on the guide and the README that index it, check 7 on the counterpart pair, and check 10 on the changeset the diff obliges — a feature is not finished before this has run, whether or not a page was edited.",
+				"refuses": "Calling the feature finished because the suites are green: nothing in the suites reads a page, and the page nobody opened is what this audit exists to find."
+			}
+		},
+		{
+			"id": "a-signature-moved",
+			"kind": "positive",
+			"prompt": "I changed topBy's signature on the sequence. Does the documentation still describe it?",
+			"expect": {
+				"invokes": true,
+				"output": "A surface row per page that mentions `topBy`, check 2 comparing each written signature against the declaration in `packages/collections/dist`, check 3 compiling the fences that call it against the built package, and check 5 on whether the old spelling is still taught as current — each finding carrying the page and line and the reader's failed call.",
+				"refuses": "Comparing the page against `packages/collections/src`: a consumer installs `dist`, and the signature that ships is the one in the declarations."
+			}
+		},
+		{
+			"id": "do-the-examples-compile",
+			"kind": "positive",
+			"prompt": "Do the examples in docs/sequences.md still compile?",
+			"expect": {
+				"invokes": true,
+				"output": "Check 3 with the page's `ts` fences concatenated in order into the scratchpad directory, resolved against the built packages, `npx tsc --noEmit` run over them and its own messages quoted — fences needing the transformer reported as such, and a fence needing it on a page that never says so reported as a finding.",
+				"refuses": "Writing the extracted file under `docs/` or `packages/`, and calling a fence checked because it was read."
+			}
+		},
+		{
+			"id": "check-the-translation",
+			"kind": "positive",
+			"prompt": "I translated docs/reflect.md into Portuguese. Check it against the English page.",
+			"expect": {
+				"invokes": true,
+				"output": "The parity table row for the pair, check 8 on both language notices being present near the top with repository-relative links that resolve, and check 9 section by section — code fences compared character for character, API facts and caveats compared both ways, and a claim present only in the Portuguese page reported against it because English is canonical.",
+				"refuses": "Reporting translated wording or a differently phrased heading as drift, and editing either page."
+			}
+		},
+		{
+			"id": "before-a-release",
+			"kind": "positive",
+			"prompt": "We are releasing tomorrow. Does the documentation match what ships?",
+			"expect": {
+				"invokes": true,
+				"output": "Scope taken from the diff against the last release tag rather than from `dev`, checks 2 and 3 run after `npm run build` so the comparison is against the artifacts that ship, the parity table for every public page, and check 10 reading `.changeset/` against the diff with the bump each shipped change claims.",
+				"refuses": "Reporting CLEAN with checks 2 and 3 unrun because the build was stale."
+			}
+		},
+		{
+			"id": "what-do-our-exports-look-like",
+			"kind": "negative",
+			"prompt": "What does a consumer see of our exports now, and did any inferred type change?",
+			"expect": {
+				"invokes": false,
+				"output": "The api-audit skill, which walks the exports map, the emitted declarations and what a call infers against the last release tag. This audit consumes that answer; it does not produce it."
+			}
+		},
+		{
+			"id": "write-the-translation",
+			"kind": "negative",
+			"prompt": "Write the Portuguese counterpart for docs/concurrency.md.",
+			"expect": {
+				"invokes": false,
+				"output": "The implement-feature skill, which owns the writing and carries the bilingual pair as a deliverable. This skill reports that the counterpart is missing and writes nothing."
+			}
+		},
+		{
+			"id": "the-example-throws",
+			"kind": "negative",
+			"prompt": "The worker pool example in the parallelism guide throws when I run it. Fix it.",
+			"expect": {
+				"invokes": false,
+				"output": "The diagnose skill: there is a reproduction to start from, and whether the defect is in the page or in the pool is what the cause decides."
+			}
+		},
+		{
+			"id": "which-behaviours-are-untested",
+			"kind": "negative",
+			"prompt": "Which behaviours of the async sequence have no test?",
+			"expect": {
+				"invokes": false,
+				"output": "The test-gap skill, which derives the owed scenarios from the implementation and the signature. This audit only reports claims a page makes that no suite holds up, which is a narrower question."
+			}
+		},
+		{
+			"id": "no-portuguese-tree-at-all",
+			"kind": "edge",
+			"prompt": "Check our bilingual documentation parity.",
+			"why": "There is no `docs/pt-BR` directory today, so the mapped counterpart of every public page is missing. Eight identical findings say nothing the one row does not, and a report padded with them buries whatever else the run found.",
+			"expect": {
+				"invokes": true,
+				"output": "One row stating the whole Portuguese tree is absent with the public set it applies to — derived from the Guides table of `docs/README.md` — the contributor notes in that file excluded and the exclusion explained, and the rest of the audit continuing over the English pages rather than stopping.",
+				"refuses": "Reporting one finding per page, and counting `docs/testing.md` as a public page owing a translation."
+			}
+		},
+		{
+			"id": "the-page-is-right-and-the-code-is-wrong",
+			"kind": "edge",
+			"prompt": "docs/parallelism.md says a pool is safe to reuse across batches, but reusing one now blocks until the previous run finishes. Update the page.",
+			"why": "This is the prohibition in `.roadmap/features/F18-docs-sync.md`. The documented guarantee came first, the serialisation arrived with a fix for a different defect, and a page edited to agree turns the regression into the specification.",
+			"expect": {
+				"invokes": true,
+				"output": "Both halves quoted — the page's claim with its line, and the implementation and changeset that changed the behaviour — the reader consequence stated, which of the two is likely intended named with the evidence for it, a BLOCKER where the code contradicts a documented guarantee, and a stop.",
+				"refuses": "Rewriting the page to match the implementation, which is the one recommendation this audit may not make."
+			}
+		},
+		{
+			"id": "a-claim-with-no-suite",
+			"kind": "edge",
+			"prompt": "The sequences guide says nothing is traversed until the result is consumed. Is that still true?",
+			"why": "A laziness claim is the kind of promise a consumer chooses the library for, and the only thing that holds it up is a counted assertion — an implementation that looks lazy today is not evidence, per the testing rule.",
+			"expect": {
+				"invokes": true,
+				"output": "Check 4 tracing the claim to a counted performance suite and quoting the assertion, the suite run rather than read, and — where no counted assertion covers it — a MEDIUM naming the missing suite and handing it to test-gap rather than writing it here.",
+				"refuses": "Accepting a timing measurement or a reading of the implementation as evidence that the claim holds."
+			}
+		},
+		{
+			"id": "nothing-moved",
+			"kind": "edge",
+			"prompt": "Audit the documentation. I just want to be sure it is all fine.",
+			"why": "With neither a page nor any package's `src` changed and no scope named, the audit would describe the documentation rather than report on it, and nothing in it could be diffed against the last run.",
+			"expect": {
+				"invokes": true,
+				"output": "One line saying the diff touches neither `docs/` nor any package's `src`, an end, and the offer of a named page, a named package or `--all` as the expensive case.",
+				"refuses": "Producing ten check sections over an unchanged surface so the run looks substantial."
+			}
+		}
+	]
+}

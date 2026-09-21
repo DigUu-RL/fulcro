@@ -249,7 +249,15 @@ so and the diff says nothing else.
    emitted artifact, an export added to make a test resolve.
 4. **The changeset is present** where `packages/*/src/**` changed, and names
    the bump the plan claimed.
-5. **`npm run format:check`** and **`npx --yes markdownlint-cli2`** for the
+5. **The documentation still describes the code**, by invoking
+   `.claude/skills/docs-sync/SKILL.md` over the pages and the packages this
+   feature touched. This step is not conditional on the feature having edited a
+   page: a change to `packages/*/src/**` is a change to what every page
+   describing it claims, and the page that was not edited is the one this audit
+   exists to find. Its `Status` is carried into the report as it came —
+   `FINDINGS` or `PARTIAL` is never summarised as up to date — and a `BLOCKER`
+   is a stop condition below.
+6. **`npm run format:check`** and **`npx --yes markdownlint-cli2`** for the
    documentation the change carries.
 
 Nothing is reported as verified on the strength of having been written. A check
@@ -272,6 +280,12 @@ Halt and hand back when:
   architecture. That is a plan to revisit, not a suite to relax.
 - **The transformer and the runtime disagree** — a call rewritten to something
   the fallback does not produce, or a fallback the rewrite makes unreachable.
+- **`/docs-sync` reports a `BLOCKER`** the plan did not account for: a page
+  teaching a name this feature removed, a fence that no longer compiles, a
+  documented guarantee the implementation stopped honouring. Report it with the
+  page and line. Where the page is right and the code is wrong, that is the
+  implementation to revisit, and `.claude/skills/docs-sync/SKILL.md` is explicit
+  that editing the page to agree is how a regression becomes the specification.
 - **The specification asks for something the repository reserves for a human**:
   pushing, publishing, merging, discarding uncommitted work. The hooks refuse
   them and `.claude/rules/protected-operations.md` says how a human performs
@@ -281,7 +295,7 @@ Halt and hand back when:
 
 ## Output
 
-The same eight sections, in this order, every run — including the run that
+The same nine sections, in this order, every run — including the run that
 stops at the plan.
 
 ```text
@@ -291,6 +305,7 @@ Plan:         the plan from §2, as agreed, with any deviation marked
 Changed:      one row per file — path, what it does, why it is in the plan
 Tests:        the behaviour cases, and what the performance suite counts
 Verification: the /verify report — status, checks executed, checks skipped
+Docs:         the /docs-sync report — status, and the drift it found
 Release:      the changeset and its bump, or why the change ships nothing
 Next step:    one action, and the commit subject this branch would carry
 ```
@@ -327,6 +342,7 @@ person:
 	"public_surface_changed": false,
 	"approved": true,
 	"verification": { "skill": "verify", "status": "PASS", "observed": true },
+	"docs": { "skill": "docs-sync", "status": "CLEAN", "observed": true },
 	"changeset": { "present": true, "bump": "minor" },
 	"deviations": [],
 	"blocked_on": null
