@@ -54,8 +54,8 @@ hundred-thousand-element run is minutes, and a benchmark fired on a casual
 It does not apply when:
 
 - **The question is whether a change made something slower.** That is
-  `.roadmap/features/F15-perf-regression.md`'s skill, which compares versions.
-  This one has no memory of yesterday's run.
+  `.claude/skills/perf-regression/SKILL.md`, which compares versions. This one
+  has no memory of yesterday's run.
 - **The question is whether the checks pass.** That is
   `.claude/skills/verify/SKILL.md`, which runs the suites and reports exit
   statuses, including the performance ones.
