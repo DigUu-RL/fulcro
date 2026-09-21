@@ -80,12 +80,18 @@ export interface WorkerHandle {
 	/**
 	 * Registers what to do with what comes back.
 	 *
+	 * A run registers its handlers and removes them again when it ends, so a
+	 * pool reused across batches does not accumulate one set per batch — which
+	 * keeps each run's buffers alive and, on Node, trips the listener warning
+	 * after ten of them.
+	 *
 	 * @param handler Called with each message, or with a failure of the worker
 	 * itself.
+	 * @returns A function removing the handler.
 	 */
 	readonly listen: (
 		handler: (message: unknown, failure?: unknown) => void,
-	) => void;
+	) => () => void;
 
 	/** Stops the worker, discarding whatever it was doing. */
 	readonly terminate: () => Promise<void>;
@@ -103,7 +109,17 @@ export interface WorkerHandle {
  */
 export type SpawnWorker = (url: URL) => WorkerHandle;
 
-/** A pool of workers, over one named task. */
+/**
+ * A pool of workers, over one named task.
+ *
+ * Runs are serialised: a second `map` or `stream` started while one is still
+ * going waits for it rather than sharing the workers with it. The alternative
+ * is routing every reply back to the run that asked for it, which buys
+ * throughput a pool this size does not have — the workers are already
+ * saturated by one run — at the cost of a run identity in every message.
+ *
+ * A `stream` therefore holds the pool until it is finished or abandoned.
+ */
 export interface WorkerPool<T, R> {
 	/**
 	 * Runs every element through the workers and collects the results.

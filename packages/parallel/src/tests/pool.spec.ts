@@ -1,6 +1,17 @@
+import process from 'node:process';
+
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { createWorkerPool, type WorkerPool } from '@fulcro/parallel';
+
+import { createPool } from '@/pool/index.js';
+
+import {
+	createFakeWorkers,
+	type FakeWorkers,
+	NOWHERE,
+	until,
+} from './fake-worker.js';
 
 /**
  * Worker pool suite.
@@ -46,6 +57,30 @@ const poolFor = <T, R>(exportName: string, workers = 2): WorkerPool<T, R> => {
 afterEach(async () => {
 	await Promise.all(opened.splice(0).map((pool) => pool.close()));
 });
+
+/**
+ * Creates a pool over workers the test drives, rather than over threads.
+ *
+ * The cases below are about *when* the pool does what it does — a second run
+ * arriving mid-flight, an abort while every worker is busy, a close during the
+ * start handshake — and a real worker replies whenever it happens to be
+ * finished. `fake-worker.ts` says the rest.
+ *
+ * @template T Type of the elements handed to the workers.
+ * @template R Type the task produces.
+ * @param fake The workers to hand it.
+ * @param workers How many to run.
+ * @returns The pool.
+ */
+const drivenPool = <T, R>(
+	fake: FakeWorkers,
+	workers: number,
+): WorkerPool<T, R> =>
+	createPool<T, R>(
+		{ module: NOWHERE, export: 'echo', workers },
+		fake.spawn,
+		NOWHERE,
+	);
 
 describe('running work on workers', () => {
 	it('should process every element', async () => {
@@ -278,5 +313,208 @@ describe('lifecycle', () => {
 		await pool.close();
 
 		await expect(pool.close()).resolves.toBeUndefined();
+	});
+});
+
+describe('running several batches through one pool', () => {
+	it('should keep two overlapping runs apart', async () => {
+		// Replies carry the element's position, and every run counts positions
+		// from zero. Two runs sharing the workers therefore read each other's
+		// replies: results land in the wrong run, and a worker still holding an
+		// element is marked free. Runs are serialised so that cannot arise.
+		const pool = poolFor<number, number>('double', 2);
+
+		const [first, second] = await Promise.all([
+			pool.map([1, 2, 3]),
+			pool.map([10, 20, 30]),
+		]);
+
+		expect(first).toEqual([2, 4, 6]);
+		expect(second).toEqual([20, 40, 60]);
+	});
+
+	it('should not accumulate listeners across runs', async () => {
+		// The documentation tells consumers to create a pool once and run many
+		// batches through it, and a run that leaves its handlers behind makes
+		// that the one path that leaks. Node says so out loud on the eleventh
+		// run, which is what this reads.
+		const warnings: string[] = [];
+
+		const record = (warning: Error): void => {
+			warnings.push(warning.name);
+		};
+
+		process.on('warning', record);
+
+		try {
+			const pool = poolFor<number, number>('double', 2);
+
+			for (let batch = 0; batch < 12; batch++) await pool.map([1, 2]);
+
+			// A warning is emitted on the next tick rather than at the call.
+			await new Promise<void>((resolve) => {
+				setImmediate(resolve);
+			});
+		} finally {
+			process.off('warning', record);
+		}
+
+		expect(warnings).not.toContain('MaxListenersExceededWarning');
+	});
+});
+
+describe('interleaving', () => {
+	it('should hand out nothing for a second run until the first has ended', async () => {
+		const fake = createFakeWorkers();
+		const pool = drivenPool<number, number>(fake, 2);
+
+		const first = pool.map([1, 2, 3]);
+		const second = pool.map([10, 20, 30]);
+
+		await until(
+			() => fake.inFlight() === 2,
+			'the first two elements to go out',
+		);
+
+		expect(fake.posted()).toEqual([1, 2]);
+
+		fake.completeAll();
+
+		await until(
+			() => fake.posted().length === 3,
+			'the third element to go out',
+		);
+
+		expect(fake.posted()).toEqual([1, 2, 3]);
+
+		fake.completeAll();
+
+		await until(() => fake.inFlight() === 2, 'the second run to start');
+
+		expect(fake.posted()).toEqual([1, 2, 3, 10, 20]);
+
+		fake.completeAll();
+
+		await until(() => fake.inFlight() === 1, 'the last element to go out');
+
+		fake.completeAll();
+
+		expect(await first).toEqual([1, 2, 3]);
+		expect(await second).toEqual([10, 20, 30]);
+	});
+
+	it('should leave no handler registered when a run ends', async () => {
+		const fake = createFakeWorkers({ auto: true });
+		const pool = drivenPool<number, number>(fake, 2);
+
+		for (let batch = 0; batch < 3; batch++) {
+			await pool.map([1, 2, 3]);
+
+			expect(fake.handlers()).toBe(0);
+		}
+	});
+});
+
+describe('cancelling, in order', () => {
+	it('should hand out no element at all when the signal is already aborted', async () => {
+		const fake = createFakeWorkers();
+		const pool = drivenPool<number, number>(fake, 2);
+		const controller = new AbortController();
+		const reason = new Error('called off');
+
+		controller.abort(reason);
+
+		await expect(
+			pool.map([1, 2, 3], { signal: controller.signal }),
+		).rejects.toBe(reason);
+
+		expect(fake.posted()).toEqual([]);
+		expect(fake.spawned()).toBe(0);
+	});
+
+	it('should reject while every worker is still busy', async () => {
+		// Nothing is completed here, deliberately. An abort is not a reply, so a
+		// pool that only looks at the signal when a worker answers learns it was
+		// called off when the work it was told to stop has already finished.
+		const fake = createFakeWorkers();
+		const pool = drivenPool<number, number>(fake, 2);
+		const controller = new AbortController();
+		const reason = new Error('called off');
+
+		const work = pool.map([1, 2, 3, 4], { signal: controller.signal });
+
+		await until(() => fake.inFlight() === 2, 'both workers to be busy');
+
+		controller.abort(reason);
+
+		await expect(work).rejects.toBe(reason);
+
+		expect(fake.posted()).toEqual([1, 2]);
+		expect(fake.terminated()).toBe(2);
+	});
+
+	it('should keep the abort reason when a worker also fails to stop', async () => {
+		const fake = createFakeWorkers({ unstoppable: [0, 1] });
+		const pool = drivenPool<number, number>(fake, 2);
+		const controller = new AbortController();
+		const reason = new Error('called off');
+
+		const work = pool.map([1, 2, 3, 4], { signal: controller.signal });
+
+		await until(() => fake.inFlight() === 2, 'both workers to be busy');
+
+		controller.abort(reason);
+
+		await expect(work).rejects.toBe(reason);
+	});
+});
+
+describe('starting', () => {
+	it('should terminate the workers that did start when one cannot load', async () => {
+		const fake = createFakeWorkers({ broken: [1] });
+		const pool = drivenPool<number, number>(fake, 3);
+
+		await expect(pool.map([1])).rejects.toThrow(/could not load/i);
+
+		expect(fake.spawned()).toBe(3);
+		expect(fake.terminated()).toBe(3);
+	});
+
+	it('should build a fresh set after a start that failed', async () => {
+		const fake = createFakeWorkers({ broken: [1] });
+		const pool = drivenPool<number, number>(fake, 3);
+
+		await expect(pool.map([1])).rejects.toThrow(/could not load/i);
+
+		const second = pool.map([7]);
+
+		await until(
+			() => fake.inFlight() === 1,
+			'the retry to hand out its element',
+		);
+
+		fake.completeAll();
+
+		expect(await second).toEqual([7]);
+		expect(fake.spawned()).toBe(6);
+	});
+
+	it('should stop the workers when a close arrives during the start', async () => {
+		// `close` promises to stop every worker. Reading the resolved members
+		// rather than the start itself means a close during the handshake finds
+		// nothing to stop and leaves the threads it could not see running for the
+		// life of the process.
+		const fake = createFakeWorkers();
+		const pool = drivenPool<number, number>(fake, 2);
+
+		const work = pool.map([1]);
+
+		await until(() => fake.spawned() === 2, 'the workers to be created');
+
+		await pool.close();
+
+		expect(fake.terminated()).toBe(2);
+
+		await expect(work).rejects.toThrow(/exited/i);
 	});
 });
