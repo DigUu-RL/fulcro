@@ -1,7 +1,7 @@
 # @fulcro/reflect
 
-`nameOf`, `typeOf` and `defaultOf` — three utilities that answer questions
-TypeScript erases on its way to JavaScript.
+`nameOf`, `typeOf`, `defaultOf`, `is`, `as`, `sizeOf` and the rest — utilities
+that answer questions TypeScript erases on its way to JavaScript.
 
 ```sh
 npm install @fulcro/reflect
@@ -183,12 +183,13 @@ yourself and pass it in as a second argument for those.
 
 ## With and without the transformer
 
-|                            | Without                             | With the transformer                                          |
-| -------------------------- | ----------------------------------- | ------------------------------------------------------------- |
-| `nameOf(() => user.email)` | `'email'` — parsed from the closure | `'email'` — emitted as a literal, minifier-proof              |
-| `nameOf<UserContract>()`   | not available                       | `'UserContract'`                                              |
-| `typeOf(value)`            | runtime shape; `declared` is `null` | runtime shape **+** the declared type and its source location |
-| `defaultOf<T>()`           | throws                              | the built value, emitted inline                               |
+|                               | Without                             | With the transformer                                          |
+| ----------------------------- | ----------------------------------- | ------------------------------------------------------------- |
+| `nameOf(() => user.email)`    | `'email'` — parsed from the closure | `'email'` — emitted as a literal, minifier-proof              |
+| `nameOf<UserContract>()`      | not available                       | `'UserContract'`                                              |
+| `typeOf(value)`               | runtime shape; `declared` is `null` | runtime shape **+** the declared type and its source location |
+| `defaultOf<T>()`              | throws                              | the built value, emitted inline                               |
+| `sizeOf<T>()`, `alignOf<T>()` | throws                              | the number of bytes the type declares, emitted inline         |
 
 Wiring the transformer is a build time concern only; this package stays a plain
 runtime dependency either way, and nothing extra is installed to get it.

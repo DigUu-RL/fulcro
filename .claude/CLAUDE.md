@@ -12,10 +12,11 @@ under `packages/` do.
 | Package                  | What it is                                                      | Runtime deps                           |
 | ------------------------ | --------------------------------------------------------------- | -------------------------------------- |
 | `@fulcro/collections`    | Lazily evaluated sequences, plus `cast<T>()` runtime validation | `@fulcro/transform-core`               |
-| `@fulcro/reflect`        | `nameOf`, `typeOf`, `defaultOf`, transformer included           | `@fulcro/transform-core`               |
+| `@fulcro/reflect`        | `nameOf`, `typeOf`, `defaultOf`, `sizeOf`, transformer included | `@fulcro/transform-core`               |
 | `@fulcro/functions`      | `switchFor`, `tryCatch` — control flow as values                | none                                   |
 | `@fulcro/transform-core` | Shared machinery behind the transformers                        | `unplugin`, optional peer `typescript` |
 | `@fulcro/parallel`       | Worker pool for CPU-bound work, browser and Node                | none                                   |
+| `@fulcro/types`          | Numeric types with a declared range and layout, `Decimal`       | none                                   |
 
 `@fulcro/collections` and `@fulcro/reflect` each ship their own compile time
 transformer behind a separate entry point (`./transformer`, `./unplugin`).

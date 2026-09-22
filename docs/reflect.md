@@ -1,8 +1,9 @@
 # Reflection
 
-Eight utilities that answer questions TypeScript erases on its way to
-JavaScript: what a name was, what a type says, what is a valid empty value, and
-whether the thing in front of you really is what it claims.
+Ten utilities that answer questions TypeScript erases on its way to
+JavaScript: what a name was, what a type says, what is a valid empty value, how
+much memory a type declares, and whether the thing in front of you really is
+what it claims.
 
 ```sh
 npm install @fulcro/reflect
@@ -10,6 +11,7 @@ npm install @fulcro/reflect
 
 ```ts
 import {
+	alignOf,
 	as,
 	defaultOf,
 	is,
@@ -17,6 +19,7 @@ import {
 	nameOf,
 	pathOf,
 	pathsOf,
+	sizeOf,
 	typeOf,
 } from '@fulcro/reflect';
 ```
@@ -209,8 +212,8 @@ works and carries the same caveat `nameOf` does.
 
 ## Describing a type without a value
 
-Three utilities answer questions about a **type**, with no value to inspect.
-All three need the transformer, and refuse without it.
+Five utilities answer questions about a **type**, with no value to inspect.
+All five need the transformer, and refuse without it.
 
 ### `keysOf<T>()`
 
@@ -290,6 +293,41 @@ more honest than an arbitrary depth of it.
 A union of primitives is a leaf and reports the union. A union with an object in
 it is reported without being descended: there is no single path to promise when
 the shape depends on which branch a value took.
+
+### `sizeOf<T>()` and `alignOf<T>()`
+
+The size and the alignment a type declares, in bytes:
+
+```ts
+import type { Decimal, SignedInteger } from '@fulcro/types';
+
+sizeOf<SignedInteger<32>>(); // 4
+alignOf<SignedInteger<32>>(); // 4
+sizeOf<Decimal>(); // 16
+```
+
+With the transformer, each call is replaced by the number, so it costs what a
+literal costs. The numbers describe the binary format of the type — the two
+bytes of a half precision float, the sixteen of a decimal128 — not what a
+JavaScript engine spends on a value in its own heap.
+
+**A type answers only if it declares a layout.** The numeric types of
+[`@fulcro/types`](./types.md) do; `string`, `bigint`, an object and
+`BigInteger` do not, and for those the call is a **type error**, not a number
+somebody guessed:
+
+```ts
+sizeOf<string>(); // error: Type 'string' does not satisfy the constraint
+```
+
+What counts as declaring a layout is a shape, not an import: a type carrying a
+`'~layout'` property whose `size` and `alignment` are number literals.
+`@fulcro/types` declares it that way, and neither package imports the other.
+
+Two calls compile and then throw at runtime, because there is no single number
+to emit: a **generic parameter** that has not been substituted yet —
+`sizeOf<T>()` inside a generic function — and a **union of different layouts**,
+such as `sizeOf<SignedInteger<8> | SignedInteger<16>>()`.
 
 ## `is` and `as` — checking a value against a type
 

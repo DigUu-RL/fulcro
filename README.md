@@ -14,15 +14,16 @@
 Development root for the `@fulcro` packages. Private — nothing is published from
 here; the packages under `packages/` are.
 
-| Package                                             | What it is                                                                 | Runtime deps                           |
-| --------------------------------------------------- | -------------------------------------------------------------------------- | -------------------------------------- |
-| [`@fulcro/collections`](packages/collections)       | Lazily evaluated sequences, and runtime validation derived from your types | `@fulcro/transform-core`               |
-| [`@fulcro/reflect`](packages/reflect)               | `nameOf`, `typeOf`, `defaultOf`, with their transformer in the box         | `@fulcro/transform-core`               |
-| [`@fulcro/functions`](packages/functions)           | `switchFor` and `tryCatch` — control flow as values                        | none                                   |
-| [`@fulcro/transform-core`](packages/transform-core) | Shared machinery behind the transformers. Installed for you, not by you    | `unplugin`, optional peer `typescript` |
-| [`@fulcro/parallel`](packages/parallel)             | A worker pool for CPU-bound work, on browser and Node                      | none                                   |
+| Package                                             | What it is                                                                   | Runtime deps                           |
+| --------------------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------- |
+| [`@fulcro/collections`](packages/collections)       | Lazily evaluated sequences, and runtime validation derived from your types   | `@fulcro/transform-core`               |
+| [`@fulcro/reflect`](packages/reflect)               | `nameOf`, `typeOf`, `defaultOf`, `sizeOf`, with their transformer in the box | `@fulcro/transform-core`               |
+| [`@fulcro/functions`](packages/functions)           | `switchFor` and `tryCatch` — control flow as values                          | none                                   |
+| [`@fulcro/transform-core`](packages/transform-core) | Shared machinery behind the transformers. Installed for you, not by you      | `unplugin`, optional peer `typescript` |
+| [`@fulcro/parallel`](packages/parallel)             | A worker pool for CPU-bound work, on browser and Node                        | none                                   |
+| [`@fulcro/types`](packages/types)                   | Numeric types with a declared range and layout, and a decimal128 `Decimal`   | none                                   |
 
-`@fulcro/functions` and `@fulcro/parallel` stand alone. `@fulcro/collections`
+`@fulcro/functions`, `@fulcro/parallel` and `@fulcro/types` stand alone. `@fulcro/collections`
 and `@fulcro/reflect` each ship **their own compile time transformer**, behind a
 separate entry point — so one install gets you everything, and a runtime-only
 bundle still pulls in none of the compiler machinery. Neither knows the other
