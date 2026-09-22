@@ -152,6 +152,7 @@ export default defineConfig({
 			project('functions'),
 			project('parallel'),
 			project('reflect'),
+			project('types'),
 			entryPoints(),
 			transformers(),
 			hooks(),

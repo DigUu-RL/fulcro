@@ -35,6 +35,7 @@ const PACKAGE_NAMES = [
 	'@fulcro/parallel',
 	'@fulcro/reflect',
 	'@fulcro/transform-core',
+	'@fulcro/types',
 ] as const;
 
 /** Manifest fields this suite reads back. */
@@ -340,6 +341,76 @@ describe('@fulcro/reflect', () => {
 		const entry = await import('@fulcro/reflect');
 
 		expect(entry).not.toHaveProperty('resolveCallableId');
+		expect(entry).not.toHaveProperty('unresolvedLayout');
+	});
+
+	it('should refuse to guess a layout without the transformer', async () => {
+		const { alignOf, sizeOf } = await import('@fulcro/reflect');
+
+		// A layout is declared on a type and never on a value, so there is
+		// nothing at runtime to read it from.
+		expect(() => sizeOf()).toThrow('only exists at compile time');
+		expect(() => alignOf()).toThrow('only exists at compile time');
+	});
+});
+
+describe('@fulcro/types', () => {
+	it('should expose one value per numeric type', async () => {
+		const entry = await import('@fulcro/types');
+
+		// The package is CommonJS, and Node's interop adds these to the
+		// namespace of an `import`; they are not names the package exports.
+		const interop: readonly string[] = [
+			'__esModule',
+			'default',
+			'module.exports',
+		];
+
+		expect(
+			Object.keys(entry)
+				.filter((key) => !interop.includes(key))
+				.sort(),
+		).toEqual([
+			'BigInteger',
+			'Decimal',
+			'DoublePrecisionFloat',
+			'HalfPrecisionFloat',
+			'SignedInteger',
+			'SinglePrecisionFloat',
+			'UnsignedInteger',
+		]);
+	});
+
+	it('should work end to end through the published entry point', async () => {
+		const { Decimal, HalfPrecisionFloat, SignedInteger } =
+			await import('@fulcro/types');
+
+		const Int32 = SignedInteger(32);
+
+		expect(Int32.add(Int32.from(2), Int32.from(3))).toBe(5);
+		expect(() => Int32.add(Int32.maximum, Int32.from(1))).toThrow(RangeError);
+		expect(HalfPrecisionFloat.from(0.1)).toBe(0.0999755859375);
+		expect(Decimal.from('0.1').add(Decimal.from('0.2')).toString()).toBe('0.3');
+	});
+
+	it('should keep the machinery unexported', async () => {
+		const entry = await import('@fulcro/types');
+
+		for (const internal of [
+			'createIntegerType',
+			'createFloatType',
+			'parseDecimal',
+			'requireRoundingMode',
+		]) {
+			expect(entry).not.toHaveProperty(internal);
+		}
+	});
+
+	it('should carry no runtime trace of a layout', async () => {
+		const { Decimal } = await import('@fulcro/types');
+
+		// Declared for the type checker only: a value never has the property.
+		expect('~layout' in Decimal.from('1')).toBe(false);
 	});
 });
 
