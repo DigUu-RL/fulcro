@@ -3,10 +3,26 @@ import type {
 	Decimal,
 	DoublePrecisionFloat,
 	HalfPrecisionFloat,
+	IntegerType,
 	SignedInteger,
 	SinglePrecisionFloat,
+	Struct,
+	StructType,
 	UnsignedInteger,
 } from '@fulcro/types';
+
+/**
+ * A struct named by its type alone: `typeof` reaches the descriptors through
+ * `import type`, so the struct's layout, like the numeric ones, needs no code
+ * of `@fulcro/types` loaded to be measured.
+ */
+type Particle = Struct<
+	StructType<{
+		mass: typeof SinglePrecisionFloat;
+		charge: IntegerType<UnsignedInteger<8>>;
+		total: typeof Decimal;
+	}>
+>;
 
 /**
  * Fixture for the layout suite: every numeric type of `@fulcro/types` measured
@@ -29,3 +45,5 @@ export const single = sizeOf<SinglePrecisionFloat>();
 export const double = alignOf<DoublePrecisionFloat>();
 export const decimalSize = sizeOf<Decimal>();
 export const decimalAlignment = alignOf<Decimal>();
+export const structSize = sizeOf<Particle>();
+export const structAlignment = alignOf<Particle>();

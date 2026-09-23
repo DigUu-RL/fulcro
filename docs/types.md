@@ -4,7 +4,8 @@
 
 Numbers with a declared range and a declared layout: fixed-width integers, three
 binary floating point formats, an integer of any size, and a decimal with the
-semantics of IEEE 754 decimal128.
+semantics of IEEE 754 decimal128 — and [structs](#structs), value types built
+from them.
 
 ```sh
 npm install @fulcro/types
@@ -435,3 +436,92 @@ alignOf<Decimal>(); // 16
 The layout lives in the type and never in a value: a type-only import is
 enough for `sizeOf`, and nothing of this package is loaded to answer it. See
 [Reflection](./reflect.md#sizeoft-and-alignoft) for how the two meet.
+
+## Structs
+
+A struct is a **value type** with a fixed layout, built from the types above
+and from other structs. Like the numeric types, it has a value and a type of
+the same name:
+
+```ts
+import { SinglePrecisionFloat, struct, type Struct } from '@fulcro/types';
+
+export const Vector3 = struct('Vector3', {
+	x: SinglePrecisionFloat,
+	y: SinglePrecisionFloat,
+	z: SinglePrecisionFloat,
+});
+export type Vector3 = Struct<typeof Vector3>;
+
+const up: Vector3 = Vector3.from({ x: 0, y: 1, z: 0 });
+```
+
+`from` converts each field with its own type's `from`, so `0.1` becomes the
+nearest single precision value and `256` in an 8-bit field is a `RangeError`
+naming the field. A field declared with `BigInteger`, which has no fixed size,
+does not compile.
+
+The descriptor's own type is `StructType<TFields>`, for code that works over
+any struct, the way `NumericType` is for the numeric types.
+
+### Values, identities and references
+
+| Kind               | What it is                                          | Here                                  |
+| ------------------ | --------------------------------------------------- | ------------------------------------- |
+| **Value type**     | Defined by its contents; no identity; fixed layout  | the numeric types, and every `struct` |
+| **Identity type**  | Defined by which object it is, whatever it contains | ordinary objects and classes          |
+| **Reference type** | Points at a value held somewhere else               | `Pointer<T>` and `View<T>`, later     |
+
+So a struct value is frozen, and two of them are compared by their fields —
+`Vector3.equals(a, b)` — never by `===`, which still compares the two objects.
+Each field compares as its own type does: a `NaN` field makes a value unequal
+to itself.
+
+### Where the fields go
+
+Fields are placed by alignment, largest first, and in declaration order among
+equals. Every size is a multiple of its alignment, so no field needs padding in
+front of it; only the end of the struct is padded, up to its alignment, so that
+the next one in an array starts aligned.
+
+```ts
+const Sample = struct('Sample', {
+	flag: UnsignedInteger(8), // offset 10
+	weight: DoublePrecisionFloat, // offset 0
+	count: UnsignedInteger(16), // offset 8
+});
+
+Sample.layout.size; // 16: eleven bytes, padded to an alignment of 8
+sizeOf<Struct<typeof Sample>>(); // 16, at compile time
+```
+
+This is not the order of a C struct, which keeps declaration order and pads
+between fields. It is the order that makes the size computable by the type
+checker — which is what lets `sizeOf` answer at compile time — and that wastes
+no byte inside the struct.
+
+`layout` gives the offset, size and alignment of every field at runtime. A
+struct nested as a field is laid out inline, as one field of its own size.
+
+### Bytes
+
+A value can be written into a `DataView` and read back, which is how a struct
+is held without an object per value — a buffer of a thousand vectors is twelve
+thousand bytes:
+
+```ts
+const buffer = new ArrayBuffer(Vector3.layout.size * 1000);
+const view = new DataView(buffer);
+
+Vector3.write(view, Vector3.layout.size * 7, up);
+Vector3.read(view, Vector3.layout.size * 7); // { x: 0, y: 1, z: 0 }
+```
+
+Every value is little-endian, whatever the platform. Integers are two's
+complement, the floats are IEEE 754 binary16, binary32 and binary64, and
+`Decimal` is IEEE 754 decimal128 in its binary integer encoding. Padding bytes
+are left as they were. An offset the struct does not fit at is a `RangeError`,
+raised before any byte is written.
+
+`read` makes a new object each time: storing a value costs no object, holding
+one still does.

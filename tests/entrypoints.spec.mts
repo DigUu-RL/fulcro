@@ -355,7 +355,7 @@ describe('@fulcro/reflect', () => {
 });
 
 describe('@fulcro/types', () => {
-	it('should expose one value per numeric type', async () => {
+	it('should expose one value per numeric type, and struct', async () => {
 		const entry = await import('@fulcro/types');
 
 		// The package is CommonJS, and Node's interop adds these to the
@@ -378,7 +378,32 @@ describe('@fulcro/types', () => {
 			'SignedInteger',
 			'SinglePrecisionFloat',
 			'UnsignedInteger',
+			'struct',
 		]);
+	});
+
+	it('should declare, store and read back a struct through the published entry point', async () => {
+		const { SinglePrecisionFloat, UnsignedInteger, struct } =
+			await import('@fulcro/types');
+
+		const Particle = struct('Particle', {
+			mass: SinglePrecisionFloat,
+			charge: UnsignedInteger(8),
+		});
+		const view = new DataView(new ArrayBuffer(Particle.layout.size));
+		const value = Particle.from({ mass: 0.5, charge: 3 });
+
+		Particle.write(view, 0, value);
+
+		expect(Particle.layout).toEqual({
+			size: 8,
+			alignment: 4,
+			fields: {
+				mass: { offset: 0, size: 4, alignment: 4 },
+				charge: { offset: 4, size: 1, alignment: 1 },
+			},
+		});
+		expect(Particle.equals(Particle.read(view, 0), value)).toBe(true);
 	});
 
 	it('should work end to end through the published entry point', async () => {
@@ -403,6 +428,8 @@ describe('@fulcro/types', () => {
 			'requireRoundingMode',
 			'OPERATOR_REWRITER',
 			'classify',
+			'codecOf',
+			'registerStructCodec',
 		]) {
 			expect(entry).not.toHaveProperty(internal);
 		}
