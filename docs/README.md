@@ -38,7 +38,7 @@ collection.
 | [Parallelism with workers](./parallelism.md) | CPU-bound work across threads, on browser and Node               | `@fulcro/parallel`          |
 | [Reflection](./reflect.md)                   | `nameOf`, `typeOf`, `defaultOf`, `is`, `as`, and the transformer | `@fulcro/reflect`           |
 | [Control flow as values](./functions.md)     | `switchFor` and `tryCatch`                                       | `@fulcro/functions`         |
-| [Numeric types](./types.md)                  | Fixed-width integers, floats, `BigInteger`, `Decimal`, layout    | `@fulcro/types`             |
+| [Numeric types](./types.md)                  | Fixed-width integers, floats, `BigInteger`, `Decimal`, operators | `@fulcro/types`             |
 
 ## Which tool for which problem
 

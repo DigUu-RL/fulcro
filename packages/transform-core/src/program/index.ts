@@ -54,7 +54,7 @@ const buildUtilityPattern = (rewriters: readonly CallRewriter[]): RegExp => {
  * @param fileName Path in whatever spelling it arrived.
  * @returns The path as the compiler spells it.
  */
-const toCompilerPath = (fileName: string): string =>
+export const toCompilerPath = (fileName: string): string =>
 	path.resolve(fileName).split(path.sep).join('/');
 
 /**
@@ -65,7 +65,7 @@ const toCompilerPath = (fileName: string): string =>
  * cost seconds every keystroke. The service reuses everything that did not
  * change, and the version counters below are what tell it what did.
  */
-class ProgramHost implements typescript.LanguageServiceHost {
+export class ProgramHost implements typescript.LanguageServiceHost {
 	/** Files of the program, as resolved from the tsconfig. */
 	private readonly rootNames: string[];
 
@@ -196,7 +196,7 @@ class ProgramHost implements typescript.LanguageServiceHost {
  * @returns The parsed tsconfig.
  * @throws {Error} When no tsconfig can be found or it cannot be read.
  */
-const parseTsconfig = (
+export const parseTsconfig = (
 	root: string,
 	explicit: string | undefined,
 ): typescript.ParsedCommandLine => {

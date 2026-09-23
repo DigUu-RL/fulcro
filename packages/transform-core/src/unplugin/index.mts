@@ -9,6 +9,8 @@ import {
 	type FileTransformer,
 	type TransformCoreOptions,
 } from '@/program/index.js';
+import { type ExpressionRewriter } from '@/rewrite/file/index.js';
+import { createRewritingFileTransformer } from '@/rewrite/fileTransformer/index.js';
 import { type CallRewriter } from '@/shared/index.js';
 
 /**
@@ -76,6 +78,37 @@ export interface TransformerUnplugin {
 export const createTransformerUnplugin = (
 	rewriters: readonly CallRewriter[],
 	name: string,
+): TransformerUnplugin =>
+	createAdapters((options) => createFileTransformer(rewriters, options), name);
+
+/**
+ * Builds the bundler adapters for a rewrite that happens before type checking
+ * — one whose output is what the checker would read, such as the operators of
+ * `@fulcro/types`.
+ *
+ * @param rewriter Rewriter of the package publishing the plugin.
+ * @param name Name the plugin reports to the bundler.
+ * @returns Every adapter `unplugin` can produce.
+ */
+export const createRewriterUnplugin = (
+	rewriter: ExpressionRewriter,
+	name: string,
+): TransformerUnplugin =>
+	createAdapters(
+		(options) => createRewritingFileTransformer(rewriter, options),
+		name,
+	);
+
+/**
+ * Builds the adapters around whichever core a package uses.
+ *
+ * @param build Builds the core for a set of options.
+ * @param name Name the plugin reports to the bundler.
+ * @returns Every adapter `unplugin` can produce.
+ */
+const createAdapters = (
+	build: (options: PluginOptions) => FileTransformer,
+	name: string,
 ): TransformerUnplugin => {
 	const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (
 		options = {},
@@ -89,7 +122,7 @@ export const createTransformerUnplugin = (
 		 * @returns The transformer core.
 		 */
 		const resolve = (): FileTransformer => {
-			transformer ??= createFileTransformer(rewriters, options);
+			transformer ??= build(options);
 			return transformer;
 		};
 
@@ -116,10 +149,7 @@ export const createTransformerUnplugin = (
 					// The root of the bundler wins over the working directory, which
 					// is what makes the plugin behave inside a monorepo.
 					if (config.root !== undefined && options.root === undefined) {
-						transformer = createFileTransformer(rewriters, {
-							...options,
-							root: config.root,
-						});
+						transformer = build({ ...options, root: config.root });
 					}
 				},
 			},

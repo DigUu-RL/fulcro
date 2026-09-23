@@ -1,15 +1,19 @@
+import type { Branded } from '@/brand';
 import type { NumericType } from '@/numericType';
 
 /**
  * An integer of any size.
  *
- * The name of the concept, over the primitive that already implements it:
- * `bigint` is exact at every magnitude, so a brand would add a check with
- * nothing left to check. It is also the one numeric type here with no fixed
- * layout — its size is the size of its value — which is why
- * `sizeOf<BigInteger>()` is a type error.
+ * Carried by a `bigint`, which is exact at every magnitude, and branded like
+ * every other numeric type here: a `BigInteger` is a `bigint` that went through
+ * {@link BigInteger.from}, not any `bigint` at all. That is what lets the
+ * operators be rewritten for this type and left alone on every other `bigint`
+ * of a program.
+ *
+ * It is also the one numeric type here with no fixed layout — its size is the
+ * size of its value — which is why `sizeOf<BigInteger>()` is a type error.
  */
-export type BigInteger = bigint;
+export type BigInteger = Branded<bigint, 'BigInteger'>;
 
 /** Integer literal accepted by {@link BigInteger.from}: decimal digits only. */
 const INTEGER_LITERAL = /^[+-]?\d+$/;
@@ -34,13 +38,14 @@ const requireDivisor = (operation: string, divisor: bigint): void => {
  * BigInteger.from(1.5); // RangeError: expected an integer
  * ```
  *
- * Nothing overflows, so the arithmetic throws only on a zero divisor.
+ * Nothing overflows, so the arithmetic throws only on a zero divisor and on a
+ * negative exponent.
  */
 export const BigInteger: NumericType<BigInteger, number | bigint | string> = {
 	name: 'BigInteger',
 
 	from: (value: number | bigint | string): BigInteger => {
-		if (typeof value === 'bigint') return value;
+		if (typeof value === 'bigint') return value as BigInteger;
 
 		if (typeof value === 'number') {
 			if (!Number.isInteger(value)) {
@@ -49,7 +54,7 @@ export const BigInteger: NumericType<BigInteger, number | bigint | string> = {
 				);
 			}
 
-			return BigInt(value);
+			return BigInt(value) as BigInteger;
 		}
 
 		if (typeof value === 'string') {
@@ -62,7 +67,7 @@ export const BigInteger: NumericType<BigInteger, number | bigint | string> = {
 				);
 			}
 
-			return BigInt(value);
+			return BigInt(value) as BigInteger;
 		}
 
 		throw new TypeError(
@@ -72,21 +77,48 @@ export const BigInteger: NumericType<BigInteger, number | bigint | string> = {
 
 	is: (value: unknown): value is BigInteger => typeof value === 'bigint',
 
-	add: (left: BigInteger, right: BigInteger): BigInteger => left + right,
+	add: (left: BigInteger, right: BigInteger): BigInteger =>
+		(left + right) as BigInteger,
 
-	subtract: (left: BigInteger, right: BigInteger): BigInteger => left - right,
+	subtract: (left: BigInteger, right: BigInteger): BigInteger =>
+		(left - right) as BigInteger,
 
-	multiply: (left: BigInteger, right: BigInteger): BigInteger => left * right,
+	multiply: (left: BigInteger, right: BigInteger): BigInteger =>
+		(left * right) as BigInteger,
 
 	divide: (left: BigInteger, right: BigInteger): BigInteger => {
 		requireDivisor('divide', right);
 
-		return left / right;
+		return (left / right) as BigInteger;
 	},
 
 	remainder: (left: BigInteger, right: BigInteger): BigInteger => {
 		requireDivisor('remainder', right);
 
-		return left % right;
+		return (left % right) as BigInteger;
 	},
+
+	power: (base: BigInteger, exponent: BigInteger): BigInteger => {
+		if (exponent < 0n) {
+			throw new RangeError(
+				`BigInteger.power: expected an exponent of zero or more, received ${exponent}n.`,
+			);
+		}
+
+		return (base ** exponent) as BigInteger;
+	},
+
+	negate: (value: BigInteger): BigInteger => -value as BigInteger,
+
+	increment: (value: BigInteger): BigInteger => (value + 1n) as BigInteger,
+
+	decrement: (value: BigInteger): BigInteger => (value - 1n) as BigInteger,
+
+	equals: (left: BigInteger, right: BigInteger): boolean => left === right,
+	lessThan: (left: BigInteger, right: BigInteger): boolean => left < right,
+	lessThanOrEqual: (left: BigInteger, right: BigInteger): boolean =>
+		left <= right,
+	greaterThan: (left: BigInteger, right: BigInteger): boolean => left > right,
+	greaterThanOrEqual: (left: BigInteger, right: BigInteger): boolean =>
+		left >= right,
 };

@@ -1,7 +1,7 @@
 import type { Branded } from '@/brand';
 import { createFloatType } from '@/float';
 import type { Layout } from '@/layout';
-import type { NumericType } from '@/numericType';
+import type { BoundedNumericType } from '@/numericType';
 
 /**
  * An IEEE 754 binary32 value: 24 bits of precision, 8 of exponent.
@@ -21,5 +21,12 @@ export type SinglePrecisionFloat = Branded<number, 'SinglePrecisionFloat'> &
  * SinglePrecisionFloat.from(1e39); // Infinity
  * ```
  */
-export const SinglePrecisionFloat: NumericType<SinglePrecisionFloat, number> =
-	createFloatType('SinglePrecisionFloat', Math.fround);
+export const SinglePrecisionFloat: BoundedNumericType<
+	SinglePrecisionFloat,
+	number
+> = createFloatType(
+	'SinglePrecisionFloat',
+	// (2 - 2^-23) × 2^127
+	3.4028234663852886e38,
+	Math.fround,
+);

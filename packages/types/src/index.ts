@@ -15,7 +15,7 @@ export { Decimal } from '@/decimal';
 export { DoublePrecisionFloat } from '@/doublePrecisionFloat';
 export { HalfPrecisionFloat } from '@/halfPrecisionFloat';
 export type { IntegerType, IntegerWidth } from '@/integer';
-export type { NumericType } from '@/numericType';
+export type { BoundedNumericType, NumericType } from '@/numericType';
 export type { RoundingMode } from '@/roundingMode';
 export { SignedInteger } from '@/signedInteger';
 export { SinglePrecisionFloat } from '@/singlePrecisionFloat';

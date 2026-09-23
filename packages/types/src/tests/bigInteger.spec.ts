@@ -48,12 +48,30 @@ describe('BigInteger', () => {
 	});
 
 	it('should refuse a zero divisor, naming the operation', () => {
-		expect(() => BigInteger.divide(1n, 0n)).toThrow(
-			'BigInteger.divide: division by zero.',
+		expect(() =>
+			BigInteger.divide(BigInteger.from(1n), BigInteger.from(0n)),
+		).toThrow('BigInteger.divide: division by zero.');
+		expect(() =>
+			BigInteger.remainder(BigInteger.from(1n), BigInteger.from(0n)),
+		).toThrow('BigInteger.remainder: division by zero.');
+	});
+
+	it('should compute the operations behind the operators without bound', () => {
+		const two = BigInteger.from(2);
+
+		expect(BigInteger.power(two, BigInteger.from(200))).toBe(2n ** 200n);
+		expect(BigInteger.negate(two)).toBe(-2n);
+		expect(BigInteger.increment(two)).toBe(3n);
+		expect(BigInteger.decrement(two)).toBe(1n);
+		expect(BigInteger.lessThan(two, BigInteger.from(3))).toBe(true);
+		expect(() => BigInteger.power(two, BigInteger.from(-1))).toThrow(
+			'BigInteger.power: expected an exponent of zero or more, received -1n.',
 		);
-		expect(() => BigInteger.remainder(1n, 0n)).toThrow(
-			'BigInteger.remainder: division by zero.',
-		);
+	});
+
+	it('should have no bounds to report', () => {
+		expect(BigInteger).not.toHaveProperty('minimum');
+		expect(BigInteger).not.toHaveProperty('maximum');
 	});
 
 	it('should recognise a bigint and nothing else', () => {
@@ -61,8 +79,10 @@ describe('BigInteger', () => {
 		expect(BigInteger.is(1)).toBe(false);
 	});
 
-	it('should be a bigint at the type level, with no layout', () => {
-		expectTypeOf(BigInteger.from(1)).toEqualTypeOf<bigint>();
+	it('should be a branded bigint at the type level, with no layout', () => {
+		expectTypeOf(BigInteger.from(1)).toEqualTypeOf<BigInteger>();
+		expectTypeOf<BigInteger>().toMatchTypeOf<bigint>();
+		expectTypeOf<bigint>().not.toMatchTypeOf<BigInteger>();
 		expectTypeOf<BigInteger>().not.toHaveProperty('~layout');
 	});
 });

@@ -45,8 +45,8 @@ describe('BigInteger', () => {
 	});
 
 	it('should multiply at the cost of the operator', () => {
-		const left: bigint = 3n ** 2_000n;
-		const right: bigint = 7n ** 1_500n;
+		const left = BigInteger.from(3n ** 2_000n);
+		const right = BigInteger.from(7n ** 1_500n);
 
 		const baseline: number = timed(20_000, () => left * right);
 		const multiplied: number = timed(20_000, () =>

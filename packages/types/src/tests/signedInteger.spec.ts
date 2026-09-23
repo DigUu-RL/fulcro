@@ -185,6 +185,86 @@ describe('SignedInteger', () => {
 		});
 	});
 
+	describe.each(RANGES)(
+		'the operations behind the operators, at $width bits',
+		({ width, minimum, maximum }) => {
+			const type = SignedInteger(width) as IntegerType<number | bigint>;
+			const of = (value: bigint) => type.from(carried(width, value));
+
+			it('should raise to a power by squaring, checked', () => {
+				expect(type.power(of(-2n), of(3n))).toBe(carried(width, -8n));
+				expect(type.power(of(5n), of(0n))).toBe(carried(width, 1n));
+				expect(type.power(of(-1n), of(maximum))).toBe(carried(width, -1n));
+				expect(() => type.power(of(2n), of(BigInt(width - 1)))).toThrow(
+					`SignedInteger<${width}>.power`,
+				);
+				expect(() => type.power(of(2n), of(-1n))).toThrow(
+					'expected an exponent of zero or more',
+				);
+			});
+
+			it('should negate, refusing the minimum', () => {
+				expect(type.negate(of(5n))).toBe(carried(width, -5n));
+				expect(type.negate(type.maximum)).toBe(carried(width, -maximum));
+				expect(() => type.negate(type.minimum)).toThrow(RangeError);
+			});
+
+			it('should step by one, refusing to step past either end', () => {
+				expect(type.increment(of(1n))).toBe(carried(width, 2n));
+				expect(type.decrement(of(1n))).toBe(carried(width, 0n));
+				expect(() => type.increment(type.maximum)).toThrow(
+					`SignedInteger<${width}>.increment`,
+				);
+				expect(() => type.decrement(type.minimum)).toThrow(
+					`SignedInteger<${width}>.decrement`,
+				);
+			});
+
+			it('should compare as the operators do', () => {
+				expect(type.equals(of(3n), of(3n))).toBe(true);
+				expect(type.lessThan(type.minimum, type.maximum)).toBe(true);
+				expect(type.lessThanOrEqual(of(3n), of(3n))).toBe(true);
+				expect(type.greaterThan(of(3n), of(3n))).toBe(false);
+				expect(type.greaterThanOrEqual(of(4n), of(3n))).toBe(true);
+			});
+
+			it('should combine bits within the width, two’s complement', () => {
+				expect(type.bitwiseAnd(of(-1n), of(5n))).toBe(carried(width, 5n));
+				expect(type.bitwiseOr(of(4n), of(1n))).toBe(carried(width, 5n));
+				expect(type.bitwiseXor(of(-1n), of(0n))).toBe(carried(width, -1n));
+				expect(type.bitwiseNot(of(0n))).toBe(carried(width, -1n));
+				expect(type.bitwiseNot(type.maximum)).toBe(type.minimum);
+			});
+
+			it('should shift, discarding what leaves the width', () => {
+				const last = of(BigInt(width - 1));
+
+				expect(type.shiftLeft(of(1n), last)).toBe(type.minimum);
+				expect(type.shiftLeft(type.maximum, of(1n))).toBe(carried(width, -2n));
+				expect(type.shiftRight(type.minimum, last)).toBe(carried(width, -1n));
+				expect(type.shiftRightLogical(of(-1n), last)).toBe(carried(width, 1n));
+				expect(type.shiftRightLogical(of(-1n), of(0n))).toBe(
+					carried(width, -1n),
+				);
+			});
+
+			it('should refuse a shift count outside the width', () => {
+				expect(() => type.shiftLeft(of(1n), of(BigInt(width)))).toThrow(
+					RangeError,
+				);
+				expect(() => type.shiftRight(of(1n), of(-1n))).toThrow(
+					`SignedInteger<${width}>.shiftRight: expected a count from 0 to ${width - 1}`,
+				);
+			});
+
+			it('should report bounds that are values of the type', () => {
+				expect(type.is(type.minimum)).toBe(true);
+				expect(type.is(type.maximum)).toBe(true);
+				expect(type.minimum).toBe(carried(width, minimum));
+			});
+		},
+	);
+
 	it('should return one descriptor per width', () => {
 		expect(SignedInteger(32)).toBe(SignedInteger(32));
 		expect(SignedInteger(32)).not.toBe(SignedInteger(16));
