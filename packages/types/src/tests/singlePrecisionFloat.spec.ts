@@ -76,6 +76,15 @@ describe('SinglePrecisionFloat', () => {
 		).toBe(1.5);
 	});
 
+	it('should report its finite range, symmetric about zero', () => {
+		expect(SinglePrecisionFloat.maximum).toBe(3.4028234663852886e38);
+		expect(SinglePrecisionFloat.minimum).toBe(-3.4028234663852886e38);
+		expect(SinglePrecisionFloat.is(SinglePrecisionFloat.maximum)).toBe(true);
+		expect(SinglePrecisionFloat.increment(SinglePrecisionFloat.maximum)).toBe(
+			SinglePrecisionFloat.maximum,
+		);
+	});
+
 	it('should recognise exactly the representable values', () => {
 		expect(SinglePrecisionFloat.is(0.5)).toBe(true);
 		expect(SinglePrecisionFloat.is(0.1)).toBe(false);

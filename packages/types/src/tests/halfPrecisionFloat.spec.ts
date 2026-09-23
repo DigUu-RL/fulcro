@@ -137,6 +137,36 @@ describe('HalfPrecisionFloat', () => {
 		).toBe(1.5);
 	});
 
+	it('should report its finite range, symmetric about zero', () => {
+		expect(HalfPrecisionFloat.maximum).toBe(65504);
+		expect(HalfPrecisionFloat.minimum).toBe(-65504);
+		expect(HalfPrecisionFloat.is(HalfPrecisionFloat.maximum)).toBe(true);
+	});
+
+	it('should round the operations behind the operators into the format', () => {
+		const one = HalfPrecisionFloat.from(1);
+		const large = HalfPrecisionFloat.from(2048);
+
+		expect(HalfPrecisionFloat.increment(large)).toBe(2048);
+		expect(HalfPrecisionFloat.decrement(one)).toBe(0);
+		expect(
+			Object.is(HalfPrecisionFloat.negate(HalfPrecisionFloat.from(0)), -0),
+		).toBe(true);
+		expect(
+			HalfPrecisionFloat.power(
+				HalfPrecisionFloat.from(3),
+				HalfPrecisionFloat.from(0.5),
+			),
+		).toBe(1.732421875);
+		expect(
+			HalfPrecisionFloat.equals(
+				HalfPrecisionFloat.from(Number.NaN),
+				HalfPrecisionFloat.from(Number.NaN),
+			),
+		).toBe(false);
+		expect(HalfPrecisionFloat.lessThan(one, large)).toBe(true);
+	});
+
 	it('should recognise exactly the representable values', () => {
 		expect(HalfPrecisionFloat.is(0.5)).toBe(true);
 		expect(HalfPrecisionFloat.is(Number.NaN)).toBe(true);

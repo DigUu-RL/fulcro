@@ -22,7 +22,9 @@ import {
 } from '@fulcro/types';
 ```
 
-Sem dependências e sem plugin de compilador.
+Os tipos e os descritores não precisam de mais nada. Usar os **operadores**
+neles — `a + b`, `price * 3`, `count++` — precisa do plugin de compilador,
+descrito em [Operadores](#operadores).
 
 ## O problema
 
@@ -54,9 +56,10 @@ const total: SignedInteger<32> = Int32.add(Int32.from(1), Int32.from(2));
 ```
 
 Os descritores têm tipos próprios, para código que funciona com qualquer tipo
-numérico: o descritor de um inteiro é um `IntegerType<T>`, e todos os outros um
-`NumericType<T, TSource>` — sendo `TSource` o que o `from` aceita — e
-`IntegerWidth` é a união das larguras, `8 | 16 | 32 | 64 | 128`.
+numérico: o descritor de um inteiro é um `IntegerType<T>`, o de um float um
+`BoundedNumericType<T, number>`, e o do `BigInteger` um `NumericType<T, TSource>`
+— sendo `TSource` o que o `from` aceita. `IntegerWidth` é a união das
+larguras, `8 | 16 | 32 | 64 | 128`.
 
 ```ts
 import type { NumericType } from '@fulcro/types';
@@ -67,6 +70,22 @@ const sum = <T>(
 	zero: T,
 ): T => values.reduce((total, value) => type.add(total, value), zero);
 ```
+
+Todo tipo com faixa a informa como `minimum` e `maximum`: o menor e o maior
+valor **finito**. `minimum` é o valor mais negativo, e não o menor positivo, que
+é o que `Number.MIN_VALUE` significa:
+
+| Tipo                             | `minimum`           | `maximum`          |
+| -------------------------------- | ------------------- | ------------------ |
+| `SignedInteger<N>`               | −2^(N−1)            | 2^(N−1) − 1        |
+| `UnsignedInteger<N>`             | 0                   | 2^N − 1            |
+| `HalfPrecisionFloat`             | −65.504             | 65.504             |
+| `SinglePrecisionFloat`           | ≈ −3,4 × 10³⁸       | ≈ 3,4 × 10³⁸       |
+| `DoublePrecisionFloat`           | −`Number.MAX_VALUE` | `Number.MAX_VALUE` |
+| `Decimal` (`Decimal.minimum`, …) | −9,99…9 × 10⁶¹⁴⁴    | 9,99…9 × 10⁶¹⁴⁴    |
+
+O `BigInteger` não tem nenhum dos dois: seus valores são tão grandes quanto a
+memória permitir.
 
 Se você quer só os tipos — para anotar uma interface, por exemplo — importe com
 `import type` e nenhum código é carregado:
@@ -119,27 +138,26 @@ UnsignedInteger(8).wrap(-1); // 255
 SignedInteger(32).wrap(2 ** 31); // -2147483648
 ```
 
-Cada descritor tem `from`, `wrap`, `is`, `add`, `subtract`, `multiply`,
-`divide`, `remainder`, e `minimum`, `maximum`, `width` e `signed`. A divisão
-trunca em direção a zero; o resto leva o sinal do dividendo, como `%`. Dividir
-por zero, e dividir o mínimo de um tipo com sinal por −1, lança erro.
+Cada descritor tem `from`, `wrap`, `is`, `minimum`, `maximum`, `width` e
+`signed`, a aritmética `add`, `subtract`, `multiply`, `divide`, `remainder`,
+`power`, `negate`, `increment` e `decrement`, as comparações `equals`,
+`lessThan`, `lessThanOrEqual`, `greaterThan` e `greaterThanOrEqual`, e as
+operações de bits `bitwiseAnd`, `bitwiseOr`, `bitwiseXor`, `bitwiseNot`,
+`shiftLeft`, `shiftRight` e `shiftRightLogical`.
 
-### Por que os operadores não bastam
+- A divisão trunca em direção a zero; o resto leva o sinal do dividendo, como
+  `%`. Dividir por zero, e dividir o mínimo de um tipo com sinal por −1, lança
+  erro.
+- `power` recebe um expoente do mesmo tipo; um negativo lança erro, assim como
+  um resultado fora da faixa.
+- A contagem de um shift precisa ir de 0 à largura − 1, senão lança erro. Os
+  bits que saem são descartados — um shift é uma operação de bits, nunca um
+  overflow. `>>` copia o bit de sinal num tipo com sinal; `shiftRightLogical`
+  (`>>>`) traz zeros, sobre a largura do próprio tipo, como o do Java:
+  `-1 >>> 28` é `15` em 32 bits.
 
-Um inteiro com brand continua sendo um `number` ou um `bigint`, então os
-operadores funcionam nele — e o resultado volta a ser um `number` comum, sem
-verificação:
-
-```ts
-const a = Int32.from(2_000_000_000);
-
-a + a; // 4000000000: um number, que já não é um inteiro de 32 bits
-Int32.add(a, a); // RangeError — que é o objetivo
-```
-
-Use a aritmética do descritor onde a faixa importa. Um `SignedInteger<8>`
-também não é um `SignedInteger<32>`, mesmo que todo valor de um caiba no outro:
-alargar passa por `from`, onde fica visível.
+Um `SignedInteger<8>` não é um `SignedInteger<32>`, mesmo que todo valor de um
+caiba no outro: alargar passa por `from`, onde fica visível.
 
 ## Floats
 
@@ -170,8 +188,14 @@ const a = SinglePrecisionFloat.from(0.1);
 const b = SinglePrecisionFloat.from(0.2);
 
 SinglePrecisionFloat.add(a, b); // 0.30000001192092896, como o hardware float32 dá
-a + b; // 0.30000000447034836, um double que ninguém arredondou
 ```
+
+Com o [plugin de operadores](#operadores), `a + b` é essa mesma chamada. Sem
+ele, é um double que ninguém arredondou: `0.30000000447034836`.
+
+`power` é o `Math.pow` arredondado uma vez para o formato. Ao contrário das
+quatro operações acima, ele é fiel, mas não garantidamente o mais próximo,
+porque o próprio `Math.pow` não é corretamente arredondado.
 
 `from` aceita só `number`. Um `bigint` é recusado em vez de convertido, porque
 transformá-lo primeiro em double e depois no formato arredonda duas vezes, e o
@@ -179,10 +203,15 @@ segundo arredondamento pode cair no vizinho errado.
 
 ## `BigInteger`
 
-Um inteiro de qualquer tamanho. É o `bigint` com o nome do conceito, já que o
-`bigint` é exato em qualquer magnitude. O descritor acrescenta um `from` que só
-aceita decimal — `BigInteger.from('0x10')` é recusado, não lido como 16 — e uma
-divisão que diz qual operação dividiu por zero.
+Um inteiro de qualquer tamanho, carregado por um `bigint` — que já é exato em
+qualquer magnitude — e com brand como todos os outros tipos daqui: um
+`BigInteger` é um `bigint` que passou por `BigInteger.from`. É isso que permite
+reescrever os operadores num `BigInteger` e deixar em paz todo outro `bigint` do
+programa.
+
+O descritor acrescenta um `from` que só aceita decimal — `BigInteger.from('0x10')`
+é recusado, não lido como 16 —, uma divisão que diz qual operação dividiu por
+zero, e um `power` que recusa expoente negativo.
 
 É o único tipo aqui sem layout fixo: o tamanho dele é o tamanho do valor.
 
@@ -229,9 +258,20 @@ Decimal.from(2).divide(Decimal.from(3), 'truncate').toString();
 // '0.6666666666666666666666666666666666'
 ```
 
-`remainder` é sempre exato e leva o sinal do dividendo. `round(places, mode)`
-arredonda para um número de casas depois do ponto — negativo para dezenas,
-centenas e assim por diante:
+`remainder` é sempre exato e leva o sinal do dividendo. `power(exponent, mode)`
+recebe um expoente inteiro de qualquer sinal e é corretamente arredondado sempre
+que a potência exata tem até 200.000 dígitos — o que cobre toda base que não
+esteja a um fio de um; além disso, usa 50 dígitos de guarda. Um expoente com
+fração lança erro. Qualquer coisa elevada a zero é um, `NaN` incluído, como no
+`pown` da IEEE 754:
+
+```ts
+Decimal.from('1.1').power(Decimal.from(2)).toString(); // '1.21'
+Decimal.from(2).power(Decimal.from(-2)).toString(); // '0.25'
+```
+
+`round(places, mode)` arredonda para um número de casas depois do ponto —
+negativo para dezenas, centenas e assim por diante:
 
 ```ts
 Decimal.from('2.345').round(2).toString(); // '2.34'
@@ -254,7 +294,7 @@ lado enviesa uma soma, e alterná-los pela paridade não. Os cinco são exportad
 como o tipo `RoundingMode`, e um modo que não seja um deles lança `RangeError`
 em vez de cair num padrão.
 
-### Operadores são recusados
+### Sem o plugin de operadores, os operadores são recusados
 
 ```ts
 const one = Decimal.from(1);
@@ -266,8 +306,9 @@ one + one; // erro de compilação: Operator '+' cannot be applied to types 'Dec
 Uma conversão implícita para `number` perderia exatamente os dígitos que o tipo
 existe para guardar, então ela é recusada duas vezes: o TypeScript rejeita o
 operador em tempo de compilação, e onde os tipos são contornados — JavaScript
-sem tipos, um `any` — a conversão lança `TypeError` em runtime. Use `add`,
-`compare`, `equals`, `lessThan`, `greaterThan` e os demais.
+sem tipos, um `any` — a conversão lança `TypeError` em runtime. Com o
+[plugin de operadores](#operadores), `one + one` é `one.add(one)`; sem ele, use
+os métodos.
 
 ### Valores especiais
 
@@ -290,6 +331,90 @@ nada: `compare` devolve `undefined`, e todo método de comparação devolve
 | `toJSON()`                              | o texto, para `JSON.stringify` escrever uma string e não `{}`      |
 | `toNumber()`                            | o `number` mais próximo                                            |
 | `toBigInt()`                            | o inteiro exato; lança erro se houver fração                       |
+
+## Operadores
+
+Com o plugin ligado, os operadores do JavaScript funcionam em todos os tipos
+numéricos daqui, com o significado do próprio tipo — verificado num inteiro,
+arredondado para o formato num float, decimal128 num `Decimal` — e o resultado
+mantém o tipo:
+
+```ts
+const Int32 = SignedInteger(32);
+const a = Int32.from(2_000_000_000);
+
+const b = a - Int32.from(1); // SignedInteger<32>, não number
+a + a; // RangeError: SignedInteger<32>.add: 4000000000 is outside [-2147483648, 2147483647].
+
+let total = Decimal.from(0);
+total += Decimal.from('19.99') * Decimal.from(3); // Decimal: 59.97
+Decimal.from('0.1') + Decimal.from('0.2') === Decimal.from('0.3'); // true
+```
+
+É uma reescrita que acontece **antes** da checagem de tipos: cada operador vira
+a operação que ele significa para o tipo — `a + b` vira
+`SignedInteger(32).add(a, b)`, `d * e` vira `d.multiply(e)` — e é isso que o
+checker lê em seguida.
+
+| Escrito                                  | Significa                                          | Em                                 |
+| ---------------------------------------- | -------------------------------------------------- | ---------------------------------- |
+| `+ - * / % **`, `-` e `+` unários        | `add`, `subtract`, … `power`, `negate`             | todos os tipos                     |
+| `++ --`, prefixo e sufixo                | `increment`, `decrement` (`add` de um, no Decimal) | todos os tipos                     |
+| `+= -= *= /= %= **=`                     | a operação, depois a atribuição                    | todos os tipos                     |
+| `< <= > >=`                              | `lessThan`, …                                      | todos os tipos                     |
+| `=== == !== !=`                          | `equals`, por valor                                | todos os tipos                     |
+| `& \| ^ ~ << >> >>>` e as formas com `=` | `bitwiseAnd`, … `shiftRightLogical`                | `SignedInteger`, `UnsignedInteger` |
+
+O valor de cada forma, e a ordem em que ela é avaliada, são os do operador: um
+`i++` sufixo vale o valor antes do passo, e uma atribuição composta avalia o
+alvo uma vez só — `items[next()] += x` chama `next` uma vez.
+
+### Só entre o mesmo tipo
+
+Os dois operandos precisam ser do mesmo tipo. `a + 1`, um `SignedInteger<32>`
+com um `SignedInteger<16>`, um `Decimal` com um `number` — cada um é um erro de
+tipo na linha em que foi escrito, com a mensagem do próprio checker:
+
+```text
+Argument of type 'number' is not assignable to parameter of type 'SignedInteger<32>'.
+```
+
+Duas coisas ficam de fora de propósito. `+` com uma string é concatenação, como
+sempre — um `Decimal` concatena como o seu texto, `'total: ' + price`. E uma
+igualdade com algo que nem é número, `price === null`, continua sendo a checagem
+de identidade que é.
+
+Num `Decimal`, `===` compara **valores**: `Decimal.from('1.20') === Decimal.from('1.2')`
+é `true`, e `NaN === NaN` é `false`, como com números. Sem o plugin, a mesma
+expressão compara dois objetos.
+
+### Como ligar
+
+O plugin vem em três formas, uma para cada ferramenta que lê o código:
+
+| Ferramenta | Entrada                          | Onde                                                                                                      |
+| ---------- | -------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `tsc`      | `@fulcro/types/transformer`      | `"plugins": [{ "transform": "@fulcro/types/transformer", "transformProgram": true }]`, via `ts-patch`     |
+| Um bundler | `@fulcro/types/unplugin`         | `plugins: [fulcroTypes()]`, com `vite`, `rollup`, `webpack`, `esbuild`, `rspack` ou `farm` importado dele |
+| O editor   | `@fulcro/types/language-service` | `"plugins": [{ "name": "@fulcro/types/language-service" }]` no tsconfig                                   |
+
+`"transformProgram": true` não é opcional: um transformer comum do `ts-patch`
+roda depois da checagem de tipos, quando `decimal * decimal` já foi reportado.
+O VS Code só carrega um plugin de language service do TypeScript do workspace —
+**TypeScript: Select TypeScript Version → Use Workspace Version**.
+
+A reescrita lê o programa inteiro, porque saber se `c + d` num arquivo é nosso
+depende de como `c` foi declarado em outro, e ela roda até um ponto fixo:
+`const c = a + b` precisa ser reescrito antes de se saber que `c` é um
+`SignedInteger<32>`. Todo arquivo TypeScript do projeto passa pelo type checker
+para isso.
+
+### Sem o plugin
+
+Os operadores são os da linguagem. Nos tipos carregados por `number` ou `bigint`
+eles fazem conta comum, sem verificação — `a + a` é `4000000000`, um `number` —
+e nada em runtime consegue recusar. Num `Decimal` eles são erro de tipo, e
+`TypeError` em runtime. Os métodos dos descritores funcionam dos dois jeitos.
 
 ## Layout
 

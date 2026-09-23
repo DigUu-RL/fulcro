@@ -1,4 +1,4 @@
-import type { NumericType } from '@/numericType';
+import type { BoundedNumericType } from '@/numericType';
 
 /**
  * Machinery shared by the three binary floating point types.
@@ -18,15 +18,20 @@ import type { NumericType } from '@/numericType';
  * Builds the descriptor of a float format.
  *
  * @param name Name of the type, as it reads in an error message.
+ * @param maximum Largest finite value of the format. The smallest is its
+ * negation, since a float's range is symmetric about zero.
  * @param round Rounding of a double to the nearest value of the format, ties to
  * even.
  * @returns The descriptor.
  */
 export const createFloatType = <T>(
 	name: string,
+	maximum: number,
 	round: (value: number) => number,
-): NumericType<T, number> => ({
+): BoundedNumericType<T, number> => ({
 	name,
+	minimum: -maximum as T,
+	maximum: maximum as T,
 
 	from: (value: number): T => {
 		// A `bigint` is refused rather than converted: turning it into a double
@@ -59,4 +64,23 @@ export const createFloatType = <T>(
 
 	remainder: (left: T, right: T): T =>
 		round((left as number) % (right as number)) as T,
+
+	// Unlike the four above, `Math.pow` is not correctly rounded even in double
+	// precision, so the result is the platform's double power rounded once into
+	// the format: faithful, and not promised to be the nearest.
+	power: (base: T, exponent: T): T =>
+		round((base as number) ** (exponent as number)) as T,
+
+	// Exact in every format: only the sign bit changes.
+	negate: (value: T): T => -(value as number) as T,
+
+	increment: (value: T): T => round((value as number) + 1) as T,
+
+	decrement: (value: T): T => round((value as number) - 1) as T,
+
+	equals: (left: T, right: T): boolean => left === right,
+	lessThan: (left: T, right: T): boolean => left < right,
+	lessThanOrEqual: (left: T, right: T): boolean => left <= right,
+	greaterThan: (left: T, right: T): boolean => left > right,
+	greaterThanOrEqual: (left: T, right: T): boolean => left >= right,
 });

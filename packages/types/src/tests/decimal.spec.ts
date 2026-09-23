@@ -822,6 +822,97 @@ describe('Decimal', () => {
 		});
 	});
 
+	describe('power', () => {
+		it.each([
+			['1.1', '2', '1.21'],
+			['2', '-2', '0.25'],
+			['3', '-1', `0.${'3'.repeat(34)}`],
+			['-2', '3', '-8'],
+			['-2', '2', '4'],
+			['10', '6145', 'Infinity'],
+			['0.1', '6177', '0'],
+			[
+				'1.000000000000000000000000000000001',
+				'100000000',
+				'1.0000000000000000000000001',
+			],
+			['0', '-1', 'Infinity'],
+			['-0', '-3', '-Infinity'],
+			['-0', '2', '0'],
+			['NaN', '0', '1'],
+			['Infinity', '-2', '0'],
+			['-Infinity', '3', '-Infinity'],
+			['1', '1e6000', '1'],
+			['-1', '1e6000', '1'],
+		])('should raise %s to %s as %s', (base, exponent, expected) => {
+			expect(D(base).power(D(exponent)).toString()).toBe(expected);
+		});
+
+		it('should refuse an exponent that is not an integer', () => {
+			expect(() => D(2).power(D('1.5'))).toThrow(
+				'Decimal.power: expected an integer exponent, received 1.5.',
+			);
+			expect(() => D(2).power(D('Infinity'))).toThrow(RangeError);
+			expect(() => D(2).power(D('NaN'))).toThrow(RangeError);
+		});
+
+		it('should agree with the exact power, correctly rounded, in every mode', () => {
+			const random = generator(0xabba);
+			const wrong: string[] = [];
+
+			for (let index = 0; index < 1_500; index++) {
+				const base: Exact = operand(random, 20);
+				const power: number = Math.floor(random() * 9);
+				const mode: RoundingMode = MODES[index % MODES.length];
+				const exact: Exact = {
+					negative: base.negative && power % 2 === 1,
+					coefficient: base.coefficient ** BigInt(power),
+					exponent: base.exponent * power,
+				};
+
+				const expected: string = D(referenceRound(exact, mode)).toString();
+				const actual: string = D(literal(base))
+					.power(D(power), mode)
+					.toString();
+
+				if (actual !== expected) {
+					wrong.push(
+						`${literal(base)} ** ${power} (${mode}): ${actual} ≠ ${expected}`,
+					);
+				}
+			}
+
+			expect(wrong).toEqual([]);
+		});
+
+		it('should settle an overflow in a directed mode at the largest value', () => {
+			expect(D(10).power(D(6145), 'truncate').equals(Decimal.maximum)).toBe(
+				true,
+			);
+			expect(D(-10).power(D(6145), 'ceiling').equals(Decimal.minimum)).toBe(
+				true,
+			);
+		});
+	});
+
+	describe('bounds', () => {
+		it('should report the largest and smallest finite values', () => {
+			expect(Decimal.maximum.toString()).toBe(
+				'9.999999999999999999999999999999999e+6144',
+			);
+			expect(Decimal.minimum.toString()).toBe(
+				'-9.999999999999999999999999999999999e+6144',
+			);
+		});
+
+		it('should overflow one unit past the maximum', () => {
+			expect(Decimal.maximum.add(D('1e6111')).toString()).toBe('Infinity');
+			expect(Decimal.minimum.subtract(D('1e6111')).toString()).toBe(
+				'-Infinity',
+			);
+		});
+	});
+
 	describe('recognition and types', () => {
 		it('should recognise its instances and nothing else', () => {
 			expect(Decimal.is(D('1'))).toBe(true);

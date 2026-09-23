@@ -37,6 +37,23 @@ describe('DoublePrecisionFloat', () => {
 		expect(DoublePrecisionFloat.remainder(a, b)).toBe(0.1 % 0.2);
 	});
 
+	it('should report the range of a number, not its smallest positive value', () => {
+		expect(DoublePrecisionFloat.maximum).toBe(Number.MAX_VALUE);
+		expect(DoublePrecisionFloat.minimum).toBe(-Number.MAX_VALUE);
+		expect(DoublePrecisionFloat.minimum).not.toBe(Number.MIN_VALUE);
+	});
+
+	it('should compute the operations behind the operators as the operators do', () => {
+		const x = DoublePrecisionFloat.from(2);
+
+		expect(DoublePrecisionFloat.power(x, DoublePrecisionFloat.from(10))).toBe(
+			1024,
+		);
+		expect(DoublePrecisionFloat.negate(x)).toBe(-2);
+		expect(DoublePrecisionFloat.increment(x)).toBe(3);
+		expect(DoublePrecisionFloat.greaterThanOrEqual(x, x)).toBe(true);
+	});
+
 	it('should recognise every number and nothing else', () => {
 		expect(DoublePrecisionFloat.is(0.1)).toBe(true);
 		expect(DoublePrecisionFloat.is(Number.NaN)).toBe(true);

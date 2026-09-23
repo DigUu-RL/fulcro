@@ -5,6 +5,7 @@ import {
 	compareParts,
 	divideParts,
 	multiplyParts,
+	powerParts,
 	remainderParts,
 	roundParts,
 } from './arithmetic';
@@ -20,8 +21,10 @@ import {
 	type DecimalParts,
 	infinity,
 	isZero,
+	MAXIMUM_ADJUSTED_EXPONENT,
 	NOT_A_NUMBER,
 	powerOfTen,
+	PRECISION,
 	zero,
 } from './parts';
 
@@ -73,6 +76,23 @@ export class Decimal {
 	private constructor(parts: DecimalParts) {
 		this.#parts = parts;
 	}
+
+	/**
+	 * The largest finite decimal128 value: thirty-four nines, the last at
+	 * 10^6111 — 9.999999999999999999999999999999999 × 10^6144.
+	 */
+	static readonly maximum: Decimal = new Decimal({
+		kind: 'finite',
+		negative: false,
+		coefficient: powerOfTen(PRECISION) - 1n,
+		exponent: MAXIMUM_ADJUSTED_EXPONENT - PRECISION + 1,
+	});
+
+	/**
+	 * The smallest finite value, the negation of {@link Decimal.maximum}. Not the
+	 * smallest positive one, which is 1 × 10^-6176.
+	 */
+	static readonly minimum: Decimal = Decimal.maximum.negate();
 
 	/**
 	 * Converts a value into a decimal.
@@ -202,6 +222,46 @@ export class Decimal {
 	 */
 	remainder(other: Decimal): Decimal {
 		return new Decimal(remainderParts(this.#parts, other.#parts));
+	}
+
+	/**
+	 * Raises this value to an integer power, rounded once — the correctly
+	 * rounded power whenever the exact one has up to 200,000 digits, which
+	 * covers every base not within a hair of one.
+	 *
+	 * ```ts
+	 * Decimal.from('1.1').power(Decimal.from(2)).toString(); // '1.21'
+	 * Decimal.from('2').power(Decimal.from(-2)).toString(); // '0.25'
+	 * ```
+	 *
+	 * Anything to the power zero is one, `NaN` included, as IEEE 754's `pown`
+	 * has it.
+	 *
+	 * @param exponent Integer exponent, of any sign.
+	 * @param mode Rounding mode, half to even by default.
+	 * @returns The power.
+	 * @throws {RangeError} When the exponent has a fractional part, or is not
+	 * finite.
+	 */
+	power(exponent: Decimal, mode: RoundingMode = DEFAULT_MODE): Decimal {
+		const { kind, negative, coefficient, exponent: scale } = exponent.#parts;
+
+		if (kind !== 'finite' || scale < 0) {
+			throw new RangeError(
+				`Decimal.power: expected an integer exponent, received ${exponent.toString()}.`,
+			);
+		}
+
+		const power: bigint =
+			(negative ? -coefficient : coefficient) * powerOfTen(scale);
+
+		return new Decimal(
+			powerParts(
+				this.#parts,
+				power,
+				requireRoundingMode('Decimal.power', mode),
+			),
+		);
 	}
 
 	/**

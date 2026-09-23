@@ -6,6 +6,8 @@ import {
 	digitCount,
 	infinity,
 	isZero,
+	MAXIMUM_ADJUSTED_EXPONENT,
+	MINIMUM_EXPONENT,
 	NOT_A_NUMBER,
 	powerOfTen,
 	PRECISION,
@@ -303,6 +305,176 @@ export const compareParts = (
 	if (leftAligned === rightAligned) return 0;
 
 	return leftAligned > rightAligned ? direction : (-direction as -1 | 1);
+};
+
+/** One, the result of any value raised to the power zero. */
+const ONE: DecimalParts = {
+	kind: 'finite',
+	negative: false,
+	coefficient: 1n,
+	exponent: 0,
+};
+
+/**
+ * The largest exact power computed, in digits. The exact power of a
+ * thirty-four-digit coefficient to `n` has `34n` digits; below this the power is
+ * computed exactly and rounded once, above it — a base within a hair of one
+ * raised to an enormous exponent, the one way to get here without overflowing —
+ * with {@link GUARD_DIGITS} digits more than the format keeps.
+ */
+const EXACT_DIGIT_LIMIT = 200_000;
+
+/** Digits carried beyond the format's thirty-four when a power is not exact. */
+const GUARD_DIGITS = 50;
+
+/**
+ * The decimal logarithm of a finite, non-zero magnitude, as a double.
+ *
+ * Only ever used to rule a power out as an overflow or an underflow before it is
+ * computed, with a margin of whole powers of ten around the limits, so the
+ * double's own error never decides anything.
+ *
+ * @param parts Magnitude to measure.
+ * @returns log10 of the magnitude.
+ */
+const decimalLogarithm = (parts: DecimalParts): number => {
+	const digits: string = parts.coefficient.toString();
+	const leading: string = digits.slice(0, 15);
+
+	return (
+		parts.exponent +
+		Math.log10(Number(leading)) +
+		(digits.length - leading.length)
+	);
+};
+
+/**
+ * A positive integer power computed with a bounded number of digits: every
+ * product is cut back to {@link GUARD_DIGITS} beyond the format, and a digit
+ * of 1 is kept below them when anything non-zero was cut.
+ *
+ * @param coefficient Coefficient of the base.
+ * @param exponent Exponent of the base.
+ * @param power Exponent it is raised to, positive.
+ * @returns The coefficient and exponent of the power, the last digit sticky.
+ */
+const guardedPower = (
+	coefficient: bigint,
+	exponent: number,
+	power: bigint,
+): { coefficient: bigint; exponent: number } => {
+	const kept: number = PRECISION + GUARD_DIGITS;
+
+	let inexact = false;
+
+	const cut = (value: bigint, scale: number): [bigint, number] => {
+		const excess: number = digitCount(value) - kept;
+
+		if (excess <= 0) return [value, scale];
+
+		const divisor: bigint = powerOfTen(excess);
+
+		if (value % divisor !== 0n) inexact = true;
+
+		return [value / divisor, scale + excess];
+	};
+
+	let result: [bigint, number] = [1n, 0];
+	let factor: [bigint, number] = [coefficient, exponent];
+	let remaining: bigint = power;
+
+	while (remaining > 0n) {
+		if (remaining % 2n === 1n) {
+			result = cut(result[0] * factor[0], result[1] + factor[1]);
+		}
+
+		remaining /= 2n;
+
+		if (remaining > 0n) {
+			factor = cut(factor[0] * factor[0], factor[1] * 2);
+		}
+	}
+
+	return inexact
+		? { coefficient: result[0] * 10n + 1n, exponent: result[1] - 1 }
+		: { coefficient: result[0], exponent: result[1] };
+};
+
+/**
+ * Raises a value to an integer power, with the special cases of IEEE 754's
+ * `pown`: anything to the power zero is one, `NaN` included; a zero or an
+ * infinity to a negative power swaps with the other; and the sign is negative
+ * only for a negative base and an odd power.
+ *
+ * The finite case is computed exactly and rounded once, so the result is the
+ * correctly rounded one — up to {@link EXACT_DIGIT_LIMIT} digits of exact
+ * power, past which it carries {@link GUARD_DIGITS} guard digits instead. A
+ * result that plainly overflows or underflows is settled from its logarithm,
+ * without building a number only to discard it.
+ *
+ * @param base Value raised.
+ * @param power Integer exponent.
+ * @param mode Rounding mode.
+ * @returns The rounded power.
+ */
+export const powerParts = (
+	base: DecimalParts,
+	power: bigint,
+	mode: RoundingMode,
+): DecimalParts => {
+	if (power === 0n) return ONE;
+	if (base.kind === 'nan') return NOT_A_NUMBER;
+
+	const negative: boolean = base.negative && power % 2n !== 0n;
+	const positive: boolean = power > 0n;
+
+	if (base.kind === 'infinity') {
+		return positive ? infinity(negative) : zero(negative);
+	}
+	if (isZero(base)) return positive ? zero(negative) : infinity(negative);
+
+	if (base.coefficient === 1n && base.exponent === 0) {
+		return { ...ONE, negative };
+	}
+
+	const magnitude: bigint = power < 0n ? -power : power;
+	const logarithm: number = decimalLogarithm(base) * Number(power);
+
+	// Two whole powers of ten of margin either side: the double estimate is off
+	// by far less, and anything inside the margin is computed.
+	if (logarithm > MAXIMUM_ADJUSTED_EXPONENT + 2) {
+		return finish(negative, 1n, MAXIMUM_ADJUSTED_EXPONENT + 1, mode);
+	}
+
+	if (logarithm < MINIMUM_EXPONENT - 2) {
+		return finish(negative, 1n, MINIMUM_EXPONENT - 2, mode);
+	}
+
+	const exact: boolean =
+		magnitude * BigInt(digitCount(base.coefficient)) <=
+		BigInt(EXACT_DIGIT_LIMIT);
+
+	const raised = exact
+		? {
+				coefficient: base.coefficient ** magnitude,
+				exponent: base.exponent * Number(magnitude),
+			}
+		: guardedPower(base.coefficient, base.exponent, magnitude);
+
+	if (positive) {
+		return finish(negative, raised.coefficient, raised.exponent, mode);
+	}
+
+	return divideParts(
+		ONE,
+		{
+			kind: 'finite',
+			negative,
+			coefficient: raised.coefficient,
+			exponent: raised.exponent,
+		},
+		mode,
+	);
 };
 
 /**

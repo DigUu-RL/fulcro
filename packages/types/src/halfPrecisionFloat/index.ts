@@ -1,7 +1,7 @@
 import type { Branded } from '@/brand';
 import { createFloatType } from '@/float';
 import type { Layout } from '@/layout';
-import type { NumericType } from '@/numericType';
+import type { BoundedNumericType } from '@/numericType';
 
 /**
  * An IEEE 754 binary16 value: 11 bits of precision, 5 of exponent, finite from
@@ -79,5 +79,7 @@ const roundToHalfPrecision = (value: number): number => {
  * HalfPrecisionFloat.from(65520); // Infinity
  * ```
  */
-export const HalfPrecisionFloat: NumericType<HalfPrecisionFloat, number> =
-	createFloatType('HalfPrecisionFloat', roundToHalfPrecision);
+export const HalfPrecisionFloat: BoundedNumericType<
+	HalfPrecisionFloat,
+	number
+> = createFloatType('HalfPrecisionFloat', 65504, roundToHalfPrecision);

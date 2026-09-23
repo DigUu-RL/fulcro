@@ -89,4 +89,107 @@ export interface NumericType<T, TSource> {
 	 * @returns The remainder, as this type.
 	 */
 	remainder(left: T, right: T): T;
+
+	/**
+	 * Raises a value to a power, as `**` does.
+	 *
+	 * @param base Value raised.
+	 * @param exponent Power it is raised to, of the same type.
+	 * @returns The power, as this type.
+	 * @throws {RangeError} For an integer type, on a negative exponent or a
+	 * result outside the range.
+	 */
+	power(base: T, exponent: T): T;
+
+	/**
+	 * The value with its sign flipped, as unary `-` does.
+	 *
+	 * @param value Value negated.
+	 * @returns The negation, as this type.
+	 * @throws {RangeError} For an integer type whose range cannot hold it: the
+	 * minimum of a signed type, and anything but zero of an unsigned one.
+	 */
+	negate(value: T): T;
+
+	/**
+	 * The value plus one, as `++` computes it.
+	 *
+	 * @param value Value incremented.
+	 * @returns The next value, as this type.
+	 */
+	increment(value: T): T;
+
+	/**
+	 * The value minus one, as `--` computes it.
+	 *
+	 * @param value Value decremented.
+	 * @returns The previous value, as this type.
+	 */
+	decrement(value: T): T;
+
+	/**
+	 * Tells whether two values are equal, as `===` does: `NaN` equals nothing,
+	 * and `0` equals `-0`.
+	 *
+	 * @param left First operand.
+	 * @param right Second operand.
+	 * @returns `true` when they are equal.
+	 */
+	equals(left: T, right: T): boolean;
+
+	/**
+	 * @param left First operand.
+	 * @param right Second operand.
+	 * @returns `true` when `left` is smaller, as `<` answers.
+	 */
+	lessThan(left: T, right: T): boolean;
+
+	/**
+	 * @param left First operand.
+	 * @param right Second operand.
+	 * @returns `true` when `left` is smaller or equal, as `<=` answers.
+	 */
+	lessThanOrEqual(left: T, right: T): boolean;
+
+	/**
+	 * @param left First operand.
+	 * @param right Second operand.
+	 * @returns `true` when `left` is larger, as `>` answers.
+	 */
+	greaterThan(left: T, right: T): boolean;
+
+	/**
+	 * @param left First operand.
+	 * @param right Second operand.
+	 * @returns `true` when `left` is larger or equal, as `>=` answers.
+	 */
+	greaterThanOrEqual(left: T, right: T): boolean;
+}
+
+/**
+ * A numeric type with a largest and a smallest value: every type here except
+ * `BigInteger`, whose values are as large as memory allows.
+ *
+ * `minimum` is the most negative finite value, not the smallest positive one —
+ * the meaning `Number.MIN_VALUE` gives the name, and the one that makes a
+ * range check with it wrong. For an unsigned integer it is zero.
+ *
+ * ```ts
+ * HalfPrecisionFloat.maximum; // 65504
+ * HalfPrecisionFloat.minimum; // -65504
+ * UnsignedInteger(8).minimum; // 0
+ * ```
+ *
+ * @template T Type of the values this descriptor produces.
+ * @template TSource What `from` accepts.
+ */
+export interface BoundedNumericType<T, TSource> extends NumericType<
+	T,
+	TSource
+> {
+	/** Smallest finite value of the type. */
+	readonly minimum: T;
+
+	/** Largest finite value of the type. */
+	readonly maximum: T;
 }

@@ -23,6 +23,30 @@ export {
 	type TransformCoreOptions,
 } from '@/program';
 export {
+	type ExpressionContext,
+	type ExpressionRewriter,
+	type Replacement,
+	rewriteSourceFile,
+	type RewriteStatistics,
+} from '@/rewrite/file';
+export {
+	isRewritable,
+	type ProgramRewrite,
+	type ProgramSource,
+	rewriteToFixpoint,
+} from '@/rewrite/fixpoint';
+export {
+	createLanguageServicePlugin,
+	type LanguageServicePlugin,
+	type PluginCreateInfo,
+} from '@/rewrite/languageService';
+export {
+	createProgramTransformer,
+	type ProgramTransformer,
+	rewriteProgram,
+} from '@/rewrite/programTransformer';
+export { type RewrittenText } from '@/rewrite/text';
+export {
 	type CallForm,
 	type CallRewriter,
 	IDENTIFIER_PATTERN,

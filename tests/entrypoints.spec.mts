@@ -401,9 +401,58 @@ describe('@fulcro/types', () => {
 			'createFloatType',
 			'parseDecimal',
 			'requireRoundingMode',
+			'OPERATOR_REWRITER',
+			'classify',
 		]) {
 			expect(entry).not.toHaveProperty(internal);
 		}
+	});
+
+	it('should publish the tsc plugin as ts-patch loads it', () => {
+		// A program transformer: called with a program, returning one.
+		const plugin = createRequire(import.meta.url)(
+			'@fulcro/types/transformer',
+		) as {
+			default: unknown;
+		};
+
+		expect(typeof plugin.default).toBe('function');
+	});
+
+	it('should publish the editor plugin as tsserver loads it', () => {
+		// `tsserver` calls what `require` returns, so the module itself is the
+		// plugin, not a property of it.
+		const plugin = createRequire(import.meta.url)(
+			'@fulcro/types/language-service',
+		) as (modules: unknown) => { create: unknown };
+
+		expect(typeof plugin).toBe('function');
+		expect(typeof plugin({}).create).toBe('function');
+	});
+
+	it('should publish a bundler plugin for every bundler unplugin covers', async () => {
+		const adapters = await import('@fulcro/types/unplugin');
+
+		for (const name of [
+			'vite',
+			'rollup',
+			'webpack',
+			'rspack',
+			'esbuild',
+			'farm',
+		]) {
+			expect(typeof adapters[name as keyof typeof adapters]).toBe('function');
+		}
+	});
+
+	it('should leave the operators to the language without the plugin', async () => {
+		const { Decimal, SignedInteger } = await import('@fulcro/types');
+		const Int32 = SignedInteger(32);
+
+		// Nothing compiled this file through the rewrite: the operators are the
+		// language's own, unchecked on a number and refused on a decimal.
+		expect((Int32.maximum as number) + 1).toBe(2147483648);
+		expect(() => (Decimal.from(1) as unknown as number) + 1).toThrow(TypeError);
 	});
 
 	it('should carry no runtime trace of a layout', async () => {

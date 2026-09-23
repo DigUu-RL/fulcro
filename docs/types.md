@@ -22,7 +22,9 @@ import {
 } from '@fulcro/types';
 ```
 
-No dependencies, and no compiler plugin needed.
+The types and their descriptors need nothing else. Using the **operators** on
+them — `a + b`, `price * 3`, `count++` — needs the compiler plugin, described
+under [Operators](#operators).
 
 ## The problem
 
@@ -54,9 +56,10 @@ const total: SignedInteger<32> = Int32.add(Int32.from(1), Int32.from(2));
 ```
 
 The descriptors have types of their own, for code that works over any numeric
-type: an integer's descriptor is an `IntegerType<T>`, every other one a
-`NumericType<T, TSource>` — `TSource` being what its `from` accepts — and
-`IntegerWidth` is the union of widths, `8 | 16 | 32 | 64 | 128`.
+type: an integer's descriptor is an `IntegerType<T>`, a float's a
+`BoundedNumericType<T, number>`, and `BigInteger`'s a `NumericType<T, TSource>`
+— `TSource` being what its `from` accepts. `IntegerWidth` is the union of
+widths, `8 | 16 | 32 | 64 | 128`.
 
 ```ts
 import type { NumericType } from '@fulcro/types';
@@ -67,6 +70,21 @@ const sum = <T>(
 	zero: T,
 ): T => values.reduce((total, value) => type.add(total, value), zero);
 ```
+
+Every type with a range reports it as `minimum` and `maximum`: the smallest and
+the largest **finite** value. `minimum` is the most negative value, not the
+smallest positive one that `Number.MIN_VALUE` means:
+
+| Type                             | `minimum`           | `maximum`          |
+| -------------------------------- | ------------------- | ------------------ |
+| `SignedInteger<N>`               | −2^(N−1)            | 2^(N−1) − 1        |
+| `UnsignedInteger<N>`             | 0                   | 2^N − 1            |
+| `HalfPrecisionFloat`             | −65,504             | 65,504             |
+| `SinglePrecisionFloat`           | ≈ −3.4 × 10³⁸       | ≈ 3.4 × 10³⁸       |
+| `DoublePrecisionFloat`           | −`Number.MAX_VALUE` | `Number.MAX_VALUE` |
+| `Decimal` (`Decimal.minimum`, …) | −9.99…9 × 10⁶¹⁴⁴    | 9.99…9 × 10⁶¹⁴⁴    |
+
+`BigInteger` has neither: its values are as large as memory allows.
 
 If you only want the types — to annotate an interface, say — import them with
 `import type` and you take no code at all:
@@ -119,25 +137,24 @@ UnsignedInteger(8).wrap(-1); // 255
 SignedInteger(32).wrap(2 ** 31); // -2147483648
 ```
 
-Each descriptor has `from`, `wrap`, `is`, `add`, `subtract`, `multiply`,
-`divide`, `remainder`, and `minimum`, `maximum`, `width` and `signed`. Division
-truncates towards zero; the remainder takes the sign of the dividend, as `%`
-does. Dividing by zero, and dividing a signed minimum by −1, throw.
+Each descriptor has `from`, `wrap`, `is`, `minimum`, `maximum`, `width` and
+`signed`, the arithmetic `add`, `subtract`, `multiply`, `divide`, `remainder`,
+`power`, `negate`, `increment` and `decrement`, the comparisons `equals`,
+`lessThan`, `lessThanOrEqual`, `greaterThan` and `greaterThanOrEqual`, and the
+bit operations `bitwiseAnd`, `bitwiseOr`, `bitwiseXor`, `bitwiseNot`,
+`shiftLeft`, `shiftRight` and `shiftRightLogical`.
 
-### Why the operators are not enough
+- Division truncates towards zero; the remainder takes the sign of the
+  dividend, as `%` does. Dividing by zero, and dividing a signed minimum by −1,
+  throw.
+- `power` takes an exponent of the same type; a negative one throws, as does a
+  result out of range.
+- A shift count must be from 0 to the width − 1, or it throws. Bits shifted out
+  are discarded — a shift is a bit operation, never an overflow. `>>` copies the
+  sign bit in on a signed type; `shiftRightLogical` (`>>>`) brings zeros in,
+  over the type's own width, as Java's does: `-1 >>> 28` is `15` in 32 bits.
 
-A branded integer is still a `number` or a `bigint`, so the operators work on it
-— and their result is a plain `number` again, unchecked:
-
-```ts
-const a = Int32.from(2_000_000_000);
-
-a + a; // 4000000000: a number, and no longer a 32-bit integer
-Int32.add(a, a); // RangeError — which is the point
-```
-
-Use the descriptor's arithmetic wherever the range matters. A
-`SignedInteger<8>` is also not a `SignedInteger<32>`, even though every value of
+A `SignedInteger<8>` is not a `SignedInteger<32>`, even though every value of
 one fits the other: widening goes through `from`, where it can be seen.
 
 ## Floats
@@ -168,8 +185,14 @@ const a = SinglePrecisionFloat.from(0.1);
 const b = SinglePrecisionFloat.from(0.2);
 
 SinglePrecisionFloat.add(a, b); // 0.30000001192092896, as float32 hardware gives
-a + b; // 0.30000000447034836, a double nobody rounded
 ```
+
+With the [operator plugin](#operators), `a + b` is that same call. Without it,
+it is a double nobody rounded: `0.30000000447034836`.
+
+`power` is `Math.pow` rounded once into the format. Unlike the four operations
+above, it is faithful rather than guaranteed nearest, because `Math.pow` itself
+is not correctly rounded.
 
 `from` takes a `number` only. A `bigint` is refused rather than converted,
 because turning it into a double first and then into the format rounds twice,
@@ -177,10 +200,14 @@ and the second rounding can land on the wrong neighbour.
 
 ## `BigInteger`
 
-An integer of any size. It is `bigint` under the name of the concept, since
-`bigint` is already exact at every magnitude. The descriptor adds a decimal-only
-`from` — `BigInteger.from('0x10')` is refused, not read as 16 — and division
-that says which operation divided by zero.
+An integer of any size, carried by a `bigint` — which is already exact at every
+magnitude — and branded like every other type here, so a `BigInteger` is a
+`bigint` that went through `BigInteger.from`. That is what lets the operators be
+rewritten on a `BigInteger` and left alone on every other `bigint` in a program.
+
+The descriptor adds a decimal-only `from` — `BigInteger.from('0x10')` is
+refused, not read as 16 — division that says which operation divided by zero,
+and a `power` that refuses a negative exponent.
 
 It is the one type here with no fixed layout: its size is the size of its value.
 
@@ -227,9 +254,20 @@ Decimal.from(2).divide(Decimal.from(3), 'truncate').toString();
 // '0.6666666666666666666666666666666666'
 ```
 
-`remainder` is always exact and takes the sign of the dividend. `round(places,
-mode)` rounds to a number of places after the point — negative for tens,
-hundreds and so on:
+`remainder` is always exact and takes the sign of the dividend.
+`power(exponent, mode)` takes an integer exponent of any sign and is correctly
+rounded whenever the exact power has up to 200,000 digits — which covers every
+base not within a hair of one; past that it carries 50 guard digits. A
+fractional exponent throws. Anything to the power zero is one, `NaN` included,
+as IEEE 754's `pown` has it:
+
+```ts
+Decimal.from('1.1').power(Decimal.from(2)).toString(); // '1.21'
+Decimal.from(2).power(Decimal.from(-2)).toString(); // '0.25'
+```
+
+`round(places, mode)` rounds to a number of places after the point — negative
+for tens, hundreds and so on:
 
 ```ts
 Decimal.from('2.345').round(2).toString(); // '2.34'
@@ -252,7 +290,7 @@ same way biases a sum, and alternating them by parity does not. The five are
 exported as the type `RoundingMode`, and a mode that is not one of them throws a
 `RangeError` rather than falling back to a default.
 
-### Operators are refused
+### Without the operator plugin, operators are refused
 
 ```ts
 const one = Decimal.from(1);
@@ -264,8 +302,9 @@ one + one; // compile error: Operator '+' cannot be applied to types 'Decimal' a
 An implicit conversion to `number` would lose exactly the digits the type
 exists to keep, so it is refused twice: TypeScript rejects the operator at
 compile time, and where the types are bypassed — untyped JavaScript, an `any`
-— the conversion throws a `TypeError` at runtime. Use `add`, `compare`,
-`equals`, `lessThan`, `greaterThan` and the rest.
+— the conversion throws a `TypeError` at runtime. With the
+[operator plugin](#operators), `one + one` is `one.add(one)`; without it, use
+the methods.
 
 ### Special values
 
@@ -288,6 +327,88 @@ equal; `isNegative()` tells them apart.
 | `toJSON()`                              | the text, so `JSON.stringify` writes a string rather than `{}`  |
 | `toNumber()`                            | the nearest `number`                                            |
 | `toBigInt()`                            | the exact integer; throws on a fraction                         |
+
+## Operators
+
+With the plugin wired up, the JavaScript operators work on every numeric type
+here, with the type's own meaning — checked on an integer, rounded into the
+format on a float, decimal128 on a `Decimal` — and the result keeps its type:
+
+```ts
+const Int32 = SignedInteger(32);
+const a = Int32.from(2_000_000_000);
+
+const b = a - Int32.from(1); // SignedInteger<32>, not number
+a + a; // RangeError: SignedInteger<32>.add: 4000000000 is outside [-2147483648, 2147483647].
+
+let total = Decimal.from(0);
+total += Decimal.from('19.99') * Decimal.from(3); // Decimal: 59.97
+Decimal.from('0.1') + Decimal.from('0.2') === Decimal.from('0.3'); // true
+```
+
+It is a rewrite that happens **before** type checking: each operator becomes the
+operation it means for the type — `a + b` becomes `SignedInteger(32).add(a, b)`,
+`d * e` becomes `d.multiply(e)` — and that is what the checker then reads.
+
+| Written                                  | Means                                         | On                                 |
+| ---------------------------------------- | --------------------------------------------- | ---------------------------------- |
+| `+ - * / % **`, unary `-` and `+`        | `add`, `subtract`, … `power`, `negate`        | every type                         |
+| `++ --`, prefix and postfix              | `increment`, `decrement` (`add` one, decimal) | every type                         |
+| `+= -= *= /= %= **=`                     | the operation, then the assignment            | every type                         |
+| `< <= > >=`                              | `lessThan`, …                                 | every type                         |
+| `=== == !== !=`                          | `equals`, by value                            | every type                         |
+| `& \| ^ ~ << >> >>>` and their `=` forms | `bitwiseAnd`, … `shiftRightLogical`           | `SignedInteger`, `UnsignedInteger` |
+
+What each form evaluates to, and in what order, is what the operator's is: a
+postfix `i++` is the value before the step, and a compound assignment
+evaluates its target once — `items[next()] += x` calls `next` once.
+
+### The same type only
+
+Both operands have to be the same type. `a + 1`, a `SignedInteger<32>` with a
+`SignedInteger<16>`, a `Decimal` with a `number` — each is a type error at the
+line it is written on, with the checker's own message:
+
+```text
+Argument of type 'number' is not assignable to parameter of type 'SignedInteger<32>'.
+```
+
+Two things are deliberately left alone. `+` with a string is concatenation, as
+ever — a `Decimal` concatenates as its text, `'total: ' + price`. And an
+equality with something that is not a number at all, `price === null`, stays
+the identity check it is.
+
+On a `Decimal`, `===` compares **values**: `Decimal.from('1.20') === Decimal.from('1.2')`
+is `true`, and `NaN === NaN` is `false`, as with numbers. Without the plugin,
+the same expression compares two objects.
+
+### Wiring it in
+
+The plugin comes in three forms, one per tool that reads the code:
+
+| Tool       | Entry                            | Where                                                                                                        |
+| ---------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `tsc`      | `@fulcro/types/transformer`      | `"plugins": [{ "transform": "@fulcro/types/transformer", "transformProgram": true }]`, through `ts-patch`    |
+| A bundler  | `@fulcro/types/unplugin`         | `plugins: [fulcroTypes()]`, with `vite`, `rollup`, `webpack`, `esbuild`, `rspack` or `farm` imported from it |
+| The editor | `@fulcro/types/language-service` | `"plugins": [{ "name": "@fulcro/types/language-service" }]` in the tsconfig                                  |
+
+`"transformProgram": true` is not optional: an ordinary `ts-patch` transformer
+runs after type checking, by which time `decimal * decimal` has already been
+reported. VS Code loads a language service plugin only from the workspace's
+TypeScript — **TypeScript: Select TypeScript Version → Use Workspace Version**.
+
+The rewrite reads the whole program, because whether `c + d` in one file is
+ours depends on how `c` was declared in another, and it runs to a fixed point:
+`const c = a + b` has to be rewritten before `c` is known to be a
+`SignedInteger<32>`. Every TypeScript file of the project goes through the type
+checker for it.
+
+### Without the plugin
+
+The operators are the language's own. On the types carried by a `number` or a
+`bigint` they compute plain, unchecked arithmetic — `a + a` is `4000000000`, a
+`number` — and nothing at runtime can refuse it. On a `Decimal` they are a type
+error, and a `TypeError` at runtime. The descriptors' methods work either way.
 
 ## Layout
 
