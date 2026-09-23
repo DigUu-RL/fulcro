@@ -164,6 +164,60 @@ describe('struct', () => {
 		expect(equals).toHaveBeenCalledTimes(3);
 	});
 
+	it('should give a hundred thousand values their methods without a function object each', () => {
+		const Point = struct(
+			'Point',
+			{ x: SinglePrecisionFloat, y: SinglePrecisionFloat },
+			{
+				length() {
+					return Math.hypot(this.x, this.y);
+				},
+			},
+		);
+		const view = new DataView(new ArrayBuffer(Point.layout.size));
+		const prototypes = new Set<object>();
+		let ownFunctions = 0;
+
+		Point.write(view, 0, Point.from({ x: 3, y: 4 }));
+
+		for (let index = 0; index < VOLUME; index++) {
+			const value =
+				index % 2 === 0 ? Point.from({ x: 3, y: 4 }) : Point.read(view, 0);
+
+			prototypes.add(Object.getPrototypeOf(value));
+
+			for (const key of Reflect.ownKeys(value)) {
+				if (
+					typeof Object.getOwnPropertyDescriptor(value, key)?.value ===
+					'function'
+				) {
+					ownFunctions++;
+				}
+			}
+		}
+
+		expect(prototypes.size).toBe(1);
+		expect(ownFunctions).toBe(0);
+	});
+
+	it('should touch the bytes as often with methods as without', () => {
+		const Point = struct(
+			'Point',
+			{ x: SinglePrecisionFloat, y: SinglePrecisionFloat },
+			{
+				length() {
+					return Math.hypot(this.x, this.y);
+				},
+			},
+		);
+		const { view, accesses } = countingView(Point.layout.size);
+
+		Point.write(view, 0, Point.from({ x: 3, y: 4 }));
+		Point.read(view, 0);
+
+		expect(accesses()).toBe(4);
+	});
+
 	it('should cost a small multiple of writing the fields by hand', () => {
 		const view = new DataView(new ArrayBuffer(Vector3.layout.size * VOLUME));
 		const value = Vector3.from({ x: 1, y: 2, z: 3 });

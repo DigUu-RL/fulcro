@@ -4,6 +4,7 @@ import { BigInteger } from '@/bigInteger';
 import { Decimal } from '@/decimal';
 import { DoublePrecisionFloat } from '@/doublePrecisionFloat';
 import { HalfPrecisionFloat } from '@/halfPrecisionFloat';
+import type { Layout } from '@/layout';
 import { SignedInteger } from '@/signedInteger';
 import { SinglePrecisionFloat } from '@/singlePrecisionFloat';
 import { type Struct, struct } from '@/struct';
@@ -295,6 +296,195 @@ describe('struct', () => {
 					Price.from({ amount: '1.5', inner: { flag: 1 } }),
 				),
 			).toBe(true);
+		});
+	});
+
+	describe('methods', () => {
+		const Point = struct(
+			'Point',
+			{ x: SinglePrecisionFloat, y: SinglePrecisionFloat },
+			{
+				length() {
+					return Math.hypot(this.x, this.y);
+				},
+				scale(factor: number): { x: number; y: number } {
+					return { x: this.x * factor, y: this.y * factor };
+				},
+			},
+		);
+		type Point = Struct<typeof Point>;
+
+		it('should give every value its methods, with this as the value', () => {
+			const point: Point = Point.from({ x: 3, y: 4 });
+
+			expect(point.length()).toBe(5);
+			expect(point.scale(2)).toEqual({ x: 6, y: 8 });
+			expectTypeOf(point.length).toEqualTypeOf<() => number>();
+			expectTypeOf<Point['x']>().toEqualTypeOf<SinglePrecisionFloat>();
+		});
+
+		it('should give the values read from bytes their methods too', () => {
+			const read = roundTrip(Point, Point.from({ x: 3, y: 4 }));
+
+			expect(read.length()).toBe(5);
+			expect(Point.is(read)).toBe(true);
+		});
+
+		it('should keep a nested struct its own methods', () => {
+			const Segment = struct('Segment', { start: Point, end: Point });
+			const segment = Segment.from({
+				start: { x: 0, y: 0 },
+				end: { x: 3, y: 4 },
+			});
+
+			expect(segment.end.length()).toBe(5);
+			expect(roundTrip(Segment, segment).end.length()).toBe(5);
+		});
+
+		it('should share one prototype, and keep only the fields as own keys', () => {
+			const a = Point.from({ x: 1, y: 2 });
+			const b = Point.from({ x: 3, y: 4 });
+
+			expect(Object.getPrototypeOf(a)).toBe(Object.getPrototypeOf(b));
+			expect(Object.keys(a)).toEqual(['x', 'y']);
+			expect({ ...a }).toEqual({ x: 1, y: 2 });
+			expect(Object.isFrozen(Object.getPrototypeOf(a))).toBe(true);
+		});
+
+		it('should leave the layout, equality and bytes as the fields alone make them', () => {
+			const Plain = struct('Plain', {
+				x: SinglePrecisionFloat,
+				y: SinglePrecisionFloat,
+			});
+
+			expect(Point.layout).toEqual(Plain.layout);
+			expectTypeOf<Point['~layout']>().toEqualTypeOf<
+				Struct<typeof Plain>['~layout']
+			>();
+			expect(
+				Point.equals(Point.from({ x: 1, y: 2 }), Point.from({ x: 1, y: 2 })),
+			).toBe(true);
+		});
+
+		it('should refuse an object with the right fields but not made by the struct', () => {
+			expect(Point.is(Object.freeze({ x: 3, y: 4 }))).toBe(false);
+			expect(Point.is(Object.freeze({ ...Point.from({ x: 3, y: 4 }) }))).toBe(
+				false,
+			);
+		});
+
+		it('should keep is as it was for a struct without methods', () => {
+			expect(Vector3.is(Object.freeze({ x: 1, y: 2, z: 3 }))).toBe(true);
+		});
+
+		it('should infer a struct without methods exactly as before', () => {
+			expectTypeOf<Vector3>().toEqualTypeOf<
+				{
+					readonly x: SinglePrecisionFloat;
+					readonly y: SinglePrecisionFloat;
+					readonly z: SinglePrecisionFloat;
+				} & Layout<12, 4>
+			>();
+			expect(Object.getPrototypeOf(Vector3.from({ x: 1, y: 2, z: 3 }))).toBe(
+				Object.prototype,
+			);
+		});
+
+		it('should not let a method change the value', () => {
+			const point = Point.from({ x: 1, y: 2 });
+			const Mutating = struct(
+				'Mutating',
+				{ x: SinglePrecisionFloat },
+				{
+					reset() {
+						(this as { x: number }).x = 0;
+					},
+				},
+			);
+
+			expect(() => Mutating.from({ x: 1 }).reset()).toThrow(TypeError);
+			expect(() => {
+				(point as { length: unknown }).length = null;
+			}).toThrow(TypeError);
+		});
+
+		it('should refuse a method named like a field, an index or the layout', () => {
+			expect(() =>
+				struct('Clash', { x: SinglePrecisionFloat }, { x: () => 1 } as never),
+			).toThrowError(
+				new TypeError(
+					"struct Clash: method 'x' has the name of a field; a value could not hold both.",
+				),
+			);
+			expect(() =>
+				struct('Indexed', { x: SinglePrecisionFloat }, { 0: () => 1 }),
+			).toThrow(TypeError);
+			expect(() =>
+				struct('Layout', { x: SinglePrecisionFloat }, { '~layout': () => 1 }),
+			).toThrow(TypeError);
+		});
+
+		it('should refuse a method that is not a function, and methods that are not an object', () => {
+			expect(() =>
+				struct('Loose', { x: SinglePrecisionFloat }, { size: 3 } as never),
+			).toThrowError(
+				new TypeError(
+					"struct Loose: method 'size' must be a function, received number.",
+				),
+			);
+			expect(() =>
+				struct('Null', { x: SinglePrecisionFloat }, null as never),
+			).toThrowError(
+				new TypeError(
+					'struct Null: expected an object of methods, received null.',
+				),
+			);
+		});
+
+		it('should lose its methods through a structured clone or JSON, and get them back from from', () => {
+			const point = Point.from({ x: 3, y: 4 });
+			const cloned: unknown = structuredClone(point);
+			const parsed: unknown = JSON.parse(JSON.stringify(point));
+
+			expect(Point.is(cloned)).toBe(false);
+			expect(Point.is(parsed)).toBe(false);
+			expect(Point.from(cloned as never).length()).toBe(5);
+			expect(Point.from(parsed as never).length()).toBe(5);
+		});
+
+		it('should let a method return a new value of its own struct', () => {
+			const Counter = struct(
+				'Counter',
+				{ value: UnsignedInteger(32) },
+				{
+					next() {
+						return Counter.from({ value: this.value + 1 });
+					},
+				},
+			);
+			type Counter = Struct<typeof Counter>;
+
+			const next: Counter = Counter.from({ value: 1 }).next();
+
+			expectTypeOf(Counter.from({ value: 1 }).next()).not.toBeAny();
+			expectTypeOf(next.next().value).toEqualTypeOf<UnsignedInteger<32>>();
+			expect(next.value).toBe(2);
+			expect(Counter.is(next)).toBe(true);
+		});
+
+		it('should accept a method keyed by a symbol', () => {
+			const Pair = struct(
+				'Pair',
+				{ left: SinglePrecisionFloat, right: SinglePrecisionFloat },
+				{
+					*[Symbol.iterator]() {
+						yield this.left;
+						yield this.right;
+					},
+				},
+			);
+
+			expect([...Pair.from({ left: 1, right: 2 })]).toEqual([1, 2]);
 		});
 	});
 
