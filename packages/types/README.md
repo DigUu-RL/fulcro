@@ -59,8 +59,28 @@ Without it, the operators are the language's own: unchecked on the
 Every type but `BigInteger` declares a size and alignment, which
 `sizeOf<T>()` and `alignOf<T>()` from `@fulcro/reflect` read at compile time.
 
+## Structs
+
+Value types with a fixed layout, built from the types above and from each
+other — frozen, compared by field, and stored in a `DataView` without an object
+per value:
+
+```ts
+import { SinglePrecisionFloat, struct, type Struct } from '@fulcro/types';
+
+const Vector3 = struct('Vector3', {
+	x: SinglePrecisionFloat,
+	y: SinglePrecisionFloat,
+	z: SinglePrecisionFloat,
+});
+type Vector3 = Struct<typeof Vector3>;
+
+Vector3.layout.size; // 12, and sizeOf<Vector3>() at compile time
+Vector3.write(view, 0, Vector3.from({ x: 0, y: 1, z: 0 }));
+```
+
 ---
 
 **Full guide:** [docs/types.md](../../docs/types.md) — ranges, rounding, the
-operators, the special values and the layout table.
+operators, the special values, the layout table and structs.
 🇧🇷 [Leia em português](../../docs/pt-BR/types.md).

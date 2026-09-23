@@ -85,6 +85,9 @@ describe('the layout of @fulcro/types, read by @fulcro/reflect', () => {
 		['double', 8],
 		['decimalSize', 16],
 		['decimalAlignment', 16],
+		// A decimal, a float and a byte: 21 bytes, padded to the decimal's 16.
+		['structSize', 32],
+		['structAlignment', 16],
 	])('should emit %s as %i', (binding, bytes) => {
 		expect(emitted).toContain(`export const ${binding} = ${bytes};`);
 	});

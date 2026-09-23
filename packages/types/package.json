@@ -1,6 +1,6 @@
 {
 	"name": "@fulcro/types",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "Numeric types with a defined range and layout: fixed-width integers, half, single and double precision floats, and a decimal128 Decimal.",
 	"keywords": [
 		"integer",
