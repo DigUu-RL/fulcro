@@ -68,6 +68,36 @@ const project = (name: string): ViteUserConfig => ({
 });
 
 /**
+ * `@fulcro/parallel`, run on its own once every other project has finished.
+ *
+ * Its suites compare a pool of one against a pool of several on the same
+ * CPU-bound job, a ratio taken in the same run as `docs/testing.md` allows. That
+ * ratio only measures the pool if the cores are free to take the work. Running
+ * beside the other projects, they are not: on a four-vCPU Windows runner the
+ * transformer and language service suites held the cores while the pool of four
+ * waited for them, and a pool that had provably spread its work across four
+ * workers measured 0.92x against the pool of one.
+ *
+ * A later group, so no other project overlaps it, and one file at a time, so
+ * its own suites do not overlap each other either. The package is a few seconds
+ * of the run, so serialising it costs little.
+ *
+ * @returns The project configuration.
+ */
+const workerPool = (): ViteUserConfig => {
+	const base: ViteUserConfig = project('parallel');
+
+	return {
+		...base,
+		test: {
+			...base.test,
+			sequence: { groupOrder: 1 },
+			fileParallelism: false,
+		},
+	};
+};
+
+/**
  * The packages as a consumer resolves them, rather than as sources.
  *
  * Rooted at the repository rather than at a package, and — unlike every project
@@ -150,7 +180,7 @@ export default defineConfig({
 		projects: [
 			project('collections'),
 			project('functions'),
-			project('parallel'),
+			workerPool(),
 			project('reflect'),
 			project('types'),
 			entryPoints(),
