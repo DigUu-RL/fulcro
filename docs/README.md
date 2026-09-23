@@ -30,15 +30,15 @@ collection.
 
 ## Guides
 
-| Guide                                        | Covers                                                           | Package                     |
-| -------------------------------------------- | ---------------------------------------------------------------- | --------------------------- |
-| [Sequences](./sequences.md)                  | Querying arrays, sets, maps and generators; validating by type   | `@fulcro/collections`       |
-| [Async sequences](./async-sequences.md)      | The same, over data that arrives over time                       | `@fulcro/collections/async` |
-| [Bounded concurrency](./concurrency.md)      | Running several elements at once, for work that waits            | `@fulcro/collections/async` |
-| [Parallelism with workers](./parallelism.md) | CPU-bound work across threads, on browser and Node               | `@fulcro/parallel`          |
-| [Reflection](./reflect.md)                   | `nameOf`, `typeOf`, `defaultOf`, `is`, `as`, and the transformer | `@fulcro/reflect`           |
-| [Control flow as values](./functions.md)     | `switchFor` and `tryCatch`                                       | `@fulcro/functions`         |
-| [Numeric types](./types.md)                  | Fixed-width integers, floats, `BigInteger`, `Decimal`, operators | `@fulcro/types`             |
+| Guide                                        | Covers                                                                    | Package                     |
+| -------------------------------------------- | ------------------------------------------------------------------------- | --------------------------- |
+| [Sequences](./sequences.md)                  | Querying arrays, sets, maps and generators; validating by type            | `@fulcro/collections`       |
+| [Async sequences](./async-sequences.md)      | The same, over data that arrives over time                                | `@fulcro/collections/async` |
+| [Bounded concurrency](./concurrency.md)      | Running several elements at once, for work that waits                     | `@fulcro/collections/async` |
+| [Parallelism with workers](./parallelism.md) | CPU-bound work across threads, on browser and Node                        | `@fulcro/parallel`          |
+| [Reflection](./reflect.md)                   | `nameOf`, `typeOf`, `defaultOf`, `is`, `as`, and the transformer          | `@fulcro/reflect`           |
+| [Control flow as values](./functions.md)     | `switchFor` and `tryCatch`                                                | `@fulcro/functions`         |
+| [Numeric types](./types.md)                  | Fixed-width integers, floats, `BigInteger`, `Decimal`, operators, structs | `@fulcro/types`             |
 
 ## Which tool for which problem
 

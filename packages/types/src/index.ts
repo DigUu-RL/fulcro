@@ -19,4 +19,6 @@ export type { BoundedNumericType, NumericType } from '@/numericType';
 export type { RoundingMode } from '@/roundingMode';
 export { SignedInteger } from '@/signedInteger';
 export { SinglePrecisionFloat } from '@/singlePrecisionFloat';
+export type { Struct, StructType } from '@/struct';
+export { struct } from '@/struct';
 export { UnsignedInteger } from '@/unsignedInteger';

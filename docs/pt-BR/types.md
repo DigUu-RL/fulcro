@@ -4,7 +4,8 @@
 
 Números com faixa e layout declarados: inteiros de largura fixa, três formatos
 de ponto flutuante binário, um inteiro de qualquer tamanho e um decimal com a
-semântica do decimal128 da IEEE 754.
+semântica do decimal128 da IEEE 754 — e [structs](#structs), tipos de valor
+construídos a partir deles.
 
 ```sh
 npm install @fulcro/types
@@ -442,3 +443,92 @@ O layout mora no tipo e nunca num valor: um import só de tipo basta para o
 `sizeOf`, e nada deste pacote é carregado para respondê-lo. Veja
 [Reflection](../reflect.md#sizeoft-and-alignoft) para como os dois se
 encontram.
+
+## Structs
+
+Um struct é um **tipo de valor** com layout fixo, construído a partir dos tipos
+acima e de outros structs. Como os tipos numéricos, ele tem um valor e um tipo
+com o mesmo nome:
+
+```ts
+import { SinglePrecisionFloat, struct, type Struct } from '@fulcro/types';
+
+export const Vector3 = struct('Vector3', {
+	x: SinglePrecisionFloat,
+	y: SinglePrecisionFloat,
+	z: SinglePrecisionFloat,
+});
+export type Vector3 = Struct<typeof Vector3>;
+
+const up: Vector3 = Vector3.from({ x: 0, y: 1, z: 0 });
+```
+
+O `from` converte cada campo com o `from` do próprio tipo, então `0.1` vira o
+valor de precisão simples mais próximo e `256` num campo de 8 bits é um
+`RangeError` que nomeia o campo. Um campo declarado com `BigInteger`, que não
+tem tamanho fixo, não compila.
+
+O tipo do próprio descritor é `StructType<TFields>`, para código que funciona
+com qualquer struct, como o `NumericType` é para os tipos numéricos.
+
+### Valores, identidades e referências
+
+| Tipo                   | O que é                                                | Aqui                                   |
+| ---------------------- | ------------------------------------------------------ | -------------------------------------- |
+| **Tipo de valor**      | Definido pelo conteúdo; sem identidade; layout fixo    | os tipos numéricos e todo `struct`     |
+| **Tipo de identidade** | Definido por qual objeto é, independente do que contém | objetos e classes comuns               |
+| **Tipo de referência** | Aponta para um valor guardado em outro lugar           | `Pointer<T>` e `View<T>`, mais adiante |
+
+Por isso um valor de struct é congelado, e dois deles são comparados pelos
+campos — `Vector3.equals(a, b)` — nunca por `===`, que continua comparando os
+dois objetos. Cada campo compara como o próprio tipo compara: um campo `NaN`
+torna um valor diferente de si mesmo.
+
+### Onde os campos ficam
+
+Os campos são posicionados por alinhamento, do maior para o menor, e na ordem
+de declaração entre iguais. Todo tamanho é múltiplo do próprio alinhamento,
+então nenhum campo precisa de padding antes dele; só o fim do struct recebe
+padding, até o alinhamento dele, para que o próximo num array comece alinhado.
+
+```ts
+const Sample = struct('Sample', {
+	flag: UnsignedInteger(8), // offset 10
+	weight: DoublePrecisionFloat, // offset 0
+	count: UnsignedInteger(16), // offset 8
+});
+
+Sample.layout.size; // 16: onze bytes, com padding até o alinhamento 8
+sizeOf<Struct<typeof Sample>>(); // 16, em tempo de compilação
+```
+
+Não é a ordem de um struct de C, que mantém a ordem de declaração e coloca
+padding entre os campos. É a ordem que torna o tamanho calculável pelo type
+checker — o que permite ao `sizeOf` responder em tempo de compilação — e que
+não desperdiça nenhum byte dentro do struct.
+
+O `layout` dá o offset, o tamanho e o alinhamento de cada campo em runtime. Um
+struct aninhado como campo fica inline, como um campo com o próprio tamanho.
+
+### Bytes
+
+Um valor pode ser escrito num `DataView` e lido de volta, que é como um struct
+é guardado sem um objeto por valor — um buffer de mil vetores ocupa doze mil
+bytes:
+
+```ts
+const buffer = new ArrayBuffer(Vector3.layout.size * 1000);
+const view = new DataView(buffer);
+
+Vector3.write(view, Vector3.layout.size * 7, up);
+Vector3.read(view, Vector3.layout.size * 7); // { x: 0, y: 1, z: 0 }
+```
+
+Todo valor é little-endian, em qualquer plataforma. Inteiros são complemento de
+dois, os floats são binary16, binary32 e binary64 da IEEE 754, e o `Decimal` é
+decimal128 da IEEE 754 na codificação de inteiro binário. Bytes de padding
+ficam como estavam. Um offset em que o struct não cabe é um `RangeError`,
+lançado antes de qualquer byte ser escrito.
+
+O `read` cria um objeto novo a cada chamada: guardar um valor não custa um
+objeto, segurar um ainda custa.
