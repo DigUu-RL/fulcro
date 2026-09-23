@@ -1,0 +1,71 @@
+{
+	"name": "@fulcro/types",
+	"version": "0.1.0",
+	"description": "Numeric types with a defined range and layout: fixed-width integers, half, single and double precision floats, and a decimal128 Decimal.",
+	"keywords": [
+		"integer",
+		"float",
+		"decimal",
+		"decimal128",
+		"numeric",
+		"typescript"
+	],
+	"license": "ISC",
+	"author": "diguu <rodrigogeribola@hotmail.com>",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		},
+		"./transformer": {
+			"types": "./dist/transformer/index.d.ts",
+			"default": "./dist/transformer/index.js"
+		},
+		"./unplugin": {
+			"types": "./dist/unplugin/index.d.mts",
+			"default": "./dist/unplugin/index.mjs"
+		},
+		"./language-service": {
+			"types": "./dist/languageService/index.d.ts",
+			"default": "./dist/languageService/index.js"
+		},
+		"./package.json": "./package.json"
+	},
+	"files": [
+		"dist"
+	],
+	"sideEffects": false,
+	"dependencies": {
+		"@fulcro/transform-core": "^0.10.0"
+	},
+	"peerDependencies": {
+		"typescript": ">=5.3.3 <7"
+	},
+	"peerDependenciesMeta": {
+		"typescript": {
+			"optional": true
+		}
+	},
+	"engines": {
+		"node": ">=22"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/DigUu-RL/fulcro.git",
+		"directory": "packages/types"
+	},
+	"homepage": "https://github.com/DigUu-RL/fulcro/tree/main/packages/types#readme",
+	"bugs": {
+		"url": "https://github.com/DigUu-RL/fulcro/issues"
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
+		"typecheck": "tsc --noEmit -p tsconfig.json",
+		"prepublishOnly": "npm run build"
+	}
+}

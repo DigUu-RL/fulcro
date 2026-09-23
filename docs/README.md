@@ -38,6 +38,7 @@ collection.
 | [Parallelism with workers](./parallelism.md) | CPU-bound work across threads, on browser and Node               | `@fulcro/parallel`          |
 | [Reflection](./reflect.md)                   | `nameOf`, `typeOf`, `defaultOf`, `is`, `as`, and the transformer | `@fulcro/reflect`           |
 | [Control flow as values](./functions.md)     | `switchFor` and `tryCatch`                                       | `@fulcro/functions`         |
+| [Numeric types](./types.md)                  | Fixed-width integers, floats, `BigInteger`, `Decimal`, operators | `@fulcro/types`             |
 
 ## Which tool for which problem
 
@@ -57,6 +58,8 @@ collection.
 | An empty value for a type, that follows the type   | [`defaultOf`](./reflect.md)             |
 | A `switch` that must break when an enum grows      | [`switchFor`](./functions.md)           |
 | A failure you would rather have as a value         | [`tryCatch`](./functions.md)            |
+| Money, or any number that is decimal by nature     | [`Decimal`](./types.md)                 |
+| An integer that must stay within 8, 16 or 32 bits  | [`SignedInteger`](./types.md)           |
 
 **`is` or `as`?** Both check the same way. `is` is a type guard, for when a
 failure should branch the program; `as` returns the value or throws, for when it

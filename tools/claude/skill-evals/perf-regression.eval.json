@@ -1,0 +1,106 @@
+{
+	"skill": "perf-regression",
+	"cases": [
+		{
+			"id": "did-my-change-slow-it-down",
+			"kind": "positive",
+			"prompt": "Did my rewrite of selectMany make anything slower?",
+			"expect": {
+				"invokes": true,
+				"output": "The baseline ref settled as a short hash, the counted contracts of the operator read from the suite that already covers it — traversals, projections, pulls at the first result — and a table whose counted rows carry integers and an arrow rather than a percentage.",
+				"refuses": "Reporting that the suite still passes as if that answered the question: a count that grew within its bound is a WARN, not a CLEAN."
+			}
+		},
+		{
+			"id": "before-the-pull-request",
+			"kind": "positive",
+			"prompt": "Compare this branch against dev before I open the pull request — it touches packages/collections/src.",
+			"expect": {
+				"invokes": true,
+				"output": "git merge-base HEAD origin/dev taken as the baseline and recorded as a hash, path A chosen because the diff left the counters alone, one test run, and a status of CLEAN, WARN or REGRESSED with the §5 row that decided it named.",
+				"refuses": "Paying for a second checkout when the committed counted bounds already answer the question."
+			}
+		},
+		{
+			"id": "suite-fails-on-the-branch",
+			"kind": "positive",
+			"prompt": "The groupBy performance suite fails on this branch and passed on dev.",
+			"expect": {
+				"invokes": true,
+				"output": "Status REGRESSED, the crossed bound quoted from the run, the delta as two integers, and the change described as algorithmic rather than as noise — with /diagnose named as what takes it to a cause.",
+				"refuses": "Loosening the assertion, skipping the case, or re-running until the machine is quieter."
+			}
+		},
+		{
+			"id": "what-does-it-cost",
+			"kind": "negative",
+			"prompt": "How much does groupBy cost over a hundred thousand orders?",
+			"expect": {
+				"invokes": false,
+				"output": "The benchmark skill, which measures a behaviour against a comparator inside one run. There is no earlier version in this question, and a comparison needs two points in the history."
+			}
+		},
+		{
+			"id": "is-the-tree-green",
+			"kind": "negative",
+			"prompt": "Run the suites and tell me whether everything passes before I commit.",
+			"expect": {
+				"invokes": false,
+				"output": "The verify skill, which runs the checks a change needs and reports their exit statuses."
+			}
+		},
+		{
+			"id": "why-is-it-slower",
+			"kind": "negative",
+			"prompt": "We know the traversal count doubled — find out why.",
+			"expect": {
+				"invokes": false,
+				"output": "The diagnose skill. This one establishes that the cost changed and where; taking the cause apart from a reproduction is diagnose's work, and this report is its input."
+			}
+		},
+		{
+			"id": "the-suite-changed-too",
+			"kind": "edge",
+			"prompt": "I refactored takeWhile and tightened its performance suite in the same commit — check it didn't get slower.",
+			"why": "The counted assertions are the recorded baseline, so a diff that edits both the implementation and its counters has moved the ruler it would be measured with. Path A silently compares against the new bound and reports CLEAN.",
+			"expect": {
+				"invokes": true,
+				"output": "The suite's own git log read first, the moved counters called out as a finding, and path B chosen — the earlier version run in a worktree with the candidate's measurement file copied onto it, so one instrument measures both implementations.",
+				"refuses": "Reading the candidate's counts against the candidate's own new bounds and calling the comparison clean."
+			}
+		},
+		{
+			"id": "only-the-clock-moved",
+			"kind": "edge",
+			"prompt": "It runs about twenty percent slower on my machine now — fail the change.",
+			"why": "This is the failure docs/testing.md records twice: an absolute duration that measured contention rather than code, on a machine that was doing something else. A percentage with no counter behind it cannot block a merge.",
+			"expect": {
+				"invokes": true,
+				"output": "Status WARN with every count identical and shown, the timing given as a ratio of ratios and labelled as such, and the counter that would settle the question named.",
+				"refuses": "Reporting REGRESSED on a timing figure, or inventing a repository-wide percentage threshold to justify it."
+			}
+		},
+		{
+			"id": "nothing-counts-the-surface",
+			"kind": "edge",
+			"prompt": "Check whether my change to the cast validator regressed anything — I don't think it has a performance suite.",
+			"why": "Writing a suite from nothing and running it once produces a first number, and a first number has no earlier value beside it. Presenting it as a comparison is the honest-looking failure this skill exists to avoid.",
+			"expect": {
+				"invokes": true,
+				"output": "Status NOT MEASURABLE, the surface and the chosen baseline stated, what was looked for as a counter and why none was found, and /test-gap named as what reports the missing scenarios.",
+				"refuses": "Writing a suite, running it on the candidate alone, and presenting the result as a baseline."
+			}
+		},
+		{
+			"id": "stash-the-work-first",
+			"kind": "edge",
+			"prompt": "Just stash my uncommitted changes, measure dev, then put them back.",
+			"why": "The candidate is never moved. Uncommitted work is the one thing in this repository that is written down nowhere else, and a measurement that begins by hiding it is one the user cannot repeat.",
+			"expect": {
+				"invokes": true,
+				"output": "The working tree left exactly as it is, and the earlier version read in a detached worktree in the scratchpad instead — added, installed, built, run, then removed and confirmed gone with git worktree list.",
+				"refuses": "Stashing, checking out over the working tree, or resetting anything to reach the baseline."
+			}
+		}
+	]
+}

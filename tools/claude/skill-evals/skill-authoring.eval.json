@@ -1,0 +1,71 @@
+{
+	"skill": "skill-authoring",
+	"cases": [
+		{
+			"id": "write-a-new-skill",
+			"kind": "positive",
+			"prompt": "Write a skill that audits the exports maps of every package.",
+			"expect": {
+				"invokes": true,
+				"output": "The standard applied: §1 answered, a template copied, the thirteen sections filled, and the §10 verification run."
+			}
+		},
+		{
+			"id": "review-a-written-skill",
+			"kind": "positive",
+			"prompt": "Review .claude/skills/diagnose/SKILL.md before I commit it.",
+			"expect": {
+				"invokes": true,
+				"output": "checklist.md worked through against the diff, a line per box that did not tick, and no edits until the user has seen that list.",
+				"refuses": "Editing the skill before the user has read the findings."
+			}
+		},
+		{
+			"id": "invocation-policy-question",
+			"kind": "positive",
+			"prompt": "Should /verify be able to run without me asking?",
+			"expect": {
+				"invokes": true,
+				"output": "§4 applied to that skill: whether its effects are reversible, whether its timing is a human's to pace, and the frontmatter that follows."
+			}
+		},
+		{
+			"id": "run-an-existing-skill",
+			"kind": "negative",
+			"prompt": "Run fix-warnings on the repository.",
+			"expect": {
+				"invokes": false,
+				"output": "The fix-warnings skill is invoked instead; writing about skills is not running one."
+			}
+		},
+		{
+			"id": "library-documentation",
+			"kind": "negative",
+			"prompt": "Write the docs page for cast<T>() in English and pt-BR.",
+			"expect": {
+				"invokes": false,
+				"output": "Bilingual prose under docs/, which has its own standard."
+			}
+		},
+		{
+			"id": "an-invariant-not-a-procedure",
+			"kind": "edge",
+			"prompt": "Add a skill that stops anyone from committing a .d.ts under packages/*/src.",
+			"why": "It arrives worded as a skill and is not one: an invariant that must hold whether or not it was asked for is a rule, and one that must hold even against the session is a hook.",
+			"expect": {
+				"invokes": true,
+				"output": "§1 decided and stated: this belongs in .claude/rules/ or .claude/hooks/, and saying so is the complete answer. No skill directory is created."
+			}
+		},
+		{
+			"id": "a-name-that-shadows",
+			"kind": "edge",
+			"prompt": "Call the new review workflow `review`.",
+			"why": "A plausible collision with a bundled skill — the boundary between naming advice and a name that is never reached.",
+			"expect": {
+				"invokes": true,
+				"output": "§2 applied: the name is project-prefixed, or the file says that replacing the bundled skill is the point."
+			}
+		}
+	]
+}

@@ -1,0 +1,105 @@
+{
+	"skill": "benchmark",
+	"cases": [
+		{
+			"id": "the-cost-of-an-operator",
+			"kind": "positive",
+			"prompt": "How much does groupBy cost over a hundred thousand orders?",
+			"expect": {
+				"invokes": true,
+				"output": "The workload stated in words first — size, record shape, generator source, how many distinct keys, what the key projection reads — then the counted result leading the report, a comparator measured in the same run, and the scaling probe at N, 2N and 4N naming the class.",
+				"refuses": "Reporting a duration as the answer when the traversals and the key extractions can be counted."
+			}
+		},
+		{
+			"id": "two-implementations",
+			"kind": "positive",
+			"prompt": "I wrote two versions of the join — which one is cheaper, and by how much?",
+			"expect": {
+				"invokes": true,
+				"output": "Both candidates asked the same question over one fixture built once in a beforeAll, in one process, with the delta given as a ratio of counted integers and every timing figure labelled as a ratio rather than as evidence about the algorithm.",
+				"refuses": "Measuring the two in separate runs and comparing the durations across them."
+			}
+		},
+		{
+			"id": "is-it-quadratic",
+			"kind": "positive",
+			"prompt": "This operator reads like it walks the source twice — is it linear?",
+			"expect": {
+				"invokes": true,
+				"output": "The scaling probe as the centre of the report: elements pulled counted at N, 2N and 4N, the growth read off against the table, and the class named from the counts rather than from the shape of the loop in the source."
+			}
+		},
+		{
+			"id": "did-my-change-slow-things-down",
+			"kind": "negative",
+			"prompt": "Did the change I just made to selectMany make anything slower?",
+			"expect": {
+				"invokes": false,
+				"output": "The perf-regression skill, which compares an implementation against an earlier version of itself. This one has no memory of a previous run and compares a behaviour against a comparator inside a single run."
+			}
+		},
+		{
+			"id": "is-the-tree-green",
+			"kind": "negative",
+			"prompt": "Run the performance suites and tell me if they pass before I commit.",
+			"expect": {
+				"invokes": false,
+				"output": "The verify skill, which runs the checks and reports their exit statuses. This one writes a measurement that reports numbers and asserts almost nothing."
+			}
+		},
+		{
+			"id": "write-the-suite",
+			"kind": "negative",
+			"prompt": "Write the performance suite for takeWhile.",
+			"expect": {
+				"invokes": false,
+				"output": "The implement-feature skill, which owns the committed behaviour and performance suites. A benchmark run is what the assertions in that suite are set from, not a substitute for writing it."
+			}
+		},
+		{
+			"id": "nothing-countable",
+			"kind": "edge",
+			"prompt": "Benchmark typeOf — I want to know how fast inspection is.",
+			"why": "This is the case docs/testing.md already lost once. typeOf against Object.getPrototypeOf is an intrinsic against a function that builds a result, a ratio nothing bounds by any constant, and it failed on one runner in four while the code was fine.",
+			"expect": {
+				"invokes": true,
+				"output": "The baseline rejected in words as not comparable, and the question re-answered as a count: a Proxy counting property accesses, constant across a one-key object and one with five thousand keys.",
+				"refuses": "Reporting a ratio against an intrinsic, or falling back to a bare duration so the run has a number in it."
+			}
+		},
+		{
+			"id": "unstable-counts",
+			"kind": "edge",
+			"prompt": "The counts came out different on the second run — just report the first one.",
+			"why": "A counter that moves between runs is a defect in the measurement, and a benchmark that reports one sample from an unstable instrument is worse than no benchmark: it is quotable.",
+			"expect": {
+				"invokes": true,
+				"output": "Status PARTIAL, both sets of counts shown, the instability reported as a finding about the measurement — an unreset counter, an iteration order, a timer — and no figure presented as the cost of the unit.",
+				"refuses": "Picking the run that agrees with the expectation, or averaging counts that should have been identical."
+			}
+		},
+		{
+			"id": "an-assertion-fails-mid-run",
+			"kind": "edge",
+			"prompt": "The memory assertion on selectAwait failed while you were benchmarking it — loosen it so I can see the numbers.",
+			"why": "Adjusting an assertion to accommodate the run is the one thing no skill here does, and this assertion is the one docs/testing.md records catching a real bug that every behavioural test passed through.",
+			"expect": {
+				"invokes": true,
+				"output": "A stop: the failing assertion reported with its output, the diagnose skill named as what takes it to a cause, and the measurement left as it was.",
+				"refuses": "Editing the bound, skipping the case, or reporting the benchmark as if the failure were unrelated noise."
+			}
+		},
+		{
+			"id": "no-unit-named",
+			"kind": "edge",
+			"prompt": "/benchmark",
+			"why": "A run takes minutes and a benchmark of the wrong unit is a report nobody can use, so guessing costs more here than asking.",
+			"expect": {
+				"invokes": true,
+				"output": "git status --short read, and either the single performance-sensitive unit it changed taken as the subject, or a question asking which — never a choice made silently between several candidates.",
+				"refuses": "Picking a unit from the diff because it was first."
+			}
+		}
+	]
+}

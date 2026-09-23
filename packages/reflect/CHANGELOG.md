@@ -1,5 +1,23 @@
 # @fulcro/reflect
 
+## 0.10.0
+
+### Minor Changes
+
+- a66c59f: Add `sizeOf<T>()` and `alignOf<T>()`, which read the size and alignment a type
+  declares and are replaced by the number at compile time.
+
+  A type declares a layout by carrying a `'~layout'` property with literal `size`
+  and `alignment`, as every fixed-layout type of `@fulcro/types` does. A type
+  without one is a type error at the call; a generic parameter, or a union of
+  different layouts, is left to throw at runtime, since there is no single number
+  to emit.
+
+### Patch Changes
+
+- Updated dependencies [dc993b2]
+  - @fulcro/transform-core@0.10.0
+
 ## 0.9.0
 
 ### Minor Changes

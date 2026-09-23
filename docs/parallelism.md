@@ -84,6 +84,30 @@ const total = await AsyncSequenceCollection.from(pool.stream(rows))
 	.aggregate(0, (sum, row) => sum + row.size);
 ```
 
+## One batch at a time
+
+A pool runs one batch at a time. Start a second `map` or `stream` while one is
+still going and it waits for it rather than sharing the workers:
+
+```ts
+const [parsed, checked] = await Promise.all([
+	pool.map(rows), // runs now
+	pool.map(others), // runs when the first has finished
+]);
+```
+
+Both are correct, and neither exceeds `workers`. The alternative — sharing the
+threads between two runs — would need a run identity in every message to route
+the replies back, and buys nothing: one run already saturates the workers.
+
+The consequence worth knowing is that a `stream` holds the pool for as long as
+you read it. Finish it, or `break` out of the `for await`, before starting
+another run.
+
+`map` and `stream` also read the elements you hand them **in full** before
+dispatching any, so a generator of ten million rows becomes ten million rows in
+memory. Batch it yourself if that matters.
+
 ## Close what you open
 
 ```ts
@@ -151,6 +175,11 @@ terminated, not interrupted. So a worker holding an element when you abort is
 killed, that element produces no result, and the pool discards itself rather
 than handing the next run a thread still busy with something nobody is waiting
 for. The next run builds a fresh one.
+
+That happens when you abort, not when the current element happens to finish:
+the run rejects straight away, even with every worker mid-task. Abort before a
+run has handed anything out and no element is dispatched at all — the workers
+are not even started.
 
 ## Failures
 

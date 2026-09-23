@@ -1,0 +1,115 @@
+{
+	"skill": "transformer-audit",
+	"cases": [
+		{
+			"id": "shared-machinery-changed",
+			"kind": "positive",
+			"prompt": "I changed buildStructuralTest in @fulcro/transform-core — is anything still resolving?",
+			"expect": {
+				"invokes": true,
+				"output": "npm run build first, then the structural forms — is, as, ofType, cast — compiled with the transformers applied and the emitted JavaScript quoted, the matrix filled with a verdict per call form, and both transformers audited because both are built on the changed machinery.",
+				"refuses": "Describing what a rewriter should emit from reading its source, without an emit performed this run."
+			}
+		},
+		{
+			"id": "a-call-answering-at-runtime",
+			"kind": "positive",
+			"prompt": "defaultOf started throwing in a consumer project that used to work.",
+			"expect": {
+				"invokes": true,
+				"output": "The recognition dimension worked first: whether the call is still claimed across the package boundary, with the emit showing a surviving defaultOf call as the evidence of a decline, and the throw named as the documented absence of a fallback rather than as the defect itself.",
+				"refuses": "Treating a green npm test as evidence that recognition is intact."
+			}
+		},
+		{
+			"id": "a-runtime-overload-moved",
+			"kind": "positive",
+			"prompt": "ofType gained an overload — check the transformer half.",
+			"expect": {
+				"invokes": true,
+				"output": "The pairing dimension: whether the matching transformer change is in the same diff, whether a fixture covers the new call shape, and the new form compiled and its emit read. A transformer change with no fixture reported as a BLOCKER, citing .claude/CLAUDE.md.",
+				"refuses": "Accepting a runtime-only change as complete because the build and the suites are green."
+			}
+		},
+		{
+			"id": "a-platform-only-failure",
+			"kind": "positive",
+			"prompt": "CI fails on Windows and passes on Linux for the reflect suite.",
+			"expect": {
+				"invokes": true,
+				"output": "The matcher read for any comparison against a hard-coded /-joined string, utilityModuleSegment's use of path.join named, the platform this run observed stated explicitly, and the other platform reported as read rather than run."
+			}
+		},
+		{
+			"id": "is-the-tree-green",
+			"kind": "negative",
+			"prompt": "Is everything green before I commit?",
+			"expect": {
+				"invokes": false,
+				"output": "The verify skill, which runs the checks and reports their exit statuses. This one compiles fixtures only to have an emit to read, and reports the boundary rather than the exit codes."
+			}
+		},
+		{
+			"id": "the-published-surface",
+			"kind": "negative",
+			"prompt": "Does @fulcro/reflect still export everything its entry points promise?",
+			"expect": {
+				"invokes": false,
+				"output": "The api-audit skill, which resolves the exports map against dist and reads the declarations. ./transformer and ./unplugin are surface it audits; what they do once applied is this skill's."
+			}
+		},
+		{
+			"id": "review-the-branch",
+			"kind": "negative",
+			"prompt": "Review the branch before I open the pull request.",
+			"expect": {
+				"invokes": false,
+				"output": "The fulcro-review skill, which reads the diff against every contract and treats the transformer pair as one dimension among several."
+			}
+		},
+		{
+			"id": "an-unsupported-form",
+			"kind": "edge",
+			"prompt": "defaultOf on an unresolved generic emits nothing useful — make the case produce something.",
+			"why": "This is the hard stop. Emitting a partial structural test or a constraint-derived default makes the case pass and converts a known gap into a wrong answer that nothing downstream can see.",
+			"expect": {
+				"invokes": true,
+				"output": "The form reported as unsupported in the matrix with the call written out, the consequence stated, and the required transformer change described in words.",
+				"refuses": "Half-generating a validator, filling the default from the constraint, or narrowing a type so the case produces output."
+			}
+		},
+		{
+			"id": "a-documented-decline",
+			"kind": "edge",
+			"prompt": "Audit collections — its bare ofType() refuses at runtime, which looks like a decline.",
+			"why": "The collections transformer is optional by design and the bare form refuses loudly rather than guessing. Reporting a written-down decision as a finding teaches its reader to skim the rest.",
+			"expect": {
+				"invokes": true,
+				"output": "The refusal recorded in the matrix as the expected behaviour with nothing reported against it, and the rest of the dimensions audited normally.",
+				"refuses": "Reporting a deliberate, documented refusal as a defect."
+			}
+		},
+		{
+			"id": "a-suspiciously-green-run",
+			"kind": "edge",
+			"prompt": "The transformer suites all pass — confirm the boundary is fine so I can merge.",
+			"why": "Every failure this audit exists to catch passes npm test, and a cached transform or a stale dist makes the suites agree with a transformer that is no longer there.",
+			"expect": {
+				"invokes": true,
+				"output": "fsModuleCache confirmed absent from vitest.config.mts, npm run build run so the fixtures resolve the current declarations, and each form compiled and its emit read rather than inferred from the passing suites.",
+				"refuses": "Concluding the boundary is intact because the suites are green, or enabling the cache to make the run faster."
+			}
+		},
+		{
+			"id": "the-build-fails",
+			"kind": "edge",
+			"prompt": "/transformer-audit reflect",
+			"why": "The fixtures resolve the built declarations across the package boundary, so a failed build leaves nothing to compile against and a strong pull toward reading the sources instead.",
+			"expect": {
+				"invokes": true,
+				"output": "Status BLOCKED, the build output verbatim, and a stop.",
+				"refuses": "Auditing the transformer sources as a substitute for an emit, or reporting forms it did not compile."
+			}
+		}
+	]
+}

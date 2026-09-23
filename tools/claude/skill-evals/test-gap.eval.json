@@ -1,0 +1,105 @@
+{
+	"skill": "test-gap",
+	"cases": [
+		{
+			"id": "what-is-untested-in-a-package",
+			"kind": "positive",
+			"prompt": "What is untested in @fulcro/parallel?",
+			"expect": {
+				"invokes": true,
+				"output": "The six sections in order, the gap table ordered BLOCKER first, and a paragraph per gap carrying the unit with its location, the scenario, the observable an assertion would read, the trigger, the consequence and the destination spec. The async catalogue worked in full — abort before start, while waiting and during work, producer and consumer failure, peak concurrency, ordering, release under failure.",
+				"refuses": "Writing a spec, running a suite, and reporting a coverage percentage."
+			}
+		},
+		{
+			"id": "cases-for-a-performance-suite",
+			"kind": "positive",
+			"prompt": "I am about to write the performance suite for takeWhile — what are the cases?",
+			"expect": {
+				"invokes": true,
+				"output": "The collections catalogue against the whole implementation: empty source, singleton, duplicates, large volume, no pull on construction, early termination, bounded memory, one traversal, projection count, iterator failure — each with the counted observable it would assert and the spec file it joins, marked performance.",
+				"refuses": "Proposing an assertion on elapsed time in place of a counted one."
+			}
+		},
+		{
+			"id": "transformer-fixture-coverage",
+			"kind": "positive",
+			"prompt": "Does the collections transformer have a fixture for every call shape it claims?",
+			"expect": {
+				"invokes": true,
+				"output": "The matcher read in full, the claimed syntax families enumerated against the fixtures that exist, and the unfixtured ones reported as HIGH — with the unsupported-syntax, runtime-fallback and path-segment scenarios named separately, the last because a green run on one platform says nothing about the other."
+			}
+		},
+		{
+			"id": "is-the-tree-green",
+			"kind": "negative",
+			"prompt": "Run the suites and tell me if everything passes.",
+			"expect": {
+				"invokes": false,
+				"output": "The verify skill, which runs the checks and reports their output. This one runs nothing and never claims a result."
+			}
+		},
+		{
+			"id": "a-failing-test",
+			"kind": "negative",
+			"prompt": "The reflect suite fails on defaultOf for a union type — find out why.",
+			"expect": {
+				"invokes": false,
+				"output": "The diagnose skill. A failing test ran and disagreed; a gap is something that never ran, and the two are different investigations."
+			}
+		},
+		{
+			"id": "write-the-tests",
+			"kind": "negative",
+			"prompt": "Write the missing tests for the sequence operators.",
+			"expect": {
+				"invokes": false,
+				"output": "The implement-feature skill, which writes both suites. This one produces the list and stops there."
+			}
+		},
+		{
+			"id": "nothing-in-scope",
+			"kind": "edge",
+			"prompt": "/test-gap",
+			"why": "A bare invocation on a clean tree is where an audit is most tempted to pick a unit so that the run produced a report.",
+			"expect": {
+				"invokes": true,
+				"output": "git status --short and git diff --stat main...HEAD consulted, and, where both are empty, a line saying there is nothing in scope and a question about which unit to enumerate.",
+				"refuses": "Choosing a unit on its own so that the run has an output."
+			}
+		},
+		{
+			"id": "coverage-is-a-hundred-percent",
+			"kind": "edge",
+			"prompt": "Coverage on this operator is 100% — anything left to test?",
+			"why": "Every line running under one assertion is the exact case this skill exists for, and the prompt offers a number that looks like an answer.",
+			"expect": {
+				"invokes": true,
+				"output": "The scenarios derived from the implementation, the signature, the documentation and the feature spec rather than from the line report, with the point stated that executed lines and asserted behaviours are independent, and the laziness, traversal and termination gaps named where they exist.",
+				"refuses": "Treating a coverage figure as evidence that a behaviour is asserted, and reporting a percentage of its own."
+			}
+		},
+		{
+			"id": "an-unobservable-requirement",
+			"kind": "edge",
+			"prompt": "Enumerate the gaps for this class — including that the internal cache evicts in insertion order.",
+			"why": "It is the distinction the report turns on: a requirement no API promises and no caller can see is not a missing test, and the wrong answer is to suggest exporting the internal so a test can reach it.",
+			"expect": {
+				"invokes": true,
+				"output": "The eviction order listed under Unobservable with why, the observable gaps reported normally, and laziness or memory scenarios instrumented rather than dismissed — awkward to observe is not unobservable.",
+				"refuses": "Reporting it as a gap, and proposing to widen the public surface so it can be asserted."
+			}
+		},
+		{
+			"id": "a-whole-suite-is-absent",
+			"kind": "edge",
+			"prompt": "groupBy has behaviour tests and nothing else. List what is missing.",
+			"why": "Enumerating fifteen scenarios inside an absent file buries the one thing that matters, which is that the file is absent.",
+			"expect": {
+				"invokes": true,
+				"output": "One HIGH naming the absent performance spec by the path it would have, cited to .claude/rules/testing.md on a feature being behaviour plus the cost of that behaviour, with the scenarios it would hold listed under that single gap rather than as separate rows.",
+				"refuses": "Splitting an absent suite into one finding per scenario."
+			}
+		}
+	]
+}

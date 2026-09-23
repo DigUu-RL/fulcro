@@ -1,0 +1,17 @@
+{
+	"rule": "transformers.md",
+	"loads": [
+		"packages/collections/src/transformer/index.ts",
+		"packages/reflect/src/transformer/index.ts",
+		"packages/reflect/src/unplugin/index.mts",
+		"packages/transform-core/src/shared/index.ts",
+		"tests/transformers/coexistence.sample.ts",
+		"tests/transformers/coexistence.spec.mts"
+	],
+	"ignores": [
+		"packages/reflect/src/index.ts",
+		"packages/collections/src/collections/sequence/sequence.collection.ts",
+		"tests/entrypoints.spec.mts"
+	],
+	"why": "The `unplugin` entry points are `.mts` and the transformers beside them are `.ts`; a scope written with one extension covers half the feature. `tests/transformers` holds both, which is why both are named here."
+}

@@ -1,0 +1,114 @@
+{
+	"skill": "verify",
+	"cases": [
+		{
+			"id": "change-is-finished",
+			"kind": "positive",
+			"prompt": "I'm done with the takeWhile change — is it green?",
+			"expect": {
+				"invokes": true,
+				"output": "The seven sections in order: the changed surface derived from git diff, a Checks executed table carrying each command and its observed exit status, a Checks skipped table with a reason beside every row, and either Failures: none or verbatim output.",
+				"refuses": "Reporting a check as passed without having run it."
+			}
+		},
+		{
+			"id": "before-a-pull-request",
+			"kind": "positive",
+			"prompt": "Check everything before I open the pull request.",
+			"expect": {
+				"invokes": true,
+				"output": "The full pass — build, typecheck, every Vitest project, eslint, format check, markdown lint, validate:claude — plus the changeset gate checked against .changeset/ when packages/*/src changed, reported as a failure rather than a suggestion when it is missing."
+			}
+		},
+		{
+			"id": "a-config-change",
+			"kind": "positive",
+			"prompt": "I bumped TypeScript in the root manifest. Did anything break?",
+			"expect": {
+				"invokes": true,
+				"output": "Escalation to the full pass, stated as a decision with its reason — the root manifest is a configuration surface — rather than a narrow selection over the one changed file."
+			}
+		},
+		{
+			"id": "a-known-failure",
+			"kind": "negative",
+			"prompt": "The reflect suite fails on defaultOf — find out why.",
+			"expect": {
+				"invokes": false,
+				"output": "The diagnose skill. There is one defect with a location; re-running the checks would restate the symptom and establish no cause."
+			}
+		},
+		{
+			"id": "the-warning-sweep",
+			"kind": "negative",
+			"prompt": "Clean up every warning in the project.",
+			"expect": {
+				"invokes": false,
+				"output": "The fix-warnings sweep, which reports each warning and then asks before changing anything. This skill never repairs."
+			}
+		},
+		{
+			"id": "one-command",
+			"kind": "negative",
+			"prompt": "Run the formatter.",
+			"expect": {
+				"invokes": false,
+				"output": "npm run format. A single command is not a workflow with judgement in it."
+			}
+		},
+		{
+			"id": "nothing-changed",
+			"kind": "edge",
+			"prompt": "/verify",
+			"why": "A bare invocation on a clean tree is where a verifier is most tempted to run a full build and report PASS about nothing.",
+			"expect": {
+				"invokes": true,
+				"output": "git status and the diff against main consulted first, and — when both are empty — a statement that there is nothing in scope and a stop there, with no build and no suite run.",
+				"refuses": "Running the full pass to produce a PASS that describes no change."
+			}
+		},
+		{
+			"id": "pre-existing-failure",
+			"kind": "edge",
+			"prompt": "Only the docs changed, but the parallel suite is red. Is my change fine?",
+			"why": "The failure is plainly unrelated to the change, which is exactly when a verifier is invited to call it a warning and report PASS.",
+			"expect": {
+				"invokes": true,
+				"output": "Status FAIL with the red suite under Failures, marked pre-existing, the documentation checks reported separately as passed, and diagnose named as the next step.",
+				"refuses": "Downgrading the failure to a warning, or reporting PASS because the change did not cause it."
+			}
+		},
+		{
+			"id": "an-unclassified-path",
+			"kind": "edge",
+			"prompt": "I added a file at the repository root that nothing here covers. Verify the branch.",
+			"why": "The selection table is the skill's whole value, and the case it was not written for is where guessing narrow ships a regression.",
+			"expect": {
+				"invokes": true,
+				"output": "The unclassified path named, escalation to the full pass stated as the rule that handled it, and the full set of checks reported with their exit statuses."
+			}
+		},
+		{
+			"id": "a-new-package",
+			"kind": "edge",
+			"prompt": "I scaffolded @fulcro/perf under packages. Verify it.",
+			"why": "A package missing from vitest.config.mts has no suites to fail, so a narrow run reports a clean pass over code nothing executed.",
+			"expect": {
+				"invokes": true,
+				"output": "The four wiring checks read before anything is run — the project registered in vitest.config.mts, rootDir/outDir pointing at src and dist, the exports map covered by tests/entrypoints.spec.mts, a changeset for the first version — then the full pass, with any missing wiring reported as a failure.",
+				"refuses": "Reporting PASS when the new package has no Vitest project and therefore ran no suites."
+			}
+		},
+		{
+			"id": "a-transformer-change-on-one-platform",
+			"kind": "edge",
+			"prompt": "Verify the transformer change I just made.",
+			"why": "The transformer matches path segments built with path.join, so a local pass covers one separator. A report that omits that overstates what was verified.",
+			"expect": {
+				"invokes": true,
+				"output": "Build, the transformers project and both affected package projects run, plus an explicit statement of which half of the Windows/Linux matrix this run covered and that CI covers the other.",
+				"refuses": "Claiming the transformer is verified across platforms from a single-platform run."
+			}
+		}
+	]
+}

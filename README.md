@@ -1,8 +1,8 @@
-<h1 align="center">
-  <img src="icon.png" alt="fulcro" width="180" height="180" />
+<h1 align="left">
+  <img src="icon-wide.png" alt="fulcro" width="80%" />
 </h1>
 
-<p align="center">
+<p align="left">
   <a href="https://github.com/DigUu-RL/fulcro/actions/workflows/ci.yml">
     <img
       src="https://github.com/DigUu-RL/fulcro/actions/workflows/ci.yml/badge.svg"
@@ -14,23 +14,30 @@
 Development root for the `@fulcro` packages. Private — nothing is published from
 here; the packages under `packages/` are.
 
-| Package                                             | What it is                                                                 | Runtime deps                           |
-| --------------------------------------------------- | -------------------------------------------------------------------------- | -------------------------------------- |
-| [`@fulcro/collections`](packages/collections)       | Lazily evaluated sequences, and runtime validation derived from your types | `@fulcro/transform-core`               |
-| [`@fulcro/reflect`](packages/reflect)               | `nameOf`, `typeOf`, `defaultOf`, with their transformer in the box         | `@fulcro/transform-core`               |
-| [`@fulcro/functions`](packages/functions)           | `switchFor` and `tryCatch` — control flow as values                        | none                                   |
-| [`@fulcro/transform-core`](packages/transform-core) | Shared machinery behind the transformers. Installed for you, not by you    | `unplugin`, optional peer `typescript` |
-| [`@fulcro/parallel`](packages/parallel)             | A worker pool for CPU-bound work, on browser and Node                      | none                                   |
+| Package                                             | What it is                                                                    | Runtime deps                           |
+| --------------------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------- |
+| [`@fulcro/collections`](packages/collections)       | Lazily evaluated sequences, and runtime validation derived from your types    | `@fulcro/transform-core`               |
+| [`@fulcro/reflect`](packages/reflect)               | `nameOf`, `typeOf`, `defaultOf`, `sizeOf`, with their transformer in the box  | `@fulcro/transform-core`               |
+| [`@fulcro/functions`](packages/functions)           | `switchFor` and `tryCatch` — control flow as values                           | none                                   |
+| [`@fulcro/transform-core`](packages/transform-core) | Shared machinery behind the transformers. Installed for you, not by you       | `unplugin`, optional peer `typescript` |
+| [`@fulcro/parallel`](packages/parallel)             | A worker pool for CPU-bound work, on browser and Node                         | none                                   |
+| [`@fulcro/types`](packages/types)                   | Numeric types with a declared range and layout, and operators that respect it | `@fulcro/transform-core`               |
 
-`@fulcro/functions` and `@fulcro/parallel` stand alone. `@fulcro/collections`
-and `@fulcro/reflect` each ship **their own compile time transformer**, behind a
-separate entry point — so one install gets you everything, and a runtime-only
-bundle still pulls in none of the compiler machinery. Neither knows the other
-exists; each rewrites only the calls it can trace back to itself.
+`@fulcro/functions` and `@fulcro/parallel` stand alone. `@fulcro/collections`,
+`@fulcro/reflect` and `@fulcro/types` each ship **their own compile time
+transformer**, behind separate entry points — so one install gets you
+everything, and a runtime-only bundle still pulls in none of the compiler
+machinery. None of them knows the others exist; each rewrites only what it can
+trace back to itself — a call to one of its utilities, or, for `@fulcro/types`,
+an operator on one of its numeric types.
 
-Wiring a transformer up is optional everywhere except `defaultOf`, which throws
-without it because a default it cannot compute would be a lie. `nameOf` and
-`typeOf` degrade, and every operator in `@fulcro/collections` works untouched.
+Wiring a transformer up is optional for the utilities, except `defaultOf`, which
+throws without it because a default it cannot compute would be a lie. `nameOf`
+and `typeOf` degrade, and every operator in `@fulcro/collections` works
+untouched. **The operators on `@fulcro/types` are the exception that matters**:
+without its plugin, `a + b` on a `SignedInteger<32>` is plain, unchecked
+arithmetic on a `number`, and on a `Decimal` it is a type error. The methods of
+the descriptors work either way.
 
 **What the plugin buys in `@fulcro/collections` is worth knowing about**, since
 it is easy to miss under "sequences": `cast<T>()` becomes a validator for

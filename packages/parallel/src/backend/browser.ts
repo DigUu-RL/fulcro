@@ -22,25 +22,35 @@ export const spawnWorker: SpawnWorker = (url: URL): WorkerHandle => {
 			worker.postMessage(message, (transfer ?? []) as Transferable[]);
 		},
 
-		listen: (handler): void => {
-			worker.addEventListener('message', (event: MessageEvent) => {
+		listen: (handler): (() => void) => {
+			const onMessage = (event: MessageEvent): void => {
 				handler(event.data);
-			});
+			};
 
-			worker.addEventListener('error', (event: ErrorEvent) => {
+			const onError = (event: ErrorEvent): void => {
 				handler(undefined, new Error(event.message));
-			});
+			};
 
 			// A message the structured clone algorithm could not carry. Silent
 			// otherwise, and it would leave a run waiting forever.
-			worker.addEventListener('messageerror', () => {
+			const onMessageError = (): void => {
 				handler(
 					undefined,
 					new Error(
 						'A message could not be cloned across the worker boundary.',
 					),
 				);
-			});
+			};
+
+			worker.addEventListener('message', onMessage);
+			worker.addEventListener('error', onError);
+			worker.addEventListener('messageerror', onMessageError);
+
+			return (): void => {
+				worker.removeEventListener('message', onMessage);
+				worker.removeEventListener('error', onError);
+				worker.removeEventListener('messageerror', onMessageError);
+			};
 		},
 
 		terminate: async (): Promise<void> => {

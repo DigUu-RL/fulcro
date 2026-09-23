@@ -1,0 +1,444 @@
+# Tipos numéricos
+
+🇺🇸 English: [Read this documentation in English](../types.md)
+
+Números com faixa e layout declarados: inteiros de largura fixa, três formatos
+de ponto flutuante binário, um inteiro de qualquer tamanho e um decimal com a
+semântica do decimal128 da IEEE 754.
+
+```sh
+npm install @fulcro/types
+```
+
+```ts
+import {
+	BigInteger,
+	Decimal,
+	DoublePrecisionFloat,
+	HalfPrecisionFloat,
+	SignedInteger,
+	SinglePrecisionFloat,
+	UnsignedInteger,
+} from '@fulcro/types';
+```
+
+Os tipos e os descritores não precisam de mais nada. Usar os **operadores**
+neles — `a + b`, `price * 3`, `count++` — precisa do plugin de compilador,
+descrito em [Operadores](#operadores).
+
+## O problema
+
+JavaScript tem um único número, um float binário de 64 bits, e ele é o número
+errado para a maioria dos valores que um programa guarda:
+
+```ts
+0.1 + 0.2; // 0.30000000000000004 — um preço que deu errado
+2 ** 53 + 1; // 9007199254740992 — um identificador alterado em silêncio
+const port = 70_000; // nada diz que uma porta tem 16 bits
+```
+
+O primeiro é uma fração decimal guardada em binário. O segundo é um inteiro
+além dos 53 bits que um double guarda com exatidão. O terceiro é uma faixa que
+ninguém escreveu, então nada a verifica. Este pacote dá a cada um desses números
+o nome do que ele é, e o verifica onde ele é criado.
+
+## Todo tipo tem um valor com o mesmo nome
+
+Um tipo é apagado a caminho do JavaScript, então `SignedInteger<32>` sozinho não
+verifica nada. Cada tipo vem, por isso, com um **descritor** de mesmo nome, que
+converte, reconhece e calcula:
+
+```ts
+const Int32 = SignedInteger(32);
+
+const port: UnsignedInteger<16> = UnsignedInteger(16).from(8080);
+const total: SignedInteger<32> = Int32.add(Int32.from(1), Int32.from(2));
+```
+
+Os descritores têm tipos próprios, para código que funciona com qualquer tipo
+numérico: o descritor de um inteiro é um `IntegerType<T>`, o de um float um
+`BoundedNumericType<T, number>`, e o do `BigInteger` um `NumericType<T, TSource>`
+— sendo `TSource` o que o `from` aceita. `IntegerWidth` é a união das
+larguras, `8 | 16 | 32 | 64 | 128`.
+
+```ts
+import type { NumericType } from '@fulcro/types';
+
+const sum = <T>(
+	type: NumericType<T, unknown>,
+	values: readonly T[],
+	zero: T,
+): T => values.reduce((total, value) => type.add(total, value), zero);
+```
+
+Todo tipo com faixa a informa como `minimum` e `maximum`: o menor e o maior
+valor **finito**. `minimum` é o valor mais negativo, e não o menor positivo, que
+é o que `Number.MIN_VALUE` significa:
+
+| Tipo                             | `minimum`           | `maximum`          |
+| -------------------------------- | ------------------- | ------------------ |
+| `SignedInteger<N>`               | −2^(N−1)            | 2^(N−1) − 1        |
+| `UnsignedInteger<N>`             | 0                   | 2^N − 1            |
+| `HalfPrecisionFloat`             | −65.504             | 65.504             |
+| `SinglePrecisionFloat`           | ≈ −3,4 × 10³⁸       | ≈ 3,4 × 10³⁸       |
+| `DoublePrecisionFloat`           | −`Number.MAX_VALUE` | `Number.MAX_VALUE` |
+| `Decimal` (`Decimal.minimum`, …) | −9,99…9 × 10⁶¹⁴⁴    | 9,99…9 × 10⁶¹⁴⁴    |
+
+O `BigInteger` não tem nenhum dos dois: seus valores são tão grandes quanto a
+memória permitir.
+
+Se você quer só os tipos — para anotar uma interface, por exemplo — importe com
+`import type` e nenhum código é carregado:
+
+```ts
+import type { SignedInteger } from '@fulcro/types';
+
+interface Packet {
+	readonly length: SignedInteger<32>;
+}
+```
+
+## Inteiros de largura fixa
+
+`SignedInteger<N>` e `UnsignedInteger<N>`, com `N` de 8, 16, 32, 64 ou 128
+bits. A largura é um parâmetro, não parte do nome: não existe
+`SignedInteger32`, nem `i32`.
+
+| Largura | Faixa com sinal  | Faixa sem sinal | Carregado por |
+| ------- | ---------------- | --------------- | ------------- |
+| 8       | −128 … 127       | 0 … 255         | `number`      |
+| 16      | −32.768 … 32.767 | 0 … 65.535      | `number`      |
+| 32      | −2³¹ … 2³¹ − 1   | 0 … 2³² − 1     | `number`      |
+| 64      | −2⁶³ … 2⁶³ − 1   | 0 … 2⁶⁴ − 1     | `bigint`      |
+| 128     | −2¹²⁷ … 2¹²⁷ − 1 | 0 … 2¹²⁸ − 1    | `bigint`      |
+
+Até 32 bits um `number` guarda todo valor com exatidão e não custa nada. A
+partir de 64 ele não consegue, então o valor é um `bigint` — e o tipo diz isso,
+em vez de você descobrir por um dígito perdido.
+
+### Verificado, a menos que você peça para dar a volta
+
+Toda operação verifica o resultado, como um contexto `checked` do C#:
+
+```ts
+const Byte = UnsignedInteger(8);
+
+Byte.from(256); // RangeError: UnsignedInteger<8>.from: 256 is outside [0, 255].
+Byte.subtract(Byte.from(0), Byte.from(1)); // RangeError
+Byte.from(1.5); // RangeError: expected an integer, received 1.5.
+```
+
+Quando aritmética modular é o que você quer — hash, checksum, emular um
+registrador — diga isso com `wrap`, que reduz qualquer inteiro módulo 2^N e
+nunca lança erro:
+
+```ts
+SignedInteger(8).wrap(200); // -56
+UnsignedInteger(8).wrap(-1); // 255
+SignedInteger(32).wrap(2 ** 31); // -2147483648
+```
+
+Cada descritor tem `from`, `wrap`, `is`, `minimum`, `maximum`, `width` e
+`signed`, a aritmética `add`, `subtract`, `multiply`, `divide`, `remainder`,
+`power`, `negate`, `increment` e `decrement`, as comparações `equals`,
+`lessThan`, `lessThanOrEqual`, `greaterThan` e `greaterThanOrEqual`, e as
+operações de bits `bitwiseAnd`, `bitwiseOr`, `bitwiseXor`, `bitwiseNot`,
+`shiftLeft`, `shiftRight` e `shiftRightLogical`.
+
+- A divisão trunca em direção a zero; o resto leva o sinal do dividendo, como
+  `%`. Dividir por zero, e dividir o mínimo de um tipo com sinal por −1, lança
+  erro.
+- `power` recebe um expoente do mesmo tipo; um negativo lança erro, assim como
+  um resultado fora da faixa.
+- A contagem de um shift precisa ir de 0 à largura − 1, senão lança erro. Os
+  bits que saem são descartados — um shift é uma operação de bits, nunca um
+  overflow. `>>` copia o bit de sinal num tipo com sinal; `shiftRightLogical`
+  (`>>>`) traz zeros, sobre a largura do próprio tipo, como o do Java:
+  `-1 >>> 28` é `15` em 32 bits.
+
+Um `SignedInteger<8>` não é um `SignedInteger<32>`, mesmo que todo valor de um
+caiba no outro: alargar passa por `from`, onde fica visível.
+
+## Floats
+
+| Tipo                   | Formato           | Bits significativos | Finito até    |
+| ---------------------- | ----------------- | ------------------- | ------------- |
+| `HalfPrecisionFloat`   | IEEE 754 binary16 | 11                  | 65.504        |
+| `SinglePrecisionFloat` | IEEE 754 binary32 | 24                  | ≈ 3,4 × 10³⁸  |
+| `DoublePrecisionFloat` | IEEE 754 binary64 | 53                  | ≈ 1,8 × 10³⁰⁸ |
+
+Cada um é carregado por um `number` que guarda um valor que o formato
+representa com exatidão, então ele é lido, comparado e impresso como qualquer
+número. `from` arredonda para o valor mais próximo, empates para o par:
+
+```ts
+SinglePrecisionFloat.from(0.1); // 0.10000000149011612
+HalfPrecisionFloat.from(0.1); // 0.0999755859375
+HalfPrecisionFloat.from(65520); // Infinity
+```
+
+A aritmética arredonda cada resultado uma vez, de volta ao formato. Isso não é
+uma aproximação: quando o formato mais largo tem pelo menos 2p + 2 bits de
+precisão, calcular em double e arredondar uma vez dá exatamente o resultado
+corretamente arredondado, e um double tem o suficiente para os dois formatos
+menores.
+
+```ts
+const a = SinglePrecisionFloat.from(0.1);
+const b = SinglePrecisionFloat.from(0.2);
+
+SinglePrecisionFloat.add(a, b); // 0.30000001192092896, como o hardware float32 dá
+```
+
+Com o [plugin de operadores](#operadores), `a + b` é essa mesma chamada. Sem
+ele, é um double que ninguém arredondou: `0.30000000447034836`.
+
+`power` é o `Math.pow` arredondado uma vez para o formato. Ao contrário das
+quatro operações acima, ele é fiel, mas não garantidamente o mais próximo,
+porque o próprio `Math.pow` não é corretamente arredondado.
+
+`from` aceita só `number`. Um `bigint` é recusado em vez de convertido, porque
+transformá-lo primeiro em double e depois no formato arredonda duas vezes, e o
+segundo arredondamento pode cair no vizinho errado.
+
+## `BigInteger`
+
+Um inteiro de qualquer tamanho, carregado por um `bigint` — que já é exato em
+qualquer magnitude — e com brand como todos os outros tipos daqui: um
+`BigInteger` é um `bigint` que passou por `BigInteger.from`. É isso que permite
+reescrever os operadores num `BigInteger` e deixar em paz todo outro `bigint` do
+programa.
+
+O descritor acrescenta um `from` que só aceita decimal — `BigInteger.from('0x10')`
+é recusado, não lido como 16 —, uma divisão que diz qual operação dividiu por
+zero, e um `power` que recusa expoente negativo.
+
+É o único tipo aqui sem layout fixo: o tamanho dele é o tamanho do valor.
+
+## `Decimal`
+
+Um número decimal de ponto flutuante, para dinheiro e para tudo o que é decimal
+por natureza:
+
+```ts
+const price = Decimal.from('19.99');
+
+price.multiply(Decimal.from(3)).toString(); // '59.97'
+Decimal.from('0.1').add(Decimal.from('0.2')).equals(Decimal.from('0.3')); // true
+```
+
+A semântica é a do **decimal128** da IEEE 754, como a proposta TC39 Decimal a
+especifica: 34 dígitos significativos, expoentes de −6143 a 6144, e os valores
+especiais `NaN`, `Infinity`, `-Infinity` e `-0`. Código escrito contra ela lê
+igual contra um decimal nativo, se a plataforma um dia tiver um.
+
+### Criando um
+
+```ts
+Decimal.from('-12.50'); // de um literal; zeros à direita não são guardados
+Decimal.from(0.1); // de um number: exatamente 0.1, não o valor binário perto dele
+Decimal.from(12345678901234567890n); // de um bigint, exatamente
+```
+
+Uma string é um literal decimal: sinal opcional, dígitos com no máximo um ponto,
+expoente opcional, ou `NaN` / `Infinity`. Espaços ao redor e hexadecimal são
+recusados com `SyntaxError`. Além de 34 dígitos significativos o valor é
+arredondado half to even.
+
+### Toda operação arredonda uma vez
+
+`add`, `subtract`, `multiply` e `divide` calculam o resultado exato e o
+arredondam para 34 dígitos, half to even a menos que você passe um modo:
+
+```ts
+Decimal.from(1).divide(Decimal.from(3)).toString();
+// '0.3333333333333333333333333333333333'
+
+Decimal.from(2).divide(Decimal.from(3), 'truncate').toString();
+// '0.6666666666666666666666666666666666'
+```
+
+`remainder` é sempre exato e leva o sinal do dividendo. `power(exponent, mode)`
+recebe um expoente inteiro de qualquer sinal e é corretamente arredondado sempre
+que a potência exata tem até 200.000 dígitos — o que cobre toda base que não
+esteja a um fio de um; além disso, usa 50 dígitos de guarda. Um expoente com
+fração lança erro. Qualquer coisa elevada a zero é um, `NaN` incluído, como no
+`pown` da IEEE 754:
+
+```ts
+Decimal.from('1.1').power(Decimal.from(2)).toString(); // '1.21'
+Decimal.from(2).power(Decimal.from(-2)).toString(); // '0.25'
+```
+
+`round(places, mode)` arredonda para um número de casas depois do ponto —
+negativo para dezenas, centenas e assim por diante:
+
+```ts
+Decimal.from('2.345').round(2).toString(); // '2.34'
+Decimal.from('2.345').round(2, 'halfAwayFromZero').toString(); // '2.35'
+Decimal.from('1250').round(-2).toString(); // '1200'
+```
+
+### Modos de arredondamento
+
+| Modo                 | Resolve um valor entre dois vizinhos para       |
+| -------------------- | ----------------------------------------------- |
+| `'halfEven'`         | o mais próximo; um empate para o par — o padrão |
+| `'halfAwayFromZero'` | o mais próximo; um empate para o mais afastado  |
+| `'truncate'`         | o que está em direção a zero                    |
+| `'floor'`            | o que está em direção a −∞                      |
+| `'ceiling'`          | o que está em direção a +∞                      |
+
+Half to even é o padrão porque não deriva: arredondar todo empate para o mesmo
+lado enviesa uma soma, e alterná-los pela paridade não. Os cinco são exportados
+como o tipo `RoundingMode`, e um modo que não seja um deles lança `RangeError`
+em vez de cair num padrão.
+
+### Sem o plugin de operadores, os operadores são recusados
+
+```ts
+const one = Decimal.from(1);
+
+one + one; // erro de compilação: Operator '+' cannot be applied to types 'Decimal' and 'Decimal'.
+`${one}`; // '1' — template literal funciona
+```
+
+Uma conversão implícita para `number` perderia exatamente os dígitos que o tipo
+existe para guardar, então ela é recusada duas vezes: o TypeScript rejeita o
+operador em tempo de compilação, e onde os tipos são contornados — JavaScript
+sem tipos, um `any` — a conversão lança `TypeError` em runtime. Com o
+[plugin de operadores](#operadores), `one + one` é `one.add(one)`; sem ele, use
+os métodos.
+
+### Valores especiais
+
+A divisão por zero segue a IEEE 754 em vez de lançar erro: um valor diferente
+de zero dividido por zero é um infinito, e zero dividido por zero é `NaN`. Um
+resultado grande demais para o formato vira um infinito, ou — num modo
+direcionado — para no maior valor finito. `NaN` não é ordenado em relação a
+nada: `compare` devolve `undefined`, e todo método de comparação devolve
+`false`. `0` e `-0` são iguais; `isNegative()` os distingue.
+
+### Tirando o valor
+
+| Método                                  | Devolve                                                            |
+| --------------------------------------- | ------------------------------------------------------------------ |
+| `toString()`                            | o texto mais curto; exponencial fora de 10⁻⁶ … 10²¹, como `Number` |
+| `toFixed(fractionDigits?, mode?)`       | um número fixo de casas, em notação comum                          |
+| `toPrecision(precision, mode?)`         | um número de dígitos significativos                                |
+| `toExponential(fractionDigits?, mode?)` | notação exponencial                                                |
+| `toLocaleString(locales?, options?)`    | `Intl.NumberFormat` sobre o texto decimal, sem perder dígito       |
+| `toJSON()`                              | o texto, para `JSON.stringify` escrever uma string e não `{}`      |
+| `toNumber()`                            | o `number` mais próximo                                            |
+| `toBigInt()`                            | o inteiro exato; lança erro se houver fração                       |
+
+## Operadores
+
+Com o plugin ligado, os operadores do JavaScript funcionam em todos os tipos
+numéricos daqui, com o significado do próprio tipo — verificado num inteiro,
+arredondado para o formato num float, decimal128 num `Decimal` — e o resultado
+mantém o tipo:
+
+```ts
+const Int32 = SignedInteger(32);
+const a = Int32.from(2_000_000_000);
+
+const b = a - Int32.from(1); // SignedInteger<32>, não number
+a + a; // RangeError: SignedInteger<32>.add: 4000000000 is outside [-2147483648, 2147483647].
+
+let total = Decimal.from(0);
+total += Decimal.from('19.99') * Decimal.from(3); // Decimal: 59.97
+Decimal.from('0.1') + Decimal.from('0.2') === Decimal.from('0.3'); // true
+```
+
+É uma reescrita que acontece **antes** da checagem de tipos: cada operador vira
+a operação que ele significa para o tipo — `a + b` vira
+`SignedInteger(32).add(a, b)`, `d * e` vira `d.multiply(e)` — e é isso que o
+checker lê em seguida.
+
+| Escrito                                  | Significa                                          | Em                                 |
+| ---------------------------------------- | -------------------------------------------------- | ---------------------------------- |
+| `+ - * / % **`, `-` e `+` unários        | `add`, `subtract`, … `power`, `negate`             | todos os tipos                     |
+| `++ --`, prefixo e sufixo                | `increment`, `decrement` (`add` de um, no Decimal) | todos os tipos                     |
+| `+= -= *= /= %= **=`                     | a operação, depois a atribuição                    | todos os tipos                     |
+| `< <= > >=`                              | `lessThan`, …                                      | todos os tipos                     |
+| `=== == !== !=`                          | `equals`, por valor                                | todos os tipos                     |
+| `& \| ^ ~ << >> >>>` e as formas com `=` | `bitwiseAnd`, … `shiftRightLogical`                | `SignedInteger`, `UnsignedInteger` |
+
+O valor de cada forma, e a ordem em que ela é avaliada, são os do operador: um
+`i++` sufixo vale o valor antes do passo, e uma atribuição composta avalia o
+alvo uma vez só — `items[next()] += x` chama `next` uma vez.
+
+### Só entre o mesmo tipo
+
+Os dois operandos precisam ser do mesmo tipo. `a + 1`, um `SignedInteger<32>`
+com um `SignedInteger<16>`, um `Decimal` com um `number` — cada um é um erro de
+tipo na linha em que foi escrito, com a mensagem do próprio checker:
+
+```text
+Argument of type 'number' is not assignable to parameter of type 'SignedInteger<32>'.
+```
+
+Duas coisas ficam de fora de propósito. `+` com uma string é concatenação, como
+sempre — um `Decimal` concatena como o seu texto, `'total: ' + price`. E uma
+igualdade com algo que nem é número, `price === null`, continua sendo a checagem
+de identidade que é.
+
+Num `Decimal`, `===` compara **valores**: `Decimal.from('1.20') === Decimal.from('1.2')`
+é `true`, e `NaN === NaN` é `false`, como com números. Sem o plugin, a mesma
+expressão compara dois objetos.
+
+### Como ligar
+
+O plugin vem em três formas, uma para cada ferramenta que lê o código:
+
+| Ferramenta | Entrada                          | Onde                                                                                                      |
+| ---------- | -------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `tsc`      | `@fulcro/types/transformer`      | `"plugins": [{ "transform": "@fulcro/types/transformer", "transformProgram": true }]`, via `ts-patch`     |
+| Um bundler | `@fulcro/types/unplugin`         | `plugins: [fulcroTypes()]`, com `vite`, `rollup`, `webpack`, `esbuild`, `rspack` ou `farm` importado dele |
+| O editor   | `@fulcro/types/language-service` | `"plugins": [{ "name": "@fulcro/types/language-service" }]` no tsconfig                                   |
+
+`"transformProgram": true` não é opcional: um transformer comum do `ts-patch`
+roda depois da checagem de tipos, quando `decimal * decimal` já foi reportado.
+O VS Code só carrega um plugin de language service do TypeScript do workspace —
+**TypeScript: Select TypeScript Version → Use Workspace Version**.
+
+A reescrita lê o programa inteiro, porque saber se `c + d` num arquivo é nosso
+depende de como `c` foi declarado em outro, e ela roda até um ponto fixo:
+`const c = a + b` precisa ser reescrito antes de se saber que `c` é um
+`SignedInteger<32>`. Todo arquivo TypeScript do projeto passa pelo type checker
+para isso.
+
+### Sem o plugin
+
+Os operadores são os da linguagem. Nos tipos carregados por `number` ou `bigint`
+eles fazem conta comum, sem verificação — `a + a` é `4000000000`, um `number` —
+e nada em runtime consegue recusar. Num `Decimal` eles são erro de tipo, e
+`TypeError` em runtime. Os métodos dos descritores funcionam dos dois jeitos.
+
+## Layout
+
+Todo tipo, exceto `BigInteger`, declara seu tamanho e alinhamento em bytes, para
+o modelo de memória sobre o qual as próximas features são construídas. O
+`@fulcro/reflect` os lê em tempo de compilação:
+
+```ts
+import { alignOf, sizeOf } from '@fulcro/reflect';
+import type { Decimal, SignedInteger } from '@fulcro/types';
+
+sizeOf<SignedInteger<32>>(); // 4
+alignOf<Decimal>(); // 16
+```
+
+| Tipo                                | Tamanho, alinhamento |
+| ----------------------------------- | -------------------- |
+| inteiros de 8, 16, 32, 64, 128 bits | 1, 2, 4, 8, 16       |
+| `HalfPrecisionFloat`                | 2                    |
+| `SinglePrecisionFloat`              | 4                    |
+| `DoublePrecisionFloat`              | 8                    |
+| `Decimal`                           | 16                   |
+
+O layout mora no tipo e nunca num valor: um import só de tipo basta para o
+`sizeOf`, e nada deste pacote é carregado para respondê-lo. Veja
+[Reflection](../reflect.md#sizeoft-and-alignoft) para como os dois se
+encontram.

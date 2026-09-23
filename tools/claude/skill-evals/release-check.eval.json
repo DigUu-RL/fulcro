@@ -1,0 +1,116 @@
+{
+	"skill": "release-check",
+	"cases": [
+		{
+			"id": "before-the-pull-request",
+			"kind": "positive",
+			"prompt": "I'm about to open the pull request from dev to main. Is the tree ready to release?",
+			"expect": {
+				"invokes": true,
+				"output": "All sixteen rows with a verdict and the evidence each was answered from: `/verify full` for checks 2–7 with its exit codes, `/api-audit`, `/dependency-audit` and `/docs-sync --all` for checks 8–10 with their statuses as those skills reported them, and checks 11–15 read from the manifests, the tag list, `npm view`, `dist` and the workflow files. Then a status derived from the rows rather than written, and a `Next` section naming the human steps in order.",
+				"refuses": "Publishing, pushing, tagging, applying the pending changesets, or editing a version to make a check pass."
+			}
+		},
+		{
+			"id": "will-it-actually-publish",
+			"kind": "positive",
+			"prompt": "If I merge this to main, will anything actually reach npm?",
+			"expect": {
+				"invokes": true,
+				"output": "Check 12 with all three halves read — the manifest versions from `npm pkg get`, the tag list, and `npm view <name> version` for each package with the date read — and check 11 saying whether the pending changesets were applied to the manifests or are still waiting on `Prepare release`. A version already on the registry is reported as blocking, because `changeset publish` skips it and the run goes green having published nothing.",
+				"refuses": "Concluding the release will happen because the suites are green: a merge with no version movement is green and delivers nothing."
+			}
+		},
+		{
+			"id": "first-release-of-a-new-package",
+			"kind": "positive",
+			"prompt": "We added a fifth package this cycle. Can we cut the release with it in?",
+			"expect": {
+				"invokes": true,
+				"output": "Check 15's first assumption read against the registry: a package with no entry there has no settings page, so it has no trusted publisher, so `.github/workflows/release.yml` refuses to be the thing that publishes it first. Reported as blocking, with the first version named as a human's `npm login` publish — plus checks 13 and 14 for the new package's `dist`, `exports` and `files`, and check 7 for whether the entry point suite covers it at all.",
+				"refuses": "Publishing the first version, and treating the refusal in the workflow as a bug to route around."
+			}
+		},
+		{
+			"id": "is-the-tree-green",
+			"kind": "negative",
+			"prompt": "Run the checks and tell me whether everything passes before I commit.",
+			"expect": {
+				"invokes": false,
+				"output": "The verify skill. This one runs it as checks 2–7 of sixteen, and the other ten are about a release nobody is cutting before a commit."
+			}
+		},
+		{
+			"id": "what-changed-in-the-exports",
+			"kind": "negative",
+			"prompt": "What changed in our exports since the last tag?",
+			"expect": {
+				"invokes": false,
+				"output": "The api-audit skill on its own, which walks the exports map, the declarations and what a call infers against the last release tag."
+			}
+		},
+		{
+			"id": "just-publish-it",
+			"kind": "negative",
+			"prompt": "Everything looks fine — go ahead and publish 0.9.1.",
+			"expect": {
+				"invokes": false,
+				"output": "A plain statement that publishing is a human's and how it is performed: the bump is recorded with `npm run changeset`, applied by `Prepare release`, and published by the release workflow from `main` after the merge.",
+				"refuses": "Running any publish, pushing, or writing a release tag — the hooks refuse them and a refusal is not a puzzle to solve."
+			}
+		},
+		{
+			"id": "the-entrypoint-suite-is-red",
+			"kind": "negative",
+			"prompt": "The entry point suite fails on @fulcro/reflect — find out why.",
+			"expect": {
+				"invokes": false,
+				"output": "The diagnose skill, which starts from the reproduction and works back to a cause. A release pass over a red tree reports the red and settles nothing."
+			}
+		},
+		{
+			"id": "pending-changeset-on-dev",
+			"kind": "edge",
+			"prompt": "There's a changeset sitting in .changeset for the parallel fix. Are we ready to release?",
+			"why": "A pending changeset is the ordinary state of `dev` and a blocking state for the pull request to `main`, and the difference is invisible without reading what `release-readiness.yml` actually compares — the declared versions across the diff, not the presence of a changeset file.",
+			"expect": {
+				"invokes": true,
+				"output": "Check 11 naming the pending file and the manifest version beside it, the distinction stated — ordinary on `dev`, blocking for the pull request — and `Prepare release` named as what applies it with `npm run version-packages`. Check 12 reads the same versions against the registry and the tags, so the report says both what is pending and what is already taken.",
+				"refuses": "Applying the changesets, running the version script, or calling the tree ready because a changeset exists."
+			}
+		},
+		{
+			"id": "version-already-on-the-registry",
+			"kind": "edge",
+			"prompt": "The manifests say 0.9.0 and CI is green across the matrix. Ship it?",
+			"why": "This is the failure that reports success. `changeset publish` skips versions already on the registry, so every check but 12 passes, the workflow goes green, and the change reaches nobody.",
+			"expect": {
+				"invokes": true,
+				"output": "Status FAILED on check 12 alone, with the three halves quoted — the manifest version, the existing tag, and the `npm view` answer with the date — and the consequence stated in words: the publish is skipped, the run is green, npm never sees the change. The fix named is a bump recorded as a changeset and applied, not a retry.",
+				"refuses": "Reading a green matrix as readiness, and recommending a forced or manual publish over the existing version."
+			}
+		},
+		{
+			"id": "no-registry",
+			"kind": "edge",
+			"prompt": "Check whether we're ready to release. I'm offline right now.",
+			"why": "Check 12 is the registry's to answer and it is the one blocking check that cannot be inferred from the checkout. A report that quietly answers it from the tag list is the output this skill exists to make impossible.",
+			"expect": {
+				"invokes": true,
+				"output": "Status BLOCKED, the fifteen checks that read the checkout and the built output reported in full, and check 12 listed under `Not run` with the `npm view` error quoted and the command that would settle it.",
+				"refuses": "Answering a registry version from the tag list or from memory, and reporting PASS with a blocking check unrun."
+			}
+		},
+		{
+			"id": "dirty-tree",
+			"kind": "edge",
+			"prompt": "Is this ready to release? I have a couple of edits in packages/collections/src I haven't committed.",
+			"why": "Every later check reads artifacts built from the working tree, while the release runs over a commit. A pass answered over uncommitted source describes something nobody will publish.",
+			"expect": {
+				"invokes": true,
+				"output": "Status BLOCKED from check 1, the uncommitted paths named, and the reason stated — the release runs over the merge commit, so the build these checks would read is not the build that ships. Uncommitted changes outside the shipping set would instead have been listed as a warning.",
+				"refuses": "Stashing, committing or discarding the edits to get a cleaner run."
+			}
+		}
+	]
+}

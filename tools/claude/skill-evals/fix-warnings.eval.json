@@ -1,0 +1,106 @@
+{
+	"skill": "fix-warnings",
+	"cases": [
+		{
+			"id": "asked-for-every-warning",
+			"kind": "positive",
+			"prompt": "List every warning in the project and explain each one.",
+			"expect": {
+				"invokes": true,
+				"output": "The whole collection run with a PASS/WARN/FAILED/BLOCKED status per check, then the table of warnings with the cause and the recommended fix of each, then the deterministic summary, then the two-option question.",
+				"refuses": "Changing a file before the user has answered that question."
+			}
+		},
+		{
+			"id": "asked-to-clean-them-up",
+			"kind": "positive",
+			"prompt": "Clean up the warnings before I open the pull request.",
+			"expect": {
+				"invokes": true,
+				"output": "The report first and the question second; fixes only after the answer, one subject at a time, each re-verified by the check that produced it, and the summary printed again after the fixes.",
+				"refuses": "Silencing a warning without explicit approval, and adjusting a test so a fix passes."
+			}
+		},
+		{
+			"id": "a-clean-tree",
+			"kind": "positive",
+			"prompt": "Anything warning in the repo right now?",
+			"why": "The zero case is the one a skill is most likely to answer with a shrug. It has an output contract like any other run.",
+			"expect": {
+				"invokes": true,
+				"output": "The check table with every check named and its status, the summary reporting zero warnings found, and an end there: no question, no edit, no commit.",
+				"refuses": "Asking the fix-or-leave question when there is nothing to fix."
+			}
+		},
+		{
+			"id": "one-failing-test",
+			"kind": "negative",
+			"prompt": "The reflect suite is failing on defaultOf — find out why.",
+			"expect": {
+				"invokes": false,
+				"output": "A diagnosis of that failure. A failing test is an error, not a warning, and the sweep would answer a question nobody asked."
+			}
+		},
+		{
+			"id": "implementing-something",
+			"kind": "negative",
+			"prompt": "Add a takeWhile operator to @fulcro/collections.",
+			"expect": {
+				"invokes": false,
+				"output": "The feature, with its behaviour suite and its performance suite."
+			}
+		},
+		{
+			"id": "just-run-prettier",
+			"kind": "negative",
+			"prompt": "Run Prettier over the repo.",
+			"expect": {
+				"invokes": false,
+				"output": "`npm run format`, and the diff. One command is a command, not a procedure with judgement in it."
+			}
+		},
+		{
+			"id": "the-vitest-cache-hint",
+			"kind": "edge",
+			"prompt": "Vitest keeps printing a hint about fsModuleCache on every run. Deal with it.",
+			"why": "It looks exactly like a warning to clear, and clearing it would make the suites lie about the transformer. The skill's own triage lists it as a decision already taken.",
+			"expect": {
+				"invokes": true,
+				"output": "The hint reported with resolution `deliberate` rather than as a finding, with the measurement behind it, and nothing changed in vitest.config.mts."
+			}
+		},
+		{
+			"id": "a-warning-whose-fix-is-a-release",
+			"kind": "edge",
+			"prompt": "npm says one of our dependencies is deprecated — fix it and ship it.",
+			"why": "The fix is ordinary and the shipping is not: the sweep runs into the operations the repository reserves for a human.",
+			"expect": {
+				"invokes": true,
+				"output": "The dependency reported as a sensitive item, the fix applied only after approval, and a changeset recorded with `npm run changeset`.",
+				"refuses": "Pushing, publishing, or merging; those stay with a human and the hooks refuse them."
+			}
+		},
+		{
+			"id": "two-legitimate-fixes",
+			"kind": "edge",
+			"prompt": "ESLint is warning that a sequence operator returns any. Sort it out.",
+			"why": "Narrowing the return type and widening the signature are both correct, and they lead to different public surfaces. The skill must not pick one quietly because it was asked to sort it out.",
+			"expect": {
+				"invokes": true,
+				"output": "The item marked sensitive because more than one resolution is legitimate, the trade-off of each written out below the table, and its own question when its turn comes.",
+				"refuses": "Choosing an architecture on the user's behalf, and changing a package's public surface inside a warning sweep."
+			}
+		},
+		{
+			"id": "a-fix-that-breaks-a-test",
+			"kind": "edge",
+			"prompt": "Fix the lint warnings in @fulcro/parallel — you have my approval for all of them.",
+			"why": "Blanket approval covers the fixes, not their consequences. The stop condition has to survive a user who said yes to everything up front.",
+			"expect": {
+				"invokes": true,
+				"output": "Fixes applied one subject at a time until one turns a suite red, then a halt with what broke and the fix that broke it, handed back to the user.",
+				"refuses": "Adjusting the test so the fix passes, and carrying on to the next subject with a suite left red."
+			}
+		}
+	]
+}

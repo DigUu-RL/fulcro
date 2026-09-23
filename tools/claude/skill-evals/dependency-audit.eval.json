@@ -1,0 +1,126 @@
+{
+	"skill": "dependency-audit",
+	"cases": [
+		{
+			"id": "a-new-runtime-edge",
+			"kind": "positive",
+			"prompt": "I want to add a dependency to @fulcro/collections. What does that cost a consumer?",
+			"expect": {
+				"invokes": true,
+				"output": "The delta row for the proposed edge with its field named, check 1 and check 8 read against it — what the tarball now pulls in, and why it could not be a devDependency or an optional peer — the licence and engines of the candidate read at a version with `npm view`, and the bump the addition claims.",
+				"refuses": "Approving the edge because the suites are green: nothing here installs the package the way a consumer does, and a runtime edge is a consumer's install whatever the suites say."
+			}
+		},
+		{
+			"id": "lockfile-moved-alone",
+			"kind": "positive",
+			"prompt": "The lockfile moved on this branch and no manifest did. What changed?",
+			"expect": {
+				"invokes": true,
+				"output": "Delta rows whose range did not move and whose resolution did, each with `npm explain` naming who asked for the new copy, check 4 read for a name that now resolves twice, and the motivation column saying `not established` for any row neither the invocation nor `git log` accounts for.",
+				"refuses": "Treating a lockfile-only change as cosmetic because no manifest moved — that is the shape a supply-chain change arrives in."
+			}
+		},
+		{
+			"id": "widen-the-peer-range",
+			"kind": "positive",
+			"prompt": "Can we widen the typescript peer range on collections, reflect and transform-core to admit 7?",
+			"expect": {
+				"invokes": true,
+				"output": "Check 2 on all three ranges together, check 10 on the compiler the repository actually builds with against the `typescript7` alias, and check 11 naming the compiler API the transformers call and the file that calls it — then a stop, because a peer range is public surface and this skill reports the proposal rather than writing the range.",
+				"refuses": "Editing the range, or calling the widening additive: widening promises support for a compiler nobody ran the fixtures against."
+			}
+		},
+		{
+			"id": "does-the-advisory-reach-us",
+			"kind": "positive",
+			"prompt": "npm audit is reporting something. Does it reach anything we publish?",
+			"expect": {
+				"invokes": true,
+				"output": "The `npm audit --json` output quoted with the date it was read, `npm explain` for each advisory path, and a severity taken from the reach rather than from the registry's label — BLOCKER only where the path lands in a published package's runtime dependencies, and the path stated where it stops before one.",
+				"refuses": "Recommending a bump as the fix before the path has been traced, or calling an advisory fixed on the strength of a bump nobody re-audited."
+			}
+		},
+		{
+			"id": "what-do-our-exports-look-like",
+			"kind": "negative",
+			"prompt": "What does a consumer see of our exports now, and did anything in the declarations change?",
+			"expect": {
+				"invokes": false,
+				"output": "The api-audit skill, which walks the exports map, the emitted declarations and what a call infers against the last release tag."
+			}
+		},
+		{
+			"id": "the-install-broke",
+			"kind": "negative",
+			"prompt": "The install broke after I pulled — figure out what is wrong.",
+			"expect": {
+				"invokes": false,
+				"output": "The diagnose skill, which starts from the reproduction and works back to a cause. This audit needs a tree that installed before any of its checks mean anything."
+			}
+		},
+		{
+			"id": "just-bump-it",
+			"kind": "negative",
+			"prompt": "Bump the dependency so the unmet peer warning goes away.",
+			"expect": {
+				"invokes": false,
+				"output": "A refusal of the premise and the fix-warnings skill for the warning itself: a bump is the silencing shape a dependency change takes, and this audit reports paths and consumers rather than version numbers.",
+				"refuses": "Recommending a version number as a diagnosis, and applying it either way — this skill writes nothing."
+			}
+		},
+		{
+			"id": "is-the-tree-green",
+			"kind": "negative",
+			"prompt": "Run the checks and tell me whether everything passes before I commit.",
+			"expect": {
+				"invokes": false,
+				"output": "The verify skill. A tree with a narrowed peer range is green, which is the reason these two are different skills."
+			}
+		},
+		{
+			"id": "eslint-is-not-declared",
+			"kind": "edge",
+			"prompt": "We run npx eslint . in CI and there is an eslint.config.mjs. Is our lint setup declared properly?",
+			"why": "The root declares eslint-config-prettier, eslint-plugin-simple-import-sort and typescript-eslint and never eslint itself; it resolves only as their peer. An import nothing declares works until the tree changes, and only reading both halves — the manifest and `npm explain` — finds it.",
+			"expect": {
+				"invokes": true,
+				"output": "Check 1 with both halves named: the root `devDependencies` as declared, and `npm explain eslint` showing it arriving as a peer of typescript-eslint. MEDIUM, with the missing declaration stated and no version recommended.",
+				"refuses": "Concluding the setup is fine because the command runs today, and naming the version to add rather than the declaration that is missing."
+			}
+		},
+		{
+			"id": "the-documented-omission",
+			"kind": "edge",
+			"prompt": "collections has no sideEffects field while every other package does. Should we add it?",
+			"why": "The omission is an argued decision with the reason written in the manifest's own `//sideEffects` field: the barrels run bootstrapCollections() on load, and a bundler treating the package as side effect free drops the call and breaks groupBy, orderBy and orderByDescending. Re-reporting a documented decision teaches the reader to skim.",
+			"expect": {
+				"invokes": true,
+				"output": "The `//sideEffects` field quoted rather than paraphrased, the omission recorded as deliberate rather than as a finding, and check 8 continuing to the parts the decision does not cover — the module type of each package and what the exports conditions resolve to.",
+				"refuses": "Reporting the absence as a finding, or adding the field."
+			}
+		},
+		{
+			"id": "no-registry",
+			"kind": "edge",
+			"prompt": "Audit the dependency change on this branch. I am on a plane with no network.",
+			"why": "Checks 6 and 7 are the registry's to answer, and an audit that reports nothing found because nothing was asked is the one output this skill may not produce.",
+			"expect": {
+				"invokes": true,
+				"output": "Status PARTIAL, the nine checks that read the checkout and the installed tree reported in full, and checks 6 and 7 listed under Audited as not run with the registry error quoted and the command that would settle them.",
+				"refuses": "Answering a licence or an advisory from memory, or reporting CLEAN with two checks unrun."
+			}
+		},
+		{
+			"id": "nothing-moved",
+			"kind": "edge",
+			"prompt": "Audit our dependencies. I just want to be sure everything is fine.",
+			"why": "With no dependency change and no package named, the audit would report the state of the world, which is a description rather than a report and cannot be diffed against the last run.",
+			"expect": {
+				"invokes": true,
+				"output": "One line saying the diff carries no dependency change, an end, and — where the intent was a release rather than a branch — the offer to audit a named package or the whole set as the expensive case.",
+				"refuses": "Producing eleven check sections about an unchanged surface so the run looks substantial."
+			}
+		}
+	]
+}
