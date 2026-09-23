@@ -14,6 +14,14 @@ interface FieldDescriptor {
 /** The fields of a struct, by name, in declaration order. */
 type StructFields = { readonly [field: string]: FieldDescriptor };
 
+/** The methods of a struct, by name. */
+type StructMethods = {
+	readonly [method: string]: (...parameters: never[]) => unknown;
+};
+
+/** What a struct declared without methods has: none. */
+type NoMethods = Record<never, never>;
+
 /** The type of the values a descriptor recognises. */
 type ValueOf<TDescriptor> = TDescriptor extends {
 	is(value: unknown): value is infer T;
@@ -77,10 +85,22 @@ type StructSize<TFields extends StructFields> = RoundUp<
 	StructAlignment<TFields>
 >;
 
-/** A value of a struct. */
-type StructValue<TFields extends StructFields> = {
+/** The fields of a value of a struct, and its layout. */
+type StructData<TFields extends StructFields> = {
 	readonly [TKey in keyof TFields]: ValueOf<TFields[TKey]>;
 } & Layout<StructSize<TFields>, StructAlignment<TFields>>;
+
+/**
+ * A value of a struct: its fields, and its methods when it declares any. A
+ * struct without methods is its fields alone, exactly as before methods
+ * existed, so nothing it inferred changes.
+ */
+type StructValue<
+	TFields extends StructFields,
+	TMethods extends StructMethods = NoMethods,
+> = [keyof TMethods] extends [never]
+	? StructData<TFields>
+	: StructData<TFields> & Readonly<TMethods>;
 
 /** What a struct's `from` accepts: each field in what its own `from` accepts. */
 type StructSource<TFields extends StructFields> = {
@@ -92,8 +112,12 @@ type StructSource<TFields extends StructFields> = {
  * recognised, compared and stored.
  *
  * @template TFields Descriptors of the fields, by name.
+ * @template TMethods Methods every value carries, by name; none by default.
  */
-export interface StructType<TFields extends StructFields> {
+export interface StructType<
+	TFields extends StructFields,
+	TMethods extends StructMethods = NoMethods,
+> {
 	/** Name of the struct, as it reads in an error message. */
 	readonly name: string;
 
@@ -122,21 +146,23 @@ export interface StructType<TFields extends StructFields> {
 	 * Makes a value, converting each field with its own type's `from`.
 	 *
 	 * @param source One entry per field, and nothing else.
-	 * @returns The value, frozen.
+	 * @returns The value, frozen, carrying the struct's methods.
 	 * @throws {TypeError} When a field is missing or not a field of the struct.
 	 * @throws {RangeError} When a field's own conversion refuses its value; the
 	 * message names the field, and `cause` is the original error.
 	 */
-	from(source: StructSource<TFields>): StructValue<TFields>;
+	from(source: StructSource<TFields>): StructValue<TFields, TMethods>;
 
 	/**
 	 * Tells whether a value is one of this struct's: frozen, with exactly its
-	 * fields, each of its type.
+	 * fields, each of its type — and, when the struct declares methods, made by
+	 * this struct, since an object with the right fields alone would not carry
+	 * them.
 	 *
 	 * @param value Value to inspect.
 	 * @returns `true` when it is.
 	 */
-	is(value: unknown): value is StructValue<TFields>;
+	is(value: unknown): value is StructValue<TFields, TMethods>;
 
 	/**
 	 * Compares two values field by field, each as its own type compares — so a
@@ -146,7 +172,10 @@ export interface StructType<TFields extends StructFields> {
 	 * @param right Second value.
 	 * @returns `true` when every field is equal.
 	 */
-	equals(left: StructValue<TFields>, right: StructValue<TFields>): boolean;
+	equals(
+		left: StructValue<TFields, TMethods>,
+		right: StructValue<TFields, TMethods>,
+	): boolean;
 
 	/**
 	 * Reads a value from bytes, in the layout of {@link StructType.layout},
@@ -154,11 +183,11 @@ export interface StructType<TFields extends StructFields> {
 	 *
 	 * @param view Bytes to read from.
 	 * @param offset Where the value starts.
-	 * @returns The value, frozen.
+	 * @returns The value, frozen, carrying the struct's methods.
 	 * @throws {RangeError} When the struct does not fit in the view at that
 	 * offset.
 	 */
-	read(view: DataView, offset: number): StructValue<TFields>;
+	read(view: DataView, offset: number): StructValue<TFields, TMethods>;
 
 	/**
 	 * Writes a value into bytes, in the layout of {@link StructType.layout},
@@ -170,7 +199,11 @@ export interface StructType<TFields extends StructFields> {
 	 * @throws {RangeError} When the struct does not fit in the view at that
 	 * offset.
 	 */
-	write(view: DataView, offset: number, value: StructValue<TFields>): void;
+	write(
+		view: DataView,
+		offset: number,
+		value: StructValue<TFields, TMethods>,
+	): void;
 }
 
 /**
@@ -183,8 +216,12 @@ export interface StructType<TFields extends StructFields> {
  *
  * @template TDescriptor Type of the descriptor `struct` returned.
  */
-export type Struct<TDescriptor extends StructType<StructFields>> =
-	TDescriptor extends StructType<infer TFields> ? StructValue<TFields> : never;
+export type Struct<
+	TDescriptor extends StructType<StructFields, StructMethods>,
+> =
+	TDescriptor extends StructType<infer TFields, infer TMethods>
+		? StructValue<TFields, TMethods>
+		: never;
 
 /** A field, resolved: where it sits and how it is stored. */
 interface PlacedField {
@@ -241,6 +278,70 @@ const rethrowForField = (name: string, key: string, error: unknown): never => {
 };
 
 /**
+ * Builds the prototype every value of a struct with methods is made on.
+ *
+ * The methods sit on it, not on each value: a value is its fields and nothing
+ * else of its own, so a thousand values cost no function object each, and
+ * `Object.keys` still lists exactly the fields that `is` counts. The methods
+ * are not enumerable, so spreading a value copies its fields and not them.
+ *
+ * @param name Name of the struct.
+ * @param fields Its fields, which no method may be named like.
+ * @param methods The methods.
+ * @returns The prototype, frozen.
+ * @throws {TypeError} When `methods` is not an object, a method is not a
+ * function, or a method is named like a field, an array index or `~layout`.
+ */
+const methodPrototype = (
+	name: string,
+	fields: StructFields,
+	methods: StructMethods,
+): object => {
+	if (typeof methods !== 'object' || methods === null) {
+		throw new TypeError(
+			`struct ${name}: expected an object of methods, received ${describeKind(methods)}.`,
+		);
+	}
+
+	const prototype: Record<PropertyKey, unknown> = {};
+
+	for (const key of Reflect.ownKeys(methods)) {
+		const method: unknown = (methods as Record<PropertyKey, unknown>)[key];
+		const label: string = String(key);
+
+		if (typeof key === 'string' && Object.hasOwn(fields, key)) {
+			throw new TypeError(
+				`struct ${name}: method '${label}' has the name of a field; a value could not hold both.`,
+			);
+		}
+
+		if (
+			typeof key === 'string' &&
+			(ARRAY_INDEX.test(key) || key === '~layout')
+		) {
+			throw new TypeError(
+				`struct ${name}: '${label}' cannot name a method; an array index would be reordered, and '~layout' is the layout itself.`,
+			);
+		}
+
+		if (typeof method !== 'function') {
+			throw new TypeError(
+				`struct ${name}: method '${label}' must be a function, received ${describeKind(method)}.`,
+			);
+		}
+
+		Object.defineProperty(prototype, key, {
+			value: method,
+			enumerable: false,
+			writable: false,
+			configurable: false,
+		});
+	}
+
+	return Object.freeze(prototype);
+};
+
+/**
  * Declares a struct: a value type with a fixed layout.
  *
  * ```ts
@@ -262,16 +363,37 @@ const rethrowForField = (name: string, key: string, error: unknown): never => {
  * read back as the same value. It is still a JavaScript object while it is
  * held as one; the layout is what it occupies when it is stored.
  *
+ * Methods, when given, are shared by every value through one prototype: they
+ * take no bytes and are not fields, so the layout, `equals` and the bytes are
+ * the same as without them. `this` is the value, which is frozen — a method
+ * that changes something returns a new value:
+ *
+ * ```ts
+ * const Vector3 = struct('Vector3', { x: SinglePrecisionFloat, … }, {
+ * 	length() {
+ * 		return Math.hypot(this.x, this.y, this.z);
+ * 	},
+ * });
+ *
+ * Vector3.from({ x: 3, y: 4, z: 0 }).length(); // 5
+ * ```
+ *
  * @param name Name of the struct, for error messages.
  * @param fields Descriptor of each field, by name.
+ * @param methods Function of each method, by name.
  * @returns The descriptor of the struct.
  * @throws {TypeError} When there is no field, a field's type has no fixed
- * layout, or a field is named like an array index or `~layout`.
+ * layout, a field is named like an array index or `~layout`, or a method is
+ * not a function or is named like a field, an array index or `~layout`.
  */
-export const struct = <TFields extends StructFields>(
+export const struct = <
+	TFields extends StructFields,
+	TMethods extends StructMethods = NoMethods,
+>(
 	name: string,
 	fields: TFields,
-): StructType<TFields> => {
+	methods?: TMethods & ThisType<StructValue<TFields, TMethods>>,
+): StructType<TFields, TMethods> => {
 	if (typeof name !== 'string' || name === '') {
 		throw new TypeError(
 			`struct: expected a name, received ${describeKind(name)}.`,
@@ -307,6 +429,19 @@ export const struct = <TFields extends StructFields>(
 
 		return { key, descriptor: fields[key], codec };
 	});
+
+	const prototype: object | undefined =
+		methods === undefined ? undefined : methodPrototype(name, fields, methods);
+
+	/**
+	 * Makes the object a value is built on: one carrying the methods, when the
+	 * struct has any, and a plain one otherwise — so a struct without methods
+	 * makes exactly the values it made before methods existed.
+	 *
+	 * @returns The object, still empty and not yet frozen.
+	 */
+	const blank = (): Record<string, unknown> =>
+		prototype === undefined ? {} : Object.create(prototype);
 
 	// Largest alignment first, so that every field lands aligned without padding
 	// before it: each size is a multiple of its own alignment. `sort` is stable,
@@ -380,7 +515,7 @@ export const struct = <TFields extends StructFields>(
 	};
 
 	const readFields = (view: DataView, offset: number): unknown => {
-		const value: Record<string, unknown> = {};
+		const value: Record<string, unknown> = blank();
 
 		for (const field of plan) {
 			value[field.key] = field.codec.read(view, offset + field.offset);
@@ -411,9 +546,11 @@ export const struct = <TFields extends StructFields>(
 			),
 		);
 
-	const descriptor: StructType<TFields> = {
+	type Value = StructValue<TFields, TMethods>;
+
+	const descriptor: StructType<TFields, TMethods> = {
 		name,
-		layout: layout as StructType<TFields>['layout'],
+		layout: layout as StructType<TFields, TMethods>['layout'],
 
 		from: (source) => {
 			if (typeof source !== 'object' || source === null) {
@@ -430,7 +567,7 @@ export const struct = <TFields extends StructFields>(
 				}
 			}
 
-			const value: Record<string, unknown> = {};
+			const value: Record<string, unknown> = blank();
 
 			for (const field of plan) {
 				if (!Object.hasOwn(source, field.key)) {
@@ -446,12 +583,13 @@ export const struct = <TFields extends StructFields>(
 				}
 			}
 
-			return Object.freeze(value) as StructValue<TFields>;
+			return Object.freeze(value) as Value;
 		},
 
-		is: (value): value is StructValue<TFields> =>
+		is: (value): value is Value =>
 			typeof value === 'object' &&
 			value !== null &&
+			(prototype === undefined || Object.getPrototypeOf(value) === prototype) &&
 			Object.isFrozen(value) &&
 			Object.keys(value).length === plan.length &&
 			plan.every(
@@ -465,7 +603,7 @@ export const struct = <TFields extends StructFields>(
 		read: (view, offset) => {
 			requireRoom('read', view, offset);
 
-			return readFields(view, offset) as StructValue<TFields>;
+			return readFields(view, offset) as Value;
 		},
 
 		write: (view, offset, value) => {
