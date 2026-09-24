@@ -9,8 +9,6 @@ import {
 	type FileTransformer,
 	type TransformCoreOptions,
 } from '@/program/index.js';
-import { type ExpressionRewriter } from '@/rewrite/file/index.js';
-import { createRewritingFileTransformer } from '@/rewrite/fileTransformer/index.js';
 import { type CallRewriter } from '@/shared/index.js';
 
 /**
@@ -82,25 +80,7 @@ export const createTransformerUnplugin = (
 	createAdapters((options) => createFileTransformer(rewriters, options), name);
 
 /**
- * Builds the bundler adapters for a rewrite that happens before type checking
- * — one whose output is what the checker would read, such as the operators of
- * `@fulcro/types`.
- *
- * @param rewriter Rewriter of the package publishing the plugin.
- * @param name Name the plugin reports to the bundler.
- * @returns Every adapter `unplugin` can produce.
- */
-export const createRewriterUnplugin = (
-	rewriter: ExpressionRewriter,
-	name: string,
-): TransformerUnplugin =>
-	createAdapters(
-		(options) => createRewritingFileTransformer(rewriter, options),
-		name,
-	);
-
-/**
- * Builds the adapters around whichever core a package uses.
+ * Builds the adapters around the core of a package.
  *
  * @param build Builds the core for a set of options.
  * @param name Name the plugin reports to the bundler.

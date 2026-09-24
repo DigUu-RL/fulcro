@@ -446,8 +446,6 @@ describe('@fulcro/types', () => {
 			'createFloatType',
 			'parseDecimal',
 			'requireRoundingMode',
-			'OPERATOR_REWRITER',
-			'classify',
 			'codecOf',
 			'registerStructCodec',
 		]) {
@@ -455,49 +453,28 @@ describe('@fulcro/types', () => {
 		}
 	});
 
-	it('should publish the tsc plugin as ts-patch loads it', () => {
-		// A program transformer: called with a program, returning one.
-		const plugin = createRequire(import.meta.url)(
+	it('should publish no compiler plugin', () => {
+		// The operators were once rewritten by a plugin behind these entry
+		// points. Nothing is configured now, and nothing is published for it.
+		const require = createRequire(import.meta.url);
+
+		for (const entry of [
 			'@fulcro/types/transformer',
-		) as {
-			default: unknown;
-		};
-
-		expect(typeof plugin.default).toBe('function');
-	});
-
-	it('should publish the editor plugin as tsserver loads it', () => {
-		// `tsserver` calls what `require` returns, so the module itself is the
-		// plugin, not a property of it.
-		const plugin = createRequire(import.meta.url)(
+			'@fulcro/types/unplugin',
 			'@fulcro/types/language-service',
-		) as (modules: unknown) => { create: unknown };
-
-		expect(typeof plugin).toBe('function');
-		expect(typeof plugin({}).create).toBe('function');
-	});
-
-	it('should publish a bundler plugin for every bundler unplugin covers', async () => {
-		const adapters = await import('@fulcro/types/unplugin');
-
-		for (const name of [
-			'vite',
-			'rollup',
-			'webpack',
-			'rspack',
-			'esbuild',
-			'farm',
 		]) {
-			expect(typeof adapters[name as keyof typeof adapters]).toBe('function');
+			expect(() => require(entry)).toThrow(
+				expect.objectContaining({ code: 'ERR_PACKAGE_PATH_NOT_EXPORTED' }),
+			);
 		}
 	});
 
-	it('should leave the operators to the language without the plugin', async () => {
+	it('should leave the operators to the language', async () => {
 		const { Decimal, SignedInteger } = await import('@fulcro/types');
 		const Int32 = SignedInteger(32);
 
-		// Nothing compiled this file through the rewrite: the operators are the
-		// language's own, unchecked on a number and refused on a decimal.
+		// The operators are the language's own, unchecked on a number and
+		// refused on a decimal: the methods are what keep the type.
 		expect((Int32.maximum as number) + 1).toBe(2147483648);
 		expect(() => (Decimal.from(1) as unknown as number) + 1).toThrow(TypeError);
 	});

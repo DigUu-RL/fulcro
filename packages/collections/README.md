@@ -133,7 +133,7 @@ kept.toArray(); // every row, and `expensive` never ran again
 The cost is memory — everything pulled through is held — and it is paid only for
 the part actually consumed.
 
-## Beyond LINQ
+## Beyond the standard set
 
 A handful of operators that earn their place by doing something the standard set
 cannot.

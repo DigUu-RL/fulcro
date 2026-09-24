@@ -16,15 +16,13 @@ under `packages/` do.
 | `@fulcro/functions`      | `switchFor`, `tryCatch` — control flow as values                | none                                   |
 | `@fulcro/transform-core` | Shared machinery behind the transformers                        | `unplugin`, optional peer `typescript` |
 | `@fulcro/parallel`       | Worker pool for CPU-bound work, browser and Node                | none                                   |
-| `@fulcro/types`          | Numeric types with a range and layout, operators by transformer | `@fulcro/transform-core`               |
+| `@fulcro/types`          | Numeric types with a range and layout, and structs              | none                                   |
 
 `@fulcro/collections` and `@fulcro/reflect` each ship their own compile time
 transformer behind a separate entry point (`./transformer`, `./unplugin`).
-`@fulcro/types` ships one that rewrites **before** type checking — the
-operators on its numeric types — behind three (`./transformer`, a `ts-patch`
-program transformer; `./unplugin`; `./language-service`, for the editor). None
-knows the others exist; each claims only what it can trace back to its own
-package.
+Neither knows the other exists; each claims only what it can trace back to its
+own package. `@fulcro/types` ships none: every operation on its types is a
+typed method, and nothing has to be configured to use it.
 
 ## Canonical commands
 

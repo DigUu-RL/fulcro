@@ -2,8 +2,8 @@
 
 Numeric types with a declared range and layout: fixed-width integers, half,
 single and double precision floats, an integer of any size, and a `Decimal` with
-the semantics of IEEE 754 decimal128 — with the JavaScript operators working on
-every one of them once the plugin is wired up.
+the semantics of IEEE 754 decimal128. Nothing to configure: every operation is
+a typed method.
 
 ```sh
 npm install @fulcro/types
@@ -34,27 +34,9 @@ Each type has a value of the same name that converts, recognises and computes,
 and every type but `BigInteger` reports its `minimum` and `maximum`. If you only
 need the types, `import type` them and no code is loaded.
 
-## Operators
-
-With the plugin, the operators mean what the type means — checked on an
-integer, rounded on a float, decimal128 on a `Decimal` — and the result keeps
-its type. Both operands have to be the same type, or it is a type error at the
-line:
-
-```ts
-const total = price * Decimal.from(3); // Decimal
-count++; // SignedInteger<32>.increment, checked
-a + 1; // type error: 'number' is not 'SignedInteger<32>'
-```
-
-| Tool       | Wire in                                                                                  |
-| ---------- | ---------------------------------------------------------------------------------------- |
-| `tsc`      | `{ "transform": "@fulcro/types/transformer", "transformProgram": true }`, via `ts-patch` |
-| A bundler  | `vite` (or `rollup`, `webpack`, `esbuild`, …) from `@fulcro/types/unplugin`              |
-| The editor | `{ "name": "@fulcro/types/language-service" }` in the tsconfig `plugins`                 |
-
-Without it, the operators are the language's own: unchecked on the
-`number`-backed types, refused on a `Decimal`.
+The JavaScript operators are the language's own: `a + b` on two
+`SignedInteger<32>` is a plain, unchecked `number`, and on a `Decimal` it
+throws. Use the methods, which keep the type and its checks.
 
 Every type but `BigInteger` declares a size and alignment, which
 `sizeOf<T>()` and `alignOf<T>()` from `@fulcro/reflect` read at compile time.
@@ -82,5 +64,5 @@ Vector3.write(view, 0, Vector3.from({ x: 0, y: 1, z: 0 }));
 ---
 
 **Full guide:** [docs/types.md](../../docs/types.md) — ranges, rounding, the
-operators, the special values, the layout table and structs.
+special values, the layout table and structs.
 🇧🇷 [Leia em português](../../docs/pt-BR/types.md).

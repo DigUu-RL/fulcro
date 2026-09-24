@@ -50,9 +50,8 @@ export type IntegerRepresentation<N extends IntegerWidth> = N extends 64 | 128
  * Descriptor of a fixed-width integer type.
  *
  * Every operation is checked: a result outside the range throws a `RangeError`
- * naming the operation, the value and the range, as a C# `checked` context
- * does. `wrap` is the one exception, and the explicit way to ask for the
- * modular behaviour of an `unchecked` conversion.
+ * naming the operation, the value and the range. `wrap` is the one exception,
+ * and the explicit way to ask for modular arithmetic.
  *
  * @template T Type of the values this descriptor produces.
  */
@@ -79,8 +78,7 @@ export interface IntegerType<T> extends BoundedNumericType<T, number | bigint> {
 	wrap(value: number | bigint): T;
 
 	/**
-	 * Divides, truncating the quotient towards zero as integer division does in
-	 * C#, Java and `BigInt`.
+	 * Divides, truncating the quotient towards zero as `BigInt` division does.
 	 *
 	 * @param left Dividend.
 	 * @param right Divisor.
@@ -151,7 +149,7 @@ export interface IntegerType<T> extends BoundedNumericType<T, number | bigint> {
 	/**
 	 * Shifts the bits towards the least significant end with zeros coming in,
 	 * as `>>>` does — on a signed type, over the bits of its own width, and read
-	 * back as signed, as Java's `>>>` does.
+	 * back as signed.
 	 *
 	 * ```ts
 	 * const Int32 = SignedInteger(32);

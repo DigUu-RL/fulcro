@@ -6,9 +6,8 @@ import type { NumericType } from '@/numericType';
  *
  * Carried by a `bigint`, which is exact at every magnitude, and branded like
  * every other numeric type here: a `BigInteger` is a `bigint` that went through
- * {@link BigInteger.from}, not any `bigint` at all. That is what lets the
- * operators be rewritten for this type and left alone on every other `bigint`
- * of a program.
+ * {@link BigInteger.from}, not any `bigint` at all, so an unchecked `bigint`
+ * cannot be passed where one is expected.
  *
  * It is also the one numeric type here with no fixed layout — its size is the
  * size of its value — which is why `sizeOf<BigInteger>()` is a type error.
