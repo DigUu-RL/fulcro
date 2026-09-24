@@ -23,9 +23,10 @@ import {
 } from '@fulcro/types';
 ```
 
-The types and their descriptors need nothing else. Using the **operators** on
-them — `a + b`, `price * 3`, `count++` — needs the compiler plugin, described
-under [Operators](#operators).
+The types and their descriptors need nothing else — no compiler plugin, no
+configuration. Every operation is a method, typed in every editor and every
+build; the JavaScript operators are the language's own, as
+[Operators](#operators) explains.
 
 ## The problem
 
@@ -118,7 +119,7 @@ finding out from a lost digit.
 
 ### Checked, unless you ask to wrap
 
-Every operation checks its result, the way a C# `checked` context does:
+Every operation checks its result, and a result out of range throws:
 
 ```ts
 const Byte = UnsignedInteger(8);
@@ -153,7 +154,7 @@ bit operations `bitwiseAnd`, `bitwiseOr`, `bitwiseXor`, `bitwiseNot`,
 - A shift count must be from 0 to the width − 1, or it throws. Bits shifted out
   are discarded — a shift is a bit operation, never an overflow. `>>` copies the
   sign bit in on a signed type; `shiftRightLogical` (`>>>`) brings zeros in,
-  over the type's own width, as Java's does: `-1 >>> 28` is `15` in 32 bits.
+  over the type's own width: `-1 >>> 28` is `15` in 32 bits.
 
 A `SignedInteger<8>` is not a `SignedInteger<32>`, even though every value of
 one fits the other: widening goes through `from`, where it can be seen.
@@ -188,8 +189,8 @@ const b = SinglePrecisionFloat.from(0.2);
 SinglePrecisionFloat.add(a, b); // 0.30000001192092896, as float32 hardware gives
 ```
 
-With the [operator plugin](#operators), `a + b` is that same call. Without it,
-it is a double nobody rounded: `0.30000000447034836`.
+Written with the operator, `a + b` is a double nobody rounded:
+`0.30000000447034836`.
 
 `power` is `Math.pow` rounded once into the format. Unlike the four operations
 above, it is faithful rather than guaranteed nearest, because `Math.pow` itself
@@ -203,8 +204,8 @@ and the second rounding can land on the wrong neighbour.
 
 An integer of any size, carried by a `bigint` — which is already exact at every
 magnitude — and branded like every other type here, so a `BigInteger` is a
-`bigint` that went through `BigInteger.from`. That is what lets the operators be
-rewritten on a `BigInteger` and left alone on every other `bigint` in a program.
+`bigint` that went through `BigInteger.from`, and an unchecked `bigint` cannot
+be passed where one is expected.
 
 The descriptor adds a decimal-only `from` — `BigInteger.from('0x10')` is
 refused, not read as 16 — division that says which operation divided by zero,
@@ -291,7 +292,7 @@ same way biases a sum, and alternating them by parity does not. The five are
 exported as the type `RoundingMode`, and a mode that is not one of them throws a
 `RangeError` rather than falling back to a default.
 
-### Without the operator plugin, operators are refused
+### Operators are refused
 
 ```ts
 const one = Decimal.from(1);
@@ -303,9 +304,7 @@ one + one; // compile error: Operator '+' cannot be applied to types 'Decimal' a
 An implicit conversion to `number` would lose exactly the digits the type
 exists to keep, so it is refused twice: TypeScript rejects the operator at
 compile time, and where the types are bypassed — untyped JavaScript, an `any`
-— the conversion throws a `TypeError` at runtime. With the
-[operator plugin](#operators), `one + one` is `one.add(one)`; without it, use
-the methods.
+— the conversion throws a `TypeError` at runtime. Write `one.add(one)`.
 
 ### Special values
 
@@ -331,85 +330,37 @@ equal; `isNegative()` tells them apart.
 
 ## Operators
 
-With the plugin wired up, the JavaScript operators work on every numeric type
-here, with the type's own meaning — checked on an integer, rounded into the
-format on a float, decimal128 on a `Decimal` — and the result keeps its type:
+The JavaScript operators are the language's own, and no type here changes that:
+TypeScript has no operator overloading, so `a + b` can only mean what it means
+for the primitive underneath. On the types carried by a `number` or a `bigint`
+it computes plain, unchecked arithmetic — `a + a` on two `SignedInteger<32>` is
+`4000000000`, a `number` — and nothing at runtime can refuse it. On a `Decimal`
+it is a type error, and a `TypeError` at runtime.
+
+Every operator has a method that keeps the type and its checks, on the
+descriptor for the primitive-backed types and on the value for a `Decimal`:
 
 ```ts
 const Int32 = SignedInteger(32);
 const a = Int32.from(2_000_000_000);
 
-const b = a - Int32.from(1); // SignedInteger<32>, not number
-a + a; // RangeError: SignedInteger<32>.add: 4000000000 is outside [-2147483648, 2147483647].
+Int32.subtract(a, Int32.from(1)); // SignedInteger<32>
+Int32.add(a, a); // RangeError: SignedInteger<32>.add: 4000000000 is outside [-2147483648, 2147483647].
 
-let total = Decimal.from(0);
-total += Decimal.from('19.99') * Decimal.from(3); // Decimal: 59.97
-Decimal.from('0.1') + Decimal.from('0.2') === Decimal.from('0.3'); // true
+Decimal.from('19.99').multiply(Decimal.from(3)); // Decimal: 59.97
+Decimal.from('0.1').add(Decimal.from('0.2')).equals(Decimal.from('0.3')); // true
 ```
 
-It is a rewrite that happens **before** type checking: each operator becomes the
-operation it means for the type — `a + b` becomes `SignedInteger(32).add(a, b)`,
-`d * e` becomes `d.multiply(e)` — and that is what the checker then reads.
+| Instead of                | Write                                                | On                                 |
+| ------------------------- | ---------------------------------------------------- | ---------------------------------- |
+| `+ - * / % **`, unary `-` | `add`, `subtract`, `multiply`, … `power`, `negate`   | every type                         |
+| `++ --`                   | `increment`, `decrement` (`add` one, on a `Decimal`) | every type                         |
+| `< <= > >=`               | `lessThan`, `lessThanOrEqual`, …                     | every type                         |
+| `=== !==`                 | `equals`, by value                                   | every type                         |
+| `& \| ^ ~ << >> >>>`      | `bitwiseAnd`, … `shiftRightLogical`                  | `SignedInteger`, `UnsignedInteger` |
 
-| Written                                  | Means                                         | On                                 |
-| ---------------------------------------- | --------------------------------------------- | ---------------------------------- |
-| `+ - * / % **`, unary `-` and `+`        | `add`, `subtract`, … `power`, `negate`        | every type                         |
-| `++ --`, prefix and postfix              | `increment`, `decrement` (`add` one, decimal) | every type                         |
-| `+= -= *= /= %= **=`                     | the operation, then the assignment            | every type                         |
-| `< <= > >=`                              | `lessThan`, …                                 | every type                         |
-| `=== == !== !=`                          | `equals`, by value                            | every type                         |
-| `& \| ^ ~ << >> >>>` and their `=` forms | `bitwiseAnd`, … `shiftRightLogical`           | `SignedInteger`, `UnsignedInteger` |
-
-What each form evaluates to, and in what order, is what the operator's is: a
-postfix `i++` is the value before the step, and a compound assignment
-evaluates its target once — `items[next()] += x` calls `next` once.
-
-### The same type only
-
-Both operands have to be the same type. `a + 1`, a `SignedInteger<32>` with a
-`SignedInteger<16>`, a `Decimal` with a `number` — each is a type error at the
-line it is written on, with the checker's own message:
-
-```text
-Argument of type 'number' is not assignable to parameter of type 'SignedInteger<32>'.
-```
-
-Two things are deliberately left alone. `+` with a string is concatenation, as
-ever — a `Decimal` concatenates as its text, `'total: ' + price`. And an
-equality with something that is not a number at all, `price === null`, stays
-the identity check it is.
-
-On a `Decimal`, `===` compares **values**: `Decimal.from('1.20') === Decimal.from('1.2')`
-is `true`, and `NaN === NaN` is `false`, as with numbers. Without the plugin,
-the same expression compares two objects.
-
-### Wiring it in
-
-The plugin comes in three forms, one per tool that reads the code:
-
-| Tool       | Entry                            | Where                                                                                                        |
-| ---------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `tsc`      | `@fulcro/types/transformer`      | `"plugins": [{ "transform": "@fulcro/types/transformer", "transformProgram": true }]`, through `ts-patch`    |
-| A bundler  | `@fulcro/types/unplugin`         | `plugins: [fulcroTypes()]`, with `vite`, `rollup`, `webpack`, `esbuild`, `rspack` or `farm` imported from it |
-| The editor | `@fulcro/types/language-service` | `"plugins": [{ "name": "@fulcro/types/language-service" }]` in the tsconfig                                  |
-
-`"transformProgram": true` is not optional: an ordinary `ts-patch` transformer
-runs after type checking, by which time `decimal * decimal` has already been
-reported. VS Code loads a language service plugin only from the workspace's
-TypeScript — **TypeScript: Select TypeScript Version → Use Workspace Version**.
-
-The rewrite reads the whole program, because whether `c + d` in one file is
-ours depends on how `c` was declared in another, and it runs to a fixed point:
-`const c = a + b` has to be rewritten before `c` is known to be a
-`SignedInteger<32>`. Every TypeScript file of the project goes through the type
-checker for it.
-
-### Without the plugin
-
-The operators are the language's own. On the types carried by a `number` or a
-`bigint` they compute plain, unchecked arithmetic — `a + a` is `4000000000`, a
-`number` — and nothing at runtime can refuse it. On a `Decimal` they are a type
-error, and a `TypeError` at runtime. The descriptors' methods work either way.
+On a `Decimal`, `===` compares the two objects, not their values: compare with
+`equals`.
 
 ## Layout
 
@@ -543,10 +494,10 @@ Sample.layout.size; // 16: eleven bytes, padded to an alignment of 8
 sizeOf<Struct<typeof Sample>>(); // 16, at compile time
 ```
 
-This is not the order of a C struct, which keeps declaration order and pads
-between fields. It is the order that makes the size computable by the type
-checker — which is what lets `sizeOf` answer at compile time — and that wastes
-no byte inside the struct.
+The fields are not kept in declaration order with padding between them. This
+order is the one that makes the size computable by the type checker — which is
+what lets `sizeOf` answer at compile time — and that wastes no byte inside the
+struct.
 
 `layout` gives the offset, size and alignment of every field at runtime. A
 struct nested as a field is laid out inline, as one field of its own size.

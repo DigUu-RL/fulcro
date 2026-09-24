@@ -166,7 +166,7 @@ export interface StructType<
 
 	/**
 	 * Compares two values field by field, each as its own type compares — so a
-	 * `NaN` field makes a value unequal to itself, as it does in C#.
+	 * `NaN` field makes a value unequal to itself, as `NaN` is.
 	 *
 	 * @param left First value.
 	 * @param right Second value.
