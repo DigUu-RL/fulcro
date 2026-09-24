@@ -273,7 +273,7 @@ No changes in this release.
 
 - The operator set is complete, and there is now an asynchronous half.
 
-  **Thirty-one operators close the gap with LINQ.** Quantifiers and element
+  **Thirty-one operators complete the standard set.** Quantifiers and element
   access — `all`, `contains`, `single`, `singleOrNull`, `elementAt`,
   `elementAtOrNull`, `defaultIfEmpty`, `sequenceEqual`. Sets and partitioning —
   `except`, `concat`, `takeWhile`, `skipWhile`, `takeLast`, `skipLast`, `chunk`,
@@ -288,7 +288,7 @@ No changes in this release.
   memory. `zip` stops with whichever side runs out, and never pulls the longer one
   past the pairing.
 
-  **Seven operators LINQ has no answer for.** `memoize` makes a sequence over a
+  **Seven operators beyond the standard set.** `memoize` makes a sequence over a
   generator repeatable — without it a second traversal yields nothing, silently,
   because an exhausted iterator cannot be told from an empty one — and runs the
   projections behind it once rather than per traversal. `partition` splits by a

@@ -119,7 +119,7 @@ finding out from a lost digit.
 
 ### Checked, unless you ask to wrap
 
-Every operation checks its result, the way a C# `checked` context does:
+Every operation checks its result, and a result out of range throws:
 
 ```ts
 const Byte = UnsignedInteger(8);
@@ -154,7 +154,7 @@ bit operations `bitwiseAnd`, `bitwiseOr`, `bitwiseXor`, `bitwiseNot`,
 - A shift count must be from 0 to the width − 1, or it throws. Bits shifted out
   are discarded — a shift is a bit operation, never an overflow. `>>` copies the
   sign bit in on a signed type; `shiftRightLogical` (`>>>`) brings zeros in,
-  over the type's own width, as Java's does: `-1 >>> 28` is `15` in 32 bits.
+  over the type's own width: `-1 >>> 28` is `15` in 32 bits.
 
 A `SignedInteger<8>` is not a `SignedInteger<32>`, even though every value of
 one fits the other: widening goes through `from`, where it can be seen.
@@ -494,10 +494,10 @@ Sample.layout.size; // 16: eleven bytes, padded to an alignment of 8
 sizeOf<Struct<typeof Sample>>(); // 16, at compile time
 ```
 
-This is not the order of a C struct, which keeps declaration order and pads
-between fields. It is the order that makes the size computable by the type
-checker — which is what lets `sizeOf` answer at compile time — and that wastes
-no byte inside the struct.
+The fields are not kept in declaration order with padding between them. This
+order is the one that makes the size computable by the type checker — which is
+what lets `sizeOf` answer at compile time — and that wastes no byte inside the
+struct.
 
 `layout` gives the offset, size and alignment of every field at runtime. A
 struct nested as a field is laid out inline, as one field of its own size.

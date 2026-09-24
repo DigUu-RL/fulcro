@@ -120,7 +120,7 @@ em vez de você descobrir por um dígito perdido.
 
 ### Verificado, a menos que você peça para dar a volta
 
-Toda operação verifica o resultado, como um contexto `checked` do C#:
+Toda operação verifica o resultado, e um resultado fora da faixa lança erro:
 
 ```ts
 const Byte = UnsignedInteger(8);
@@ -155,8 +155,8 @@ operações de bits `bitwiseAnd`, `bitwiseOr`, `bitwiseXor`, `bitwiseNot`,
 - A contagem de um shift precisa ir de 0 à largura − 1, senão lança erro. Os
   bits que saem são descartados — um shift é uma operação de bits, nunca um
   overflow. `>>` copia o bit de sinal num tipo com sinal; `shiftRightLogical`
-  (`>>>`) traz zeros, sobre a largura do próprio tipo, como o do Java:
-  `-1 >>> 28` é `15` em 32 bits.
+  (`>>>`) traz zeros, sobre a largura do próprio tipo: `-1 >>> 28` é `15` em
+  32 bits.
 
 Um `SignedInteger<8>` não é um `SignedInteger<32>`, mesmo que todo valor de um
 caiba no outro: alargar passa por `from`, onde fica visível.
@@ -499,10 +499,10 @@ Sample.layout.size; // 16: onze bytes, com padding até o alinhamento 8
 sizeOf<Struct<typeof Sample>>(); // 16, em tempo de compilação
 ```
 
-Não é a ordem de um struct de C, que mantém a ordem de declaração e coloca
-padding entre os campos. É a ordem que torna o tamanho calculável pelo type
-checker — o que permite ao `sizeOf` responder em tempo de compilação — e que
-não desperdiça nenhum byte dentro do struct.
+Os campos não ficam na ordem de declaração com padding entre eles. Esta ordem é
+a que torna o tamanho calculável pelo type checker — o que permite ao `sizeOf`
+responder em tempo de compilação — e que não desperdiça nenhum byte dentro do
+struct.
 
 O `layout` dá o offset, o tamanho e o alinhamento de cada campo em runtime. Um
 struct aninhado como campo fica inline, como um campo com o próprio tamanho.
