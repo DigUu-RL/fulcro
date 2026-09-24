@@ -1,5 +1,12 @@
 # @fulcro/collections
 
+## 0.11.0
+
+### Patch Changes
+
+- Updated dependencies [818d049]
+  - @fulcro/transform-core@0.11.0
+
 ## 0.10.0
 
 ### Patch Changes
