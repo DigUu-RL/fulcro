@@ -477,6 +477,54 @@ So a struct value is frozen, and two of them are compared by their fields —
 Each field compares as its own type does: a `NaN` field makes a value unequal
 to itself.
 
+### Methods
+
+A third argument gives every value of the struct its methods, with `this` as
+the value:
+
+```ts
+export const Vector3 = struct(
+	'Vector3',
+	{ x: SinglePrecisionFloat, y: SinglePrecisionFloat, z: SinglePrecisionFloat },
+	{
+		length() {
+			return Math.hypot(this.x, this.y, this.z);
+		},
+		scale(factor: number) {
+			return Vector3.from({
+				x: this.x * factor,
+				y: this.y * factor,
+				z: this.z * factor,
+			});
+		},
+	},
+);
+export type Vector3 = Struct<typeof Vector3>; // includes length() and scale()
+
+Vector3.from({ x: 3, y: 4, z: 0 }).length(); // 5
+```
+
+The methods sit on one prototype every value shares, not on each value. They
+take no bytes and are not fields: the layout, `equals` and the bytes are what
+the fields alone make them, and a value read from bytes has its methods like
+one made by `from`. Write them as methods, not arrow functions, so that `this`
+is the value.
+
+A value is still frozen, so a method does not change it: it returns a new
+value, as `scale` does. A method named like a field, like an array index or
+`~layout`, or one that is not a function, is a `TypeError` when the struct is
+declared.
+
+For a struct with methods, `is` also checks that the value was made by the
+struct: an object with the right fields and nothing else does not carry the
+methods, so it is not one. A struct without methods recognises such an object,
+as it always has.
+
+A value that crosses a worker boundary or goes through JSON loses its methods:
+the structured clone behind `postMessage` does not keep prototypes, so what
+arrives is the fields alone. Rebuild it with `Vector3.from(value)` on the other
+side.
+
 ### Where the fields go
 
 Fields are placed by alignment, largest first, and in declaration order among

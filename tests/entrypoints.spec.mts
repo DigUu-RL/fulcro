@@ -382,6 +382,26 @@ describe('@fulcro/types', () => {
 		]);
 	});
 
+	it('should give the values of a struct its methods through the published entry point', async () => {
+		const { SinglePrecisionFloat, struct } = await import('@fulcro/types');
+
+		const Point = struct(
+			'Point',
+			{ x: SinglePrecisionFloat, y: SinglePrecisionFloat },
+			{
+				length() {
+					return Math.hypot(this.x, this.y);
+				},
+			},
+		);
+		const view = new DataView(new ArrayBuffer(Point.layout.size));
+
+		Point.write(view, 0, Point.from({ x: 3, y: 4 }));
+
+		expect(Point.read(view, 0).length()).toBe(5);
+		expect(Point.is(Object.freeze({ x: 3, y: 4 }))).toBe(false);
+	});
+
 	it('should declare, store and read back a struct through the published entry point', async () => {
 		const { SinglePrecisionFloat, UnsignedInteger, struct } =
 			await import('@fulcro/types');

@@ -484,6 +484,54 @@ campos — `Vector3.equals(a, b)` — nunca por `===`, que continua comparando o
 dois objetos. Cada campo compara como o próprio tipo compara: um campo `NaN`
 torna um valor diferente de si mesmo.
 
+### Métodos
+
+Um terceiro argumento dá a todo valor do struct os seus métodos, com `this`
+sendo o valor:
+
+```ts
+export const Vector3 = struct(
+	'Vector3',
+	{ x: SinglePrecisionFloat, y: SinglePrecisionFloat, z: SinglePrecisionFloat },
+	{
+		length() {
+			return Math.hypot(this.x, this.y, this.z);
+		},
+		scale(factor: number) {
+			return Vector3.from({
+				x: this.x * factor,
+				y: this.y * factor,
+				z: this.z * factor,
+			});
+		},
+	},
+);
+export type Vector3 = Struct<typeof Vector3>; // inclui length() e scale()
+
+Vector3.from({ x: 3, y: 4, z: 0 }).length(); // 5
+```
+
+Os métodos ficam num único protótipo compartilhado por todos os valores, e não
+em cada valor. Eles não ocupam bytes e não são campos: o layout, o `equals` e os
+bytes são os que os campos sozinhos produzem, e um valor lido de bytes tem os
+seus métodos como um criado pelo `from`. Escreva-os como métodos, não como arrow
+functions, para que `this` seja o valor.
+
+Um valor continua congelado, então um método não o altera: ele devolve um valor
+novo, como o `scale` faz. Um método com o nome de um campo, de um índice de
+array ou `~layout`, ou que não seja uma função, é um `TypeError` na declaração
+do struct.
+
+Num struct com métodos, o `is` também confere que o valor foi criado pelo
+struct: um objeto só com os campos certos não carrega os métodos, então não é
+um valor dele. Um struct sem métodos continua reconhecendo esse objeto, como
+sempre.
+
+Um valor que atravessa a fronteira de um worker ou passa por JSON perde os
+métodos: o structured clone por trás do `postMessage` não preserva protótipos,
+então o que chega são só os campos. Recrie-o com `Vector3.from(value)` do outro
+lado.
+
 ### Onde os campos ficam
 
 Os campos são posicionados por alinhamento, do maior para o menor, e na ordem
