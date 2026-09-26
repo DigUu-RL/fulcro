@@ -1,3 +1,5 @@
+import { createError, prefixError } from '@fulcro/errors';
+
 import type { Layout } from '@/layout';
 import type { Add, LargestAlignment, RoundUp } from '@/struct/arithmetic';
 import { codecOf, type FieldCodec, registerStructCodec } from '@/struct/codec';
@@ -253,28 +255,16 @@ const describeKind = (value: unknown): string =>
 /**
  * Re-throws the error a field's own conversion raised, naming the field.
  *
+ * The code and the class stay the inner error's: what went wrong is still what
+ * that code names, only found inside a struct.
+ *
  * @param name Name of the struct.
  * @param key Field being converted.
  * @param error What the conversion threw.
  * @returns Never.
  */
 const rethrowForField = (name: string, key: string, error: unknown): never => {
-	const message = (original: Error): string =>
-		`${name}.from: field '${key}': ${original.message}`;
-
-	if (error instanceof RangeError) {
-		throw new RangeError(message(error), { cause: error });
-	}
-
-	if (error instanceof TypeError) {
-		throw new TypeError(message(error), { cause: error });
-	}
-
-	if (error instanceof SyntaxError) {
-		throw new SyntaxError(message(error), { cause: error });
-	}
-
-	throw error;
+	throw prefixError(error, `${name}.from: field '${key}'`);
 };
 
 /**
@@ -298,9 +288,7 @@ const methodPrototype = (
 	methods: StructMethods,
 ): object => {
 	if (typeof methods !== 'object' || methods === null) {
-		throw new TypeError(
-			`struct ${name}: expected an object of methods, received ${describeKind(methods)}.`,
-		);
+		throw createError('FULCRO6008', name, describeKind(methods));
 	}
 
 	const prototype: Record<PropertyKey, unknown> = {};
@@ -310,24 +298,18 @@ const methodPrototype = (
 		const label: string = String(key);
 
 		if (typeof key === 'string' && Object.hasOwn(fields, key)) {
-			throw new TypeError(
-				`struct ${name}: method '${label}' has the name of a field; a value could not hold both.`,
-			);
+			throw createError('FULCRO6009', name, label);
 		}
 
 		if (
 			typeof key === 'string' &&
 			(ARRAY_INDEX.test(key) || key === '~layout')
 		) {
-			throw new TypeError(
-				`struct ${name}: '${label}' cannot name a method; an array index would be reordered, and '~layout' is the layout itself.`,
-			);
+			throw createError('FULCRO6010', name, label);
 		}
 
 		if (typeof method !== 'function') {
-			throw new TypeError(
-				`struct ${name}: method '${label}' must be a function, received ${describeKind(method)}.`,
-			);
+			throw createError('FULCRO6011', name, label, describeKind(method));
 		}
 
 		Object.defineProperty(prototype, key, {
@@ -395,36 +377,28 @@ export const struct = <
 	methods?: TMethods & ThisType<StructValue<TFields, TMethods>>,
 ): StructType<TFields, TMethods> => {
 	if (typeof name !== 'string' || name === '') {
-		throw new TypeError(
-			`struct: expected a name, received ${describeKind(name)}.`,
-		);
+		throw createError('FULCRO6012', describeKind(name));
 	}
 
 	if (typeof fields !== 'object' || fields === null) {
-		throw new TypeError(
-			`struct ${name}: expected an object of fields, received ${describeKind(fields)}.`,
-		);
+		throw createError('FULCRO6013', name, describeKind(fields));
 	}
 
 	const keys: string[] = Object.keys(fields);
 
 	if (keys.length === 0) {
-		throw new TypeError(`struct ${name}: expected at least one field.`);
+		throw createError('FULCRO6014', name);
 	}
 
 	const declared = keys.map((key) => {
 		if (ARRAY_INDEX.test(key) || key === '~layout') {
-			throw new TypeError(
-				`struct ${name}: '${key}' cannot name a field; an array index would be reordered, and '~layout' is the layout itself.`,
-			);
+			throw createError('FULCRO6015', name, key);
 		}
 
 		const codec: FieldCodec | undefined = codecOf(fields[key]);
 
 		if (codec === undefined) {
-			throw new TypeError(
-				`struct ${name}: field '${key}' has no fixed layout. Declare it with a numeric type of @fulcro/types other than BigInteger, or with another struct.`,
-			);
+			throw createError('FULCRO6016', name, key);
 		}
 
 		return { key, descriptor: fields[key], codec };
@@ -498,8 +472,10 @@ export const struct = <
 		offset: number,
 	): void => {
 		if (!(view instanceof DataView)) {
-			throw new TypeError(
-				`${name}.${operation}: expected a DataView, received ${describeKind(view)}.`,
+			throw createError(
+				'FULCRO6017',
+				`${name}.${operation}`,
+				describeKind(view),
 			);
 		}
 
@@ -508,8 +484,12 @@ export const struct = <
 			offset < 0 ||
 			offset + size > view.byteLength
 		) {
-			throw new RangeError(
-				`${name}.${operation}: ${size} bytes at offset ${offset} do not fit in a view of ${view.byteLength} bytes.`,
+			throw createError(
+				'FULCRO6018',
+				`${name}.${operation}`,
+				size,
+				offset,
+				view.byteLength,
 			);
 		}
 	};
@@ -554,16 +534,12 @@ export const struct = <
 
 		from: (source) => {
 			if (typeof source !== 'object' || source === null) {
-				throw new TypeError(
-					`${name}.from: expected an object, received ${describeKind(source)}.`,
-				);
+				throw createError('FULCRO6019', `${name}.from`, describeKind(source));
 			}
 
 			for (const key of Object.keys(source)) {
 				if (!Object.hasOwn(fields, key)) {
-					throw new TypeError(
-						`${name}.from: '${key}' is not a field; the fields are ${keys.join(', ')}.`,
-					);
+					throw createError('FULCRO6020', `${name}.from`, key, keys.join(', '));
 				}
 			}
 
@@ -571,7 +547,7 @@ export const struct = <
 
 			for (const field of plan) {
 				if (!Object.hasOwn(source, field.key)) {
-					throw new TypeError(`${name}.from: missing field '${field.key}'.`);
+					throw createError('FULCRO6021', `${name}.from`, field.key);
 				}
 
 				try {

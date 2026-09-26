@@ -1,3 +1,5 @@
+import { createError, type ErrorCode } from '@fulcro/errors';
+
 /**
  * The script every worker runs.
  *
@@ -11,6 +13,11 @@
  * `self.onmessage` and replies with `self.postMessage`; a Node worker uses the
  * `parentPort` it was handed. The shape of the protocol is identical, so the
  * difference is a handful of lines here rather than two implementations.
+ *
+ * A failure of its own is reported as a code and the values of its message,
+ * never as a thrown error: only text survives the boundary, and the pool needs
+ * the values to create the same error again on its side, class and code
+ * included.
  */
 
 /** What the pool sends first, before any work. */
@@ -36,13 +43,37 @@ let task: ((value: unknown) => unknown) | null = null;
 /** Sends a message back to the pool. */
 let reply: (message: unknown) => void = () => {};
 
+/** One of this package's own errors, as it crosses to the pool. */
+interface CodedFailure {
+	readonly code: ErrorCode;
+	readonly values: readonly unknown[];
+}
+
+/**
+ * Describes what somebody else's code threw — the task module failing to
+ * load, or the task itself.
+ *
+ * Serialised here: an Error survives a structured clone, but a custom one
+ * loses its prototype, and its message is what a caller reads.
+ *
+ * @param error The thrown value.
+ * @returns Its text.
+ */
+const describeForeign = (error: unknown): { readonly error: string } => ({
+	error: error instanceof Error ? error.message : String(error),
+});
+
 /**
  * Loads the module and finds the export the pool asked for.
  *
  * @param message What the pool sent.
- * @throws {Error} When the module has no such export, or it is not callable.
+ * @returns Nothing once the task is ready, or the failure to report when the
+ * module has no such export, or it is not callable.
+ * @throws When the module itself cannot be loaded.
  */
-const initialize = async (message: InitMessage): Promise<void> => {
+const initialize = async (
+	message: InitMessage,
+): Promise<CodedFailure | null> => {
 	const loaded: Record<string, unknown> = (await import(
 		message.module
 	)) as Record<string, unknown>;
@@ -50,12 +81,12 @@ const initialize = async (message: InitMessage): Promise<void> => {
 	const found: unknown = loaded[message.export];
 
 	if (typeof found !== 'function') {
-		throw new Error(
-			`${message.module} has no callable export named "${message.export}".`,
-		);
+		return { code: 'FULCRO3001', values: [message.module, message.export] };
 	}
 
 	task = found as (value: unknown) => unknown;
+
+	return null;
 };
 
 /**
@@ -69,11 +100,9 @@ const initialize = async (message: InitMessage): Promise<void> => {
  */
 const run = async (message: TaskMessage): Promise<void> => {
 	if (task === null) {
-		reply({
-			kind: 'failed',
-			id: message.id,
-			error: 'The worker was given a task before it was initialised.',
-		});
+		const failure: CodedFailure = { code: 'FULCRO3006', values: [] };
+
+		reply({ kind: 'failed', id: message.id, ...failure });
 
 		return;
 	}
@@ -81,13 +110,7 @@ const run = async (message: TaskMessage): Promise<void> => {
 	try {
 		reply({ kind: 'done', id: message.id, value: await task(message.value) });
 	} catch (error) {
-		reply({
-			kind: 'failed',
-			id: message.id,
-			// Serialised here: an Error survives a structured clone, but a custom
-			// one loses its prototype, and its message is what a caller reads.
-			error: error instanceof Error ? error.message : String(error),
-		});
+		reply({ kind: 'failed', id: message.id, ...describeForeign(error) });
 	}
 };
 
@@ -99,13 +122,13 @@ const run = async (message: TaskMessage): Promise<void> => {
 const receive = async (message: Incoming): Promise<void> => {
 	if (message.kind === 'init') {
 		try {
-			await initialize(message);
-			reply({ kind: 'ready' });
+			const failure: CodedFailure | null = await initialize(message);
+
+			reply(
+				failure === null ? { kind: 'ready' } : { kind: 'broken', ...failure },
+			);
 		} catch (error) {
-			reply({
-				kind: 'broken',
-				error: error instanceof Error ? error.message : String(error),
-			});
+			reply({ kind: 'broken', ...describeForeign(error) });
 		}
 
 		return;
@@ -133,7 +156,7 @@ const listen = async (): Promise<void> => {
 	const { parentPort } = await import('node:worker_threads');
 
 	if (parentPort === null) {
-		throw new Error('This module is only meaningful inside a worker.');
+		throw createError('FULCRO3002');
 	}
 
 	reply = (message: unknown): void => {

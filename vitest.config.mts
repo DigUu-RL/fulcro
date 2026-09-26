@@ -138,6 +138,23 @@ const transformers = (): ViteUserConfig => ({
 });
 
 /**
+ * The repository's own lint rules.
+ *
+ * Its own project for the reason the hooks have one: what it checks is how
+ * this repository is written, not the library. The rules are run in memory over
+ * sources placed at paths that name a package.
+ *
+ * @returns The project configuration.
+ */
+const lint = (): ViteUserConfig => ({
+	test: {
+		name: 'eslint',
+		globals: true,
+		include: ['tests/eslint/**/*.spec.mts'],
+	},
+});
+
+/**
  * The repository's own safety hooks.
  *
  * Its own project for the same reason the transformers have one: what it
@@ -179,12 +196,14 @@ export default defineConfig({
 	test: {
 		projects: [
 			project('collections'),
+			project('errors'),
 			project('functions'),
 			workerPool(),
 			project('reflect'),
 			project('types'),
 			entryPoints(),
 			transformers(),
+			lint(),
 			hooks(),
 			claude(),
 		],

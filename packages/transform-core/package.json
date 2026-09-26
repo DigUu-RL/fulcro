@@ -34,6 +34,7 @@
 		"prepublishOnly": "npm run build"
 	},
 	"dependencies": {
+		"@fulcro/errors": "^0.0.0",
 		"unplugin": "^3.3.0"
 	},
 	"peerDependencies": {

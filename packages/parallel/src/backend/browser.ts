@@ -1,3 +1,5 @@
+import { createError } from '@fulcro/errors';
+
 import { SpawnWorker, WorkerHandle } from '@/@types/index.js';
 
 /**
@@ -28,18 +30,13 @@ export const spawnWorker: SpawnWorker = (url: URL): WorkerHandle => {
 			};
 
 			const onError = (event: ErrorEvent): void => {
-				handler(undefined, new Error(event.message));
+				handler(undefined, createError('FULCRO3008', event.message));
 			};
 
 			// A message the structured clone algorithm could not carry. Silent
 			// otherwise, and it would leave a run waiting forever.
 			const onMessageError = (): void => {
-				handler(
-					undefined,
-					new Error(
-						'A message could not be cloned across the worker boundary.',
-					),
-				);
+				handler(undefined, createError('FULCRO3009'));
 			};
 
 			worker.addEventListener('message', onMessage);

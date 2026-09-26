@@ -1,3 +1,5 @@
+import { createError } from '@fulcro/errors';
+
 /**
  * The most primitive form a value can be reduced to at runtime.
  *
@@ -522,9 +524,7 @@ export const typeOf: TypeOfSignature = ((
 	// because `typeOf(undefined)` is a perfectly ordinary call that has to keep
 	// answering about the undefined value.
 	if (args.length === 0) {
-		throw new Error(
-			'typeOf<T>() was not resolved at compile time. Either the @fulcro/reflect transformer did not run over this file, or T is an unresolved generic. The form taking a value, typeOf(value), works without it.',
-		);
+		throw createError('FULCRO4004');
 	}
 
 	const [value, declared] = args as [unknown, DeclaredType | undefined];

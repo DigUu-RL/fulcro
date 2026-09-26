@@ -1,3 +1,5 @@
+import { createError, type ErrorCode } from '@fulcro/errors';
+
 import {
 	PoolOptions,
 	RunOptions,
@@ -18,12 +20,44 @@ import {
 /** How many workers to start when the caller does not say. */
 const DEFAULT_WORKERS = 4;
 
+/**
+ * A failure as it crosses the boundary: one of this package's own, as its code
+ * and the values of its message, or somebody else's, as the text it had.
+ */
+type Failure =
+	| { readonly code: ErrorCode; readonly values: readonly unknown[] }
+	| { readonly error: string };
+
 /** What a worker sends back. */
 type Outgoing =
 	| { readonly kind: 'ready' }
-	| { readonly kind: 'broken'; readonly error: string }
+	| ({ readonly kind: 'broken' } & Failure)
 	| { readonly kind: 'done'; readonly id: number; readonly value: unknown }
-	| { readonly kind: 'failed'; readonly id: number; readonly error: string };
+	| ({ readonly kind: 'failed'; readonly id: number } & Failure);
+
+/**
+ * Creates, on this side, the error a worker reported.
+ *
+ * @param failure What the worker sent.
+ * @param foreign The code that says where somebody else's failure happened —
+ * loading the task module, or running the task.
+ * @returns The error.
+ */
+const errorFrom = (
+	failure: Failure,
+	foreign: 'FULCRO3004' | 'FULCRO3005',
+): Error => {
+	if ('error' in failure) return createError(foreign, failure.error);
+
+	// The worker chose the code and its values together, from the same
+	// catalog, so they match; the compiler cannot see that across a message.
+	const create = createError as (
+		code: ErrorCode,
+		...values: readonly unknown[]
+	) => Error;
+
+	return create(failure.code, ...failure.values);
+};
 
 /** A worker and what it is currently doing. */
 interface Member {
@@ -69,9 +103,7 @@ export const createPool = <T, R>(
 	const size: number = options.workers ?? availableWorkers();
 
 	if (!Number.isInteger(size) || size < 1) {
-		throw new Error(
-			`A pool needs a positive integer worker count, and was given ${options.workers}.`,
-		);
+		throw createError('FULCRO3003', options.workers);
 	}
 
 	/**
@@ -121,7 +153,9 @@ export const createPool = <T, R>(
 										const reply = message as Outgoing;
 
 										if (reply.kind === 'ready') resolve();
-										if (reply.kind === 'broken') reject(new Error(reply.error));
+										if (reply.kind === 'broken') {
+											reject(errorFrom(reply, 'FULCRO3004'));
+										}
 									}),
 								);
 
@@ -227,7 +261,7 @@ export const createPool = <T, R>(
 				}
 
 				if (reply.kind === 'failed') {
-					failure ??= { error: new Error(reply.error) };
+					failure ??= { error: errorFrom(reply, 'FULCRO3005') };
 					member.busyWith = null;
 					outstanding.delete(reply.id);
 					notify();

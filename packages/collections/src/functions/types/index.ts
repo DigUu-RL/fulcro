@@ -1,3 +1,5 @@
+import { createError } from '@fulcro/errors';
+
 import { Predicate, TypeNames, TypeTest, TypeToken } from '@/@types';
 
 /**
@@ -40,9 +42,7 @@ export const resolveTypeTest = (
 	// rather than guessed, because every guess available here — keeping
 	// everything, keeping nothing — is silently wrong.
 	if (type === undefined) {
-		throw new Error(
-			`${operator}<T>() was not resolved at compile time. Either the @fulcro/collections transformer did not run over this file, or T has no runtime representation — an interface leaves nothing to test for, so pass a class, a typeof name, or use where() with a predicate.`,
-		);
+		throw createError('FULCRO1016', operator);
 	}
 
 	// A shape test, which is what the transformer emits for a type with no

@@ -1,3 +1,5 @@
+import { createError } from '@fulcro/errors';
+
 /**
  * Produces the default value of a type: the emptiest value that still fully
  * inhabits it, built by filling the type in rather than by handing back a
@@ -34,9 +36,5 @@
  * @throws {Error} Always, when the transformer is not enabled.
  */
 export function defaultOf<T>(): T {
-	throw new Error(
-		'defaultOf<T>() resolves a type, which only exists at compile time. ' +
-			'Enable the transformer in the `plugins` entry of your tsconfig ' +
-			'so the call is replaced by the value it describes.',
-	);
+	throw createError('FULCRO4003');
 }

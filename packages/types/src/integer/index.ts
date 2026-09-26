@@ -1,3 +1,5 @@
+import { createError } from '@fulcro/errors';
+
 import type { BoundedNumericType } from '@/numericType';
 
 /**
@@ -198,9 +200,7 @@ const describeValue = (value: unknown): string => {
  * @returns Never.
  */
 const rejectKind = (name: string, operation: string, value: unknown): never => {
-	throw new TypeError(
-		`${name}.${operation}: expected a number or a bigint, received ${typeof value}.`,
-	);
+	throw createError('FULCRO6028', `${name}.${operation}`, typeof value);
 };
 
 /**
@@ -216,9 +216,7 @@ const rejectFraction = (
 	operation: string,
 	value: number,
 ): never => {
-	throw new RangeError(
-		`${name}.${operation}: expected an integer, received ${describeValue(value)}.`,
-	);
+	throw createError('FULCRO6002', `${name}.${operation}`, describeValue(value));
 };
 
 /**
@@ -229,9 +227,7 @@ const rejectFraction = (
  * @returns Never.
  */
 const rejectNegativeExponent = (name: string, exponent: unknown): never => {
-	throw new RangeError(
-		`${name}.power: expected an exponent of zero or more, received ${describeValue(exponent)}.`,
-	);
+	throw createError('FULCRO6005', `${name}.power`, describeValue(exponent));
 };
 
 /**
@@ -249,8 +245,11 @@ const rejectCount = (
 	width: number,
 	count: unknown,
 ): never => {
-	throw new RangeError(
-		`${name}.${operation}: expected a count from 0 to ${width - 1}, received ${describeValue(count)}.`,
+	throw createError(
+		'FULCRO6029',
+		`${name}.${operation}`,
+		width - 1,
+		describeValue(count),
 	);
 };
 
@@ -274,8 +273,11 @@ export const createIntegerType = <T>(
 	name: string,
 ): IntegerType<T> => {
 	if (!INTEGER_WIDTHS.includes(width)) {
-		throw new RangeError(
-			`${signed ? 'SignedInteger' : 'UnsignedInteger'}: expected a width of ${INTEGER_WIDTHS.join(', ')} bits, received ${describeValue(width)}.`,
+		throw createError(
+			'FULCRO6030',
+			signed ? 'SignedInteger' : 'UnsignedInteger',
+			INTEGER_WIDTHS.join(', '),
+			describeValue(width),
 		);
 	}
 
@@ -322,8 +324,11 @@ const createNumberIntegerType = <T>(
 	 */
 	const accept = (operation: string, value: number): T => {
 		if (value < low || value > high) {
-			throw new RangeError(
-				`${name}.${operation}: ${describeValue(value)} is outside ${range}.`,
+			throw createError(
+				'FULCRO6031',
+				`${name}.${operation}`,
+				describeValue(value),
+				range,
 			);
 		}
 
@@ -350,7 +355,7 @@ const createNumberIntegerType = <T>(
 	 */
 	const requireDivisor = (operation: string, divisor: number): void => {
 		if (divisor === 0) {
-			throw new RangeError(`${name}.${operation}: division by zero.`);
+			throw createError('FULCRO6001', `${name}.${operation}`);
 		}
 	};
 
@@ -384,8 +389,11 @@ const createNumberIntegerType = <T>(
 		from: (value: number | bigint): T => {
 			if (typeof value === 'bigint') {
 				if (value < minimum || value > maximum) {
-					throw new RangeError(
-						`${name}.from: ${describeValue(value)} is outside ${range}.`,
+					throw createError(
+						'FULCRO6031',
+						`${name}.from`,
+						describeValue(value),
+						range,
 					);
 				}
 
@@ -555,8 +563,11 @@ const createBigIntegerType = <T>(
 		reported: number | bigint = value,
 	): T => {
 		if (value < minimum || value > maximum) {
-			throw new RangeError(
-				`${name}.${operation}: ${describeValue(reported)} is outside ${range}.`,
+			throw createError(
+				'FULCRO6031',
+				`${name}.${operation}`,
+				describeValue(reported),
+				range,
 			);
 		}
 
@@ -587,7 +598,7 @@ const createBigIntegerType = <T>(
 	 */
 	const requireDivisor = (operation: string, divisor: bigint): void => {
 		if (divisor === 0n) {
-			throw new RangeError(`${name}.${operation}: division by zero.`);
+			throw createError('FULCRO6001', `${name}.${operation}`);
 		}
 	};
 
@@ -674,8 +685,12 @@ const createBigIntegerType = <T>(
 			const magnitude: bigint = value < 0n ? -value : value;
 
 			if (magnitude >= 2n && power >= BigInt(width)) {
-				throw new RangeError(
-					`${name}.power: ${describeValue(value)} ** ${describeValue(power)} is outside ${range}.`,
+				throw createError(
+					'FULCRO6032',
+					name,
+					describeValue(value),
+					describeValue(power),
+					range,
 				);
 			}
 

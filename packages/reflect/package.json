@@ -53,6 +53,7 @@
 		"url": "https://github.com/DigUu-RL/fulcro/issues"
 	},
 	"dependencies": {
+		"@fulcro/errors": "^0.0.0",
 		"@fulcro/transform-core": "^0.11.0"
 	},
 	"peerDependencies": {

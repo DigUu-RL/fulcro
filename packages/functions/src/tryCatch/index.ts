@@ -1,3 +1,5 @@
+import { createError } from '@fulcro/errors';
+
 /** Outcome of an operation that produced a value. */
 export interface Success<T> {
 	/** Value the operation produced. */
@@ -54,9 +56,7 @@ export type Result<T, E = unknown> = Success<T> | Failure<E>;
 const asStorableError = (error: unknown): NonNullable<unknown> => {
 	if (error !== null && error !== undefined) return error;
 
-	return new Error(`Operation rejected with ${String(error)}`, {
-		cause: error,
-	});
+	return createError('FULCRO2001', error);
 };
 
 /**
