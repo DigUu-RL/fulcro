@@ -346,12 +346,20 @@ describe('@fulcro/reflect', () => {
 	});
 
 	it('should refuse to guess a layout without the transformer', async () => {
-		const { alignOf, sizeOf } = await import('@fulcro/reflect');
+		const { alignOf, layoutOf, offsetOf, sizeOf } =
+			await import('@fulcro/reflect');
 
 		// A layout is declared on a type and never on a value, so there is
 		// nothing at runtime to read it from.
 		expect(() => sizeOf()).toThrow('only exists at compile time');
 		expect(() => alignOf()).toThrow('only exists at compile time');
+		expect(() => layoutOf()).toThrow('only exists at compile time');
+		expect(() => offsetOf('x' as never)).toThrow(
+			expect.objectContaining({
+				code: 'FULCRO4009',
+				message: expect.stringContaining('offsetOf<T>("x")'),
+			}),
+		);
 	});
 });
 
