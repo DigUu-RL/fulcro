@@ -39,6 +39,7 @@ collection.
 | [Reflection](./reflect.md)                   | `nameOf`, `typeOf`, `defaultOf`, `is`, `as`, and the transformer | `@fulcro/reflect`           |
 | [Control flow as values](./functions.md)     | `switchFor` and `tryCatch`                                       | `@fulcro/functions`         |
 | [Numeric types](./types.md)                  | Fixed-width integers, floats, `BigInteger`, `Decimal`, structs   | `@fulcro/types`             |
+| [Error codes](./errors.md)                   | What each `FULCRO` code means, and what to write instead         | every package               |
 
 ## Which tool for which problem
 

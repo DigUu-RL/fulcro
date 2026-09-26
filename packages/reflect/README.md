@@ -171,7 +171,7 @@ objects, every element of an array. A failing `as` names **where** it stopped
 matching rather than only that it did:
 
 ```text
-TypeError: as<Order>() refused a value: customer.email: expected string, got number
+TypeError: FULCRO4007: as<Order>() refused a value: customer.email: expected string, got number
 ```
 
 That message comes from a second walker emitted beside the check, which runs
