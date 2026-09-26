@@ -127,6 +127,7 @@ more than one row is reviewed under every one.
 | Changed path                                    | Reviewed against                              |
 | ----------------------------------------------- | --------------------------------------------- |
 | `packages/*/src/**/*.ts`                        | `general.md`, `testing.md`, `build-output.md` |
+| `packages/*/src/**/*.ts`, `packages/errors/**`  | `errors.md`                                   |
 | `packages/collections/src/**`                   | `collections-performance.md`                  |
 | `packages/parallel/src/**`                      | `concurrency.md`                              |
 | `packages/collections/src/collections/async/**` | `concurrency.md`                              |
@@ -223,6 +224,15 @@ that the silent failures are found before the cosmetic ones.
 4. Is an abstraction introduced for a second case that has not arrived — an
    interface with one implementation, an option nobody passes?
 5. Do comments say why, or do they restate the line above them?
+
+**Error codes** — `errors.md`
+
+1. Does a new error come from `createError` with a code registered in the same
+   change, and does that code sit in the package's own range?
+2. Did a registered code change its class, its meaning, or its number? Each is a
+   break for a consumer matching on it.
+3. Does every new code have its section in `docs/errors/FULCRO<n>xxx.md` and in
+   the `pt-BR` counterpart?
 
 **Package boundaries** — `.claude/CLAUDE.md`
 

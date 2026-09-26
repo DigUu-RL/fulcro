@@ -146,7 +146,8 @@ Architecture: the files added or changed, and why each one exists
 Surfaces:     from §1, with the obligation each brings
 Public API:   unchanged, or the proposal — names, inference, bump
 Tests:        the behaviour cases, and what the performance suite counts
-Docs:         the pages, English and pt-BR
+Errors:       the codes this feature adds, each in its package's range
+Docs:         the pages, English and pt-BR, the error pages included
 Changeset:    the bump, or why the change ships nothing
 Out of scope: what this feature is not, so the diff can be read against it
 ```
@@ -185,7 +186,8 @@ are written against what the implementation does.
 1. **Types and signatures first**, as the plan agreed them. The signature is
    the part consumers cannot change later.
 2. **The implementation**, smallest coherent version, in the file the plan
-   named. One file per utility.
+   named. One file per utility. Every error it creates is registered in
+   `@fulcro/errors` in the same change (`.claude/rules/errors.md`).
 3. **The behaviour suite**, beside it, `<utility>.spec.ts`. Every invariant
    from the plan has a case; so does every boundary the specification names.
 4. **The performance suite**, `<utility>.performance.spec.ts`, counting work —
