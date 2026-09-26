@@ -1,6 +1,6 @@
 {
 	"name": "@fulcro/errors",
-	"version": "0.0.0",
+	"version": "1.0.0",
 	"description": "Every error the @fulcro packages throw, each with a stable FULCRO code, its message and its class.",
 	"keywords": [
 		"errors",
