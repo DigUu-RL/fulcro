@@ -1,3 +1,5 @@
+import { createError } from '@fulcro/errors';
+
 import { requireRoundingMode, type RoundingMode } from '@/roundingMode';
 
 import {
@@ -131,9 +133,7 @@ export class Decimal {
 			return new Decimal(parseDecimal(String(value)));
 		}
 
-		throw new TypeError(
-			`Decimal.from: expected a Decimal, a string, a number or a bigint, received ${typeof value}.`,
-		);
+		throw createError('FULCRO6024', typeof value);
 	};
 
 	/**
@@ -247,9 +247,7 @@ export class Decimal {
 		const { kind, negative, coefficient, exponent: scale } = exponent.#parts;
 
 		if (kind !== 'finite' || scale < 0) {
-			throw new RangeError(
-				`Decimal.power: expected an integer exponent, received ${exponent.toString()}.`,
-			);
+			throw createError('FULCRO6025', exponent.toString());
 		}
 
 		const power: bigint =
@@ -303,9 +301,7 @@ export class Decimal {
 	 */
 	round(places: number = 0, mode: RoundingMode = DEFAULT_MODE): Decimal {
 		if (!Number.isSafeInteger(places)) {
-			throw new RangeError(
-				`Decimal.round: expected an integer number of places, received ${places}.`,
-			);
+			throw createError('FULCRO6026', places);
 		}
 
 		return new Decimal(
@@ -519,9 +515,7 @@ export class Decimal {
 		const { kind, negative, coefficient, exponent } = this.#parts;
 
 		if (kind !== 'finite' || exponent < 0) {
-			throw new RangeError(
-				`Decimal.toBigInt: expected an integer, received ${this.toString()}.`,
-			);
+			throw createError('FULCRO6002', 'Decimal.toBigInt', this.toString());
 		}
 
 		const magnitude: bigint = coefficient * powerOfTen(exponent);
@@ -536,9 +530,6 @@ export class Decimal {
 	 * @throws {TypeError} Always.
 	 */
 	valueOf(): never {
-		throw new TypeError(
-			'Decimal cannot be converted to a primitive implicitly: operators such as + and < would lose its digits. ' +
-				'Use add(), compare() or toString() instead.',
-		);
+		throw createError('FULCRO6027');
 	}
 }

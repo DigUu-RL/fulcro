@@ -1,3 +1,5 @@
+import { createError } from '@fulcro/errors';
+
 /** One reachable leaf of a type, and what is at the end of it. */
 export interface TypePath {
 	/**
@@ -63,9 +65,7 @@ export const pathsOf = <T>(
 	paths?: readonly TypePath[],
 ): readonly TypePath[] => {
 	if (paths === undefined) {
-		throw new Error(
-			'pathsOf<T>() was not resolved at compile time. Either the @fulcro/reflect transformer did not run over this file, or T has no paths to walk — a primitive, or an unresolved generic.',
-		);
+		throw createError('FULCRO4005');
 	}
 
 	return paths;

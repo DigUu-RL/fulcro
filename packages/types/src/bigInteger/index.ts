@@ -1,3 +1,5 @@
+import { createError } from '@fulcro/errors';
+
 import type { Branded } from '@/brand';
 import type { NumericType } from '@/numericType';
 
@@ -25,7 +27,7 @@ const INTEGER_LITERAL = /^[+-]?\d+$/;
  */
 const requireDivisor = (operation: string, divisor: bigint): void => {
 	if (divisor === 0n) {
-		throw new RangeError(`BigInteger.${operation}: division by zero.`);
+		throw createError('FULCRO6001', `BigInteger.${operation}`);
 	}
 };
 
@@ -48,9 +50,7 @@ export const BigInteger: NumericType<BigInteger, number | bigint | string> = {
 
 		if (typeof value === 'number') {
 			if (!Number.isInteger(value)) {
-				throw new RangeError(
-					`BigInteger.from: expected an integer, received ${value}.`,
-				);
+				throw createError('FULCRO6002', 'BigInteger.from', String(value));
 			}
 
 			return BigInt(value) as BigInteger;
@@ -61,17 +61,13 @@ export const BigInteger: NumericType<BigInteger, number | bigint | string> = {
 			// whitespace. A decimal type accepting a hexadecimal string is a
 			// surprise nobody reading `from('0x10')` expects to be 16.
 			if (!INTEGER_LITERAL.test(value)) {
-				throw new SyntaxError(
-					`BigInteger.from: expected decimal digits with an optional sign, received ${JSON.stringify(value)}.`,
-				);
+				throw createError('FULCRO6003', JSON.stringify(value));
 			}
 
 			return BigInt(value) as BigInteger;
 		}
 
-		throw new TypeError(
-			`BigInteger.from: expected a number, a bigint or a string, received ${typeof value}.`,
-		);
+		throw createError('FULCRO6004', typeof value);
 	},
 
 	is: (value: unknown): value is BigInteger => typeof value === 'bigint',
@@ -99,9 +95,7 @@ export const BigInteger: NumericType<BigInteger, number | bigint | string> = {
 
 	power: (base: BigInteger, exponent: BigInteger): BigInteger => {
 		if (exponent < 0n) {
-			throw new RangeError(
-				`BigInteger.power: expected an exponent of zero or more, received ${exponent}n.`,
-			);
+			throw createError('FULCRO6005', 'BigInteger.power', `${exponent}n`);
 		}
 
 		return (base ** exponent) as BigInteger;

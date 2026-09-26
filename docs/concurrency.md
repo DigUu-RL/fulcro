@@ -73,7 +73,7 @@ later when the sequence runs:
 
 ```ts
 .selectAwait(loadUser, { concurrency: 0 })
-// Error: selectAwait() needs a positive integer concurrency, and was given 0.
+// Error: FULCRO1017: selectAwait() needs a positive integer concurrency, and was given 0.
 ```
 
 ### Picking a number

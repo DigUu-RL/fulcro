@@ -1,3 +1,5 @@
+import { createError } from '@fulcro/errors';
+
 /**
  * A type that declares its memory layout.
  *
@@ -24,9 +26,4 @@ export interface WithLayout {
  * @returns The error.
  */
 export const unresolvedLayout = (call: string): Error =>
-	new Error(
-		`${call} reads the layout a type declares, which only exists at compile time. ` +
-			'Enable the transformer in the `plugins` entry of your tsconfig so the call is replaced by the number it describes. ' +
-			'If it is enabled, the type argument was not a concrete type: a generic parameter has no layout until it is substituted, ' +
-			'and a union of layouts has no single one.',
-	);
+	createError('FULCRO4009', call);

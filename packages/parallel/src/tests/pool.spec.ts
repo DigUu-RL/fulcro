@@ -269,6 +269,66 @@ describe('when things go wrong', () => {
 	});
 });
 
+describe('the codes a failure carries', () => {
+	/**
+	 * Waits for a run to fail and hands back what it failed with.
+	 *
+	 * @param work The run.
+	 * @returns The rejection.
+	 */
+	const failureOf = async (work: Promise<unknown>): Promise<Error> => {
+		try {
+			await work;
+		} catch (error) {
+			return error as Error;
+		}
+
+		throw new Error('The run was expected to fail and did not.');
+	};
+
+	it('should code a bad worker count FULCRO3003', () => {
+		expect(() =>
+			createWorkerPool({ module: WORK, export: 'double', workers: 0 }),
+		).toThrow(expect.objectContaining({ code: 'FULCRO3003' }));
+	});
+
+	it("should code the task's own failure FULCRO3005, keeping its text", async () => {
+		const failure = await failureOf(
+			poolFor<number, number>('explode').map([1]),
+		);
+
+		expect(failure).toMatchObject({
+			code: 'FULCRO3005',
+			message: 'FULCRO3005: the task refused',
+		});
+	});
+
+	it('should recreate a missing export as FULCRO3001, with its values', async () => {
+		const failure = await failureOf(
+			poolFor<number, number>('notAFunction').map([1]),
+		);
+
+		expect(failure).toMatchObject({ code: 'FULCRO3001' });
+		expect(failure.message).toMatch(
+			/^FULCRO3001: .+ has no callable export named "notAFunction"\.$/,
+		);
+	});
+
+	it('should code a module that cannot be loaded FULCRO3004', async () => {
+		const pool = createWorkerPool<number, number>({
+			module: new URL('./fixtures/missing.mjs', import.meta.url),
+			export: 'double',
+			workers: 1,
+		});
+
+		opened.push(pool as WorkerPool<unknown, unknown>);
+
+		expect(await failureOf(pool.map([1]))).toMatchObject({
+			code: 'FULCRO3004',
+		});
+	});
+});
+
 describe('cancelling', () => {
 	it('should reject with the reason the signal carries', async () => {
 		const controller = new AbortController();

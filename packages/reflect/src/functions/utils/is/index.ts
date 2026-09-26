@@ -1,3 +1,5 @@
+import { createError } from '@fulcro/errors';
+
 /**
  * A test deciding whether a value is of some type, by looking at its shape.
  *
@@ -58,9 +60,7 @@ export const refuseUnresolved: (operator: string) => never = (
 	// From here the two ways a call can arrive unresolved are
 	// indistinguishable, so both are named. Guessing between them would be
 	// presenting a coin toss as a diagnosis.
-	throw new Error(
-		`${operator}<T>() was not resolved at compile time. Either the @fulcro/reflect transformer did not run over this file, or T has no runtime representation — index signatures and unresolved generics cannot be checked, so pass a test of your own.`,
-	);
+	throw createError('FULCRO4002', operator);
 };
 
 /**

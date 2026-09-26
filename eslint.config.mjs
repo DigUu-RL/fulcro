@@ -2,6 +2,8 @@ import eslintConfigPrettier from 'eslint-config-prettier';
 import simpleImportSort from 'eslint-plugin-simple-import-sort';
 import typescriptEslint from 'typescript-eslint';
 
+import { codedErrors } from './tools/eslint/coded-errors.mjs';
+
 /**
  * Braces on any branch that does not fit on one line.
  *
@@ -93,7 +95,12 @@ export default [
 
 		plugins: {
 			'simple-import-sort': simpleImportSort,
-			local: { rules: { 'brace-wrapped-branches': braceWrappedBranches } },
+			local: {
+				rules: {
+					'brace-wrapped-branches': braceWrappedBranches,
+					'coded-errors': codedErrors,
+				},
+			},
 		},
 
 		rules: {
@@ -117,6 +124,21 @@ export default [
 			'simple-import-sort/exports': 'error',
 
 			'local/brace-wrapped-branches': 'error',
+		},
+	},
+
+	{
+		// The shipped sources only. A test builds whatever errors it needs to
+		// provoke a failure, and `@fulcro/errors` is where the classes are
+		// constructed on everybody else's behalf.
+		files: ['packages/*/src/**/*.{ts,mts,cts,js,mjs,cjs}'],
+		ignores: [
+			'packages/errors/src/**',
+			'packages/*/src/**/tests/**',
+			'packages/*/src/**/*.spec.ts',
+		],
+		rules: {
+			'local/coded-errors': 'error',
 		},
 	},
 

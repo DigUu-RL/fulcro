@@ -15,7 +15,7 @@ import { Decimal, SignedInteger, UnsignedInteger } from '@fulcro/types';
 const Int32 = SignedInteger(32);
 
 Int32.add(Int32.from(2), Int32.from(3)); // 5
-Int32.add(Int32.maximum, Int32.from(1)); // RangeError: outside [-2147483648, 2147483647]
+Int32.add(Int32.maximum, Int32.from(1)); // RangeError: FULCRO6031: … outside [-2147483648, 2147483647]
 UnsignedInteger(8).wrap(-1); // 255, when modular arithmetic is what you mean
 
 Decimal.from('0.1').add(Decimal.from('0.2')).toString(); // '0.3'

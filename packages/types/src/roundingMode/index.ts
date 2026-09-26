@@ -1,3 +1,5 @@
+import { createError } from '@fulcro/errors';
+
 /**
  * How a value that falls between two representable ones is resolved.
  *
@@ -46,7 +48,10 @@ export const requireRoundingMode = (
 		return mode as RoundingMode;
 	}
 
-	throw new RangeError(
-		`${operation}: expected a rounding mode of ${[...ROUNDING_MODES].join(', ')}, received ${JSON.stringify(mode) ?? String(mode)}.`,
+	throw createError(
+		'FULCRO6007',
+		operation,
+		[...ROUNDING_MODES].join(', '),
+		JSON.stringify(mode) ?? String(mode),
 	);
 };

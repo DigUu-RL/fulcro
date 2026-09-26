@@ -124,9 +124,9 @@ Every operation checks its result, and a result out of range throws:
 ```ts
 const Byte = UnsignedInteger(8);
 
-Byte.from(256); // RangeError: UnsignedInteger<8>.from: 256 is outside [0, 255].
+Byte.from(256); // RangeError: FULCRO6031: UnsignedInteger<8>.from: 256 is outside [0, 255].
 Byte.subtract(Byte.from(0), Byte.from(1)); // RangeError
-Byte.from(1.5); // RangeError: expected an integer, received 1.5.
+Byte.from(1.5); // RangeError: FULCRO6002: UnsignedInteger<8>.from: expected an integer, received 1.5.
 ```
 
 When modular arithmetic is what you mean — hashing, checksums, emulating a
@@ -345,7 +345,7 @@ const Int32 = SignedInteger(32);
 const a = Int32.from(2_000_000_000);
 
 Int32.subtract(a, Int32.from(1)); // SignedInteger<32>
-Int32.add(a, a); // RangeError: SignedInteger<32>.add: 4000000000 is outside [-2147483648, 2147483647].
+Int32.add(a, a); // RangeError: FULCRO6031: SignedInteger<32>.add: 4000000000 is outside [-2147483648, 2147483647].
 
 Decimal.from('19.99').multiply(Decimal.from(3)); // Decimal: 59.97
 Decimal.from('0.1').add(Decimal.from('0.2')).equals(Decimal.from('0.3')); // true

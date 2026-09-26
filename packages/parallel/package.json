@@ -28,6 +28,9 @@
 		"dist"
 	],
 	"sideEffects": false,
+	"dependencies": {
+		"@fulcro/errors": "^0.0.0"
+	},
 	"engines": {
 		"node": ">=22"
 	},

@@ -354,8 +354,8 @@ match, for when a failure should stop it.
 ### The message names where it failed
 
 ```text
-TypeError: as<Order>() refused a value: customer.email: expected string, got number
-TypeError: as<Order>() refused a value: items[3].quantity: expected number, got undefined
+TypeError: FULCRO4007: as<Order>() refused a value: customer.email: expected string, got number
+TypeError: FULCRO4007: as<Order>() refused a value: items[3].quantity: expected number, got undefined
 ```
 
 Told only _"not an Order"_ about a record with forty fields, you would be no

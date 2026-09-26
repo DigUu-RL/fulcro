@@ -24,6 +24,7 @@ scopes the rule to nothing and does it in silence.
 | `api-design.md`              | the public surface                    | Inference is part of it, and a change to it is reviewed   |
 | `naming.md`                  | exported names under `packages/*/src` | The vocabulary is agreed before the feature is written    |
 | `build-output.md`            | `packages/*`                          | Built output lives in `dist/`, never beside source        |
+| `errors.md`                  | shipped sources, `tools/eslint`       | Every error comes from `@fulcro/errors`, with its code    |
 | `collections-performance.md` | `packages/collections/src`            | Laziness, one traversal, bounded memory, early exit       |
 | `transformers.md`            | `transformer/`, `unplugin/`           | Runtime and transformer are one feature                   |
 | `concurrency.md`             | `packages/parallel`, async sequences  | Cancellation, bounds and release under failure            |

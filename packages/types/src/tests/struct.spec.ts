@@ -19,6 +19,16 @@ import { UnsignedInteger } from '@/unsignedInteger';
  * back as the value that was written, for every type a field can have.
  */
 
+/**
+ * The error a refusal is expected to throw: the class, the whole message, and
+ * the code the message starts with, which `toThrow` compares as well.
+ *
+ * @param error The expected error, its message starting with its code.
+ * @returns The same error, carrying that code.
+ */
+const coded = <T extends Error>(error: T): T =>
+	Object.assign(error, { code: error.message.slice(0, 'FULCRO0000'.length) });
+
 const Vector3 = struct('Vector3', {
 	x: SinglePrecisionFloat,
 	y: SinglePrecisionFloat,
@@ -178,8 +188,10 @@ describe('struct', () => {
 			expect(() =>
 				struct('Account', { balance: BigInteger } as never),
 			).toThrowError(
-				new TypeError(
-					"struct Account: field 'balance' has no fixed layout. Declare it with a numeric type of @fulcro/types other than BigInteger, or with another struct.",
+				coded(
+					new TypeError(
+						"FULCRO6016: struct Account: field 'balance' has no fixed layout. Declare it with a numeric type of @fulcro/types other than BigInteger, or with another struct.",
+					),
 				),
 			);
 			expect(() =>
@@ -189,7 +201,11 @@ describe('struct', () => {
 
 		it('should refuse no fields, no name, and names an object would reorder', () => {
 			expect(() => struct('Empty', {})).toThrowError(
-				new TypeError('struct Empty: expected at least one field.'),
+				coded(
+					new TypeError(
+						'FULCRO6014: struct Empty: expected at least one field.',
+					),
+				),
 			);
 			expect(() => struct('', { x: SinglePrecisionFloat })).toThrow(TypeError);
 			expect(() => struct('Indexed', { 0: SinglePrecisionFloat })).toThrow(
@@ -236,24 +252,39 @@ describe('struct', () => {
 
 			expect(caught).toBeInstanceOf(RangeError);
 			expect((caught as Error).message).toBe(
-				"Mixed.from: field 'flag': UnsignedInteger<8>.from: 256 is outside [0, 255].",
+				"FULCRO6031: Mixed.from: field 'flag': UnsignedInteger<8>.from: 256 is outside [0, 255].",
 			);
 			expect((caught as Error).cause).toBeInstanceOf(RangeError);
+
+			// The field is where it happened, not what happened: the code stays the
+			// one the field's own conversion raised, on the outer error and the cause.
+			expect(caught).toMatchObject({ code: 'FULCRO6031' });
+			expect((caught as Error).cause).toMatchObject({
+				code: 'FULCRO6031',
+				message:
+					'FULCRO6031: UnsignedInteger<8>.from: 256 is outside [0, 255].',
+			});
 		});
 
 		it('should refuse a missing field, an unknown one, and a non-object', () => {
 			expect(() => Vector3.from({ x: 1, y: 2 } as never)).toThrowError(
-				new TypeError("Vector3.from: missing field 'z'."),
+				coded(new TypeError("FULCRO6021: Vector3.from: missing field 'z'.")),
 			);
 			expect(() =>
 				Vector3.from({ x: 1, y: 2, z: 3, w: 4 } as never),
 			).toThrowError(
-				new TypeError(
-					"Vector3.from: 'w' is not a field; the fields are x, y, z.",
+				coded(
+					new TypeError(
+						"FULCRO6020: Vector3.from: 'w' is not a field; the fields are x, y, z.",
+					),
 				),
 			);
 			expect(() => Vector3.from(null as never)).toThrowError(
-				new TypeError('Vector3.from: expected an object, received null.'),
+				coded(
+					new TypeError(
+						'FULCRO6019: Vector3.from: expected an object, received null.',
+					),
+				),
 			);
 		});
 
@@ -412,8 +443,10 @@ describe('struct', () => {
 			expect(() =>
 				struct('Clash', { x: SinglePrecisionFloat }, { x: () => 1 } as never),
 			).toThrowError(
-				new TypeError(
-					"struct Clash: method 'x' has the name of a field; a value could not hold both.",
+				coded(
+					new TypeError(
+						"FULCRO6009: struct Clash: method 'x' has the name of a field; a value could not hold both.",
+					),
 				),
 			);
 			expect(() =>
@@ -428,15 +461,19 @@ describe('struct', () => {
 			expect(() =>
 				struct('Loose', { x: SinglePrecisionFloat }, { size: 3 } as never),
 			).toThrowError(
-				new TypeError(
-					"struct Loose: method 'size' must be a function, received number.",
+				coded(
+					new TypeError(
+						"FULCRO6011: struct Loose: method 'size' must be a function, received number.",
+					),
 				),
 			);
 			expect(() =>
 				struct('Null', { x: SinglePrecisionFloat }, null as never),
 			).toThrowError(
-				new TypeError(
-					'struct Null: expected an object of methods, received null.',
+				coded(
+					new TypeError(
+						'FULCRO6008: struct Null: expected an object of methods, received null.',
+					),
 				),
 			);
 		});
@@ -605,8 +642,10 @@ describe('struct', () => {
 			const value = Vector3.from({ x: 1, y: 2, z: 3 });
 
 			expect(() => Vector3.write(view, 4, value)).toThrowError(
-				new RangeError(
-					'Vector3.write: 12 bytes at offset 4 do not fit in a view of 12 bytes.',
+				coded(
+					new RangeError(
+						'FULCRO6018: Vector3.write: 12 bytes at offset 4 do not fit in a view of 12 bytes.',
+					),
 				),
 			);
 			expect([...bytes].every((byte) => byte === 0)).toBe(true);

@@ -1,3 +1,5 @@
+import { createError } from '@fulcro/errors';
+
 import { refuseUnresolved, type TypeTest } from '@/functions/utils/is';
 
 /**
@@ -61,9 +63,7 @@ export const as = <T>(value: unknown, test?: TypeTest<T>): T => {
 	const named: string = test.name ?? 'the type';
 	const where: string | null = test.explain?.(value) ?? null;
 
-	throw new TypeError(
-		where === null
-			? `as<${named}>() refused a value of type ${describe(value)}.`
-			: `as<${named}>() refused a value: ${where}`,
-	);
+	throw where === null
+		? createError('FULCRO4006', named, describe(value))
+		: createError('FULCRO4007', named, where);
 };
