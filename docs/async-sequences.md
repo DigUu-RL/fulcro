@@ -298,7 +298,7 @@ It refuses **at the element that failed**, so a bad page is caught without the
 rest of the feed being fetched:
 
 ```text
-TypeError: cast('Order') found a string at index 2.
+TypeError: FULCRO1015: cast('Order') found a string at index 2.
 ```
 
 `ofType<T>()` is the same check used to filter rather than to refuse. Both take

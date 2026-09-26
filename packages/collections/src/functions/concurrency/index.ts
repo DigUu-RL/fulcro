@@ -1,3 +1,5 @@
+import { createError } from '@fulcro/errors';
+
 import { AsyncSelector, ConcurrencyOptions } from '@/@types';
 
 /**
@@ -26,9 +28,7 @@ export const assertConcurrency = (
 	concurrency: number,
 ): void => {
 	if (!Number.isInteger(concurrency) || concurrency < 1) {
-		throw new Error(
-			`${operation}() needs a positive integer concurrency, and was given ${concurrency}.`,
-		);
+		throw createError('FULCRO1017', operation, concurrency);
 	}
 };
 

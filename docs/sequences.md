@@ -145,7 +145,7 @@ when an element of another type means the data is wrong and silence would be
 the worst outcome. The throw names what it found and where:
 
 ```text
-TypeError: cast('string') found a number at index 2.
+TypeError: FULCRO1015: cast('string') found a number at index 2.
 ```
 
 Both take either a `typeof` name or a class, and both narrow the type without a
@@ -303,7 +303,7 @@ Refused: index signatures, unresolved generics, and a class brought in with
 `import type`, which is erased before the emitted code could reference it.
 
 ```text
-Error: ofType<T>() was not resolved at compile time. Either the
+Error: FULCRO1016: ofType<T>() was not resolved at compile time. Either the
 @fulcro/collections transformer did not run over this file, or T has no runtime
 representation — an interface leaves nothing to test for, so pass a class, a
 typeof name, or use where() with a predicate.

@@ -1,3 +1,5 @@
+import { createError } from '@fulcro/errors';
+
 import type { BoundedNumericType } from '@/numericType';
 
 /**
@@ -38,9 +40,7 @@ export const createFloatType = <T>(
 		// first and then into the format rounds twice, and the second rounding
 		// can land on the wrong neighbour.
 		if (typeof value !== 'number') {
-			throw new TypeError(
-				`${name}.from: expected a number, received ${typeof value}.`,
-			);
+			throw createError('FULCRO6006', `${name}.from`, typeof value);
 		}
 
 		return round(value) as T;

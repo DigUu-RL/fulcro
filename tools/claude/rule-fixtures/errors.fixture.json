@@ -1,0 +1,15 @@
+{
+	"rule": "errors.md",
+	"loads": [
+		"packages/types/src/struct/index.ts",
+		"packages/parallel/src/worker/entry.ts",
+		"packages/errors/src/catalog/types.ts",
+		"tools/eslint/coded-errors.mjs"
+	],
+	"ignores": [
+		"tests/entrypoints.spec.mts",
+		"docs/errors.md",
+		"tools/claude/validate-claude-config.mjs"
+	],
+	"why": "An error is created where the shipped code runs, so the rule follows the package sources, and the lint rule that enforces the ranges. Tests provoke errors rather than define them, and the pages are written from the catalog, not the other way round."
+}

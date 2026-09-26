@@ -1,3 +1,5 @@
+import { createError } from '@fulcro/errors';
+
 import {
 	CollectionFactories,
 	GroupFactory,
@@ -18,12 +20,6 @@ import { OrderedSequence, SortCriterion } from '@/@types/collections/ordered';
  * the concrete classes in.
  */
 let registeredFactories: CollectionFactories | undefined;
-
-/** Message used when a factory is requested before being registered. */
-const MISSING_FACTORIES_MESSAGE =
-	'Collection factories were not registered. Import the library through ' +
-	'its public entry points (e.g. @/collections/sequence) so that the ' +
-	'composition root can wire the concrete collections.';
 
 /**
  * Registers the concrete collection factories.
@@ -54,7 +50,7 @@ export const hasCollectionFactories = (): boolean =>
  * @throws {Error} When no factory has been registered yet.
  */
 const resolveFactories = (): CollectionFactories => {
-	if (!registeredFactories) throw new Error(MISSING_FACTORIES_MESSAGE);
+	if (!registeredFactories) throw createError('FULCRO1018');
 	return registeredFactories;
 };
 

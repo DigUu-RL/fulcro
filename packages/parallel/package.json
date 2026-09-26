@@ -1,6 +1,6 @@
 {
 	"name": "@fulcro/parallel",
-	"version": "0.1.1",
+	"version": "1.0.0",
 	"description": "A worker pool for CPU-bound work, on the browser and on Node, with the work named rather than captured.",
 	"keywords": [
 		"worker",
@@ -28,6 +28,9 @@
 		"dist"
 	],
 	"sideEffects": false,
+	"dependencies": {
+		"@fulcro/errors": "^1.0.0"
+	},
 	"engines": {
 		"node": ">=22"
 	},

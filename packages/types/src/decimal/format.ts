@@ -1,3 +1,5 @@
+import { createError } from '@fulcro/errors';
+
 import type { RoundingMode } from '@/roundingMode';
 
 import {
@@ -37,8 +39,12 @@ export const requireDigits = (
 		digits < minimum ||
 		digits > MAXIMUM_DIGITS
 	) {
-		throw new RangeError(
-			`Decimal.${operation}: expected an integer from ${minimum} to ${MAXIMUM_DIGITS}, received ${digits}.`,
+		throw createError(
+			'FULCRO6022',
+			`Decimal.${operation}`,
+			minimum,
+			MAXIMUM_DIGITS,
+			digits,
 		);
 	}
 

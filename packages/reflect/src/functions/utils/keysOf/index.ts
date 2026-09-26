@@ -1,3 +1,5 @@
+import { createError } from '@fulcro/errors';
+
 /**
  * Reads the keys a type declares.
  *
@@ -37,9 +39,7 @@ export const keysOf = <T>(
 	keys?: readonly (string & keyof T)[],
 ): readonly (string & keyof T)[] => {
 	if (keys === undefined) {
-		throw new Error(
-			'keysOf<T>() was not resolved at compile time. Either the @fulcro/reflect transformer did not run over this file, or T has no keys to read — a primitive, a union, or an unresolved generic.',
-		);
+		throw createError('FULCRO4001');
 	}
 
 	return keys;

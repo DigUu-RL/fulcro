@@ -1,6 +1,6 @@
 {
 	"name": "@fulcro/reflect",
-	"version": "0.11.0",
+	"version": "1.0.0",
 	"description": "Type aware nameOf, typeOf and defaultOf, with the compile time transformer that resolves them in the box.",
 	"keywords": [
 		"nameof",
@@ -53,7 +53,8 @@
 		"url": "https://github.com/DigUu-RL/fulcro/issues"
 	},
 	"dependencies": {
-		"@fulcro/transform-core": "^0.11.0"
+		"@fulcro/errors": "^1.0.0",
+		"@fulcro/transform-core": "^1.0.0"
 	},
 	"peerDependencies": {
 		"typescript": ">=5.3.3 <7"

@@ -1,3 +1,5 @@
+import { createError } from '@fulcro/errors';
+
 import {
 	Accumulator,
 	Action,
@@ -338,7 +340,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 			if (!predicate || predicate(item)) return item;
 		}
 
-		throw new Error('Sequence contains no elements');
+		throw createError('FULCRO1001');
 	}
 
 	/**
@@ -367,7 +369,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 	last(predicate?: Predicate<T>): T {
 		const found: T | typeof NOT_FOUND = this.findLast(predicate);
 
-		if (found === NOT_FOUND) throw new Error('Sequence contains no elements');
+		if (found === NOT_FOUND) throw createError('FULCRO1001');
 
 		return found;
 	}
@@ -735,7 +737,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 			counter++;
 		}
 
-		if (counter === 0) throw new Error('Sequence contains no elements');
+		if (counter === 0) throw createError('FULCRO1001');
 		return total / counter;
 	}
 
@@ -756,7 +758,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 			if (minimum === null || value < minimum) minimum = value;
 		}
 
-		if (minimum === null) throw new Error('Sequence contains no elements');
+		if (minimum === null) throw createError('FULCRO1001');
 		return minimum;
 	}
 
@@ -777,7 +779,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 			if (maximum === null || value > maximum) maximum = value;
 		}
 
-		if (maximum === null) throw new Error('Sequence contains no elements');
+		if (maximum === null) throw createError('FULCRO1001');
 		return maximum;
 	}
 
@@ -813,7 +815,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 			map.set(key, element);
 
 			if (map.size === storedCount) {
-				throw new Error('An item with the same key has already been added.');
+				throw createError('FULCRO1002');
 			}
 		}
 
@@ -941,7 +943,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 		const found: T | null = this.resolveSingle(predicate);
 
 		if (found === null) {
-			throw new Error('single() found no element matching the condition.');
+			throw createError('FULCRO1003');
 		}
 
 		return found;
@@ -982,9 +984,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 			if (predicate !== undefined && !predicate(item)) continue;
 
 			if (seen) {
-				throw new Error(
-					'single() found more than one element matching the condition.',
-				);
+				throw createError('FULCRO1004');
 			}
 
 			found = item;
@@ -1004,7 +1004,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 	elementAt(index: number): T {
 		const found: T | null = this.elementAtOrNull(index);
 
-		if (found === null) throw new Error(`elementAt(${index}) is out of range.`);
+		if (found === null) throw createError('FULCRO1005', index);
 
 		return found;
 	}
@@ -1272,9 +1272,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 */
 	chunk(size: number): Sequence<T[]> {
 		if (!Number.isInteger(size) || size < 1) {
-			throw new Error(
-				`chunk(${size}) needs a positive integer: a chunk of no elements would never end the sequence.`,
-			);
+			throw createError('FULCRO1006', size);
 		}
 
 		const source: Iterable<T> = this.source;
@@ -1502,7 +1500,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 		}
 
 		if (best === NOT_FOUND) {
-			throw new Error(`${operation}() was called on an empty sequence.`);
+			throw createError('FULCRO1007', operation);
 		}
 
 		return best;
@@ -1840,7 +1838,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 */
 	windowed(size: number): Sequence<T[]> {
 		if (!Number.isInteger(size) || size < 1) {
-			throw new Error(`windowed(${size}) needs a positive integer.`);
+			throw createError('FULCRO1008', size);
 		}
 
 		const source: Iterable<T> = this.source;
@@ -1960,7 +1958,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 		}
 
 		if (values.length === 0) {
-			throw new Error(`${operation}() was called on an empty sequence.`);
+			throw createError('FULCRO1007', operation);
 		}
 
 		// Numeric rather than the default lexicographic sort, which would put
@@ -1994,7 +1992,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 */
 	percentile(rank: number, selector?: Selector<T, number>): number {
 		if (!Number.isFinite(rank) || rank < 0 || rank > 100) {
-			throw new Error(`percentile(${rank}) takes a rank between 0 and 100.`);
+			throw createError('FULCRO1009', rank);
 		}
 
 		const values: number[] = this.sortedValues('percentile', selector);
@@ -2034,7 +2032,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 		}
 
 		if (values.length === 0) {
-			throw new Error(`${operation}() was called on an empty sequence.`);
+			throw createError('FULCRO1007', operation);
 		}
 
 		const mean: number =
@@ -2084,9 +2082,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 		// observation: one measurement says nothing about the spread it came
 		// from, and answering 0 would claim that it does.
 		if (count < 2) {
-			throw new Error(
-				'sampleStandardDeviation() needs at least two elements: a sample of one says nothing about its spread.',
-			);
+			throw createError('FULCRO1010');
 		}
 
 		return Math.sqrt(total / (count - 1));
@@ -2106,10 +2102,10 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 */
 	static range(start: number, count: number): Sequence<number> {
 		if (!Number.isInteger(start) || !Number.isInteger(count)) {
-			throw new Error('range() takes integers.');
+			throw createError('FULCRO1011');
 		}
 
-		if (count < 0) throw new Error('range() cannot produce a negative count.');
+		if (count < 0) throw createError('FULCRO1012');
 
 		return SequenceCollection.deferred<number>(
 			{
@@ -2132,10 +2128,10 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 */
 	static repeat<T>(value: T, count: number): Sequence<T> {
 		if (!Number.isInteger(count)) {
-			throw new Error('repeat() takes an integer count.');
+			throw createError('FULCRO1013');
 		}
 
-		if (count < 0) throw new Error('repeat() cannot produce a negative count.');
+		if (count < 0) throw createError('FULCRO1014');
 
 		return SequenceCollection.deferred<T>(
 			{
@@ -2277,9 +2273,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 							// not actionable on its own.
 							const found: string = describeType(item);
 
-							throw new TypeError(
-								`cast('${expected}') found a ${found} at index ${index}.`,
-							);
+							throw createError('FULCRO1015', expected, found, index);
 						}
 
 						index++;

@@ -1,3 +1,5 @@
+import { createError } from '@fulcro/errors';
+
 import {
 	ANONYMOUS_NAME,
 	resolveCallableId,
@@ -87,11 +89,7 @@ export function nameOf(input?: unknown): string {
 	// by the transformer, which is the only thing able to see a type. Reaching
 	// the runtime means the project compiled without it.
 	if (arguments.length === 0) {
-		throw new Error(
-			'nameOf<T>() names a type, which only exists at compile time. ' +
-				'Enable the transformer in the `plugins` entry of your ' +
-				'tsconfig, or call nameOf with a value or an accessor.',
-		);
+		throw createError('FULCRO4008');
 	}
 
 	if (typeof input === 'function') {

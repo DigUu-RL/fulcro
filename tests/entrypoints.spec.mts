@@ -31,6 +31,7 @@ const resolve = createRequire(import.meta.url).resolve;
 /** Packages published from this repository. */
 const PACKAGE_NAMES = [
 	'@fulcro/collections',
+	'@fulcro/errors',
 	'@fulcro/functions',
 	'@fulcro/parallel',
 	'@fulcro/reflect',
@@ -513,6 +514,60 @@ describe('@fulcro/collections/async', () => {
 		const main = await import('@fulcro/collections');
 
 		expect(main).not.toHaveProperty('AsyncSequenceCollection');
+	});
+});
+
+describe('@fulcro/errors', () => {
+	it('should expose the two functions and nothing of the catalog', async () => {
+		const entry = await import('@fulcro/errors');
+
+		// The package is CommonJS; see `@fulcro/types` above for these.
+		const interop: readonly string[] = [
+			'__esModule',
+			'default',
+			'module.exports',
+		];
+
+		expect(
+			Object.keys(entry)
+				.filter((key) => !interop.includes(key))
+				.sort(),
+		).toEqual(['createError', 'prefixError']);
+	});
+
+	it('should create a coded error through the published entry point', async () => {
+		const { createError } = await import('@fulcro/errors');
+		const error = createError('FULCRO6021', 'Vector3.from', 'x');
+
+		expect(error).toBeInstanceOf(TypeError);
+		expect(error.code).toBe('FULCRO6021');
+		expect(error.message).toBe("FULCRO6021: Vector3.from: missing field 'x'.");
+	});
+
+	it("should reach a consumer through another package's CommonJS build", async () => {
+		const { SignedInteger } = await import('@fulcro/types');
+		const Int32 = SignedInteger(32);
+
+		expect(() => Int32.add(Int32.maximum, Int32.from(1))).toThrow(
+			expect.objectContaining({
+				code: 'FULCRO6031',
+				message: expect.stringMatching(/^FULCRO6031: /),
+			}),
+		);
+	});
+
+	it("should reach a consumer through another package's ES module build", async () => {
+		// `@fulcro/parallel` is an ES module importing this CommonJS package by
+		// name, which only works if Node can see the named exports statically.
+		const { createWorkerPool } = await import('@fulcro/parallel');
+
+		expect(() =>
+			createWorkerPool({
+				module: 'file:///nowhere.mjs',
+				export: 'task',
+				workers: 0,
+			}),
+		).toThrow(expect.objectContaining({ code: 'FULCRO3003' }));
 	});
 });
 

@@ -1,3 +1,5 @@
+import { createError } from '@fulcro/errors';
+
 import {
 	type DecimalParts,
 	infinity,
@@ -68,9 +70,7 @@ export const parseDecimal = (text: string): DecimalParts => {
 	const [, sign = '', whole = '', fraction = '', exponentText] = match ?? [];
 
 	if (match === null || whole.length + fraction.length === 0) {
-		throw new SyntaxError(
-			`Decimal.from: expected a decimal literal, received ${describeInput(text)}.`,
-		);
+		throw createError('FULCRO6023', describeInput(text));
 	}
 
 	const negative: boolean = sign === '-';

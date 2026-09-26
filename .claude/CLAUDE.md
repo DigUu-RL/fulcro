@@ -9,14 +9,15 @@ invariants in `.claude/rules/`.
 A private npm workspace root. Nothing publishes from the root; the packages
 under `packages/` do.
 
-| Package                  | What it is                                                      | Runtime deps                           |
-| ------------------------ | --------------------------------------------------------------- | -------------------------------------- |
-| `@fulcro/collections`    | Lazily evaluated sequences, plus `cast<T>()` runtime validation | `@fulcro/transform-core`               |
-| `@fulcro/reflect`        | `nameOf`, `typeOf`, `defaultOf`, `sizeOf`, transformer included | `@fulcro/transform-core`               |
-| `@fulcro/functions`      | `switchFor`, `tryCatch` — control flow as values                | none                                   |
-| `@fulcro/transform-core` | Shared machinery behind the transformers                        | `unplugin`, optional peer `typescript` |
-| `@fulcro/parallel`       | Worker pool for CPU-bound work, browser and Node                | none                                   |
-| `@fulcro/types`          | Numeric types with a range and layout, and structs              | none                                   |
+| Package                  | What it is                                                      | Runtime deps                            |
+| ------------------------ | --------------------------------------------------------------- | --------------------------------------- |
+| `@fulcro/errors`         | Every error of every package: its code, message and class       | none                                    |
+| `@fulcro/collections`    | Lazily evaluated sequences, plus `cast<T>()` runtime validation | `errors`, `transform-core`              |
+| `@fulcro/reflect`        | `nameOf`, `typeOf`, `defaultOf`, `sizeOf`, transformer included | `errors`, `transform-core`              |
+| `@fulcro/functions`      | `switchFor`, `tryCatch` — control flow as values                | `errors`                                |
+| `@fulcro/transform-core` | Shared machinery behind the transformers                        | `errors`, `unplugin`, peer `typescript` |
+| `@fulcro/parallel`       | Worker pool for CPU-bound work, browser and Node                | `errors`                                |
+| `@fulcro/types`          | Numeric types with a range and layout, and structs              | `errors`                                |
 
 `@fulcro/collections` and `@fulcro/reflect` each ship their own compile time
 transformer behind a separate entry point (`./transformer`, `./unplugin`).
@@ -24,22 +25,26 @@ Neither knows the other exists; each claims only what it can trace back to its
 own package. `@fulcro/types` ships none: every operation on its types is a
 typed method, and nothing has to be configured to use it.
 
+`@fulcro/errors` sits below everything else: every error any package creates
+comes from its catalog, with a `FULCRO` code from that package's range. See
+`.claude/rules/errors.md`.
+
 ## Canonical commands
 
 Run from the repository root. These are the scripts that exist today — read
 `package.json` before trusting any command that is not on this list.
 
-| Command                                   | What it does                                                |
-| ----------------------------------------- | ----------------------------------------------------------- |
-| `npm run build`                           | Builds `@fulcro/transform-core` first, then every workspace |
-| `npm run typecheck`                       | `tsc --noEmit` per package, then `tsconfig.tests.json`      |
-| `npm test`                                | Builds, then runs Vitest                                    |
-| `npx vitest run --configLoader native`    | The suites without rebuilding                               |
-| `npx eslint .`                            | Lint, including the local `brace-wrapped-branches` rule     |
-| `npm run format:check` / `npm run format` | Prettier check / write                                      |
-| `npx --yes markdownlint-cli2`             | Markdown lint (`.markdownlint-cli2.jsonc`)                  |
-| `npm run validate:claude`                 | Structural validation of the `.claude` tree                 |
-| `npm run changeset`                       | Records a version bump for a shipped change                 |
+| Command                                   | What it does                                                                |
+| ----------------------------------------- | --------------------------------------------------------------------------- |
+| `npm run build`                           | Builds `errors`, then `transform-core`, then every workspace                |
+| `npm run typecheck`                       | `tsc --noEmit` per package, then `tsconfig.tests.json`                      |
+| `npm test`                                | Builds, then runs Vitest                                                    |
+| `npx vitest run --configLoader native`    | The suites without rebuilding                                               |
+| `npx eslint .`                            | Lint, including the local `brace-wrapped-branches` and `coded-errors` rules |
+| `npm run format:check` / `npm run format` | Prettier check / write                                                      |
+| `npx --yes markdownlint-cli2`             | Markdown lint (`.markdownlint-cli2.jsonc`)                                  |
+| `npm run validate:claude`                 | Structural validation of the `.claude` tree                                 |
+| `npm run changeset`                       | Records a version bump for a shipped change                                 |
 
 Each package builds with `tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json`.
 

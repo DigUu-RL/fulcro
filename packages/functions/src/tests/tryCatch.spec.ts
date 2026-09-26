@@ -59,6 +59,10 @@ describe('tryCatch', () => {
 			expect(result.error).not.toBeNull();
 			expect(result.error).toBeInstanceOf(Error);
 			expect((result.error as Error).cause).toBe(thrown);
+			expect(result.error).toMatchObject({
+				code: 'FULCRO2001',
+				message: `FULCRO2001: Operation rejected with ${String(thrown)}`,
+			});
 		},
 	);
 

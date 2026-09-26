@@ -1,5 +1,7 @@
 import { Worker } from 'node:worker_threads';
 
+import { createError } from '@fulcro/errors';
+
 import { SpawnWorker, WorkerHandle } from '@/@types/index.js';
 
 /**
@@ -35,7 +37,7 @@ export const spawnWorker: SpawnWorker = (url: URL): WorkerHandle => {
 
 			const onExit = (code: number): void => {
 				if (code !== 0) {
-					handler(undefined, new Error(`The worker exited with code ${code}.`));
+					handler(undefined, createError('FULCRO3007', code));
 				}
 			};
 

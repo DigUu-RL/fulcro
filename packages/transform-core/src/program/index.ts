@@ -3,6 +3,8 @@ import * as path from 'node:path';
 
 import typescript from 'typescript';
 
+import { createError } from '@fulcro/errors';
+
 import { CallRewriter } from '@/shared';
 import { createTransformer, TransformerOptions } from '@/transformer';
 
@@ -206,16 +208,14 @@ export const parseTsconfig = (
 			: typescript.findConfigFile(root, typescript.sys.fileExists);
 
 	if (configPath === undefined) {
-		throw new Error(
-			`No tsconfig.json found from ${root}. The transformer needs one to ` +
-				'know which files belong to the program.',
-		);
+		throw createError('FULCRO5001', root);
 	}
 
 	const read = typescript.readConfigFile(configPath, typescript.sys.readFile);
 
 	if (read.error !== undefined) {
-		throw new Error(
+		throw createError(
+			'FULCRO5002',
 			typescript.flattenDiagnosticMessageText(read.error.messageText, '\n'),
 		);
 	}

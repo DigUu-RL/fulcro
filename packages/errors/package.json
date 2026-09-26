@@ -1,0 +1,45 @@
+{
+	"name": "@fulcro/errors",
+	"version": "1.0.0",
+	"description": "Every error the @fulcro packages throw, each with a stable FULCRO code, its message and its class.",
+	"keywords": [
+		"errors",
+		"error-codes",
+		"typescript"
+	],
+	"license": "ISC",
+	"author": "diguu <rodrigogeribola@hotmail.com>",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		},
+		"./package.json": "./package.json"
+	},
+	"files": [
+		"dist"
+	],
+	"sideEffects": false,
+	"engines": {
+		"node": ">=22"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/DigUu-RL/fulcro.git",
+		"directory": "packages/errors"
+	},
+	"homepage": "https://github.com/DigUu-RL/fulcro/tree/main/packages/errors#readme",
+	"bugs": {
+		"url": "https://github.com/DigUu-RL/fulcro/issues"
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
+		"typecheck": "tsc --noEmit -p tsconfig.json",
+		"prepublishOnly": "npm run build"
+	}
+}

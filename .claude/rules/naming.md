@@ -25,9 +25,12 @@ are written here.
   `Pointer`, not `Ptr`; `MemoryReference`, not `Ref`.
 - Functions are `camelCase` verbs: `sizeOf`, `alignOf`, `offsetOf`, `borrow`,
   `borrowMutable`, `allocate`.
-- Keywords stay lowercase: `unsafe`, `fixed`, `with`, `match`, `struct`,
-  `operator`, `using`, `await using`, `compiletime` — never `compileTime` and
-  never `comptime`.
+- There are no keywords of our own. A capability that another language spells
+  as a keyword — `unsafe`, `fixed`, `with`, `match`, `struct`, `compiletime` —
+  ships as a function, a method or a type, named by the conventions above.
+  A keyword TypeScript does not parse needs a plugin in every tool that reads
+  the file, and nothing here may need configuring to be used. `using` and
+  `await using` are TypeScript's own and are used as they are.
 - A name borrowed from another language's vocabulary is not a name here.
   `Wasm*`, `Simd*`, `Vec3`, `i32`, `f32` describe somebody else's runtime, and
   a consumer reading them has to know that runtime to read our API.
