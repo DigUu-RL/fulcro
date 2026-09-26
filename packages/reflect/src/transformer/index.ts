@@ -13,7 +13,9 @@ import { asRewriter } from '@/transformer/as';
 import { defaultOfRewriter } from '@/transformer/defaultOf';
 import { isRewriter } from '@/transformer/is';
 import { keysOfRewriter } from '@/transformer/keysOf';
+import { layoutOfRewriter } from '@/transformer/layoutOf';
 import { nameOfRewriter } from '@/transformer/nameOf';
+import { offsetOfRewriter } from '@/transformer/offsetOf';
 import { pathOfRewriter } from '@/transformer/pathOf';
 import { pathsOfRewriter } from '@/transformer/pathsOf';
 import { sizeOfRewriter } from '@/transformer/sizeOf';
@@ -68,6 +70,8 @@ export const REWRITERS: readonly CallRewriter[] = [
 	pathsOfRewriter,
 	sizeOfRewriter,
 	alignOfRewriter,
+	offsetOfRewriter,
+	layoutOfRewriter,
 ];
 
 /**

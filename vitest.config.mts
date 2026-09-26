@@ -50,6 +50,15 @@ const project = (name: string): ViteUserConfig => ({
 		globals: true,
 		include: ['src/**/*.spec.ts', 'src/**/*.test.ts'],
 
+		// The transformer suites build a whole TypeScript program in `beforeAll`
+		// — the standard library and the built declarations, type-checked — and
+		// that is CPU-bound work competing with every other project in a full
+		// run. Alone, it takes a few seconds; under the full run it crossed the
+		// default ten once a fifth such suite was added (F30c), failing an
+		// untouched one. A generous ceiling, as `docs/testing.md` allows for
+		// smoke limits: only a hang crosses it, never a slow machine.
+		hookTimeout: 60_000,
+
 		// Vitest prints a hint on every run suggesting `fsModuleCache: true`.
 		// Do not take it. The cache keys on the content of the source files, and
 		// the plugin above rewrites those files based on code that lives in this
@@ -134,6 +143,10 @@ const transformers = (): ViteUserConfig => ({
 		name: 'transformers',
 		globals: true,
 		include: ['tests/transformers/**/*.spec.mts'],
+		// Every suite here builds a TypeScript program in `beforeAll`: the same
+		// CPU-bound work, under the same contention, as the package projects'
+		// transformer suites — see `hookTimeout` in `project` above.
+		hookTimeout: 60_000,
 	},
 });
 

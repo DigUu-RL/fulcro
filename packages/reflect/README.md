@@ -190,6 +190,8 @@ yourself and pass it in as a second argument for those.
 | `typeOf(value)`               | runtime shape; `declared` is `null` | runtime shape **+** the declared type and its source location |
 | `defaultOf<T>()`              | throws                              | the built value, emitted inline                               |
 | `sizeOf<T>()`, `alignOf<T>()` | throws                              | the number of bytes the type declares, emitted inline         |
+| `offsetOf<T>('field')`        | throws                              | where the struct's field sits, in bytes, emitted inline       |
+| `layoutOf<T>()`               | throws                              | the whole layout, fields placed, as a frozen literal          |
 
 Wiring the transformer is a build time concern only; this package stays a plain
 runtime dependency either way, and nothing extra is installed to get it.

@@ -98,7 +98,9 @@ transformer.
 Error: FULCRO4009: sizeOf<T>() reads the layout a type declares, which only exists at compile time. …
 ```
 
-`sizeOf<T>()` or `alignOf<T>()` reached runtime unanswered. Besides a
-transformer that did not run, `T` may not be one concrete type: a generic
-parameter has no layout until it is substituted, and a union of types with
-different layouts has no single one.
+`sizeOf<T>()`, `alignOf<T>()`, `offsetOf<T>(field)` or `layoutOf<T>()`
+reached runtime unanswered. Besides a transformer that did not run, `T` may not
+be one concrete type: a generic parameter has no layout until it is
+substituted, and a union of types with different layouts has no single one.
+`offsetOf` is also left unanswered when its field is not written as a string
+literal, such as a variable holding the name.

@@ -121,26 +121,38 @@ const roundTrip = <T>(
 describe('struct', () => {
 	describe('layout', () => {
 		it('should declare the same layout in its type as it computes at runtime', () => {
-			expectTypeOf<Vector3['~layout']>().toEqualTypeOf<{
-				readonly size: 12;
-				readonly alignment: 4;
-			}>();
-			expectTypeOf<Struct<typeof Mixed>['~layout']>().toEqualTypeOf<{
-				readonly size: 16;
-				readonly alignment: 8;
-			}>();
-			expectTypeOf<Struct<typeof Outer>['~layout']>().toEqualTypeOf<{
-				readonly size: 8;
-				readonly alignment: 4;
-			}>();
-			expectTypeOf<Struct<typeof Wide>['~layout']>().toEqualTypeOf<{
-				readonly size: 32;
-				readonly alignment: 16;
-			}>();
-			expectTypeOf<Struct<typeof Large>['~layout']>().toEqualTypeOf<{
-				readonly size: 1040;
-				readonly alignment: 16;
-			}>();
+			expectTypeOf<Vector3['~layout']>().toEqualTypeOf<
+				{ readonly size: 12; readonly alignment: 4 } & {
+					readonly fields: {
+						readonly x: { readonly size: 4; readonly alignment: 4 };
+						readonly y: { readonly size: 4; readonly alignment: 4 };
+						readonly z: { readonly size: 4; readonly alignment: 4 };
+					};
+				}
+			>();
+			expectTypeOf<Struct<typeof Mixed>['~layout']>().toEqualTypeOf<
+				{ readonly size: 16; readonly alignment: 8 } & {
+					readonly fields: {
+						readonly flag: { readonly size: 1; readonly alignment: 1 };
+						readonly weight: { readonly size: 8; readonly alignment: 8 };
+						readonly count: { readonly size: 2; readonly alignment: 2 };
+					};
+				}
+			>();
+			expectTypeOf<Struct<typeof Outer>['~layout']>().toEqualTypeOf<
+				{ readonly size: 8; readonly alignment: 4 } & {
+					readonly fields: {
+						readonly inner: { readonly size: 1; readonly alignment: 1 };
+						readonly ratio: { readonly size: 4; readonly alignment: 4 };
+					};
+				}
+			>();
+			expectTypeOf<
+				Struct<typeof Wide>['~layout']['size' | 'alignment']
+			>().toEqualTypeOf<32 | 16>();
+			expectTypeOf<
+				Struct<typeof Large>['~layout']['size' | 'alignment']
+			>().toEqualTypeOf<1040 | 16>();
 
 			expect([Vector3.layout.size, Vector3.layout.alignment]).toEqual([12, 4]);
 			expect([Mixed.layout.size, Mixed.layout.alignment]).toEqual([16, 8]);
@@ -408,13 +420,21 @@ describe('struct', () => {
 			expect(Vector3.is(Object.freeze({ x: 1, y: 2, z: 3 }))).toBe(true);
 		});
 
-		it('should infer a struct without methods exactly as before', () => {
+		it('should infer a struct without methods as its fields and its layout alone', () => {
 			expectTypeOf<Vector3>().toEqualTypeOf<
 				{
 					readonly x: SinglePrecisionFloat;
 					readonly y: SinglePrecisionFloat;
 					readonly z: SinglePrecisionFloat;
-				} & Layout<12, 4>
+				} & Layout<12, 4> & {
+						readonly '~layout': {
+							readonly fields: {
+								readonly x: { readonly size: 4; readonly alignment: 4 };
+								readonly y: { readonly size: 4; readonly alignment: 4 };
+								readonly z: { readonly size: 4; readonly alignment: 4 };
+							};
+						};
+					}
 			>();
 			expect(Object.getPrototypeOf(Vector3.from({ x: 1, y: 2, z: 3 }))).toBe(
 				Object.prototype,

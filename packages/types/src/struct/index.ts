@@ -87,10 +87,28 @@ type StructSize<TFields extends StructFields> = RoundUp<
 	StructAlignment<TFields>
 >;
 
+/**
+ * The layout of each field, by name, added to the layout a struct declares.
+ *
+ * No offsets: an offset depends on the order fields were declared in, which a
+ * type does not promise. The compiler keeps it all the same — this is a mapped
+ * type over the fields, so the checker lists them as they were written — and
+ * `offsetOf<T>()` and `layoutOf<T>()` in `@fulcro/reflect` place them from
+ * there, by the rule {@link StructType.layout} states.
+ */
+interface FieldsLayout<TFields extends StructFields> {
+	readonly '~layout': {
+		readonly fields: {
+			readonly [TKey in keyof TFields]: FieldLayout<TFields[TKey]>;
+		};
+	};
+}
+
 /** The fields of a value of a struct, and its layout. */
 type StructData<TFields extends StructFields> = {
 	readonly [TKey in keyof TFields]: ValueOf<TFields[TKey]>;
-} & Layout<StructSize<TFields>, StructAlignment<TFields>>;
+} & Layout<StructSize<TFields>, StructAlignment<TFields>> &
+	FieldsLayout<TFields>;
 
 /**
  * A value of a struct: its fields, and its methods when it declares any. A
