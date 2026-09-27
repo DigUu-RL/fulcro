@@ -343,6 +343,21 @@ describe('@fulcro/reflect', () => {
 
 		expect(entry).not.toHaveProperty('resolveCallableId');
 		expect(entry).not.toHaveProperty('unresolvedLayout');
+		expect(entry).not.toHaveProperty('describeUnwritable');
+	});
+
+	it('should compute a constant at runtime, without the transformer', async () => {
+		const { constantOf } = await import('@fulcro/reflect');
+
+		// The one layout-free answer that needs no transformer: the function
+		// runs here, and the value is what the compile-time literal would be.
+		const table = constantOf(() => [1, 2, 3].map((value) => value * value));
+
+		expect(table).toEqual([1, 4, 9]);
+		expect(Object.isFrozen(table)).toBe(true);
+		expect(() => constantOf(() => new Map() as never)).toThrow(
+			expect.objectContaining({ code: 'FULCRO4011' }),
+		);
 	});
 
 	it('should refuse to guess a layout without the transformer', async () => {
@@ -364,7 +379,7 @@ describe('@fulcro/reflect', () => {
 });
 
 describe('@fulcro/types', () => {
-	it('should expose one value per numeric type, and struct', async () => {
+	it('should expose one value per numeric and mathematics type, and struct', async () => {
 		const entry = await import('@fulcro/types');
 
 		// The package is CommonJS, and Node's interop adds these to the
@@ -381,14 +396,64 @@ describe('@fulcro/types', () => {
 				.sort(),
 		).toEqual([
 			'BigInteger',
+			'ComplexNumber',
 			'Decimal',
 			'DoublePrecisionFloat',
+			'Fraction',
 			'HalfPrecisionFloat',
+			'Matrix',
+			'Quaternion',
 			'SignedInteger',
 			'SinglePrecisionFloat',
 			'UnsignedInteger',
+			'Vector',
 			'struct',
 		]);
+	});
+
+	it('should compute with the mathematics types through the published entry point', async () => {
+		const {
+			ComplexNumber,
+			DoublePrecisionFloat,
+			Fraction,
+			Matrix,
+			Quaternion,
+			SignedInteger,
+			Vector,
+		} = await import('@fulcro/types');
+
+		const Transform = Matrix(DoublePrecisionFloat, 2, 3);
+		const Point = Vector(DoublePrecisionFloat, 3, 1);
+		const moved = Transform.multiply(
+			Transform.from([
+				[1, 0, 5],
+				[0, 1, 7],
+			]),
+			Point.from([2, 3, 1]),
+		);
+
+		expect([...moved]).toEqual([7, 10]);
+
+		const Complex = ComplexNumber(DoublePrecisionFloat);
+		const i = Complex.from({ real: 0, imaginary: 1 });
+
+		expect(Complex.multiply(i, i)).toEqual({ real: -1, imaginary: 0 });
+
+		const Rotation = Quaternion(DoublePrecisionFloat);
+
+		expect(
+			Rotation.multiply(
+				Rotation.from({ w: 0, x: 1, y: 0, z: 0 }),
+				Rotation.from({ w: 0, x: 0, y: 1, z: 0 }),
+			),
+		).toEqual({ w: 0, x: 0, y: 0, z: 1 });
+
+		const Ratio = Fraction(SignedInteger(32));
+
+		expect(Ratio.from({ numerator: 6, denominator: -4 })).toEqual({
+			numerator: -3,
+			denominator: 2,
+		});
 	});
 
 	it('should give the values of a struct its methods through the published entry point', async () => {
@@ -456,7 +521,13 @@ describe('@fulcro/types', () => {
 			'parseDecimal',
 			'requireRoundingMode',
 			'codecOf',
-			'registerStructCodec',
+			'registerCodec',
+			'registerRepeatedCodec',
+			'elementOf',
+			'createMatrixOperations',
+			'createComponentRecord',
+			'createHypercomplexType',
+			'MatrixOperations',
 		]) {
 			expect(entry).not.toHaveProperty(internal);
 		}

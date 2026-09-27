@@ -11,14 +11,24 @@
  * only the types imports them with `import type` and takes no code at all.
  */
 export { BigInteger } from '@/bigInteger';
+export type { ComplexNumberType } from '@/complexNumber';
+export { ComplexNumber } from '@/complexNumber';
 export { Decimal } from '@/decimal';
 export { DoublePrecisionFloat } from '@/doublePrecisionFloat';
+export type { FractionType } from '@/fraction';
+export { Fraction } from '@/fraction';
 export { HalfPrecisionFloat } from '@/halfPrecisionFloat';
 export type { IntegerType, IntegerWidth } from '@/integer';
+export type { MatrixType } from '@/matrix';
+export { Matrix } from '@/matrix';
 export type { BoundedNumericType, NumericType } from '@/numericType';
+export type { QuaternionType } from '@/quaternion';
+export { Quaternion } from '@/quaternion';
 export type { RoundingMode } from '@/roundingMode';
 export { SignedInteger } from '@/signedInteger';
 export { SinglePrecisionFloat } from '@/singlePrecisionFloat';
 export type { Struct, StructType } from '@/struct';
 export { struct } from '@/struct';
 export { UnsignedInteger } from '@/unsignedInteger';
+export type { VectorType } from '@/vector';
+export { Vector } from '@/vector';

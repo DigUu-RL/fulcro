@@ -385,8 +385,11 @@ const decimalCodec: FieldCodec = {
 	equals: (left, right) => (left as Decimal).equals(right as Decimal),
 };
 
-/** Codecs registered by the structs themselves, so one can nest in another. */
-const structCodecs = new WeakMap<object, FieldCodec>();
+/**
+ * Codecs registered by the composite types themselves — structs, matrices,
+ * fractions, complex numbers and quaternions — so one can nest in another.
+ */
+const registeredCodecs = new WeakMap<object, FieldCodec>();
 
 /** Widths a fixed-width integer comes in. */
 const INTEGER_WIDTHS: readonly unknown[] = [8, 16, 32, 64, 128];
@@ -413,17 +416,64 @@ const isIntegerDescriptor = (
 };
 
 /**
- * Registers the codec of a struct, so that another struct can hold it as a
- * field.
+ * Registers the codec of a composite type, so that a struct can hold it as a
+ * field and a matrix as an element.
  *
- * @param descriptor Descriptor of the struct.
+ * @param descriptor Descriptor of the type.
  * @param codec How it is stored.
  */
-export const registerStructCodec = (
+export const registerCodec = (descriptor: object, codec: FieldCodec): void => {
+	registeredCodecs.set(descriptor, codec);
+};
+
+/**
+ * Registers the codec of a type stored as a fixed number of values of one
+ * element type, end to end: a matrix's elements, a quaternion's components.
+ * Nothing is registered when the element type has no fixed layout, and the
+ * type then has none either.
+ *
+ * @param descriptor Descriptor of the type.
+ * @param element What the element type was declared with.
+ * @param count How many elements a value holds.
+ * @param assemble Makes a value from its elements, in stored order.
+ * @param disassemble Lists a value's elements, in stored order.
+ * @param equals How the type compares two values.
+ */
+export const registerRepeatedCodec = (
 	descriptor: object,
-	codec: FieldCodec,
+	element: unknown,
+	count: number,
+	assemble: (elements: unknown[]) => unknown,
+	disassemble: (value: unknown) => readonly unknown[],
+	equals: (left: unknown, right: unknown) => boolean,
 ): void => {
-	structCodecs.set(descriptor, codec);
+	const codec: FieldCodec | undefined = codecOf(element);
+
+	if (codec === undefined) return;
+
+	const { size } = codec;
+
+	registerCodec(descriptor, {
+		size: size * count,
+		alignment: codec.alignment,
+		read: (view, offset) => {
+			const elements: unknown[] = new Array<unknown>(count);
+
+			for (let index = 0; index < count; index++) {
+				elements[index] = codec.read(view, offset + index * size);
+			}
+
+			return assemble(elements);
+		},
+		write: (view, offset, value) => {
+			const elements: readonly unknown[] = disassemble(value);
+
+			for (let index = 0; index < count; index++) {
+				codec.write(view, offset + index * size, elements[index]);
+			}
+		},
+		equals,
+	});
 };
 
 /**
@@ -441,7 +491,7 @@ export const codecOf = (descriptor: unknown): FieldCodec | undefined => {
 	if (descriptor === Decimal) return decimalCodec;
 
 	const known: FieldCodec | undefined =
-		floatCodecs.get(descriptor) ?? structCodecs.get(descriptor);
+		floatCodecs.get(descriptor) ?? registeredCodecs.get(descriptor);
 
 	if (known !== undefined) return known;
 

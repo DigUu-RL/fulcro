@@ -1,5 +1,7 @@
 import typescript from 'typescript';
 
+import { createError } from '@fulcro/errors';
+
 import { CallRewriter, isOwnedCall, RewriteContext } from '@/shared';
 
 /**
@@ -32,11 +34,63 @@ export interface TransformerOptions {
 	readonly projectRoot?: string;
 }
 
+/**
+ * What `ts-patch` hands a plugin beside its options: among other things, the
+ * way to add a diagnostic to the compilation.
+ */
+export interface TransformerExtras {
+	/**
+	 * Adds an error to what the compiler reports.
+	 *
+	 * @param diagnostic The error.
+	 */
+	readonly addDiagnostic?: (diagnostic: typescript.Diagnostic) => unknown;
+}
+
 /** The factory shape `ts-patch` expects from a plugin module. */
 export type TransformerFactory = (
 	program: typescript.Program,
 	options?: TransformerOptions,
+	extras?: TransformerExtras,
 ) => typescript.TransformerFactory<typescript.SourceFile>;
+
+/** The code a message from the catalog starts with, as a number. */
+const CODE = /^FULCRO(\d{4})/;
+
+/**
+ * Builds the diagnostic of a refused call.
+ *
+ * @param node Node the error points at.
+ * @param message What went wrong, starting with its `FULCRO` code.
+ * @returns The diagnostic.
+ */
+const diagnosticAt = (
+	node: typescript.Node,
+	message: string,
+): typescript.Diagnostic => ({
+	category: typescript.DiagnosticCategory.Error,
+	code: Number(CODE.exec(message)?.[1] ?? 0),
+	file: node.getSourceFile(),
+	start: node.getStart(),
+	length: node.getWidth(),
+	messageText: message,
+	source: 'fulcro',
+});
+
+/**
+ * A diagnostic as one line: where, and what.
+ *
+ * @param diagnostic The diagnostic.
+ * @returns `file(line,column): message`.
+ */
+const describeDiagnostic = (diagnostic: typescript.Diagnostic): string => {
+	const file = diagnostic.file as typescript.SourceFile;
+	const { line, character } = file.getLineAndCharacterOfPosition(
+		diagnostic.start ?? 0,
+	);
+
+	return `${file.fileName}(${line + 1},${character + 1}): ${String(diagnostic.messageText)}`;
+};
 
 /**
  * Builds a transformer from a set of rewriters.
@@ -44,6 +98,12 @@ export type TransformerFactory = (
  * @param rewriters Rewriters consulted for every call, in order. Each one
  * claims a single exported function of a single module, so the order carries no
  * meaning beyond the one a reader gives it.
+ *
+ * A call a rewriter refuses with {@link RewriteContext.report} becomes an error
+ * of the compilation: through `ts-patch`'s `addDiagnostic` when it is there,
+ * and otherwise — a bundler, a test calling `program.emit` — as one error
+ * thrown once the file is walked, listing every refusal in it.
+ *
  * @returns The factory a package exports as the default of its transformer
  * entry point.
  */
@@ -52,12 +112,22 @@ export const createTransformer =
 	(
 		program: typescript.Program,
 		options: TransformerOptions = {},
+		extras: TransformerExtras = {},
 	): typescript.TransformerFactory<typescript.SourceFile> => {
 		const checker: typescript.TypeChecker = program.getTypeChecker();
 		const projectRoot: string =
 			options.projectRoot ?? program.getCurrentDirectory();
 
 		return (context: typescript.TransformationContext) => {
+			const refused: typescript.Diagnostic[] = [];
+
+			const report = (node: typescript.Node, message: string): void => {
+				const diagnostic: typescript.Diagnostic = diagnosticAt(node, message);
+
+				if (extras.addDiagnostic === undefined) refused.push(diagnostic);
+				else extras.addDiagnostic(diagnostic);
+			};
+
 			const visit = (node: typescript.Node): typescript.Node => {
 				if (typescript.isCallExpression(node)) {
 					const rewritten: typescript.Node | null = rewriteCall(node);
@@ -72,6 +142,7 @@ export const createTransformer =
 				factory: context.factory,
 				projectRoot,
 				visit,
+				report,
 			};
 
 			const rewriteCall = (
@@ -84,7 +155,23 @@ export const createTransformer =
 				return owner === undefined ? null : owner.rewrite(call, rewriteContext);
 			};
 
-			return (sourceFile: typescript.SourceFile) =>
-				typescript.visitNode(sourceFile, visit) as typescript.SourceFile;
+			return (sourceFile: typescript.SourceFile) => {
+				const transformed = typescript.visitNode(
+					sourceFile,
+					visit,
+				) as typescript.SourceFile;
+
+				// Thrown only after the whole file is walked, so one run reports
+				// every refusal in it rather than the first.
+				if (refused.length > 0) {
+					const report: string = refused.map(describeDiagnostic).join('\n');
+
+					refused.length = 0;
+
+					throw createError('FULCRO5003', report);
+				}
+
+				return transformed;
+			};
 		};
 	};

@@ -180,4 +180,54 @@ export const typesCatalog = {
 		message: (name: string, base: string, exponent: string, range: string) =>
 			`${name}.power: ${base} ** ${exponent} is outside ${range}.`,
 	},
+	FULCRO6033: {
+		kind: TypeError,
+		message: (operation: string, received: string) =>
+			`${operation}: expected a numeric type of @fulcro/types as the element type, received ${received}.`,
+	},
+	FULCRO6034: {
+		kind: TypeError,
+		message: (operation: string, received: string) =>
+			`${operation}: expected an array, received ${received}.`,
+	},
+	FULCRO6035: {
+		kind: RangeError,
+		message: (operation: string, dimension: string, received: string) =>
+			`${operation}: expected a positive integer number of ${dimension}, received ${received}.`,
+	},
+	FULCRO6036: {
+		kind: RangeError,
+		message: (operation: string, expected: string, received: string) =>
+			`${operation}: expected a ${expected}, received a ${received}.`,
+	},
+	FULCRO6037: {
+		kind: RangeError,
+		message: (left: string, right: string, expected: string) =>
+			`Cannot multiply ${left} by ${right}. Expected ${expected}.`,
+	},
+	FULCRO6038: {
+		kind: RangeError,
+		message: (operation: string, expected: string, received: string) =>
+			`${operation}: expected ${expected}, received ${received}.`,
+	},
+	FULCRO6039: {
+		kind: RangeError,
+		message: (name: string) =>
+			`${name}.identity: only a square matrix has an identity.`,
+	},
+	FULCRO6040: {
+		kind: RangeError,
+		message: (rows: string, columns: string) =>
+			`Vector: expected one row or one column, received ${rows} rows and ${columns} columns. A shape with neither is a Matrix.`,
+	},
+	FULCRO6041: {
+		kind: TypeError,
+		message: (received: string) =>
+			`Fraction: expected SignedInteger(n), UnsignedInteger(n) or BigInteger as the element type, received ${received}.`,
+	},
+	FULCRO6042: {
+		kind: RangeError,
+		message: (name: string, received: string) =>
+			`${name}.power: expected a whole exponent, received ${received}.`,
+	},
 } as const satisfies RangeCatalog<'6'>;

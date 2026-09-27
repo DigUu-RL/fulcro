@@ -20,4 +20,11 @@ export const transformCoreCatalog = {
 		// knows and this package does not.
 		message: (diagnostic: string) => diagnostic,
 	},
+	FULCRO5003: {
+		kind: Error,
+		// Each line already carries the file, the position and the refusal's
+		// own code and message; this only says where they came from.
+		message: (report: string) =>
+			`The Fulcro transformer refused calls it could not answer at compile time:\n${report}`,
+	},
 } as const satisfies RangeCatalog<'5'>;

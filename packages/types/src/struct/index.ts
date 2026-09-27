@@ -2,7 +2,7 @@ import { createError, prefixError } from '@fulcro/errors';
 
 import type { Layout } from '@/layout';
 import type { Add, LargestAlignment, RoundUp } from '@/struct/arithmetic';
-import { codecOf, type FieldCodec, registerStructCodec } from '@/struct/codec';
+import { codecOf, type FieldCodec, registerCodec } from '@/struct/codec';
 
 /**
  * What a field of a struct may be declared with: the descriptor of a type that
@@ -606,7 +606,7 @@ export const struct = <
 		},
 	};
 
-	registerStructCodec(descriptor, {
+	registerCodec(descriptor, {
 		size,
 		alignment,
 		read: readFields,

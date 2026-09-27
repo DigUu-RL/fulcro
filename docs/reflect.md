@@ -1,9 +1,12 @@
 # Reflection
 
-Twelve utilities that answer questions TypeScript erases on its way to
+🇧🇷 Português (Brasil): [Leia esta documentação em português](./pt-BR/reflect.md)
+
+Thirteen utilities that answer questions TypeScript erases on its way to
 JavaScript: what a name was, what a type says, what is a valid empty value, how
 much memory a type declares and where its fields sit, and whether the thing in
-front of you really is what it claims.
+front of you really is what it claims — and one that answers a question while
+the program compiles, so it costs nothing when it runs.
 
 ```sh
 npm install @fulcro/reflect
@@ -13,6 +16,7 @@ npm install @fulcro/reflect
 import {
 	alignOf,
 	as,
+	constantOf,
 	defaultOf,
 	is,
 	keysOf,
@@ -380,6 +384,76 @@ is not known until the code runs, so the call is left to throw, as it is for a
 generic parameter. A union of structs whose fields are placed differently has
 no single answer either, and throws.
 
+## `constantOf` — computed once, while the program compiles
+
+A lookup table, a precomputed series, a set of coefficients: values that are
+the same on every run, computed on every run anyway.
+
+```ts
+import { constantOf } from '@fulcro/reflect';
+
+export const CRC_TABLE = constantOf(() =>
+	Array.from({ length: 256 }, (_, byte) => {
+		let crc = byte;
+
+		for (let bit = 0; bit < 8; bit++) {
+			crc = crc & 1 ? 0xedb88320 ^ (crc >>> 1) : crc >>> 1;
+		}
+
+		return crc >>> 0;
+	}),
+);
+// emitted: export const CRC_TABLE = Object.freeze([0, 1996959894, 3993919788, …]);
+```
+
+The call is plain TypeScript: `tsc`, an editor and a linter read it as a call,
+and nothing in the file needs a plugin to be understood. With the transformer,
+the function runs **while the program compiles**, and the call is replaced by
+what it returned, frozen at every level. Without it, the call runs the function
+at runtime and freezes the result the same way — the answer is the same, it is
+only paid for later.
+
+### What it can prove
+
+The transformer evaluates a call only when it can prove the function constant.
+Every name the function reads from outside itself has to be:
+
+- a **`const`** whose initializer is provable in turn — another `constantOf`
+  included, which is then evaluated once and its value reused;
+- a **function** declared in your source, whose body is provable in turn,
+  recursion included;
+- one of the **built-ins** whose answer depends only on their arguments —
+  `Math`, `Number`, `String`, `Array`, `Object`, `JSON`, `BigInt`, `Map`, `Set`,
+  the typed arrays and their like.
+
+Names are followed across imports between your own files. Anything else is
+refused, **at the call, as a compile error** naming the first name it could
+not prove:
+
+```text
+FULCRO4010: constantOf(…) cannot be evaluated at compile time: 'counter' is declared with let or var, so it can change. …
+```
+
+A `let`, a parameter of an enclosing function, a class, `Date`, `globalThis`,
+and every value declared only in a `.d.ts` — which is everything imported from
+another package, `@fulcro/types` included, since the compiler sees its types
+and never its source. The function runs in a context of its own, with no
+`Math.random` and a time limit of five seconds; a throw or a timeout is a
+compile error too ([FULCRO4012](./errors/FULCRO4xxx.md#fulcro4012),
+[FULCRO4013](./errors/FULCRO4xxx.md#fulcro4013)). None of these is ever left
+quietly to the runtime: a build that asked for a value to be computed already
+does not ship the computation instead.
+
+### What it can return
+
+What a literal can write: numbers — `NaN`, the infinities and `-0` included —
+strings, booleans, bigints, `null`, `undefined`, and arrays and plain objects
+of them. A function, a class instance, a `Map`, an array with holes, or an
+object reached twice is refused with
+[FULCRO4011](./errors/FULCRO4xxx.md#fulcro4011) — at compile time with the
+transformer, and at runtime by the same rule without it, so the two can never
+disagree.
+
 ## `is` and `as` — checking a value against a type
 
 TypeScript's `as` is an **assertion, not a check**. `payload as Order` compiles
@@ -456,6 +530,7 @@ still loads and still answers, but it answers from the value instead:
 | `nameOf<UserContract>()`   | not available                       | `'UserContract'`                          |
 | `typeOf(v).declared`       | `null`                              | the declared type and its source location |
 | `defaultOf<T>()`           | **throws**                          | the built value, emitted inline           |
+| `constantOf(() => …)`      | the function runs, at runtime       | its result, computed while compiling      |
 
 Two of those degrade **quietly**, which is worth knowing before you meet it: a
 minifier renames local variables, so `nameOf(() => email)` can report a mangled
@@ -521,6 +596,11 @@ step, are the two usual causes.
 
 **`typeOf(…).declared` is `null`, or `nameOf` reports a mangled name.** Same
 cause. These two degrade quietly, so check them whenever the build setup changes.
+
+**The build fails with FULCRO4010 on a `constantOf`.** The function reads
+something the transformer cannot prove constant, and the message names it.
+Under a bundler the refusals of a file arrive together, as
+[FULCRO5003](./errors/FULCRO5xxx.md#fulcro5003).
 
 **The paths from `typeOf` look wrong.** Set `projectRoot` explicitly; they are
 made relative to it, and the default is the compiler's working directory.

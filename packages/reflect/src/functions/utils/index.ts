@@ -8,6 +8,7 @@
  */
 export { alignOf } from '@/functions/utils/alignOf';
 export { as } from '@/functions/utils/as';
+export { type Constant, constantOf } from '@/functions/utils/constantOf';
 export { defaultOf } from '@/functions/utils/defaultOf';
 export { is, type TypeTest } from '@/functions/utils/is';
 export { keysOf } from '@/functions/utils/keysOf';
