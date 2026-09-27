@@ -1,5 +1,12 @@
 # @fulcro/functions
 
+## 1.2.0
+
+### Patch Changes
+
+- Updated dependencies [b9b4ce1]
+  - @fulcro/errors@1.1.0
+
 ## 1.1.0
 
 ### Patch Changes
