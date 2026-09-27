@@ -55,8 +55,8 @@ export const reflectCatalog = {
 		kind: Error,
 		message: (call: string) =>
 			`${call} reads the layout a type declares, which only exists at compile time. ` +
-			'Enable the transformer in the `plugins` entry of your tsconfig so the call is replaced by the number it describes. ' +
+			'Enable the transformer in the `plugins` entry of your tsconfig so the call is replaced by what it describes. ' +
 			'If it is enabled, the type argument was not a concrete type: a generic parameter has no layout until it is substituted, ' +
-			'and a union of layouts has no single one.',
+			'and a union of layouts has no single one. offsetOf also needs its field written as a string literal.',
 	},
 } as const satisfies RangeCatalog<'4'>;

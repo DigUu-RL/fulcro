@@ -101,7 +101,9 @@ não precisam do transformer.
 Error: FULCRO4009: sizeOf<T>() reads the layout a type declares, which only exists at compile time. …
 ```
 
-`sizeOf<T>()` ou `alignOf<T>()` chegou ao runtime sem resposta. Além de um
-transformer que não rodou, `T` pode não ser um tipo concreto: um parâmetro
-genérico não tem layout até ser substituído, e uma união de tipos com layouts
-diferentes não tem um layout único.
+`sizeOf<T>()`, `alignOf<T>()`, `offsetOf<T>(field)` ou `layoutOf<T>()`
+chegou ao runtime sem resposta. Além de um transformer que não rodou, `T` pode
+não ser um tipo concreto: um parâmetro genérico não tem layout até ser
+substituído, e uma união de tipos com layouts diferentes não tem um layout
+único. `offsetOf` também fica sem resposta quando o campo não é escrito como
+uma string literal, por exemplo uma variável guardando o nome.

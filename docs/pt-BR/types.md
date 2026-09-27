@@ -507,6 +507,20 @@ struct.
 O `layout` dá o offset, o tamanho e o alinhamento de cada campo em runtime. Um
 struct aninhado como campo fica inline, como um campo com o próprio tamanho.
 
+As mesmas respostas existem em tempo de compilação, pelo
+[`@fulcro/reflect`](../reflect.md#offsetoftfield-and-layoutoft), só a partir
+do tipo:
+
+```ts
+offsetOf<Struct<typeof Sample>>('flag'); // 10
+layoutOf<Struct<typeof Sample>>(); // igual a Sample.layout
+```
+
+O tipo de um valor de struct lista, no `'~layout'`, o tamanho e o alinhamento
+de cada campo, na ordem de declaração, mas não o offset — um offset depende
+dessa ordem, que um tipo não promete. O transformer posiciona os campos pela
+regra acima, e um teste garante que a resposta dele é a mesma do `layout`.
+
 ### Bytes
 
 Um valor pode ser escrito num `DataView` e lido de volta, que é como um struct

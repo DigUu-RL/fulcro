@@ -502,6 +502,20 @@ struct.
 `layout` gives the offset, size and alignment of every field at runtime. A
 struct nested as a field is laid out inline, as one field of its own size.
 
+The same answers exist at compile time, through
+[`@fulcro/reflect`](./reflect.md#offsetoftfield-and-layoutoft), from the type
+alone:
+
+```ts
+offsetOf<Struct<typeof Sample>>('flag'); // 10
+layoutOf<Struct<typeof Sample>>(); // equal to Sample.layout
+```
+
+The type of a struct value lists each field's size and alignment on its
+`'~layout'`, in declaration order, but not its offset — an offset depends on
+that order, which a type does not promise. The transformer places the fields
+by the rule above, and a test holds its answer to `layout`'s.
+
 ### Bytes
 
 A value can be written into a `DataView` and read back, which is how a struct

@@ -1,6 +1,6 @@
 {
 	"name": "@fulcro/transform-core",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"description": "Shared machinery behind the Fulcro compile time transformers. Installed for you; not meant to be depended on directly.",
 	"keywords": [
 		"typescript",
@@ -34,7 +34,7 @@
 		"prepublishOnly": "npm run build"
 	},
 	"dependencies": {
-		"@fulcro/errors": "^1.0.0",
+		"@fulcro/errors": "^1.0.1",
 		"unplugin": "^3.3.0"
 	},
 	"peerDependencies": {

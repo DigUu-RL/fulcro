@@ -1,9 +1,9 @@
 # Reflection
 
-Ten utilities that answer questions TypeScript erases on its way to
+Twelve utilities that answer questions TypeScript erases on its way to
 JavaScript: what a name was, what a type says, what is a valid empty value, how
-much memory a type declares, and whether the thing in front of you really is
-what it claims.
+much memory a type declares and where its fields sit, and whether the thing in
+front of you really is what it claims.
 
 ```sh
 npm install @fulcro/reflect
@@ -16,7 +16,9 @@ import {
 	defaultOf,
 	is,
 	keysOf,
+	layoutOf,
 	nameOf,
+	offsetOf,
 	pathOf,
 	pathsOf,
 	sizeOf,
@@ -328,6 +330,55 @@ Two calls compile and then throw at runtime, because there is no single number
 to emit: a **generic parameter** that has not been substituted yet —
 `sizeOf<T>()` inside a generic function — and a **union of different layouts**,
 such as `sizeOf<SignedInteger<8> | SignedInteger<16>>()`.
+
+### `offsetOf<T>(field)` and `layoutOf<T>()`
+
+Where a field of a struct sits, and the whole layout at once:
+
+```ts
+import { SinglePrecisionFloat, struct, type Struct } from '@fulcro/types';
+
+const Vector3 = struct('Vector3', {
+	x: SinglePrecisionFloat,
+	y: SinglePrecisionFloat,
+	z: SinglePrecisionFloat,
+});
+type Vector3 = Struct<typeof Vector3>;
+
+offsetOf<Vector3>('y'); // 4
+offsetOf<Vector3>('w'); // error: not a field of Vector3
+
+layoutOf<Vector3>();
+// {
+//   size: 12,
+//   alignment: 4,
+//   fields: {
+//     x: { offset: 0, size: 4, alignment: 4 },
+//     y: { offset: 4, size: 4, alignment: 4 },
+//     z: { offset: 8, size: 4, alignment: 4 },
+//   },
+// }
+```
+
+With the transformer, `offsetOf` is replaced by the number and `layoutOf` by a
+frozen object literal, equal to the struct descriptor's own `Vector3.layout`,
+with the fields in the order they were declared. A method, `'~layout'` or any
+other name that is not a field is a **type error**, and so is `offsetOf` on a
+type without fields. `layoutOf` on a numeric type gives its size and alignment
+and `fields: {}`.
+
+The offsets are not written in the type; only each field's size and alignment
+are. The transformer places the fields itself, by the rule
+[`struct`](./types.md#where-the-fields-go) places them by at runtime —
+largest alignment first, declaration order among equals — reading the order
+from the type, where the compiler keeps it. That holds for a struct imported
+from a built package as well: its declaration file still lists the fields in
+the order they were written.
+
+`offsetOf` needs the field as a **string literal**: a name held in a variable
+is not known until the code runs, so the call is left to throw, as it is for a
+generic parameter. A union of structs whose fields are placed differently has
+no single answer either, and throws.
 
 ## `is` and `as` — checking a value against a type
 
