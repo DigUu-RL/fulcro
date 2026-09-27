@@ -4,8 +4,9 @@
 
 Numbers with a declared range and a declared layout: fixed-width integers, three
 binary floating point formats, an integer of any size, and a decimal with the
-semantics of IEEE 754 decimal128 — and [structs](#structs), value types built
-from them.
+semantics of IEEE 754 decimal128 — [structs](#structs), value types built from
+them — and the [mathematics](#mathematics) built on all of them: matrices,
+vectors, fractions, complex numbers and quaternions.
 
 ```sh
 npm install @fulcro/types
@@ -538,3 +539,144 @@ raised before any byte is written.
 
 `read` makes a new object each time: storing a value costs no object, holding
 one still does.
+
+## Mathematics
+
+```ts
+import {
+	ComplexNumber,
+	Fraction,
+	Matrix,
+	Quaternion,
+	Vector,
+} from '@fulcro/types';
+```
+
+Five types built over the numeric ones, each declared the same way — a function
+taking the type its components are made of — and each doing its arithmetic
+through that type's own descriptor. A matrix of `SignedInteger(8)` throws where
+an element would leave its range; one of `SinglePrecisionFloat` rounds each
+product and sum as that type does; one of `Decimal` is exact where a double is
+not:
+
+```ts
+const Money = Matrix(Decimal, 1, 2);
+
+Money.add(Money.from([[0.1, 0.2]]), Money.from([[0.2, 0.1]])).map(String);
+// ['0.3', '0.3']
+```
+
+The component type can be any numeric type of this package — `BigInteger`
+and `Decimal` included — or a `Fraction`, a `ComplexNumber` or a `Quaternion`,
+so a matrix of complex numbers is a matrix like any other. When the component
+type declares a layout, so does the type built on it, its components end to
+end; it can then be the field of a [struct](#structs), and
+[`sizeOf`](./reflect.md#sizeoft-and-alignoft) reads it from the type.
+
+### Matrices and vectors
+
+```ts
+const Transform = Matrix(SinglePrecisionFloat, 3, 4);
+const Point = Vector(SinglePrecisionFloat, 4, 1);
+
+const shift = Transform.from([
+	[1, 0, 0, 5],
+	[0, 1, 0, 0],
+	[0, 0, 1, 0],
+]);
+const point = Point.from([1, 2, 3, 1]);
+
+Transform.multiply(shift, point); // [6, 2, 3] — a Matrix<SinglePrecisionFloat, 3, 1>
+```
+
+The dimensions are type parameters, never part of a name: there is no
+`Matrix3x4` and no `Vector3D`. A vector is a matrix with one row or one column,
+and `Vector<T, 4, 1>` is the same type as `Matrix<T, 4, 1>`, so a vector goes
+wherever the matrix of its shape goes.
+
+Shapes are checked by the compiler, with no plugin:
+
+```ts
+Transform.multiply(shift, shift);
+// Cannot multiply Matrix<T, 3, 4> by Matrix<T, 3, 4>. Expected a matrix with 4 rows.
+
+Transform.identity(); // error: only a square matrix has one
+Vector(SinglePrecisionFloat, 2, 3); // error: a vector has one row or one column
+```
+
+The same checks run at runtime for a caller that got past the compiler — with
+`as never`, say — and throw the same sentences
+([FULCRO6037](./errors/FULCRO6xxx.md#fulcro6037) and its neighbours).
+
+A value is a frozen array of its elements, row after row, so it indexes,
+spreads and serialises as the numbers it holds; `rows` and `columns` sit on it
+without being listed:
+
+```ts
+shift[3]; // 5 — row 0, column 3
+[shift.rows, shift.columns]; // [3, 4]
+JSON.stringify(point); // '[1,2,3,1]'
+```
+
+| Operation               | What it does                                       |
+| ----------------------- | -------------------------------------------------- |
+| `from(rows)`            | makes a matrix from its rows; a vector from a list |
+| `is`, `equals`          | recognise and compare, element by element          |
+| `add`, `subtract`       | element by element, same shape                     |
+| `negate`, `scale`       | every element, or every element times a value      |
+| `multiply(left, right)` | the matrix product, R × C by C × K into R × K      |
+| `transpose(value)`      | rows and columns swapped                           |
+| `identity()`            | a square matrix's identity, built once and shared  |
+| `dot(left, right)`      | a vector's dot product, of the element type        |
+
+A product of an R × C matrix by a C × K one asks the element type for exactly
+R·C·K multiplications and R·(C−1)·K additions — no zero converted to start a
+sum, nothing computed twice — and the performance suite counts them.
+
+### Fractions
+
+```ts
+const Ratio = Fraction(SignedInteger(32));
+const third = Ratio.from({ numerator: 1, denominator: 3 });
+
+Ratio.add(third, third); // { numerator: 2, denominator: 3 }
+Ratio.from({ numerator: 6, denominator: -4 }); // { numerator: -3, denominator: 2 }
+Ratio.lessThan(third, Ratio.from(0)); // false
+```
+
+An exact rational over an integer type: `SignedInteger(n)`,
+`UnsignedInteger(n)` or `BigInteger`. Always in lowest terms with a positive
+denominator, so two fractions are equal exactly when their parts are. A
+fraction is a full numeric type — the same `add`, `divide`, `power`,
+`lessThan` and the rest as the types above — so it can be the element of a
+matrix too.
+
+Every operation is exact; what can fail is the integer type underneath. Common
+factors are cancelled before multiplying, so an intermediate stays as small as
+the result allows, but one outside the integer's range still throws its
+`RangeError`. Over `BigInteger` nothing overflows. `power` takes a whole
+exponent, since a fractional power of a rational is rarely rational.
+
+### Complex numbers and quaternions
+
+```ts
+const Complex = ComplexNumber(DoublePrecisionFloat);
+const i = Complex.from({ real: 0, imaginary: 1 });
+
+Complex.multiply(i, i); // { real: -1, imaginary: 0 }
+Complex.from(2); // { real: 2, imaginary: 0 }
+
+const Rotation = Quaternion(DoublePrecisionFloat);
+const qi = Rotation.from({ w: 0, x: 1, y: 0, z: 0 });
+const qj = Rotation.from({ w: 0, x: 0, y: 1, z: 0 });
+
+Rotation.multiply(qi, qj); // { w: 0, x: 0, y: 0, z: 1 } — k
+Rotation.multiply(qj, qi); // { w: 0, x: 0, y: 0, z: -1 } — the order matters
+```
+
+The two share everything but their product: `add`, `subtract`, `negate`,
+`scale`, `conjugate` — which negates every imaginary part — and `divide`, which
+multiplies by the divisor's conjugate over its squared norm. There is no
+`lessThan`: neither has an order that agrees with its arithmetic. Dividing by
+zero does what the component type's division does — `NaN` for a float, an
+error for an integer.

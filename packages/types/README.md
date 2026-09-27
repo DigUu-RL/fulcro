@@ -2,8 +2,9 @@
 
 Numeric types with a declared range and layout: fixed-width integers, half,
 single and double precision floats, an integer of any size, and a `Decimal` with
-the semantics of IEEE 754 decimal128. Nothing to configure: every operation is
-a typed method.
+the semantics of IEEE 754 decimal128 — structs built from them, and matrices,
+vectors, fractions, complex numbers and quaternions built over them. Nothing to
+configure: every operation is a typed method.
 
 ```sh
 npm install @fulcro/types
@@ -61,8 +62,26 @@ Vector3.layout.size; // 12, and sizeOf<Vector3>() at compile time
 Vector3.write(view, 0, Vector3.from({ x: 0, y: 1, z: 0 }));
 ```
 
+## Mathematics
+
+`Matrix`, `Vector`, `Fraction`, `ComplexNumber` and `Quaternion`, each built
+over any type above and doing its arithmetic through that type's descriptor.
+Dimensions are type parameters, and a product whose shapes do not meet does not
+compile:
+
+```ts
+import { Matrix, SinglePrecisionFloat, Vector } from '@fulcro/types';
+
+const Transform = Matrix(SinglePrecisionFloat, 3, 4);
+const Point = Vector(SinglePrecisionFloat, 4, 1);
+
+Transform.multiply(shift, point); // Matrix<SinglePrecisionFloat, 3, 1>
+Transform.multiply(shift, shift);
+// Cannot multiply Matrix<T, 3, 4> by Matrix<T, 3, 4>. Expected a matrix with 4 rows.
+```
+
 ---
 
 **Full guide:** [docs/types.md](../../docs/types.md) — ranges, rounding, the
-special values, the layout table and structs.
+special values, the layout table, structs and the mathematics types.
 🇧🇷 [Leia em português](../../docs/pt-BR/types.md).

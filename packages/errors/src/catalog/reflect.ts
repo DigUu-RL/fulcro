@@ -59,4 +59,32 @@ export const reflectCatalog = {
 			'If it is enabled, the type argument was not a concrete type: a generic parameter has no layout until it is substituted, ' +
 			'and a union of layouts has no single one. offsetOf also needs its field written as a string literal.',
 	},
+	FULCRO4010: {
+		kind: Error,
+		message: (call: string, reason: string) =>
+			`${call} cannot be evaluated at compile time: ${reason}. ` +
+			'Everything the function reads has to be a const, a function or a built-in the compiler can see the source of; ' +
+			'compute the value at runtime instead, without constantOf, if it cannot be.',
+	},
+	FULCRO4011: {
+		kind: TypeError,
+		message: (call: string, received: string) =>
+			`${call} produced ${received}, which cannot be written as a literal. ` +
+			'A constant is a number, a string, a boolean, a bigint, null or undefined, or an array or a plain object of them, each reached once.',
+	},
+	FULCRO4012: {
+		kind: Error,
+		message: (call: string, thrown: string) =>
+			`${call} threw while it was evaluated at compile time: ${thrown}`,
+	},
+	FULCRO4013: {
+		kind: Error,
+		message: (call: string, milliseconds: number) =>
+			`${call} did not finish within ${milliseconds} ms at compile time.`,
+	},
+	FULCRO4014: {
+		kind: TypeError,
+		message: (received: string) =>
+			`constantOf: expected a function, received ${received}.`,
+	},
 } as const satisfies RangeCatalog<'4'>;

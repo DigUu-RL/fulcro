@@ -10,6 +10,7 @@ export type { TransformerOptions } from '@fulcro/transform-core';
 
 import { alignOfRewriter } from '@/transformer/alignOf';
 import { asRewriter } from '@/transformer/as';
+import { constantOfRewriter } from '@/transformer/constantOf';
 import { defaultOfRewriter } from '@/transformer/defaultOf';
 import { isRewriter } from '@/transformer/is';
 import { keysOfRewriter } from '@/transformer/keysOf';
@@ -72,6 +73,7 @@ export const REWRITERS: readonly CallRewriter[] = [
 	alignOfRewriter,
 	offsetOfRewriter,
 	layoutOfRewriter,
+	constantOfRewriter,
 ];
 
 /**

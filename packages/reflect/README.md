@@ -181,6 +181,24 @@ it, and `is` does not carry one at all.
 Index signatures and unresolved generics are refused, loudly. Write the test
 yourself and pass it in as a second argument for those.
 
+## `constantOf`
+
+A value computed once, while the program compiles, and written into the output
+as a literal:
+
+```ts
+const SQUARES = constantOf(() =>
+	Array.from({ length: 256 }, (_, index) => index * index),
+);
+// emitted: const SQUARES = Object.freeze([0, 1, 4, 9, …]);
+```
+
+The transformer runs the function only when it can prove it constant — every
+name it reads is a `const`, a function or a deterministic built-in in your own
+source — and fails the build at the call otherwise, naming what it could not
+prove. Without the transformer the function runs at runtime, with the same
+result.
+
 ## With and without the transformer
 
 |                               | Without                             | With the transformer                                          |
@@ -192,6 +210,7 @@ yourself and pass it in as a second argument for those.
 | `sizeOf<T>()`, `alignOf<T>()` | throws                              | the number of bytes the type declares, emitted inline         |
 | `offsetOf<T>('field')`        | throws                              | where the struct's field sits, in bytes, emitted inline       |
 | `layoutOf<T>()`               | throws                              | the whole layout, fields placed, as a frozen literal          |
+| `constantOf(() => …)`         | the function runs, at runtime       | its result, computed while compiling, as a frozen literal     |
 
 Wiring the transformer is a build time concern only; this package stays a plain
 runtime dependency either way, and nothing extra is installed to get it.
@@ -200,3 +219,4 @@ runtime dependency either way, and nothing extra is installed to get it.
 
 **Full guide:** [docs/reflect.md](../../docs/reflect.md) — scenarios, worked
 examples and the failure modes worth knowing before you meet them.
+🇧🇷 [Leia em português](../../docs/pt-BR/reflect.md).

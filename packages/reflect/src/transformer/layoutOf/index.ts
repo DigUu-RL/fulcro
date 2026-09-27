@@ -1,17 +1,10 @@
-import typescript from 'typescript';
-
 import {
 	type CallRewriter,
 	utilityModuleSegment,
 } from '@fulcro/transform-core';
 
 import { type ReadLayout, readLayout } from '@/transformer/layout';
-
-/**
- * A field name that can be written bare in an object literal. Anything else is
- * written quoted, which means the same thing and is only less pleasant to read.
- */
-const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
+import { frozenObject } from '@/transformer/literal';
 
 /**
  * Rewriter of `layoutOf`.
@@ -40,41 +33,9 @@ export const layoutOfRewriter: CallRewriter = {
 		if (layout === null) return null;
 
 		const { factory } = context;
-
-		/**
-		 * Emits `Object.freeze({ … })` over some number members.
-		 *
-		 * @param members Name and expression of each member, in order.
-		 * @returns The expression.
-		 */
 		const frozen = (
-			members: readonly (readonly [string, typescript.Expression])[],
-		): typescript.Expression =>
-			factory.createCallExpression(
-				factory.createPropertyAccessExpression(
-					factory.createIdentifier('Object'),
-					'freeze',
-				),
-				undefined,
-				[
-					factory.createObjectLiteralExpression(
-						members.map(([name, value]) =>
-							factory.createPropertyAssignment(
-								// `__proto__: …` in a literal sets the prototype rather than
-								// a property; only the computed form makes it a field.
-								name === '__proto__'
-									? factory.createComputedPropertyName(
-											factory.createStringLiteral(name),
-										)
-									: IDENTIFIER.test(name)
-										? factory.createIdentifier(name)
-										: factory.createStringLiteral(name),
-								value,
-							),
-						),
-					),
-				],
-			);
+			members: Parameters<typeof frozenObject>[1],
+		): ReturnType<typeof frozenObject> => frozenObject(factory, members);
 
 		return frozen([
 			['size', factory.createNumericLiteral(layout.size)],

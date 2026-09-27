@@ -104,3 +104,63 @@ be one concrete type: a generic parameter has no layout until it is
 substituted, and a union of types with different layouts has no single one.
 `offsetOf` is also left unanswered when its field is not written as a string
 literal, such as a variable holding the name.
+
+## FULCRO4010
+
+```text
+FULCRO4010: constantOf(…) cannot be evaluated at compile time: 'counter' is declared with let or var, so it can change. …
+```
+
+A compile error, at the call. The transformer evaluates `constantOf` only when
+it can prove the function constant: every name it reads from outside itself is
+a `const`, a function, or one of the built-ins whose answer depends on nothing
+but their arguments. The message names the first name that is not, and why:
+a `let`, a parameter of an enclosing function, a class, `Date`, or a value
+declared only in a `.d.ts` — which includes everything imported from another
+package, whose source the compiler never sees.
+
+Make what the function reads a `const` in your own source, or compute the value
+at runtime without `constantOf`.
+
+## FULCRO4011
+
+```text
+TypeError: FULCRO4011: constantOf(…) produced an instance of Map, which cannot be written as a literal. …
+```
+
+The function given to `constantOf` returned something a literal cannot write: a
+function, a symbol, a class instance, an array with holes or extra properties,
+an object with a getter or symbol keys, or an object reached twice — shared, or
+a cycle. Raised at compile time as a compile error, and at runtime by the same
+rule, so a call answers alike with and without the transformer.
+
+Return plain data: numbers, strings, booleans, bigints, `null`, `undefined`,
+and arrays and plain objects of them.
+
+## FULCRO4012
+
+```text
+FULCRO4012: constantOf(…) threw while it was evaluated at compile time: refused on purpose
+```
+
+A compile error: the function given to `constantOf` threw while the
+transformer ran it. The message after the colon is what it threw. `Math.random`
+is removed from the context it runs in, so calling it lands here.
+
+## FULCRO4013
+
+```text
+FULCRO4013: constantOf(…) did not finish within 5000 ms at compile time.
+```
+
+A compile error: the function given to `constantOf` ran past the limit and was
+stopped, rather than leaving the build hanging.
+
+## FULCRO4014
+
+```text
+TypeError: FULCRO4014: constantOf: expected a function, received number.
+```
+
+`constantOf` was given something other than a function, at runtime. The
+transformer refuses the same call at compile time with FULCRO4010.
