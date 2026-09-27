@@ -525,6 +525,148 @@ describe('the fixtures behind a path-scoped rule', () => {
 	});
 });
 
+/**
+ * Writes a subagent.
+ *
+ * @param fixture The tree.
+ * @param file The file name, without the extension.
+ * @param frontmatter The lines of the block, or `null` for none at all.
+ * @param body What follows it.
+ */
+const agent = (
+	fixture: Tree,
+	file: string,
+	frontmatter: string | null,
+	body = 'You review one change and report.\n',
+): void => {
+	fixture.write(
+		`.claude/agents/${file}.md`,
+		`${frontmatter === null ? '' : `---\n${frontmatter}\n---\n\n`}${body}`,
+	);
+};
+
+describe('the subagents', () => {
+	const reviewer = [
+		'name: architecture-reviewer',
+		'description: Reviews the architecture of one change.',
+		'tools: Read, Grep, Glob, Bash',
+		'disallowedTools: Write, Edit, NotebookEdit',
+	].join('\n');
+
+	it('accepts a read-only agent named for its file', () => {
+		const fixture = ruled();
+
+		agent(fixture, 'architecture-reviewer', reviewer);
+
+		expect(rules(fixture.root)).toEqual([]);
+		expect(rules(fixture.root, 'warning')).toEqual([]);
+	});
+
+	it('accepts the tools written as a list', () => {
+		const fixture = ruled();
+
+		agent(
+			fixture,
+			'architecture-reviewer',
+			[
+				'name: architecture-reviewer',
+				'description: Reviews the architecture of one change.',
+				'tools:',
+				'  - Read',
+				'  - Grep',
+			].join('\n'),
+		);
+
+		expect(rules(fixture.root)).toEqual([]);
+	});
+
+	it('accepts a tree with no agents at all', () => {
+		expect(rules(ruled().root)).toEqual([]);
+	});
+
+	it('reports an agent that leaves its tools out and so inherits all of them', () => {
+		const fixture = ruled();
+
+		agent(
+			fixture,
+			'architecture-reviewer',
+			'name: architecture-reviewer\ndescription: Reviews one change.',
+		);
+
+		expect(rules(fixture.root)).toEqual(['agent-tools-undeclared']);
+	});
+
+	it('reports each writing tool an agent is granted', () => {
+		const fixture = ruled();
+
+		agent(
+			fixture,
+			'architecture-reviewer',
+			[
+				'name: architecture-reviewer',
+				'description: Reviews one change.',
+				'tools: [Read, Edit, Write]',
+			].join('\n'),
+		);
+
+		expect(rules(fixture.root)).toEqual([
+			'agent-tools-writing',
+			'agent-tools-writing',
+		]);
+	});
+
+	it('reports a name that is not the file name, and a missing description', () => {
+		const fixture = ruled();
+
+		agent(fixture, 'architecture-reviewer', 'name: architect\ntools: Read');
+
+		expect(rules(fixture.root)).toEqual(['agent-name', 'agent-description']);
+	});
+
+	it('reports a key Claude Code does not read', () => {
+		const fixture = ruled();
+
+		agent(fixture, 'architecture-reviewer', `${reviewer}\nallowed-tools: Read`);
+
+		expect(rules(fixture.root)).toEqual(['agent-frontmatter-unknown-key']);
+	});
+
+	it('reports a block YAML would discard, and a file with no block', () => {
+		const broken = ruled();
+
+		agent(broken, 'architecture-reviewer', `${reviewer}\ncolor: 'blue`);
+
+		expect(rules(broken.root)).toEqual(['agent-frontmatter-unreadable']);
+
+		const bare = ruled();
+
+		agent(bare, 'architecture-reviewer', null);
+
+		expect(rules(bare.root)).toEqual(['agent-frontmatter-missing']);
+	});
+
+	it('reports an agent with no prompt below its block', () => {
+		const fixture = ruled();
+
+		agent(fixture, 'architecture-reviewer', reviewer, '');
+
+		expect(rules(fixture.root)).toEqual(['agent-body-empty']);
+	});
+
+	it('reports a file its prompt names that is not there', () => {
+		const fixture = ruled();
+
+		agent(
+			fixture,
+			'architecture-reviewer',
+			reviewer,
+			'Read `.claude/rules/general.md` first.\n',
+		);
+
+		expect(rules(fixture.root)).toEqual(['reference-missing']);
+	});
+});
+
 describe('this repository', () => {
 	it('passes its own validator, warnings included', () => {
 		expect(validateConfig()).toEqual([]);

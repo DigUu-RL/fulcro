@@ -156,6 +156,8 @@ editing the page to agree.
 - `.claude/hooks/` — the invariants a session cannot talk its way out of,
   enforced by Claude Code itself; `tests/hooks/` is their suite.
 - `.claude/skills/` — workflows.
+- `.claude/agents/` — subagents a session delegates isolated, read-only
+  review to; `architecture-reviewer` reads a change one level above the diff.
 - `tools/claude/` — the validators of everything above, the eval suites in
   `tools/claude/skill-evals/` and the rule fixtures in
   `tools/claude/rule-fixtures/`; `tests/claude/` is their suite. They run on a

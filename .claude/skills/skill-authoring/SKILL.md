@@ -32,13 +32,14 @@ instead — §1 is where that is decided, and deciding it is a complete answer.
 
 ## 1. Is it a skill?
 
-Three mechanisms live under `.claude/`, and they are not interchangeable.
+Four mechanisms live under `.claude/`, and they are not interchangeable.
 
-| Mechanism | Shape                        | Holds when                          |
-| --------- | ---------------------------- | ----------------------------------- |
-| Rule      | An invariant and its reason  | The model reads it and agrees       |
-| Skill     | A procedure, on request      | The model invokes it and follows it |
-| Hook      | Code, before or after a tool | Always — the model has no say       |
+| Mechanism | Shape                        | Holds when                                     |
+| --------- | ---------------------------- | ---------------------------------------------- |
+| Rule      | An invariant and its reason  | The model reads it and agrees                  |
+| Skill     | A procedure, on request      | The model invokes it and follows it            |
+| Hook      | Code, before or after a tool | Always — the model has no say                  |
+| Subagent  | A role, with its own tools   | A session delegates to it and reads the report |
 
 Ask in this order:
 
@@ -50,6 +51,14 @@ Ask in this order:
   `.claude/CLAUDE.md` if it fits in three.
 - **Is it a sequence of steps someone performs on request?** Then it is a
   skill.
+- **Is it expert reading another workflow hands off, whose trace the caller
+  should not carry?** Then it is a subagent, in `.claude/agents/`. The
+  difference from a skill with `context: fork` is who starts it: a forked
+  skill is invoked, a subagent is delegated to — by the session, or by a skill
+  that is not itself forked, since a fork cannot delegate further.
+  `.claude/agents/architecture-reviewer.md` is the model, and
+  `npm run validate:claude` refuses an agent that leaves `tools` out or grants
+  a writing tool.
 
 A rule does not get turned into a skill so it can be invoked, and a procedure
 does not get pasted into `CLAUDE.md` so it is always loaded. `CLAUDE.md` is
