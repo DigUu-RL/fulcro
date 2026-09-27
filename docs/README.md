@@ -30,16 +30,16 @@ collection.
 
 ## Guides
 
-| Guide                                        | Covers                                                           | Package                     |
-| -------------------------------------------- | ---------------------------------------------------------------- | --------------------------- |
-| [Sequences](./sequences.md)                  | Querying arrays, sets, maps and generators; validating by type   | `@fulcro/collections`       |
-| [Async sequences](./async-sequences.md)      | The same, over data that arrives over time                       | `@fulcro/collections/async` |
-| [Bounded concurrency](./concurrency.md)      | Running several elements at once, for work that waits            | `@fulcro/collections/async` |
-| [Parallelism with workers](./parallelism.md) | CPU-bound work across threads, on browser and Node               | `@fulcro/parallel`          |
-| [Reflection](./reflect.md)                   | `nameOf`, `typeOf`, `defaultOf`, `is`, `as`, and the transformer | `@fulcro/reflect`           |
-| [Control flow as values](./functions.md)     | `switchFor` and `tryCatch`                                       | `@fulcro/functions`         |
-| [Numeric types](./types.md)                  | Fixed-width integers, floats, `BigInteger`, `Decimal`, structs   | `@fulcro/types`             |
-| [Error codes](./errors.md)                   | What each `FULCRO` code means, and what to write instead         | every package               |
+| Guide                                        | Covers                                                                                                                     | Package                     |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| [Sequences](./sequences.md)                  | Querying arrays, sets, maps and generators; validating by type                                                             | `@fulcro/collections`       |
+| [Async sequences](./async-sequences.md)      | The same, over data that arrives over time                                                                                 | `@fulcro/collections/async` |
+| [Bounded concurrency](./concurrency.md)      | Running several elements at once, for work that waits                                                                      | `@fulcro/collections/async` |
+| [Parallelism with workers](./parallelism.md) | CPU-bound work across threads, on browser and Node                                                                         | `@fulcro/parallel`          |
+| [Reflection](./reflect.md)                   | `nameOf`, `typeOf`, `defaultOf`, `is`, `as`, `constantOf`, and the transformer                                             | `@fulcro/reflect`           |
+| [Control flow as values](./functions.md)     | `switchFor` and `tryCatch`                                                                                                 | `@fulcro/functions`         |
+| [Numeric types](./types.md)                  | Fixed-width integers, floats, `BigInteger`, `Decimal`, structs, matrices, vectors, fractions, complex numbers, quaternions | `@fulcro/types`             |
+| [Error codes](./errors.md)                   | What each `FULCRO` code means, and what to write instead                                                                   | every package               |
 
 ## Which tool for which problem
 
@@ -61,6 +61,8 @@ collection.
 | A failure you would rather have as a value         | [`tryCatch`](./functions.md)            |
 | Money, or any number that is decimal by nature     | [`Decimal`](./types.md)                 |
 | An integer that must stay within 8, 16 or 32 bits  | [`SignedInteger`](./types.md)           |
+| A matrix product whose shapes must match           | [`Matrix`](./types.md#mathematics)      |
+| A lookup table computed once, not on every run     | [`constantOf`](./reflect.md)            |
 
 **`is` or `as`?** Both check the same way. `is` is a type guard, for when a
 failure should branch the program; `as` returns the value or throws, for when it

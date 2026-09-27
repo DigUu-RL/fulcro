@@ -30,6 +30,19 @@ export interface RewriteContext {
 	 * inside whatever it keeps.
 	 */
 	readonly visit: (node: typescript.Node) => typescript.Node;
+
+	/**
+	 * Refuses a call at compile time, as an error located at the node.
+	 *
+	 * For a call the rewriter owns but cannot answer, where leaving it to the
+	 * runtime would ship a wrong or silently weaker answer — the case
+	 * `transformers.md` calls failing loudly. The rewriter still returns what it
+	 * returns; the build is what fails.
+	 *
+	 * @param node Node the error points at, from the source being compiled.
+	 * @param message What went wrong, starting with its `FULCRO` code.
+	 */
+	readonly report: (node: typescript.Node, message: string) => void;
 }
 
 /**

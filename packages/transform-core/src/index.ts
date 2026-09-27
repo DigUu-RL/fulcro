@@ -38,6 +38,7 @@ export {
 } from '@/structural';
 export {
 	createTransformer,
+	type TransformerExtras,
 	type TransformerFactory,
 	type TransformerOptions,
 } from '@/transformer';

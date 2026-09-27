@@ -2,14 +2,14 @@
 
 🇺🇸 English: [Read this documentation in English](../../errors/FULCRO4xxx.md)
 
-Os erros de [reflexão](../../reflect.md). Voltar para
+Os erros de [reflexão](../reflect.md). Voltar para
 [todos os códigos](../errors.md).
 
 A maioria destes tem uma causa em comum: um utilitário que responde a partir de
 um tipo chegou ao runtime sem que o transformer tivesse respondido antes. Um
 tipo só existe em tempo de compilação, então em runtime não sobra nada para
 ler, e o utilitário recusa em vez de adivinhar. A correção é a mesma para todos
-— configurar o transformer, como [Reflexão](../../reflect.md) descreve — e cada
+— configurar o transformer, como [Reflexão](../reflect.md) descreve — e cada
 seção abaixo diz o que mais pode causá-lo.
 
 ## FULCRO4001
@@ -107,3 +107,64 @@ não ser um tipo concreto: um parâmetro genérico não tem layout até ser
 substituído, e uma união de tipos com layouts diferentes não tem um layout
 único. `offsetOf` também fica sem resposta quando o campo não é escrito como
 uma string literal, por exemplo uma variável guardando o nome.
+
+## FULCRO4010
+
+```text
+FULCRO4010: constantOf(…) cannot be evaluated at compile time: 'counter' is declared with let or var, so it can change. …
+```
+
+Um erro de compilação, na chamada. O transformer só avalia `constantOf` quando
+consegue provar que a função é constante: todo nome que ela lê de fora de si é
+um `const`, uma função, ou um dos built-ins cuja resposta depende só dos
+argumentos. A mensagem diz o primeiro nome que não é, e por quê: um `let`, um
+parâmetro de uma função que a envolve, uma classe, `Date`, ou um valor
+declarado só num `.d.ts` — o que inclui tudo o que vem de outro pacote, cujo
+código-fonte o compilador nunca vê.
+
+Faça do que a função lê um `const` no seu próprio código, ou calcule o valor em
+runtime, sem `constantOf`.
+
+## FULCRO4011
+
+```text
+TypeError: FULCRO4011: constantOf(…) produced an instance of Map, which cannot be written as a literal. …
+```
+
+A função passada a `constantOf` devolveu algo que um literal não consegue
+escrever: uma função, um símbolo, uma instância de classe, um array com buracos
+ou com propriedades a mais, um objeto com getter ou com chaves símbolo, ou um
+objeto alcançado duas vezes — compartilhado, ou um ciclo. Lançado em tempo de
+compilação como erro de compilação, e em runtime pela mesma regra, para que uma
+chamada responda igual com e sem o transformer.
+
+Devolva dados simples: números, strings, booleanos, bigints, `null`,
+`undefined`, e arrays e objetos simples deles.
+
+## FULCRO4012
+
+```text
+FULCRO4012: constantOf(…) threw while it was evaluated at compile time: refused on purpose
+```
+
+Um erro de compilação: a função passada a `constantOf` lançou enquanto o
+transformer a executava. A mensagem depois dos dois-pontos é o que ela lançou.
+`Math.random` é removido do contexto em que ela roda, então chamá-lo cai aqui.
+
+## FULCRO4013
+
+```text
+FULCRO4013: constantOf(…) did not finish within 5000 ms at compile time.
+```
+
+Um erro de compilação: a função passada a `constantOf` passou do limite e foi
+interrompida, em vez de deixar o build travado.
+
+## FULCRO4014
+
+```text
+TypeError: FULCRO4014: constantOf: expected a function, received number.
+```
+
+`constantOf` recebeu algo que não é uma função, em runtime. O transformer
+recusa a mesma chamada em tempo de compilação com FULCRO4010.

@@ -4,8 +4,9 @@
 
 Números com faixa e layout declarados: inteiros de largura fixa, três formatos
 de ponto flutuante binário, um inteiro de qualquer tamanho e um decimal com a
-semântica do decimal128 da IEEE 754 — e [structs](#structs), tipos de valor
-construídos a partir deles.
+semântica do decimal128 da IEEE 754 — [structs](#structs), tipos de valor
+construídos a partir deles — e a [matemática](#matemática) construída sobre
+todos eles: matrizes, vetores, frações, números complexos e quatérnios.
 
 ```sh
 npm install @fulcro/types
@@ -390,7 +391,7 @@ alignOf<Decimal>(); // 16
 
 O layout mora no tipo e nunca num valor: um import só de tipo basta para o
 `sizeOf`, e nada deste pacote é carregado para respondê-lo. Veja
-[Reflection](../reflect.md#sizeoft-and-alignoft) para como os dois se
+[Reflexão](./reflect.md#sizeoft-e-alignoft) para como os dois se
 encontram.
 
 ## Structs
@@ -508,7 +509,7 @@ O `layout` dá o offset, o tamanho e o alinhamento de cada campo em runtime. Um
 struct aninhado como campo fica inline, como um campo com o próprio tamanho.
 
 As mesmas respostas existem em tempo de compilação, pelo
-[`@fulcro/reflect`](../reflect.md#offsetoftfield-and-layoutoft), só a partir
+[`@fulcro/reflect`](./reflect.md#offsetoftfield-e-layoutoft), só a partir
 do tipo:
 
 ```ts
@@ -543,3 +544,147 @@ lançado antes de qualquer byte ser escrito.
 
 O `read` cria um objeto novo a cada chamada: guardar um valor não custa um
 objeto, segurar um ainda custa.
+
+## Matemática
+
+```ts
+import {
+	ComplexNumber,
+	Fraction,
+	Matrix,
+	Quaternion,
+	Vector,
+} from '@fulcro/types';
+```
+
+Cinco tipos construídos sobre os numéricos, cada um declarado do mesmo jeito —
+uma função que recebe o tipo de que seus componentes são feitos — e cada um
+fazendo a aritmética pelo descritor desse tipo. Uma matriz de
+`SignedInteger(8)` lança onde um elemento sairia da faixa; uma de
+`SinglePrecisionFloat` arredonda cada produto e cada soma como esse tipo
+arredonda; uma de `Decimal` é exata onde um double não é:
+
+```ts
+const Money = Matrix(Decimal, 1, 2);
+
+Money.add(Money.from([[0.1, 0.2]]), Money.from([[0.2, 0.1]])).map(String);
+// ['0.3', '0.3']
+```
+
+O tipo dos componentes pode ser qualquer tipo numérico deste pacote —
+`BigInteger` e `Decimal` inclusive — ou uma `Fraction`, um `ComplexNumber` ou
+um `Quaternion`, então uma matriz de números complexos é uma matriz como
+qualquer outra. Quando o tipo dos componentes declara um layout, o tipo
+construído sobre ele também declara, com os componentes em sequência; ele pode
+então ser campo de uma [struct](#structs), e o
+[`sizeOf`](./reflect.md#sizeoft-e-alignoft) o lê do tipo.
+
+### Matrizes e vetores
+
+```ts
+const Transform = Matrix(SinglePrecisionFloat, 3, 4);
+const Point = Vector(SinglePrecisionFloat, 4, 1);
+
+const shift = Transform.from([
+	[1, 0, 0, 5],
+	[0, 1, 0, 0],
+	[0, 0, 1, 0],
+]);
+const point = Point.from([1, 2, 3, 1]);
+
+Transform.multiply(shift, point); // [6, 2, 3] — uma Matrix<SinglePrecisionFloat, 3, 1>
+```
+
+As dimensões são parâmetros de tipo, nunca parte de um nome: não existe
+`Matrix3x4` nem `Vector3D`. Um vetor é uma matriz com uma linha ou uma coluna,
+e `Vector<T, 4, 1>` é o mesmo tipo que `Matrix<T, 4, 1>`, então um vetor vai
+aonde a matriz da sua forma vai.
+
+As formas são checadas pelo compilador, sem plugin nenhum:
+
+```ts
+Transform.multiply(shift, shift);
+// Cannot multiply Matrix<T, 3, 4> by Matrix<T, 3, 4>. Expected a matrix with 4 rows.
+
+Transform.identity(); // erro: só uma matriz quadrada tem identidade
+Vector(SinglePrecisionFloat, 2, 3); // erro: um vetor tem uma linha ou uma coluna
+```
+
+As mesmas checagens rodam em runtime para quem passou pelo compilador — com
+`as never`, por exemplo — e lançam as mesmas frases
+([FULCRO6037](./errors/FULCRO6xxx.md#fulcro6037) e vizinhos).
+
+Um valor é um array congelado dos seus elementos, linha após linha, então ele
+indexa, espalha e serializa como os números que contém; `rows` e `columns`
+ficam nele sem ser listados:
+
+```ts
+shift[3]; // 5 — linha 0, coluna 3
+[shift.rows, shift.columns]; // [3, 4]
+JSON.stringify(point); // '[1,2,3,1]'
+```
+
+| Operação                | O que faz                                                          |
+| ----------------------- | ------------------------------------------------------------------ |
+| `from(rows)`            | cria uma matriz a partir das linhas; um vetor, de uma lista        |
+| `is`, `equals`          | reconhecem e comparam, elemento a elemento                         |
+| `add`, `subtract`       | elemento a elemento, mesma forma                                   |
+| `negate`, `scale`       | todo elemento, ou todo elemento vezes um valor                     |
+| `multiply(left, right)` | o produto de matrizes, R × C por C × K dando R × K                 |
+| `transpose(value)`      | linhas e colunas trocadas                                          |
+| `identity()`            | a identidade de uma matriz quadrada, feita uma vez e compartilhada |
+| `dot(left, right)`      | o produto escalar de um vetor, no tipo do elemento                 |
+
+O produto de uma matriz R × C por uma C × K pede ao tipo do elemento
+exatamente R·C·K multiplicações e R·(C−1)·K adições — nenhum zero convertido
+para começar uma soma, nada calculado duas vezes — e a suíte de performance as
+conta.
+
+### Frações
+
+```ts
+const Ratio = Fraction(SignedInteger(32));
+const third = Ratio.from({ numerator: 1, denominator: 3 });
+
+Ratio.add(third, third); // { numerator: 2, denominator: 3 }
+Ratio.from({ numerator: 6, denominator: -4 }); // { numerator: -3, denominator: 2 }
+Ratio.lessThan(third, Ratio.from(0)); // false
+```
+
+Um racional exato sobre um tipo inteiro: `SignedInteger(n)`,
+`UnsignedInteger(n)` ou `BigInteger`. Sempre em termos mínimos com
+denominador positivo, então duas frações são iguais exatamente quando as
+partes são. Uma fração é um tipo numérico completo — os mesmos `add`,
+`divide`, `power`, `lessThan` e o resto dos tipos acima — então ela também pode
+ser elemento de uma matriz.
+
+Toda operação é exata; o que pode falhar é o tipo inteiro por baixo. Os fatores
+comuns são cancelados antes de multiplicar, então um intermediário fica tão
+pequeno quanto o resultado permite, mas um que saia da faixa do inteiro ainda
+lança o `RangeError` dele. Sobre `BigInteger` nada estoura. `power` recebe um
+expoente inteiro, já que uma potência fracionária de um racional raramente é
+racional.
+
+### Números complexos e quatérnios
+
+```ts
+const Complex = ComplexNumber(DoublePrecisionFloat);
+const i = Complex.from({ real: 0, imaginary: 1 });
+
+Complex.multiply(i, i); // { real: -1, imaginary: 0 }
+Complex.from(2); // { real: 2, imaginary: 0 }
+
+const Rotation = Quaternion(DoublePrecisionFloat);
+const qi = Rotation.from({ w: 0, x: 1, y: 0, z: 0 });
+const qj = Rotation.from({ w: 0, x: 0, y: 1, z: 0 });
+
+Rotation.multiply(qi, qj); // { w: 0, x: 0, y: 0, z: 1 } — k
+Rotation.multiply(qj, qi); // { w: 0, x: 0, y: 0, z: -1 } — a ordem importa
+```
+
+Os dois compartilham tudo menos o produto: `add`, `subtract`, `negate`,
+`scale`, `conjugate` — que nega toda parte imaginária — e `divide`, que
+multiplica pelo conjugado do divisor sobre o quadrado da sua norma. Não há
+`lessThan`: nenhum dos dois tem uma ordem que concorde com a sua aritmética.
+Dividir por zero faz o que a divisão do tipo dos componentes faz — `NaN` para
+um float, um erro para um inteiro.

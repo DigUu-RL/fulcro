@@ -1,6 +1,6 @@
 /**
  * Arithmetic on number literals, at the type level, for the layout a struct
- * type declares.
+ * type or a matrix type declares.
  *
  * `sizeOf<T>()` answers from the literal in `T['~layout']`, so a struct type
  * has to carry its size as a literal, and that literal is a sum of its fields
@@ -135,6 +135,55 @@ export type Add<TLeft extends number, TRight extends number> = number extends
 	TLeft | TRight
 	? number
 	: ToNumber<Reverse<AddReversed<Reverse<`${TLeft}`>, Reverse<`${TRight}`>>>>;
+
+/**
+ * A number literal multiplied by one digit, as that many additions.
+ *
+ * @template N Number multiplied.
+ * @template TDigit Digit it is multiplied by.
+ */
+type MultiplyByDigit<
+	N extends number,
+	TDigit extends Digit,
+	TProduct extends number = 0,
+	TCount extends unknown[] = [],
+> = TCount['length'] extends DigitValues[TDigit]
+	? TProduct
+	: MultiplyByDigit<N, TDigit, Add<TProduct, N>, [...TCount, unknown]>;
+
+/** A number literal times ten: its text with a zero after it. */
+type TimesTen<N extends number> = N extends 0 ? 0 : ToNumber<`${N}0`>;
+
+/**
+ * Long multiplication, most significant digit of the right operand first: the
+ * product so far is shifted one place and the next digit's share added to it.
+ */
+type MultiplyDigits<
+	TLeft extends number,
+	TDigits extends string,
+	TProduct extends number = 0,
+> = TDigits extends `${infer THead extends Digit}${infer TTail}`
+	? MultiplyDigits<
+			TLeft,
+			TTail,
+			Add<TimesTen<TProduct>, MultiplyByDigit<TLeft, THead>>
+		>
+	: TProduct;
+
+/**
+ * The product of two number literals; `number` when either is not a literal.
+ *
+ * What a matrix's layout needs: its rows times its columns times the size of an
+ * element. Built on {@link Add}, a digit at a time, so its depth grows with the
+ * number of digits and never with the product.
+ *
+ * @template TLeft First operand, a non-negative integer.
+ * @template TRight Second operand, a non-negative integer.
+ */
+export type Multiply<
+	TLeft extends number,
+	TRight extends number,
+> = number extends TLeft | TRight ? number : MultiplyDigits<TLeft, `${TRight}`>;
 
 /**
  * A tuple as long as a number of up to four digits, built one digit at a time

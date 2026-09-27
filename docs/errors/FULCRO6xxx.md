@@ -23,6 +23,9 @@ RangeError: FULCRO6001: SignedInteger<32>.divide: division by zero.
 `divide()` or `remainder()` of an integer type or of `BigInteger` was given a
 divisor of zero. An integer has no infinity to answer with.
 
+A `Fraction` raises it too: `from()` with a denominator of zero, `divide()` or
+`remainder()` by zero, and `power()` of zero to a negative exponent.
+
 ## FULCRO6002
 
 ```text
@@ -199,6 +202,9 @@ TypeError: FULCRO6020: Vector3.from: 'w' is not a field; the fields are x, y, z.
 `from()` of a struct was given a property the struct does not declare. It is
 refused rather than dropped, so that a misspelt field is not silently lost.
 
+The same holds for the object of parts given to `from()` of a `Fraction`, a
+`ComplexNumber` or a `Quaternion`.
+
 ## FULCRO6021
 
 ```text
@@ -207,6 +213,10 @@ TypeError: FULCRO6021: Vector3.from: missing field 'z'.
 
 `from()` of a struct was not given one of its fields. Every field is required;
 there is no default to fill in.
+
+The same holds for the object of parts given to `from()` of a `Fraction`, a
+`ComplexNumber` or a `Quaternion`; to make a real number, pass the number
+alone instead of an object.
 
 ## FULCRO6022
 
@@ -311,3 +321,101 @@ RangeError: FULCRO6032: SignedInteger<64>.power: 3n ** 200n is outside [-9223372
 `power()` of a 64- or 128-bit integer type would produce a result outside its
 range. It is refused before the result is computed, which for a large exponent
 would itself be expensive.
+
+## FULCRO6033
+
+```text
+TypeError: FULCRO6033: Matrix: expected a numeric type of @fulcro/types as the element type, received object.
+```
+
+`Matrix()`, `Vector()`, `ComplexNumber()` or `Quaternion()` was given an
+element type without the arithmetic it needs: `from`, `is`, `add`,
+`subtract`, `multiply`, `divide`, `negate` and `equals`. Every numeric type of
+this package has them, and so do `Fraction`, `ComplexNumber` and `Quaternion`.
+
+## FULCRO6034
+
+```text
+TypeError: FULCRO6034: Matrix<DoublePrecisionFloat, 2, 3>.from: expected an array, received string.
+```
+
+`from()` of a matrix or a vector was given something other than an array — or
+a row of a matrix was not one. It is also raised when an operand of a matrix
+operation is an array without a shape: a plain array rather than a value a
+`from()` made.
+
+## FULCRO6035
+
+```text
+RangeError: FULCRO6035: Matrix: expected a positive integer number of rows, received 0.
+```
+
+`Matrix()` or `Vector()` was declared with a number of rows or columns that is
+not a positive integer.
+
+## FULCRO6036
+
+```text
+RangeError: FULCRO6036: Matrix<DoublePrecisionFloat, 2, 2>.add: expected a Matrix<DoublePrecisionFloat, 2, 2>, received a Matrix<DoublePrecisionFloat, 2, 3>.
+```
+
+An operand of `add()`, `subtract()`, `negate()`, `scale()`, `transpose()` or
+`dot()` has another shape than the descriptor it was handed to. The compiler
+refuses this before it runs; the error is for a caller that got past it.
+
+## FULCRO6037
+
+```text
+RangeError: FULCRO6037: Cannot multiply Matrix<SinglePrecisionFloat, 3, 4> by Vector<SinglePrecisionFloat, 2, 1>. Expected a vector with 4 rows.
+```
+
+`multiply()` was given a right operand whose rows do not match the columns of
+the left one. The compiler refuses the same call with the same sentence, in
+terms of `T`; this is the runtime check for a caller that got past it.
+
+## FULCRO6038
+
+```text
+RangeError: FULCRO6038: Matrix<DoublePrecisionFloat, 2, 3>.from: expected 2 rows, received 1.
+```
+
+`from()` of a matrix was not given as many rows as the matrix has, or a row did
+not hold as many elements as it has columns; `from()` of a vector was not given
+as many elements as the vector has.
+
+## FULCRO6039
+
+```text
+RangeError: FULCRO6039: Matrix<DoublePrecisionFloat, 2, 3>.identity: only a square matrix has an identity.
+```
+
+`identity()` was called on a matrix that is not square. The compiler refuses
+this before it runs.
+
+## FULCRO6040
+
+```text
+RangeError: FULCRO6040: Vector: expected one row or one column, received 2 rows and 3 columns. A shape with neither is a Matrix.
+```
+
+`Vector()` was declared with neither one row nor one column. The compiler
+refuses this before it runs; declare the shape with `Matrix()`.
+
+## FULCRO6041
+
+```text
+TypeError: FULCRO6041: Fraction: expected SignedInteger(n), UnsignedInteger(n) or BigInteger as the element type, received object.
+```
+
+`Fraction()` was given a type that is not an integer type. A fraction of floats
+would round, which is what a fraction exists to avoid.
+
+## FULCRO6042
+
+```text
+RangeError: FULCRO6042: Fraction<SignedInteger<32>>.power: expected a whole exponent, received 1/2.
+```
+
+`power()` of a fraction was given an exponent that is not a whole number. A
+fractional power of a rational number is rarely rational, so it is refused
+rather than approximated.

@@ -29,3 +29,19 @@ Error: FULCRO5002: <the compiler's own message>
 The `tsconfig.json` was found but could not be read — invalid JSON, or an
 `extends` pointing at a file that does not exist. The message after the code is
 TypeScript's own, and names the file and the problem.
+
+## FULCRO5003
+
+```text
+Error: FULCRO5003: The Fulcro transformer refused calls it could not answer at compile time:
+src/tables.ts(4,23): FULCRO4010: constantOf(…) cannot be evaluated at compile time: 'counter' is declared with let or var, so it can change. …
+```
+
+A transformer refused one or more calls in a file — a call it owns but cannot
+answer, where leaving it to the runtime would ship a wrong or weaker answer.
+Each line names the file, the position and the refusal with its own code; look
+that code up for what to change.
+
+Under `tsc` with `ts-patch`, the refusals are compile errors of their own and
+this error is not raised; it is how a bundler plugin, which has no diagnostics
+to add to, reports the same refusals — all of a file's at once.
