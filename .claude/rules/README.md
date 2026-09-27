@@ -18,7 +18,7 @@ scopes the rule to nothing and does it in silence.
 
 | File                         | Scope                                 | Invariant                                                 |
 | ---------------------------- | ------------------------------------- | --------------------------------------------------------- |
-| `general.md`                 | every source file                     | Names, errors, comments and when to abstract              |
+| `general.md`                 | every source file                     | Names, errors, comments, when to abstract, and SOLID      |
 | `git.md`                     | every session                         | Branch model, commit shape, changesets                    |
 | `testing.md`                 | the suites                            | Behaviour and performance, and performance is counted     |
 | `api-design.md`              | the public surface                    | Inference is part of it, and a change to it is reviewed   |
