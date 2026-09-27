@@ -348,7 +348,7 @@ Its `exports` carry `browser` and `node` conditions over one shared core, so the
 platform difference is settled by the bundler rather than by a runtime check,
 and a browser bundle never contains a reference to `node:worker_threads`.
 
-**Versioned independently** from the other four. The fixed group exists because
+**Versioned independently** of the `fixed` group. The fixed group exists because
 a transformer is tied to the folder layout the library it serves publishes, a
 coupling no compiler checks. Nothing of the sort binds this package: it
 consumes `AsyncSequence` through its public types like any other consumer, and a
@@ -379,7 +379,7 @@ Concurrency tests are the ones that pass by accident, so:
 3. **Parallelism supports the browser as a first-class target**, not as a port.
    Almost everything it needs is already a web standard Node adopted; only
    worker construction differs, behind `exports` conditions.
-4. **`@fulcro/parallel` versions independently** of the other four. It has none
+4. **`@fulcro/parallel` versions independently** of the `fixed` group. It has none
    of the layout coupling that forced the existing fixed group.
 
 ## Implementation order

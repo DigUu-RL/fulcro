@@ -1,20 +1,21 @@
 import { describe, expect, it } from 'vitest';
 
-import { type Result, tryCatch } from '@/tryCatch';
+import { type Result } from '@/result';
+import { tryCatch } from '@/tryCatch';
 
 describe('tryCatch', () => {
 	it('should report a produced value as a success', async () => {
 		const result: Result<number> = await tryCatch(Promise.resolve(42));
 
 		expect(result.error).toBeNull();
-		expect(result.data).toBe(42);
+		expect(result.value).toBe(42);
 	});
 
 	it('should report a rejection as a failure', async () => {
 		const failure = new Error('rejected');
 		const result: Result<number> = await tryCatch(Promise.reject(failure));
 
-		expect(result.data).toBeNull();
+		expect(result.value).toBeNull();
 		expect(result.error).toBe(failure);
 	});
 
@@ -25,7 +26,7 @@ describe('tryCatch', () => {
 			throw new Error('thrown before any promise existed');
 		});
 
-		expect(result.data).toBeNull();
+		expect(result.value).toBeNull();
 		expect((result.error as Error).message).toBe(
 			'thrown before any promise existed',
 		);
@@ -35,7 +36,7 @@ describe('tryCatch', () => {
 		const result = await tryCatch(async () => 'value');
 
 		expect(result.error).toBeNull();
-		expect(result.data).toBe('value');
+		expect(result.value).toBe('value');
 	});
 
 	it('should keep a thrown non-error exactly as it was thrown', async () => {
@@ -43,7 +44,7 @@ describe('tryCatch', () => {
 			Promise.reject('a bare string'),
 		);
 
-		expect(result.data).toBeNull();
+		expect(result.value).toBeNull();
 		expect(result.error).toBe('a bare string');
 	});
 
@@ -67,14 +68,27 @@ describe('tryCatch', () => {
 	);
 
 	it('should discriminate a falsy success from a failure', async () => {
-		// `if (result.data)` reports every one of these as a failure, which is
-		// why `error` is the discriminant and `data` is not.
+		// `if (result.value)` reports every one of these as a failure, which is
+		// why `error` is the discriminant and `value` is not.
 		for (const falsy of [0, '', false, null]) {
 			const result = await tryCatch(Promise.resolve(falsy));
 
 			expect(result.error).toBeNull();
-			expect(result.data).toBe(falsy);
+			expect(result.value).toBe(falsy);
 		}
+	});
+
+	it('should return a result that tells its variant by method', async () => {
+		const succeeded = await tryCatch(async () => 1);
+		const failed = await tryCatch(async () => {
+			throw new Error('x');
+		});
+
+		expect(succeeded.isSuccess()).toBe(true);
+		expect(failed.isFailure()).toBe(true);
+		expect(
+			failed.handle({ success: () => 'success', failure: () => 'failure' }),
+		).toBe('failure');
 	});
 
 	it('should narrow to the produced value once the error is ruled out', async () => {
@@ -85,9 +99,9 @@ describe('tryCatch', () => {
 			return;
 		}
 
-		// Reached only when the union narrowed: `data` is `number` here, not
+		// Reached only when the union narrowed: `value` is `number` here, not
 		// `number | null`, and this assignment is what proves it.
-		const value: number = result.data;
+		const value: number = result.value;
 
 		expect(value).toBe(7);
 	});

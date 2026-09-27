@@ -1,54 +1,14 @@
 import { createError } from '@fulcro/errors';
 
-/** Outcome of an operation that produced a value. */
-export interface Success<T> {
-	/** Value the operation produced. */
-	readonly data: T;
-
-	/** Always `null`, which is what tells a success from a failure. */
-	readonly error: null;
-}
-
-/**
- * Outcome of an operation that threw.
- *
- * The error is non nullable by construction, so that `error === null` is enough
- * to tell the two cases apart. {@link tryCatch} upholds that at runtime: a
- * thrown `null` or `undefined` — legal in JavaScript, however pathological — is
- * wrapped in an `Error` rather than stored as is, because storing it would make
- * a failure indistinguishable from a success.
- *
- * @template E Type of the captured error.
- */
-export interface Failure<E> {
-	/** Always `null`, since the operation produced no value. */
-	readonly data: null;
-
-	/** The captured error. */
-	readonly error: NonNullable<E>;
-}
-
-/**
- * The outcome of an operation, as a value rather than as control flow.
- *
- * Discriminate on `error`, never on `data`:
- *
- * ```ts
- * if (result.error === null) use(result.data);
- * ```
- *
- * `data` is a valid discriminant only while the success type excludes every
- * falsy value, which is a property of `T` and not of this type — `0`, `''` and
- * `null` are all perfectly good results, and `if (result.data)` reports each of
- * them as a failure.
- *
- * @template T Type produced on success.
- * @template E Type of the error captured on failure.
- */
-export type Result<T, E = unknown> = Success<T> | Failure<E>;
+import { failure, type Result, success } from '@/result';
 
 /**
  * Something a thrown value can be stored as without defeating the discriminant.
+ *
+ * A failure's error is non nullable by construction, so that `error === null`
+ * is enough to tell a failure from a success. A thrown `null` or `undefined` —
+ * legal in JavaScript, however pathological — is therefore wrapped in an
+ * `Error` rather than stored as is.
  *
  * @param error Value that was thrown.
  * @returns The value itself, or an `Error` standing in for a nullish throw.
@@ -65,9 +25,9 @@ const asStorableError = (error: unknown): NonNullable<unknown> => {
  * ```ts
  * const result = await tryCatch(() => fetch(url));
  *
- * if (result.error !== null) return fallback;
+ * if (result.isFailure()) return fallback;
  *
- * use(result.data);
+ * use(result.value);
  * ```
  *
  * **Prefer the callback form.** Passing a promise that already exists cannot
@@ -97,12 +57,12 @@ export const tryCatch = async <T, E = unknown>(
 	operation: Promise<T> | (() => T | PromiseLike<T>),
 ): Promise<Result<Awaited<T>, E>> => {
 	try {
-		const data: Awaited<T> = await (typeof operation === 'function'
+		const value: Awaited<T> = await (typeof operation === 'function'
 			? operation()
 			: operation);
 
-		return { data, error: null };
+		return success(value);
 	} catch (error) {
-		return { data: null, error: asStorableError(error) as NonNullable<E> };
+		return failure(asStorableError(error) as NonNullable<E>);
 	}
 };

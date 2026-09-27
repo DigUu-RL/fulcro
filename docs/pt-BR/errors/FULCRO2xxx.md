@@ -2,7 +2,7 @@
 
 🇺🇸 English: [Read this documentation in English](../../errors/FULCRO2xxx.md)
 
-Os erros de [fluxo de controle como valores](../../functions.md). Voltar para
+Os erros de [fluxo de controle como valores](../functions.md). Voltar para
 [todos os códigos](../errors.md).
 
 ## FULCRO2001

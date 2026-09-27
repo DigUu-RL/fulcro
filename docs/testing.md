@@ -222,14 +222,16 @@ were correct, and the memory was not.
 
 ## Where the suites live
 
-| File                                          | Covers                                     |
-| --------------------------------------------- | ------------------------------------------ |
-| `sequence/performance.spec.ts`                | The original operator set                  |
-| `sequence/operators.performance.spec.ts`      | Everything added since                     |
-| `sequence/shaping.performance.spec.ts`        | `choose`, `ofType`, `cast`, `topBy`, `tap` |
-| `sequence/realistic.performance.spec.ts`      | Records at volume                          |
-| `async/async.performance.spec.ts`             | Async sequences and concurrency            |
-| `functions/src/tests/performance.spec.ts`     | `switchFor`, `tryCatch`                    |
-| `reflect/src/tests/utils/performance.spec.ts` | `nameOf`, `typeOf`, `defaultOf`            |
+| File                                             | Covers                                     |
+| ------------------------------------------------ | ------------------------------------------ |
+| `sequence/performance.spec.ts`                   | The original operator set                  |
+| `sequence/operators.performance.spec.ts`         | Everything added since                     |
+| `sequence/shaping.performance.spec.ts`           | `choose`, `ofType`, `cast`, `topBy`, `tap` |
+| `sequence/realistic.performance.spec.ts`         | Records at volume                          |
+| `async/async.performance.spec.ts`                | Async sequences and concurrency            |
+| `functions/src/tests/performance.spec.ts`        | `switchFor`, `tryCatch`                    |
+| `functions/src/tests/result.performance.spec.ts` | `Result`                                   |
+| `functions/src/tests/option.performance.spec.ts` | `Option`                                   |
+| `reflect/src/tests/utils/performance.spec.ts`    | `nameOf`, `typeOf`, `defaultOf`            |
 
 A new feature either extends one of these or brings its own.

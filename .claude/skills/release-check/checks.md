@@ -183,8 +183,8 @@ adding one there publishes a version with an empty diff.
 
 **A blocking mismatch** is a changeset naming a package whose source did not
 change, or shipped source in a package no changeset names, when the
-`fixed` group of `.changeset/config.json` does not account for it. Four of the
-five packages move together and `@fulcro/parallel` moves alone; a bump that looks
+`fixed` group of `.changeset/config.json` does not account for it. The three
+transformer-bound packages move together and the rest move alone; a bump that looks
 partial may be exactly right, and only the `fixed` list settles it.
 
 ## 12. Package versions

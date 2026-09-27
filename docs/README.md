@@ -37,7 +37,7 @@ collection.
 | [Bounded concurrency](./concurrency.md)      | Running several elements at once, for work that waits                                                                      | `@fulcro/collections/async` |
 | [Parallelism with workers](./parallelism.md) | CPU-bound work across threads, on browser and Node                                                                         | `@fulcro/parallel`          |
 | [Reflection](./reflect.md)                   | `nameOf`, `typeOf`, `defaultOf`, `is`, `as`, `constantOf`, and the transformer                                             | `@fulcro/reflect`           |
-| [Control flow as values](./functions.md)     | `switchFor` and `tryCatch`                                                                                                 | `@fulcro/functions`         |
+| [Control flow as values](./functions.md)     | `switchFor`, `tryCatch`, `Result` and `Option`                                                                             | `@fulcro/functions`         |
 | [Numeric types](./types.md)                  | Fixed-width integers, floats, `BigInteger`, `Decimal`, structs, matrices, vectors, fractions, complex numbers, quaternions | `@fulcro/types`             |
 | [Error codes](./errors.md)                   | What each `FULCRO` code means, and what to write instead                                                                   | every package               |
 
@@ -59,6 +59,7 @@ collection.
 | An empty value for a type, that follows the type   | [`defaultOf`](./reflect.md)             |
 | A `switch` that must break when an enum grows      | [`switchFor`](./functions.md)           |
 | A failure you would rather have as a value         | [`tryCatch`](./functions.md)            |
+| A value that may be missing, handled exhaustively  | [`Option`](./functions.md#option)       |
 | Money, or any number that is decimal by nature     | [`Decimal`](./types.md)                 |
 | An integer that must stay within 8, 16 or 32 bits  | [`SignedInteger`](./types.md)           |
 | A matrix product whose shapes must match           | [`Matrix`](./types.md#mathematics)      |

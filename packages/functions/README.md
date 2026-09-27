@@ -1,10 +1,19 @@
 # @fulcro/functions
 
-Two runtime helpers that turn control flow into values. No dependencies, no
-compiler involvement, nothing to configure.
+Runtime helpers that turn control flow into values, and two types that turn
+failure and absence into values. No dependencies, no compiler involvement,
+nothing to configure.
 
 ```ts
-import { switchFor, tryCatch } from '@fulcro/functions';
+import {
+	failure,
+	none,
+	optionOf,
+	some,
+	success,
+	switchFor,
+	tryCatch,
+} from '@fulcro/functions';
 ```
 
 ## `switchFor`
@@ -117,16 +126,49 @@ the compiler cannot reason about which values it accepts — which is why it tak
 a fallback and the exhaustive form does not. It also decides a branch without
 narrowing the value inside `then`.
 
+## `Result`
+
+The outcome of an operation, as a value: a success carrying `value`, or a
+failure carrying `error`. Build one with `success(value)` or `failure(error)`,
+or let `tryCatch` build it for you.
+
+```ts
+const message = result.handle({
+	success: (value) => `got ${value}`,
+	failure: (error) => `failed: ${String(error)}`,
+});
+```
+
+**`handle` is exhaustive.** Both branches are required, and leaving one out does
+not compile. Only the branch for the variant at hand runs.
+
+**Or narrow first**, with `isSuccess()` or `isFailure()`:
+
+```ts
+if (result.isSuccess()) {
+	result.value; // T, not T | null
+}
+```
+
+`error === null` narrows the same way, and survives a copy — through
+`structuredClone`, a worker or JSON — that keeps the data of a result but not
+its methods. **Never discriminate on `value`:** `0`, `''` and `null` are
+perfectly good values, and `if (result.value)` reports every one of them as a
+failure.
+
+A failure's error is never `null` or `undefined`; `failure(null)` does not
+compile, since the failure would then read as a success.
+
 ## `tryCatch`
 
-The outcome of an operation as a value, instead of as control flow.
+Runs an operation and returns its outcome as a `Result`, instead of throwing.
 
 ```ts
 const result = await tryCatch(() => fetch(url));
 
-if (result.error !== null) return fallback;
+if (result.isFailure()) return fallback;
 
-use(result.data);
+use(result.value);
 ```
 
 **Prefer the callback form.** Passing a promise that already exists cannot catch
@@ -136,16 +178,6 @@ escapes before `tryCatch` is ever called. The callback form moves that call
 inside the `try`, which is the only way to cover both the synchronous and the
 asynchronous failure of one operation. The promise form is still accepted, and
 reads better when the promise is already in hand.
-
-**Discriminate on `error`, never on `data`.** `0`, `''` and `null` are perfectly
-good results, and `if (result.data)` reports every one of them as a failure.
-Checking `result.error === null` narrows the union properly:
-
-```ts
-if (result.error === null) {
-	result.data; // T, not T | null
-}
-```
 
 **`E` defaults to `unknown`, not to `Error`.** JavaScript lets any value be
 thrown, so typing the error as an `Error` would be a claim this function cannot
@@ -163,6 +195,25 @@ came would make the failure indistinguishable from a success.
 
 `tryCatch` always returns a promise, including for a fully synchronous
 operation.
+
+## `Option`
+
+A value that may be absent, as a value of its own rather than as `null`.
+
+```ts
+const user: Option<User> = optionOf(users.get(id));
+
+const greeting = user.handle({
+	some: (found) => `Hello, ${found.name}`,
+	none: () => 'Hello, stranger',
+});
+```
+
+`optionOf` reads `null` and `undefined` as absent, and everything else — `0`,
+`''` and `false` included — as present. `some(value)` keeps whatever it is
+given, and `none()` is always the same frozen object. Narrow with `isSome()` or
+`isNone()`: `some(null)` and `none()` hold the same data, and only the variant
+tells them apart.
 
 ---
 
