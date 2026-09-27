@@ -242,6 +242,13 @@ that the silent failures are found before the cosmetic ones.
    for the other? `.claude/CLAUDE.md` says neither knows the other exists.
 3. Did a dependency appear in a package that `.claude/CLAUDE.md`'s table lists
    as having none?
+4. Does the change span more than one package, add a package, move a
+   dependency between packages, or introduce a new abstraction? Then its
+   architecture — ownership, cycles, a second copy of a primitive, hidden
+   state, initialization order — is the `architecture-reviewer` subagent's,
+   `.claude/agents/architecture-reviewer.md`. Report it as a `NOTE` naming
+   the packages involved. This skill runs in a fork and cannot delegate; the
+   parent session does, with this report in hand.
 
 **Tests** — `testing.md`
 

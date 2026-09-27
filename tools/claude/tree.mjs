@@ -405,24 +405,51 @@ export const scriptsOf = (root = repositoryRoot) => {
 };
 
 /**
- * The subagents declared under `.claude/agents`.
+ * One subagent as it sits on disk.
  *
- * The directory does not exist yet; the reader answers with an empty set
- * rather than throwing, so that the first agent to arrive is validated by a
- * check that was already running.
+ * @typedef {{
+ *   file: string,
+ *   path: string,
+ *   frontmatter: ReturnType<typeof frontmatterOf>,
+ * }} Agent
+ */
+
+/**
+ * Reads every subagent under `.claude/agents`.
+ *
+ * A tree without the directory answers with nothing rather than throwing: an
+ * agent is optional, and the checks over the ones that exist run either way.
+ *
+ * @param {string} [root] The repository root.
+ * @returns {Agent[]} The agents, ordered by file name.
+ */
+export const agentDefinitionsOf = (root = repositoryRoot) => {
+	const base = path.join(root, '.claude', 'agents');
+
+	if (!exists(base)) return [];
+
+	return fs
+		.readdirSync(base)
+		.filter((file) => file.endsWith('.md'))
+		.sort()
+		.map((file) => {
+			const full = path.join(base, file);
+
+			return {
+				file,
+				path: full,
+				frontmatter: frontmatterOf(fs.readFileSync(full, 'utf8')),
+			};
+		});
+};
+
+/**
+ * The subagents declared under `.claude/agents`.
  *
  * @param {string} [root] The repository root.
  * @returns {Set<string>} The agent names, without the `.md`.
  */
-export const agentsOf = (root = repositoryRoot) => {
-	const base = path.join(root, '.claude', 'agents');
-
-	if (!exists(base)) return new Set();
-
-	return new Set(
-		fs
-			.readdirSync(base)
-			.filter((file) => file.endsWith('.md'))
-			.map((file) => file.replace(/\.md$/, '')),
+export const agentsOf = (root = repositoryRoot) =>
+	new Set(
+		agentDefinitionsOf(root).map((agent) => agent.file.replace(/\.md$/, '')),
 	);
-};

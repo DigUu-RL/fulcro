@@ -3,7 +3,8 @@
  *
  * The skills are checked next door, in `validate-skills.mjs`. What is left is
  * the machinery around them — the settings, the hooks they are wired to, the
- * rules the prompts point at — and it fails the same way skills do: in
+ * rules the prompts point at, the subagents work is delegated to — and it
+ * fails the same way skills do: in
  * silence. A hook whose path no longer resolves is not an error, it is a guard
  * that stopped running; a rule nobody links to is not a broken build, it is an
  * invariant nobody reads; a deny entry naming a tool no hook matches is a
@@ -21,6 +22,7 @@ import { pathToFileURL } from 'node:url';
 import { matchedBy } from './glob.mjs';
 import { error, report, warning } from './report.mjs';
 import {
+	agentDefinitionsOf,
 	displayed,
 	exists,
 	repositoryRoot,
@@ -50,6 +52,42 @@ const LIBRARIES = new Set(['command-line.mjs', 'hook.mjs']);
  * catch — a heading in the body says the same thing and is read by everyone.
  */
 const RULE_KEYS = new Set(['paths']);
+
+/**
+ * The frontmatter keys a subagent may set.
+ *
+ * The ones Claude Code documents whose values are scalars or lists. `hooks`,
+ * `mcpServers` in its inline form and `experimental` take nested mappings,
+ * which `frontmatter.mjs` refuses rather than guesses at; an agent that needs
+ * one is the case that extends the reader, not this list.
+ */
+const AGENT_KEYS = new Set([
+	'name',
+	'description',
+	'tools',
+	'disallowedTools',
+	'model',
+	'permissionMode',
+	'maxTurns',
+	'skills',
+	'memory',
+	'background',
+	'omitClaudeMd',
+	'effort',
+	'isolation',
+	'color',
+	'initialPrompt',
+]);
+
+/**
+ * The tools that write to the working tree.
+ *
+ * A subagent's edits land in the checkout without passing in front of the
+ * session the user is watching, and the parent receives a report of them
+ * rather than the diff. Every agent here reviews and reports; the first one
+ * that has to write is a decision to argue here, not a line in its own file.
+ */
+const WRITING_TOOLS = new Set(['Write', 'Edit', 'NotebookEdit']);
 
 /**
  * The paragraphs of a rule that are prose rather than structure.
@@ -573,6 +611,131 @@ const checkRuleFixtures = (root) => {
 };
 
 /**
+ * A tool list as a subagent's frontmatter writes it.
+ *
+ * Claude Code takes either a comma-separated string or a list.
+ *
+ * @param {import('./frontmatter.mjs').Value | undefined} value The raw value.
+ * @returns {string[] | null} The tool names, or `null` when none was given.
+ */
+const toolsIn = (value) => {
+	if (value === undefined) return null;
+	if (Array.isArray(value)) return value.map((tool) => tool.trim());
+
+	return `${value}`
+		.split(',')
+		.map((tool) => tool.trim())
+		.filter((tool) => tool !== '');
+};
+
+/**
+ * Checks the subagents under `.claude/agents`.
+ *
+ * An agent fails the way a skill does — a block Claude Code cannot read is an
+ * agent that is never delegated to, and nothing says so — plus one way of its
+ * own: an agent that leaves `tools` out inherits every tool, writing ones
+ * included, and a reviewer that can edit is a reviewer nobody watched edit.
+ *
+ * @param {string} root The repository root.
+ * @returns {import('./report.mjs').Finding[]} What was found.
+ */
+const checkAgents = (root) => {
+	const findings = [];
+
+	for (const agent of agentDefinitionsOf(root)) {
+		const at = `.claude/agents/${agent.file}`;
+		const expected = agent.file.replace(/\.md$/, '');
+		const block = agent.frontmatter;
+
+		if (!block.present) {
+			findings.push(
+				error(
+					'agent-frontmatter-missing',
+					at,
+					'Has no frontmatter, so Claude Code has no name or description to delegate by.',
+				),
+			);
+
+			continue;
+		}
+
+		for (const problem of block.problems) {
+			findings.push(error('agent-frontmatter-unreadable', at, problem));
+		}
+
+		for (const key of block.order) {
+			if (AGENT_KEYS.has(key)) continue;
+
+			findings.push(
+				error(
+					'agent-frontmatter-unknown-key',
+					`${at} (${key})`,
+					'Not a key this repository reads a subagent by; an invented or misspelt key is ignored in silence.',
+				),
+			);
+		}
+
+		if (block.values.name !== expected) {
+			findings.push(
+				error(
+					'agent-name',
+					`${at} (name)`,
+					`\`name\` is \`${block.values.name ?? ''}\`; it must be \`${expected}\`, because a skill delegates by the file name and Claude Code by \`name\`.`,
+				),
+			);
+		}
+
+		const description = block.values.description;
+
+		if (typeof description !== 'string' || description.trim() === '') {
+			findings.push(
+				error(
+					'agent-description',
+					`${at} (description)`,
+					'Has no description, which is the only thing Claude Code reads to decide when to delegate.',
+				),
+			);
+		}
+
+		const tools = toolsIn(block.values.tools);
+
+		if (tools === null) {
+			findings.push(
+				error(
+					'agent-tools-undeclared',
+					`${at} (tools)`,
+					'Declares no `tools`, so it inherits every tool the session has — writing ones included.',
+				),
+			);
+		}
+
+		for (const tool of (tools ?? []).filter((name) =>
+			WRITING_TOOLS.has(name),
+		)) {
+			findings.push(
+				error(
+					'agent-tools-writing',
+					`${at} (tools)`,
+					`Grants \`${tool}\`. A subagent's edits reach the working tree without passing in front of the session the user is watching; the agents here review and report.`,
+				),
+			);
+		}
+
+		if (block.body.trim() === '') {
+			findings.push(
+				error(
+					'agent-body-empty',
+					at,
+					'Has no body; the body is the whole of the prompt the agent starts from.',
+				),
+			);
+		}
+	}
+
+	return findings;
+};
+
+/**
  * Checks what the contract and the rules name.
  *
  * The same reader the skills are checked with, for the same reason: a prompt
@@ -593,6 +756,10 @@ const checkReferences = (root) => {
 			.filter((name) => name.endsWith('.md'))) {
 			files.push(path.join(rules, file));
 		}
+	}
+
+	for (const agent of agentDefinitionsOf(root)) {
+		files.push(agent.path);
 	}
 
 	for (const file of files) {
@@ -617,6 +784,7 @@ export const validateConfig = (root = repositoryRoot) => [
 	...checkSettings(root),
 	...checkRules(root),
 	...checkRuleFixtures(root),
+	...checkAgents(root),
 	...checkReferences(root),
 ];
 
