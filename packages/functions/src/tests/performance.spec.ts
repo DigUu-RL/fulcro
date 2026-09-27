@@ -152,14 +152,15 @@ describe('tryCatch', () => {
 	});
 
 	it('should add no allocation beyond the outcome itself', async () => {
-		// The shape is fixed: two properties, whatever happened.
+		// The shape is fixed: two properties, whatever happened. The methods
+		// are inherited, not carried by every outcome.
 		const succeeded = await tryCatch(async () => 1);
 		const failed = await tryCatch(async () => {
 			throw new Error('x');
 		});
 
-		expect(Object.keys(succeeded).sort()).toEqual(['data', 'error']);
-		expect(Object.keys(failed).sort()).toEqual(['data', 'error']);
+		expect(Reflect.ownKeys(succeeded).sort()).toEqual(['error', 'value']);
+		expect(Reflect.ownKeys(failed).sort()).toEqual(['error', 'value']);
 	});
 });
 

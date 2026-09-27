@@ -18,7 +18,7 @@ here; the packages under `packages/` are.
 | --------------------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------- |
 | [`@fulcro/collections`](packages/collections)       | Lazily evaluated sequences, and runtime validation derived from your types   | `@fulcro/transform-core`               |
 | [`@fulcro/reflect`](packages/reflect)               | `nameOf`, `typeOf`, `defaultOf`, `sizeOf`, with their transformer in the box | `@fulcro/transform-core`               |
-| [`@fulcro/functions`](packages/functions)           | `switchFor` and `tryCatch` — control flow as values                          | none                                   |
+| [`@fulcro/functions`](packages/functions)           | `switchFor`, `tryCatch`, `Result` and `Option` — control flow as values      | none                                   |
 | [`@fulcro/transform-core`](packages/transform-core) | Shared machinery behind the transformers. Installed for you, not by you      | `unplugin`, optional peer `typescript` |
 | [`@fulcro/parallel`](packages/parallel)             | A worker pool for CPU-bound work, on browser and Node                        | none                                   |
 | [`@fulcro/types`](packages/types)                   | Numeric types with a declared range and layout, and structs built from them  | none                                   |
@@ -181,9 +181,10 @@ refused**, by the `Release readiness` check. That combination is the one way the
 automatic release fails without failing: everything goes green and npm never
 sees the change.
 
-**Four of the five packages share one version**, as a `fixed` group in
-`.changeset/config.json`. `@fulcro/parallel` is outside it and versions on its
-own: nothing binds it to the others the way the group members are bound. A
+**Three packages share one version** — `@fulcro/collections`,
+`@fulcro/reflect` and `@fulcro/transform-core` — as a `fixed` group in
+`.changeset/config.json`. The others version on their own: no transformer binds
+them to anything the way the group members are bound. A
 package with no changes of its own is bumped along with the rest, and that is
 deliberate: a rewriter recognises a call by the folder its declaration sits in
 inside the published output of the library it belongs to. Reorganising those

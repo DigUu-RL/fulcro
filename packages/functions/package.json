@@ -1,12 +1,13 @@
 {
 	"name": "@fulcro/functions",
-	"version": "1.2.0",
-	"description": "Runtime helpers turning control flow into values: an exhaustive switchFor and a throwing-free tryCatch.",
+	"version": "2.0.0",
+	"description": "Runtime helpers turning control flow into values: an exhaustive switchFor, a throwing-free tryCatch, and Result and Option handled exhaustively.",
 	"keywords": [
 		"switch",
 		"exhaustive",
 		"enum",
 		"result",
+		"option",
 		"try-catch",
 		"typescript"
 	],

@@ -129,8 +129,8 @@ tag or status stated that was not read from a command in this session.
 
 Sources 3, 7 and 8 are the three halves of check 12, and reading two of them is
 how a report concludes a release will happen when it will not. Source 6 is what
-says which packages move together: four of the five are a `fixed` group and one
-is not, so a bump that looks partial may be correct and a bump that looks
+says which packages move together: three are a `fixed` group and the rest are
+not, so a bump that looks partial may be correct and a bump that looks
 complete may not be.
 
 ## 2. The sixteen checks

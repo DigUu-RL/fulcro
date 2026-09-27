@@ -651,11 +651,38 @@ describe('@fulcro/errors', () => {
 });
 
 describe('@fulcro/functions', () => {
-	it('should expose both helpers', async () => {
+	it('should expose the helpers and the constructors', async () => {
 		const entry = await import('@fulcro/functions');
 
-		expect(typeof entry.switchFor).toBe('function');
-		expect(typeof entry.tryCatch).toBe('function');
+		for (const name of [
+			'switchFor',
+			'tryCatch',
+			'success',
+			'failure',
+			'some',
+			'none',
+			'optionOf',
+		] as const) {
+			expect(typeof entry[name]).toBe('function');
+		}
+	});
+
+	it('should hand back a result that handles both variants', async () => {
+		const { tryCatch } = await import('@fulcro/functions');
+
+		const loaded = await tryCatch(async () => 21);
+
+		expect(
+			loaded.handle({ success: (value) => value * 2, failure: () => 0 }),
+		).toBe(42);
+		expect(loaded.value).toBe(21);
+	});
+
+	it('should read a nullish value as an absent option', async () => {
+		const { optionOf } = await import('@fulcro/functions');
+
+		expect(optionOf(null).isNone()).toBe(true);
+		expect(optionOf(0).isSome()).toBe(true);
 	});
 
 	it('should dispatch exhaustively through the published entry point', async () => {

@@ -6,12 +6,7 @@
 	"baseBranch": "main",
 	"updateInternalDependencies": "patch",
 	"fixed": [
-		[
-			"@fulcro/collections",
-			"@fulcro/functions",
-			"@fulcro/reflect",
-			"@fulcro/transform-core"
-		]
+		["@fulcro/collections", "@fulcro/reflect", "@fulcro/transform-core"]
 	],
 	"linked": [],
 	"ignore": []
