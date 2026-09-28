@@ -316,6 +316,12 @@ The report is verified when each row survives all four:
 `Status: CLEAN` requires that every form in scope was compiled and read. One
 that was not makes it `PARTIAL`, whatever the others showed.
 
+When the report will back a pull request, someone other than the session that
+wrote the rewriter reads it: the `transformer-reviewer` subagent,
+`.claude/agents/transformer-reviewer.md`, given the change and this report.
+This skill runs in a fork and cannot delegate, so say so as a `NOTE` in
+`Findings`; the parent session delegates with the report in hand.
+
 ## Stop
 
 Halt and hand back when:

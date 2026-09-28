@@ -158,7 +158,8 @@ editing the page to agree.
 - `.claude/skills/` — workflows.
 - `.claude/agents/` — subagents a session delegates isolated, read-only
   review to; `architecture-reviewer` reads a change one level above the diff,
-  `performance-reviewer` reads what it costs and what backs the claim.
+  `performance-reviewer` reads what it costs and what backs the claim,
+  `transformer-reviewer` reads a rewriter's assumptions and what it emits.
 - `tools/claude/` — the validators of everything above, the eval suites in
   `tools/claude/skill-evals/` and the rule fixtures in
   `tools/claude/rule-fixtures/`; `tests/claude/` is their suite. They run on a
