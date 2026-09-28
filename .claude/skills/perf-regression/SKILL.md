@@ -288,6 +288,14 @@ named in it:
 - **The working tree is as it was**, confirmed by `git status --short` against
   the one read before starting. Any file written for the run is removed or
   named as kept.
+- **The code was read as well as counted**, when the status is `CLEAN` or
+  `WARN` and the change goes into a pull request. Counts only see what the
+  suite already counts; a new allocation, an eager step or a second pass that
+  no counter watches passes path A untouched. Delegate to the
+  `performance-reviewer` subagent, `.claude/agents/performance-reviewer.md`,
+  with the diff and this report, and name any finding it raises above `LOW`
+  under `Verdict`. It does not change the status: a finding without a count
+  behind it is a `WARN` at most, and the counter it names is the follow-up.
 
 ## Stop
 
