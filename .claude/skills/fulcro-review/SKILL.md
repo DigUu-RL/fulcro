@@ -182,6 +182,12 @@ that the silent failures are found before the cosmetic ones.
    naming the file, the call and what to write instead — or does it decline in
    silence?
 6. Is machinery reimplemented that `@fulcro/transform-core` already has?
+7. Does the change touch a rewriter, a plugin or `@fulcro/transform-core`?
+   Then its AST and checker assumptions, the emit, the compiler versions it
+   relies on and how the two transformers interact are the
+   `transformer-reviewer` subagent's, `.claude/agents/transformer-reviewer.md`.
+   Report it as a `NOTE` naming the rewriters involved. This skill runs in a
+   fork and cannot delegate; the parent session does, with this report in hand.
 
 **Laziness, memory and termination** — `collections-performance.md`
 
