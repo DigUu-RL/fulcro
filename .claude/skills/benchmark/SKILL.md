@@ -292,6 +292,13 @@ named in it:
 - **Each figure is labelled** — counted, ratio, ceiling, or machine
   observation. An unlabelled number does not go in.
 - **The tree still builds** if a file was kept: `npm run typecheck`.
+- **Someone other than this session read it**, when the report will back a
+  claim in a pull request or a recommendation to keep one implementation.
+  Delegate to the `performance-reviewer` subagent,
+  `.claude/agents/performance-reviewer.md`, with the unit and this report; its
+  `Benchmark quality` line goes into `Observations`, and a finding it raises
+  above `LOW` into `Recommendation`. The session that designed a counter is
+  the one least placed to see that it counts the wrong thing.
 
 ## Stop
 

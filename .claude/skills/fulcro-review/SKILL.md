@@ -198,6 +198,13 @@ that the silent failures are found before the cosmetic ones.
    generators unwound, resources released?
 6. Did the complexity class change, and is a cache justified by a counted
    comparison rather than by intuition?
+7. Does the change rewrite a performance-sensitive implementation, or claim
+   that something got faster? Then its cost — allocations, contention,
+   concurrency actually used, what cancellation costs, and whether the
+   evidence can carry the claim — is the `performance-reviewer` subagent's,
+   `.claude/agents/performance-reviewer.md`. Report it as a `NOTE` naming the
+   units involved. This skill runs in a fork and cannot delegate; the parent
+   session does, with this report in hand.
 
 **Concurrency and resources** — `concurrency.md`
 
