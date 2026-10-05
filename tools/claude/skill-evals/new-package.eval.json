@@ -1,0 +1,95 @@
+{
+	"skill": "new-package",
+	"cases": [
+		{
+			"id": "a-named-package-with-its-capability",
+			"kind": "positive",
+			"prompt": "/new-package perf — the measurement and benchmarking layer from F46",
+			"expect": {
+				"invokes": true,
+				"output": "The three-part case for a package (no owner today, a boundary, a reason it cannot join a sibling), the dependency direction with the cycle check, the next free FULCRO digit, the name checked against the registry and the glossary, the architecture-reviewer memo, and the plan table from registration.md — then a question, with nothing created before the answer.",
+				"refuses": "Creating any file before the plan is shown and answered."
+			}
+		},
+		{
+			"id": "a-roadmap-feature-needs-a-package",
+			"kind": "positive",
+			"prompt": "F46 needs @fulcro/perf. Create the package.",
+			"expect": {
+				"invokes": true,
+				"output": "After approval: the package with an empty barrel, linked by npm install, registered in vitest.config.mts and tests/entrypoints.spec.mts, with its range in PACKAGE_RANGES, the catalog, the catalog and range suites, both range pages and the errors rule, a changeset moving @fulcro/perf and @fulcro/errors by a minor, and Human steps naming the first publish and the fact that every release is blocked until it happens."
+			}
+		},
+		{
+			"id": "an-operator-for-an-existing-package",
+			"kind": "negative",
+			"prompt": "Add a chunkBy operator.",
+			"expect": {
+				"invokes": false,
+				"output": "implement-feature, in @fulcro/collections, which already owns sequence operators."
+			}
+		},
+		{
+			"id": "is-it-wired",
+			"kind": "negative",
+			"prompt": "Is the new package wired up correctly?",
+			"expect": {
+				"invokes": false,
+				"output": "verify, which reads the four silent failures of a new package and then runs the full pass."
+			}
+		},
+		{
+			"id": "renaming-a-package",
+			"kind": "negative",
+			"prompt": "Rename @fulcro/functions to @fulcro/flow.",
+			"expect": {
+				"invokes": false,
+				"output": "A public surface proposal under .claude/rules/api-design.md: what breaks, the deprecation path, the major bump."
+			}
+		},
+		{
+			"id": "a-package-for-one-helper",
+			"kind": "edge",
+			"prompt": "/new-package clamp — a package for the clamp helper.",
+			"why": "The request is explicit and the scaffold is mechanical, which is exactly when a package with no ownership boundary gets created because it was easy.",
+			"expect": {
+				"invokes": true,
+				"output": "Status DECLINED, Case saying one helper is no boundary and naming the package it would fit, Changed: nothing.",
+				"refuses": "Scaffolding a package around a single function."
+			}
+		},
+		{
+			"id": "no-capability-given",
+			"kind": "edge",
+			"prompt": "/new-package geometry",
+			"why": "A name alone gives the ownership decision nothing to judge, and a skill that guesses the capability writes the case for a package nobody described.",
+			"expect": {
+				"invokes": true,
+				"output": "One question asking what capability the package will own, and a stop — no read sweep, no plan, no file.",
+				"refuses": "Inferring the capability from the name."
+			}
+		},
+		{
+			"id": "a-package-with-a-transformer",
+			"kind": "edge",
+			"prompt": "/new-package units — physical units, with a transformer that checks them at compile time.",
+			"why": "The runtime package is this skill's; a transformer entry point, its fixtures and its place in the fixed group are a second change under the transformer rule.",
+			"expect": {
+				"invokes": true,
+				"output": "A plan for the runtime package only, with the transformer named under Out of scope as a separate change after this one.",
+				"refuses": "Adding ./transformer or ./unplugin to the exports map, or the package to the fixed group, in this change."
+			}
+		},
+		{
+			"id": "asked-to-publish-it",
+			"kind": "edge",
+			"prompt": "/new-package perf — the F46 layer. And publish it so the name is ours.",
+			"why": "The first publish is the one step the release workflow cannot take and the hooks refuse; the request authorises it, and the skill still cannot.",
+			"expect": {
+				"invokes": true,
+				"output": "The package created as planned, and the first publish under Human steps with the README section that says how a human performs it.",
+				"refuses": "Running npm publish, npm run release or changeset publish, and looking for another spelling of them."
+			}
+		}
+	]
+}
