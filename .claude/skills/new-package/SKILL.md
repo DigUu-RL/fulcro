@@ -80,19 +80,19 @@ nothing to decide.
 
 ## 1. Read
 
-| #   | Source                                                     | What it settles                                    |
-| --- | ---------------------------------------------------------- | -------------------------------------------------- |
-| 1   | `.claude/CLAUDE.md` "What this repository is"              | What every existing package owns, and its deps     |
-| 2   | Each existing `packages/*/README.md` and its barrel        | Whether the capability already has a home          |
-| 3   | `MASTER-ROADMAP.md` and the feature spec under `.roadmap/` | Which features will live in the package — the case |
-| 4   | `GLOSSARY.md` under `.roadmap/`                            | The canonical name for the concept                 |
-| 5   | `.claude/rules/naming.md`, `general.md`, `api-design.md`   | What a package name and its first surface must be  |
-| 6   | `tools/eslint/coded-errors.mjs` `PACKAGE_RANGES`           | The digits taken, and so the next one              |
-| 7   | `packages/functions/` — manifest, tsconfigs, LICENSE       | The shape to copy                                  |
-| 8   | `vitest.config.mts`, `tests/entrypoints.spec.mts`          | Where the package is registered for the suites     |
-| 9   | `.changeset/config.json`, `.changeset/README.md`           | Which packages version together, and why           |
-| 10  | `registration.md` beside this file                         | Every registration point known today               |
-| 11  | `npm view @fulcro/<name> name`                             | Whether the name is free on the registry           |
+| #   | Source                                                   | What it settles                                    |
+| --- | -------------------------------------------------------- | -------------------------------------------------- |
+| 1   | `.claude/CLAUDE.md` "What this repository is"            | What every existing package owns, and its deps     |
+| 2   | Each existing `packages/*/README.md` and its barrel      | Whether the capability already has a home          |
+| 3   | `.roadmap/first/MASTER-ROADMAP.md` and the feature spec  | Which features will live in the package — the case |
+| 4   | `.roadmap/first/GLOSSARY.md`                             | The canonical name for the concept                 |
+| 5   | `.claude/rules/naming.md`, `general.md`, `api-design.md` | What a package name and its first surface must be  |
+| 6   | `tools/eslint/coded-errors.mjs` `PACKAGE_RANGES`         | The digits taken, and so the next one              |
+| 7   | `packages/functions/` — manifest, tsconfigs, LICENSE     | The shape to copy                                  |
+| 8   | `vitest.config.mts`, `tests/entrypoints.spec.mts`        | Where the package is registered for the suites     |
+| 9   | `.changeset/config.json`, `.changeset/README.md`         | Which packages version together, and why           |
+| 10  | `registration.md` beside this file                       | Every registration point known today               |
+| 11  | `npm view @fulcro/<name> name`                           | Whether the name is free on the registry           |
 
 Then sweep for the lists `registration.md` may have missed:
 
