@@ -33,6 +33,7 @@ const PACKAGE_NAMES = [
 	'@fulcro/collections',
 	'@fulcro/errors',
 	'@fulcro/functions',
+	'@fulcro/memory',
 	'@fulcro/parallel',
 	'@fulcro/reflect',
 	'@fulcro/transform-core',
@@ -712,6 +713,47 @@ describe('@fulcro/functions', () => {
 		});
 
 		expect((failed.error as Error).message).toBe('boom');
+	});
+});
+
+describe('@fulcro/memory', () => {
+	it('should expose the two storage factories and nothing else', async () => {
+		const entry = await import('@fulcro/memory');
+
+		// `Storage` is a type and leaves nothing at runtime. A helper of the
+		// strategies showing up here would be a surface nobody agreed.
+		expect(
+			Object.keys(entry)
+				.filter((name) => name !== 'default')
+				.sort(),
+		).toEqual(['createFixedBufferStorage', 'createManagedStorage']);
+	});
+
+	it('should store a struct from the published types package', async () => {
+		const { createFixedBufferStorage, createManagedStorage } =
+			await import('@fulcro/memory');
+		const { SinglePrecisionFloat, struct } = await import('@fulcro/types');
+
+		const Point = struct('Point', {
+			x: SinglePrecisionFloat,
+			y: SinglePrecisionFloat,
+		});
+		const points = createFixedBufferStorage(Point, 2);
+		const names = createManagedStorage(2, '');
+
+		points.set(1, Point.from({ x: 1, y: 2 }));
+		names.set(1, 'b');
+
+		expect(points.get(1)).toEqual({ x: 1, y: 2 });
+		expect(names.get(1)).toBe('b');
+	});
+
+	it('should refuse an index outside, with its code', async () => {
+		const { createManagedStorage } = await import('@fulcro/memory');
+
+		expect(() => createManagedStorage(1, 0).get(1)).toThrow(
+			expect.objectContaining({ code: 'FULCRO7002' }),
+		);
 	});
 });
 

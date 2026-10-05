@@ -24,6 +24,7 @@ export const PACKAGE_RANGES = {
 	reflect: '4',
 	'transform-core': '5',
 	types: '6',
+	memory: '7',
 };
 
 /** A constructor the language provides for an error, by name. */

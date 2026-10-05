@@ -39,6 +39,7 @@ O primeiro dígito indica o pacote que o lançou:
 | `FULCRO4xxx` | `@fulcro/reflect`        | [FULCRO4xxx](./errors/FULCRO4xxx.md) |
 | `FULCRO5xxx` | `@fulcro/transform-core` | [FULCRO5xxx](./errors/FULCRO5xxx.md) |
 | `FULCRO6xxx` | `@fulcro/types`          | [FULCRO6xxx](./errors/FULCRO6xxx.md) |
+| `FULCRO7xxx` | `@fulcro/memory`         | [FULCRO7xxx](./errors/FULCRO7xxx.md) |
 
 Cada página tem uma seção por código, com link próprio no formato
 `FULCRO6xxx.md#fulcro6021`: o que ele significa, o que costuma causá-lo e o que

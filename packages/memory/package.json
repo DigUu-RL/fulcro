@@ -1,0 +1,53 @@
+{
+	"name": "@fulcro/memory",
+	"version": "0.0.0",
+	"description": "Where a value's bytes live and who may reach them: storage, allocation and access to memory regions.",
+	"keywords": [
+		"memory",
+		"storage",
+		"allocator",
+		"buffer",
+		"typescript"
+	],
+	"license": "ISC",
+	"author": "diguu <rodrigogeribola@hotmail.com>",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		},
+		"./package.json": "./package.json"
+	},
+	"files": [
+		"dist"
+	],
+	"sideEffects": false,
+	"dependencies": {
+		"@fulcro/errors": "^1.1.0"
+	},
+	"devDependencies": {
+		"@fulcro/types": "^1.2.0"
+	},
+	"engines": {
+		"node": ">=22"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/DigUu-RL/fulcro.git",
+		"directory": "packages/memory"
+	},
+	"homepage": "https://github.com/DigUu-RL/fulcro/tree/main/packages/memory#readme",
+	"bugs": {
+		"url": "https://github.com/DigUu-RL/fulcro/issues"
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json && node ../../tools/build/rewrite-aliases.mjs",
+		"typecheck": "tsc --noEmit -p tsconfig.json",
+		"prepublishOnly": "npm run build"
+	}
+}

@@ -39,31 +39,33 @@ collection.
 | [Reflection](./reflect.md)                   | `nameOf`, `typeOf`, `defaultOf`, `is`, `as`, `constantOf`, and the transformer                                             | `@fulcro/reflect`           |
 | [Control flow as values](./functions.md)     | `switchFor`, `tryCatch`, `Result` and `Option`                                                                             | `@fulcro/functions`         |
 | [Numeric types](./types.md)                  | Fixed-width integers, floats, `BigInteger`, `Decimal`, structs, matrices, vectors, fractions, complex numbers, quaternions | `@fulcro/types`             |
+| [Memory](./memory.md)                        | `Storage<T>`: one contract over values held in managed memory or in a fixed buffer of bytes                                | `@fulcro/memory`            |
 | [Error codes](./errors.md)                   | What each `FULCRO` code means, and what to write instead                                                                   | every package               |
 
 ## Which tool for which problem
 
-| You have                                           | Reach for                               |
-| -------------------------------------------------- | --------------------------------------- |
-| An array or a `Set` to query                       | [Sequences](./sequences.md)             |
-| Rows arriving from a cursor, a stream, an API      | [Async sequences](./async-sequences.md) |
-| A hundred requests to make, and they are slow      | [Bounded concurrency](./concurrency.md) |
-| A hundred files to parse, and the CPU is the limit | [Parallelism](./parallelism.md)         |
-| **A payload you cannot trust, and a type for it**  | [`as`](./reflect.md)                    |
-| A payload you would rather branch on than throw    | [`is`](./reflect.md)                    |
-| A whole feed to check as it arrives                | [`cast`](./async-sequences.md)          |
-| A mixed array to narrow to one type                | [`ofType`](./sequences.md)              |
-| The best ten of a hundred thousand                 | [`topBy`](./sequences.md)               |
-| A projection that is also the filter               | [`choose`](./sequences.md)              |
-| A string that has to match a property name         | [`nameOf`](./reflect.md)                |
-| An empty value for a type, that follows the type   | [`defaultOf`](./reflect.md)             |
-| A `switch` that must break when an enum grows      | [`switchFor`](./functions.md)           |
-| A failure you would rather have as a value         | [`tryCatch`](./functions.md)            |
-| A value that may be missing, handled exhaustively  | [`Option`](./functions.md#option)       |
-| Money, or any number that is decimal by nature     | [`Decimal`](./types.md)                 |
-| An integer that must stay within 8, 16 or 32 bits  | [`SignedInteger`](./types.md)           |
-| A matrix product whose shapes must match           | [`Matrix`](./types.md#mathematics)      |
-| A lookup table computed once, not on every run     | [`constantOf`](./reflect.md)            |
+| You have                                           | Reach for                                 |
+| -------------------------------------------------- | ----------------------------------------- |
+| An array or a `Set` to query                       | [Sequences](./sequences.md)               |
+| Rows arriving from a cursor, a stream, an API      | [Async sequences](./async-sequences.md)   |
+| A hundred requests to make, and they are slow      | [Bounded concurrency](./concurrency.md)   |
+| A hundred files to parse, and the CPU is the limit | [Parallelism](./parallelism.md)           |
+| **A payload you cannot trust, and a type for it**  | [`as`](./reflect.md)                      |
+| A payload you would rather branch on than throw    | [`is`](./reflect.md)                      |
+| A whole feed to check as it arrives                | [`cast`](./async-sequences.md)            |
+| A mixed array to narrow to one type                | [`ofType`](./sequences.md)                |
+| The best ten of a hundred thousand                 | [`topBy`](./sequences.md)                 |
+| A projection that is also the filter               | [`choose`](./sequences.md)                |
+| A string that has to match a property name         | [`nameOf`](./reflect.md)                  |
+| An empty value for a type, that follows the type   | [`defaultOf`](./reflect.md)               |
+| A `switch` that must break when an enum grows      | [`switchFor`](./functions.md)             |
+| A failure you would rather have as a value         | [`tryCatch`](./functions.md)              |
+| A value that may be missing, handled exhaustively  | [`Option`](./functions.md#option)         |
+| Money, or any number that is decimal by nature     | [`Decimal`](./types.md)                   |
+| An integer that must stay within 8, 16 or 32 bits  | [`SignedInteger`](./types.md)             |
+| A matrix product whose shapes must match           | [`Matrix`](./types.md#mathematics)        |
+| A lookup table computed once, not on every run     | [`constantOf`](./reflect.md)              |
+| A million structs, as bytes rather than objects    | [`createFixedBufferStorage`](./memory.md) |
 
 **`is` or `as`?** Both check the same way. `is` is a type guard, for when a
 failure should branch the program; `as` returns the value or throws, for when it
