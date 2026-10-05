@@ -52,7 +52,9 @@ Run from the repository root. These are the scripts that exist today — read
 | `npm run validate:claude`                 | Structural validation of the `.claude` tree                                 |
 | `npm run changeset`                       | Records a version bump for a shipped change                                 |
 
-Each package builds with `tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json`.
+Each package builds with
+`tsc -p tsconfig.build.json && node ../../tools/build/rewrite-aliases.mjs`: the
+second step turns the `@/…` imports `tsc` leaves in `dist` into relative paths.
 
 `npm test` builds first on purpose: the harness loads the transformers from
 `dist`, and the entry point suite runs entirely against built output.

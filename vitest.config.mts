@@ -168,6 +168,23 @@ const lint = (): ViteUserConfig => ({
 });
 
 /**
+ * The repository's own build tools.
+ *
+ * Its own project for the reason the lint rules have one: what it checks is how
+ * the packages are built, not the library. The suites build a small package in
+ * a temporary directory and run the tool over it.
+ *
+ * @returns The project configuration.
+ */
+const build = (): ViteUserConfig => ({
+	test: {
+		name: 'build',
+		globals: true,
+		include: ['tests/build/**/*.spec.mts'],
+	},
+});
+
+/**
  * The repository's own safety hooks.
  *
  * Its own project for the same reason the transformers have one: what it
@@ -218,6 +235,7 @@ export default defineConfig({
 			entryPoints(),
 			transformers(),
 			lint(),
+			build(),
 			hooks(),
 			claude(),
 		],
