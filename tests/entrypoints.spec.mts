@@ -33,6 +33,7 @@ const PACKAGE_NAMES = [
 	'@fulcro/collections',
 	'@fulcro/errors',
 	'@fulcro/functions',
+	'@fulcro/memory',
 	'@fulcro/parallel',
 	'@fulcro/reflect',
 	'@fulcro/transform-core',

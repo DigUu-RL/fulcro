@@ -1,5 +1,6 @@
 import { collectionsCatalog } from './collections';
 import { functionsCatalog } from './functions';
+import { memoryCatalog } from './memory';
 import { parallelCatalog } from './parallel';
 import { reflectCatalog } from './reflect';
 import { transformCoreCatalog } from './transform-core';
@@ -15,6 +16,7 @@ import { typesCatalog } from './types';
 export const catalog = {
 	...collectionsCatalog,
 	...functionsCatalog,
+	...memoryCatalog,
 	...parallelCatalog,
 	...reflectCatalog,
 	...transformCoreCatalog,

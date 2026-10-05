@@ -28,9 +28,9 @@ every error a package creates comes from one place.
 ## A code belongs to one package, forever
 
 - Each package owns one range: 1 collections, 2 functions, 3 parallel,
-  4 reflect, 5 transform-core, 6 types. A new package takes the next digit, in
-  `tools/eslint/coded-errors.mjs` and a new catalog file, before it throws
-  anything.
+  4 reflect, 5 transform-core, 6 types, 7 memory. A new package takes the next
+  digit, in `tools/eslint/coded-errors.mjs` and a new catalog file, before it
+  throws anything.
 - A code is never renumbered and never reused, even after its error is gone.
   Retire it by leaving its entry and its page in place, marked as retired.
 - Two call sites share a code only when they report the same condition with

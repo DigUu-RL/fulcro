@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { catalog } from '@/catalog';
 import { collectionsCatalog } from '@/catalog/collections';
 import { functionsCatalog } from '@/catalog/functions';
+import { memoryCatalog } from '@/catalog/memory';
 import { parallelCatalog } from '@/catalog/parallel';
 import { reflectCatalog } from '@/catalog/reflect';
 import { transformCoreCatalog } from '@/catalog/transform-core';
@@ -25,6 +26,7 @@ const RANGES = [
 	['@fulcro/reflect', '4', reflectCatalog],
 	['@fulcro/transform-core', '5', transformCoreCatalog],
 	['@fulcro/types', '6', typesCatalog],
+	['@fulcro/memory', '7', memoryCatalog],
 ] as const;
 
 /** The spelling every code follows. */

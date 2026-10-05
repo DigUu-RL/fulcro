@@ -211,6 +211,7 @@ export default defineConfig({
 			project('collections'),
 			project('errors'),
 			project('functions'),
+			project('memory'),
 			workerPool(),
 			project('reflect'),
 			project('types'),
