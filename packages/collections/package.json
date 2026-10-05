@@ -37,7 +37,7 @@
 	],
 	"//sideEffects": "Deliberately omitted. The barrels run `bootstrapCollections()` on load to plug the concrete classes into the factory registry, so a bundler treating this package as side effect free would drop the call and break `groupBy`, `orderBy` and `orderByDescending`.",
 	"scripts": {
-		"build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
+		"build": "tsc -p tsconfig.build.json && node ../../tools/build/rewrite-aliases.mjs",
 		"typecheck": "tsc --noEmit -p tsconfig.json",
 		"prepublishOnly": "npm run build"
 	},
