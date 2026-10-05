@@ -68,7 +68,7 @@ with what still runs.
 
 | #   | Command                                        | What it reveals                                                                               |
 | --- | ---------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| 1   | `npm run build`                                | `tsc` under every tsconfig flag, `tsc-alias`, transformer notices                             |
+| 1   | `npm run build`                                | `tsc` under every tsconfig flag, the alias rewrite, transformer notices                       |
 | 2   | `npm run typecheck`                            | the same checks without emit, plus `tsconfig.tests.json`                                      |
 | 3   | `npx vitest run --configLoader native`         | runner and Vite warnings, config hints, `console.warn` from the suites, Node API deprecations |
 | 4   | `npx eslint .`                                 | the rules in `eslint.config.mjs`, including the local `local/brace-wrapped-branches`          |
