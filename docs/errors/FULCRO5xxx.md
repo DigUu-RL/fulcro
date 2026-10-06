@@ -3,8 +3,9 @@
 🇧🇷 Português (Brasil): [Leia esta documentação em português](../pt-BR/errors/FULCRO5xxx.md)
 
 The errors of the machinery behind the compile-time transformers of
-`@fulcro/collections` and `@fulcro/reflect`. They are raised while your project
-is being built, not while it runs. Back to [all codes](../errors.md).
+`@fulcro/collections`, `@fulcro/reflect` and `@fulcro/memory`. They are raised
+while your project is being built, not while it runs. Back to
+[all codes](../errors.md).
 
 ## FULCRO5001
 

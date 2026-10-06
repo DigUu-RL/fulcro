@@ -22,14 +22,16 @@ here; the packages under `packages/` are.
 | [`@fulcro/transform-core`](packages/transform-core) | Shared machinery behind the transformers. Installed for you, not by you       | `unplugin`, optional peer `typescript` |
 | [`@fulcro/parallel`](packages/parallel)             | A worker pool for CPU-bound work, on browser and Node                         | none                                   |
 | [`@fulcro/types`](packages/types)                   | Numeric types with a declared range and layout, and structs built from them   | none                                   |
-| [`@fulcro/memory`](packages/memory)                 | `Storage<T>`: one contract over values in managed memory or in a fixed buffer | none                                   |
+| [`@fulcro/memory`](packages/memory)                 | `Storage<T>`: one contract over values in managed memory or in a fixed buffer | `@fulcro/transform-core`               |
 
 `@fulcro/functions`, `@fulcro/parallel` and `@fulcro/types` stand alone, with
-nothing to configure. `@fulcro/collections` and `@fulcro/reflect` each ship
-**their own compile time transformer**, behind separate entry points — so one
-install gets you everything, and a runtime-only bundle still pulls in none of
-the compiler machinery. Neither knows the other exists; each rewrites only
-what it can trace back to itself, a call to one of its utilities.
+nothing to configure. `@fulcro/collections`, `@fulcro/reflect` and
+`@fulcro/memory` each ship **their own compile time transformer**, behind
+separate entry points — so one install gets you everything, and a runtime-only
+bundle still pulls in none of the compiler machinery. None knows the others
+exist; each claims only what it can trace back to itself, a call to one of its
+utilities. Memory's rewrites nothing: it refuses, at build time, a value used
+after `move` — which the runtime refuses as well, later.
 
 Wiring a transformer up is optional for the utilities, except `defaultOf`, which
 throws without it because a default it cannot compute would be a lie. `nameOf`

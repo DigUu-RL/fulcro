@@ -480,3 +480,146 @@ Details:
 was handed something else. A buffer is the case shown: wrap it with
 `createLinearMemory` first. An object shaped like a linear memory is not one —
 only `createLinearMemory` makes them.
+
+## FULCRO7023
+
+```text
+Error: FULCRO7023: borrow: the owner was moved; use the owner move returned.
+```
+
+Details:
+
+```text
+{ operation: string }
+```
+
+An owner was used after it was handed to `move`. The handle `move` spent
+refuses everything from then on — `borrow`, `borrowMutable`, `move` and its
+`length` — because another owner now holds the same values, and two handles
+acting for them would defeat the point of owning them.
+
+Use the owner `move` returned. With [the memory transformer](../memory.md#ownership)
+wired up, the same use is refused when the code is compiled, as
+[FULCRO7027](#fulcro7027), wherever the old owner is used by name.
+
+## FULCRO7024
+
+```text
+Error: FULCRO7024: ReadOnlyView.get: the borrow has ended — its owner was moved, or borrowed again in a way it cannot share; borrow again.
+```
+
+Details:
+
+```text
+{ operation: string }
+```
+
+A borrow, or a subview, a read-only view, a view or a pointer made from one,
+was used after something its owner did ended it. A shared borrow ends when the
+owner is lent with `borrowMutable`. An exclusive borrow ends when the owner is
+lent again, either way. Every borrow ends when the owner is moved.
+
+Borrow again after the conflicting operation, rather than holding on to the
+borrow from before it. With the memory transformer wired up, a borrow kept in
+a variable is refused when the code is compiled, as
+[FULCRO7028](#fulcro7028) or [FULCRO7029](#fulcro7029).
+
+## FULCRO7025
+
+```text
+Error: FULCRO7025: own: the storage already has an owner, and a storage is owned once.
+```
+
+Details:
+
+```text
+{ operation: string }
+```
+
+`own` was given a `create` that returned a storage another `own` already took.
+A storage has one owner: two would each lend its values for writing while the
+other still reads them.
+
+Create the storage inside the function handed to `own` —
+`own(() => createManagedStorage(…))` — so that nothing else holds it. To hand
+an owner to other code, `move` it.
+
+## FULCRO7026
+
+```text
+TypeError: FULCRO7026: own: create returned a borrow, which reaches memory another owner holds; create a storage instead.
+```
+
+Details:
+
+```text
+{ operation: string }
+```
+
+The function handed to `own` returned a borrow. A borrow observes values that
+already have an owner, so owning it would give the same memory two owners.
+
+Create a new storage inside the function. To give code the values without
+giving it ownership, pass it the borrow itself.
+
+## FULCRO7027
+
+```text
+FULCRO7027: move: 'queue' is used after it was moved at line 12; use the owner move returned.
+```
+
+Details:
+
+```text
+{ operation: string; name: string; line: number }
+```
+
+A compile error, at the use, from the memory transformer. The variable was
+handed to `move` at the line named, on some path that reaches this use — in a
+branch, an earlier iteration of the loop, a `try` that may have run, or a
+function created after the move. At runtime the same use throws
+[FULCRO7023](#fulcro7023).
+
+Use the owner `move` returned. When the move happens on only one branch, give
+the variable a new value on that branch, or move it on every one.
+
+## FULCRO7028
+
+```text
+FULCRO7028: borrow: the borrow 'reading' is used after borrowMutable(scores) at line 8 ended it.
+```
+
+Details:
+
+```text
+{ operation: string; name: string; owner: string; conflict: string; line: number }
+```
+
+A compile error, at the use, from the memory transformer. The borrow kept in
+the variable was taken from `owner`, and `conflict` — at the line named — lent
+the same owner in a way this borrow cannot share: for writing, ending every
+borrow before it, or for reading, ending a borrow for writing. A borrow lasts
+until its last use, so it is only this later use that is refused. At runtime
+the same use throws [FULCRO7024](#fulcro7024).
+
+Finish with the borrow before taking the conflicting one, or borrow again
+after it.
+
+## FULCRO7029
+
+```text
+FULCRO7029: borrow: the borrow 'reading' is used after its owner 'scores' was moved at line 9.
+```
+
+Details:
+
+```text
+{ operation: string; name: string; owner: string; line: number }
+```
+
+A compile error, at the use, from the memory transformer. The borrow kept in
+the variable was taken from an owner that was moved at the line named; every
+borrow of an owner ends when it moves. At runtime the same use throws
+[FULCRO7024](#fulcro7024).
+
+Borrow from the owner `move` returned.

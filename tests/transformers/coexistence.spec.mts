@@ -9,14 +9,15 @@ import { beforeAll, describe, expect, it } from 'vitest';
  * Coexistence suite.
  *
  * Each package tests its own transformer alone, which proves each one works and
- * proves nothing about the two together. A consumer using both libraries
- * applies both plugins to the same compilation, and there is no other coverage
- * of that: they walk the same tree, and one replacing a node the other still
+ * proves nothing about them together. A consumer using several libraries
+ * applies their plugins to the same compilation, and there is no other coverage
+ * of that: they walk the same tree, and one replacing a node another still
  * needed to visit would break quietly — the file would compile, the call would
  * be left as written, and only a runtime refusal much later would say so.
  *
- * So this compiles one fixture with both applied and asserts that **every** call
- * came out resolved.
+ * So this compiles one fixture with all three applied and asserts that
+ * **every** call came out resolved, and that the one plugin that only refuses
+ * still refuses.
  */
 
 /** Resolves the built packages the way a consumer's compiler would. */
@@ -38,7 +39,7 @@ const FIXTURE = path.resolve(
 let emitted = '';
 
 /**
- * Compiles the fixture with both transformers applied.
+ * Compiles the fixture with all three transformers applied.
  *
  * @returns The emitted JavaScript.
  */
@@ -49,6 +50,9 @@ const compileFixture = (): string => {
 		: (program: ts.Program) => ts.TransformerFactory<ts.SourceFile>;
 
 	const collections = require('@fulcro/collections/transformer')
+		.default as typeof reflect;
+
+	const memory = require('@fulcro/memory/transformer')
 		.default as typeof reflect;
 
 	const program: ts.Program = ts.createProgram([FIXTURE], {
@@ -88,9 +92,11 @@ const compileFixture = (): string => {
 		},
 		undefined,
 		false,
-		// Both, in one pass over one tree. The order is deliberate and
-		// arbitrary: neither should depend on running first.
-		{ before: [reflect(program), collections(program)] },
+		// All three, in one pass over one tree. The order is deliberate and
+		// arbitrary: none should depend on running first. Memory's goes last, so
+		// it walks the tree the other two produced — with calls inside its
+		// borrows already rewritten — and must refuse nothing here.
+		{ before: [reflect(program), collections(program), memory(program)] },
 	);
 
 	return output;
@@ -100,7 +106,7 @@ beforeAll(() => {
 	emitted = compileFixture();
 });
 
-describe('both plugins on one file', () => {
+describe('the plugins on one file', () => {
 	it('should resolve the calls @fulcro/reflect owns', () => {
 		expect(emitted).toMatch(/is\(payload, \{ name: "Order"/);
 		expect(emitted).toMatch(/as\(payload, \{ name: "Order"/);
@@ -133,6 +139,47 @@ describe('both plugins on one file', () => {
 
 		expect(block).toMatch(/\.ofType\(\{ name: "Order"/);
 		expect(block).toMatch(/is\(order, \{ name: "Order"/);
+	});
+
+	it("should leave @fulcro/memory's calls as written, and rewrite the others inside them", () => {
+		const start: number = emitted.indexOf('export const owned');
+		const block: string = emitted.slice(start);
+
+		expect(start).toBeGreaterThan(-1);
+		expect(block).toContain('borrow(move(orders))');
+		expect(block).toMatch(/is\(first, \{ name: "Order"/);
+		expect(block).toMatch(/\.ofType\(\{ name: "Order"/);
+	});
+
+	it('should still refuse a use after move among calls the others rewrite', () => {
+		const rejected: string = path.resolve(
+			path.dirname(fileURLToPath(import.meta.url)),
+			'coexistence.rejected.sample.ts',
+		);
+		const reflect = require('@fulcro/reflect/transformer').default as (
+			program: ts.Program,
+		) => ts.TransformerFactory<ts.SourceFile>;
+		const memory = require('@fulcro/memory/transformer')
+			.default as typeof reflect;
+		const program: ts.Program = ts.createProgram([rejected], {
+			target: ts.ScriptTarget.ES2022,
+			module: ts.ModuleKind.ESNext,
+			moduleResolution: ts.ModuleResolutionKind.Bundler,
+			strict: true,
+			skipLibCheck: true,
+		});
+
+		expect(() =>
+			program.emit(
+				program.getSourceFile(rejected),
+				() => undefined,
+				undefined,
+				false,
+				{ before: [reflect(program), memory(program)] },
+			),
+		).toThrow(
+			/coexistence\.rejected\.sample\.ts\(19,26\): FULCRO7027: move: 'orders' is used after it was moved at line 17/,
+		);
 	});
 
 	it('should leave nothing unresolved', () => {

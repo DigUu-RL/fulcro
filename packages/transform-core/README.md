@@ -2,8 +2,9 @@
 
 Shared machinery behind the Fulcro compile time transformers.
 
-**You do not install this.** `@fulcro/reflect` depends on it, and any other
-package in the library that grows a transformer will too. It is published
+**You do not install this.** `@fulcro/reflect`, `@fulcro/collections` and
+`@fulcro/memory` depend on it, and any other package in the library that grows
+a transformer will too. It is published
 because they depend on it, not because it is meant to be used directly, and its
 shape is theirs to change without notice.
 
@@ -37,12 +38,13 @@ particular — and that is this one.
 
 Everything with nothing to do with any particular utility:
 
-| Piece                       | Does                                                                        |
-| --------------------------- | --------------------------------------------------------------------------- |
-| `isOwnedCall`               | Follows a call back to the declaration that owns it, rather than by name    |
-| `createTransformer`         | Walks a source file once and hands each call to the rewriter that claims it |
-| `createFileTransformer`     | Builds and keeps a program, for the bundlers that have no checker           |
-| `createTransformerUnplugin` | The adapter surface Vite, Rollup, Webpack, Rspack, esbuild and Farm expect  |
+| Piece                       | Does                                                                                                                                   |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `isOwnedCall`               | Follows a call back to the declaration that owns it, rather than by name — and, given a `packageName`, to the package that declares it |
+| `createTransformer`         | Walks a source file once and hands each call to the rewriter that claims it                                                            |
+| `FileAnalyzer`              | Checks a whole file as written, once, before any rewriter — for a rule no single call decides                                          |
+| `createFileTransformer`     | Builds and keeps a program, for the bundlers that have no checker                                                                      |
+| `createTransformerUnplugin` | The adapter surface Vite, Rollup, Webpack, Rspack, esbuild and Farm expect                                                             |
 
 What lives in each library instead is the part that knows what to **emit** — how
 `defaultOf` fills a tuple, how a type argument becomes a runtime test. That

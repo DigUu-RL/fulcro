@@ -11,11 +11,53 @@ import typescript from 'typescript';
  * each rewriter whether the call in hand belongs to it.
  */
 
-/** Everything a rewriter needs from the compilation in progress. */
-export interface RewriteContext {
+/** What an analyzer needs from the compilation in progress. */
+export interface AnalysisContext {
 	/** Checker of the program being compiled. */
 	readonly checker: typescript.TypeChecker;
 
+	/**
+	 * Refuses code at compile time, as an error located at the node.
+	 *
+	 * @param node Node the error points at, from the source being compiled.
+	 * @param message What went wrong, starting with its `FULCRO` code.
+	 */
+	readonly report: (node: typescript.Node, message: string) => void;
+}
+
+/**
+ * Checks a whole source file, without rewriting it.
+ *
+ * For a rule no single call can decide: whether a value is used after it was
+ * moved depends on everything the function does after the call, not on the
+ * call. A rewriter sees one call at a time, top down, so four of them asking
+ * the same question would each walk the enclosing function again and report
+ * one conflict from both of its ends. An analyzer walks the file once, before
+ * any rewriter runs, and sees the source exactly as it was written.
+ */
+export interface FileAnalyzer {
+	/**
+	 * Names of the functions whose calls the analyzer looks at.
+	 *
+	 * A file mentioning none of them is never type checked on its behalf — the
+	 * same cheap pre-filter rewriters get from their `functionName`.
+	 */
+	readonly functionNames: readonly string[];
+
+	/**
+	 * Checks one file, reporting through the context.
+	 *
+	 * @param sourceFile File as written, before any rewriter touched it.
+	 * @param context Compilation in progress.
+	 */
+	readonly analyze: (
+		sourceFile: typescript.SourceFile,
+		context: AnalysisContext,
+	) => void;
+}
+
+/** Everything a rewriter needs from the compilation in progress. */
+export interface RewriteContext extends AnalysisContext {
 	/** Node factory of the current transformation. */
 	readonly factory: typescript.NodeFactory;
 
@@ -56,8 +98,8 @@ export interface RewriteContext {
  */
 export type CallForm = 'function' | 'method';
 
-/** Rewrites the calls of a single utility. */
-export interface CallRewriter {
+/** Identifies the exported function a call has to resolve to. */
+export interface CallTarget {
 	/** Name the exported function is called by. */
 	readonly functionName: string;
 
@@ -73,6 +115,21 @@ export interface CallRewriter {
 	 */
 	readonly callForm?: CallForm;
 
+	/**
+	 * Name of the package that must declare the function, as its `package.json`
+	 * spells it.
+	 *
+	 * Needed where the module segment alone is not distinctive. A segment such
+	 * as `move/index` also matches a consumer's own `src/move/index.ts`, and a
+	 * transformer that reports errors — rather than declining — would then fail
+	 * that consumer's build over a function it never wrote. When set, the
+	 * nearest `package.json` above the declaration has to carry this name.
+	 */
+	readonly packageName?: string;
+}
+
+/** Rewrites the calls of a single utility. */
+export interface CallRewriter extends CallTarget {
 	/**
 	 * Rewrites one call.
 	 *
@@ -111,6 +168,70 @@ export const utilityModuleSegment = (name: string): string =>
 	path.join('functions', 'utils', name);
 
 /**
+ * Name of the package each directory belongs to, once looked up.
+ *
+ * A program holds thousands of declarations from a handful of directories, and
+ * every call asks again, so the walk up to a `package.json` and the read of it
+ * happen once per directory for the life of the process.
+ */
+const packageNames = new Map<string, string | null>();
+
+/**
+ * Reads the package name a directory's own `package.json` declares.
+ *
+ * @param directory Directory to look in.
+ * @returns The name; `null` when the manifest names nothing; `undefined` when
+ * the directory has no manifest, and the search goes on above it.
+ */
+const manifestNameIn = (directory: string): string | null | undefined => {
+	const manifest: string = path.join(directory, 'package.json');
+
+	if (!typescript.sys.fileExists(manifest)) return undefined;
+
+	const name: unknown = (
+		JSON.parse(typescript.sys.readFile(manifest) ?? '{}') as { name?: unknown }
+	).name;
+
+	return typeof name === 'string' ? name : null;
+};
+
+/**
+ * Tells which package a directory belongs to, remembering the answer for it.
+ *
+ * @param directory Absolute directory.
+ * @returns The package name, or `null` when no manifest above it names one.
+ */
+const packageNameIn = (directory: string): string | null => {
+	const cached: string | null | undefined = packageNames.get(directory);
+
+	if (cached !== undefined) return cached;
+
+	const parent: string = path.dirname(directory);
+	const declared: string | null | undefined = manifestNameIn(directory);
+	const found: string | null =
+		declared !== undefined
+			? declared
+			: parent === directory
+				? null
+				: packageNameIn(parent);
+
+	packageNames.set(directory, found);
+
+	return found;
+};
+
+/**
+ * Tells which package a file belongs to: the `name` in the nearest
+ * `package.json` above it.
+ *
+ * @param fileName File, in either spelling of the separator.
+ * @returns The package name, or `null` when no `package.json` above the file
+ * names one.
+ */
+export const packageNameOf = (fileName: string): string | null =>
+	packageNameIn(path.dirname(path.resolve(fileName)));
+
+/**
  * Tells whether a call resolves to the function a rewriter owns.
  *
  * The symbol is followed back to its declaration rather than matched by name,
@@ -118,13 +239,14 @@ export const utilityModuleSegment = (name: string): string =>
  *
  * @param call Call being inspected.
  * @param checker Checker of the program being compiled.
- * @param rewriter Rewriter claiming the call.
+ * @param rewriter Rewriter claiming the call, or any other description of the
+ * function a call has to resolve to.
  * @returns `true` when the call targets the function of that rewriter.
  */
 export const isOwnedCall = (
 	call: typescript.CallExpression,
 	checker: typescript.TypeChecker,
-	rewriter: CallRewriter,
+	rewriter: CallTarget,
 ): boolean => {
 	// The node carrying the name differs between the two forms: an identifier
 	// standing on its own, or the member half of a property access. Everything
@@ -155,11 +277,18 @@ export const isOwnedCall = (
 	const declarations: readonly typescript.Declaration[] =
 		resolved?.declarations ?? [];
 
-	return declarations.some((declaration) =>
-		path
-			.normalize(declaration.getSourceFile().fileName)
-			.includes(rewriter.moduleSegment),
-	);
+	return declarations.some((declaration) => {
+		const fileName: string = path.normalize(
+			declaration.getSourceFile().fileName,
+		);
+
+		if (!fileName.includes(rewriter.moduleSegment)) return false;
+
+		return (
+			rewriter.packageName === undefined ||
+			packageNameOf(fileName) === rewriter.packageName
+		);
+	});
 };
 
 /**

@@ -12,12 +12,14 @@ paths:
 **Scope:** the `transformer/` and `unplugin/` directories of every package,
 `@fulcro/transform-core`, and `tests/transformers`
 
-`@fulcro/collections` and `@fulcro/reflect` each ship a compile-time
-transformer behind its own entry point, and neither knows the other exists.
-What they share is the machinery in `@fulcro/transform-core` and a failure
-mode: a transformer that stops recognising a call does not throw, it declines,
-and the runtime fallback answers instead. The build stays green and the answer
-is worse.
+`@fulcro/collections`, `@fulcro/reflect` and `@fulcro/memory` each ship a
+compile-time transformer behind its own entry point, and none knows the others
+exist. What they share is the machinery in `@fulcro/transform-core` and a
+failure mode: a transformer that stops recognising a call does not throw, it
+declines, and the runtime fallback answers instead. The build stays green and
+the answer is worse. Memory's rewrites nothing and only refuses, through a
+`FileAnalyzer` — so for it the failure reads as a use after `move` that
+compiles, refused only later by the runtime.
 
 ## They change together, in one commit
 

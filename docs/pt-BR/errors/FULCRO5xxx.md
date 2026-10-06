@@ -3,8 +3,8 @@
 🇺🇸 English: [Read this documentation in English](../../errors/FULCRO5xxx.md)
 
 Os erros da maquinaria por trás dos transformers de tempo de compilação do
-`@fulcro/collections` e do `@fulcro/reflect`. Eles surgem enquanto o seu
-projeto é compilado, e não enquanto ele roda. Voltar para
+`@fulcro/collections`, do `@fulcro/reflect` e do `@fulcro/memory`. Eles surgem
+enquanto o seu projeto é compilado, e não enquanto ele roda. Voltar para
 [todos os códigos](../errors.md).
 
 ## FULCRO5001

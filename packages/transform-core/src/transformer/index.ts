@@ -2,7 +2,13 @@ import typescript from 'typescript';
 
 import { createError } from '@fulcro/errors';
 
-import { CallRewriter, isOwnedCall, RewriteContext } from '@/shared';
+import {
+	AnalysisContext,
+	CallRewriter,
+	FileAnalyzer,
+	isOwnedCall,
+	RewriteContext,
+} from '@/shared';
 
 /**
  * Composition root shared by every Fulcro transformer.
@@ -18,10 +24,11 @@ import { CallRewriter, isOwnedCall, RewriteContext } from '@/shared';
  * the package that owns that utility — this one knows only how to walk and how
  * to ask.
  *
- * Which is the whole reason it is a package of its own: `@fulcro/reflect` and
- * `@fulcro/collections` each ship their own transformer, so neither has to be
- * installed for the other to work, and neither can drift out of version with
- * the runtime code it rewrites. The walking is the only part they share.
+ * Which is the whole reason it is a package of its own: `@fulcro/reflect`,
+ * `@fulcro/collections` and `@fulcro/memory` each ship their own transformer,
+ * so none has to be installed for another to work, and none can drift out of
+ * version with the runtime code it rewrites or checks. The walking is the only
+ * part they share.
  *
  * Calls no rewriter can resolve are left untouched, so the runtime
  * implementations stay in charge and a project compiling without the
@@ -104,11 +111,16 @@ const describeDiagnostic = (diagnostic: typescript.Diagnostic): string => {
  * and otherwise — a bundler, a test calling `program.emit` — as one error
  * thrown once the file is walked, listing every refusal in it.
  *
+ * @param analyzers Analyzers run over each file before it is walked, as
+ * written; none when omitted. They report the way a refusing rewriter does.
  * @returns The factory a package exports as the default of its transformer
  * entry point.
  */
 export const createTransformer =
-	(rewriters: readonly CallRewriter[]): TransformerFactory =>
+	(
+		rewriters: readonly CallRewriter[],
+		analyzers: readonly FileAnalyzer[] = [],
+	): TransformerFactory =>
 	(
 		program: typescript.Program,
 		options: TransformerOptions = {},
@@ -155,7 +167,22 @@ export const createTransformer =
 				return owner === undefined ? null : owner.rewrite(call, rewriteContext);
 			};
 
+			const analysisContext: AnalysisContext = { checker, report };
+
 			return (sourceFile: typescript.SourceFile) => {
+				// Another package's transformer may run before this one and hand
+				// over a tree with rewritten, synthesized nodes in it — nodes with no
+				// position, no parent and no symbol. An analyzer is promised the
+				// file as written, which is the tree that one came from.
+				const written: typescript.SourceFile = typescript.getOriginalNode(
+					sourceFile,
+					typescript.isSourceFile,
+				);
+
+				for (const analyzer of analyzers) {
+					analyzer.analyze(written, analysisContext);
+				}
+
 				const transformed = typescript.visitNode(
 					sourceFile,
 					visit,

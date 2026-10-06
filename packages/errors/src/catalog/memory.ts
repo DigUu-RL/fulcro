@@ -259,4 +259,69 @@ export const memoryCatalog = {
 		}) =>
 			`${operation}: expected a linear memory or an allocation, received ${received}.`,
 	},
+	FULCRO7023: {
+		kind: Error,
+		message: ({ operation }: { operation: string }) =>
+			`${operation}: the owner was moved; use the owner move returned.`,
+	},
+	FULCRO7024: {
+		kind: Error,
+		message: ({ operation }: { operation: string }) =>
+			`${operation}: the borrow has ended — its owner was moved, or borrowed again in a way it cannot share; borrow again.`,
+	},
+	FULCRO7025: {
+		kind: Error,
+		message: ({ operation }: { operation: string }) =>
+			`${operation}: the storage already has an owner, and a storage is owned once.`,
+	},
+	FULCRO7026: {
+		kind: TypeError,
+		message: ({ operation }: { operation: string }) =>
+			`${operation}: create returned a borrow, which reaches memory another owner holds; create a storage instead.`,
+	},
+	FULCRO7027: {
+		kind: Error,
+		message: ({
+			operation,
+			name,
+			line,
+		}: {
+			operation: string;
+			name: string;
+			line: number;
+		}) =>
+			`${operation}: '${name}' is used after it was moved at line ${line}; use the owner move returned.`,
+	},
+	FULCRO7028: {
+		kind: Error,
+		message: ({
+			operation,
+			name,
+			owner,
+			conflict,
+			line,
+		}: {
+			operation: string;
+			name: string;
+			owner: string;
+			conflict: string;
+			line: number;
+		}) =>
+			`${operation}: the borrow '${name}' is used after ${conflict}(${owner}) at line ${line} ended it.`,
+	},
+	FULCRO7029: {
+		kind: Error,
+		message: ({
+			operation,
+			name,
+			owner,
+			line,
+		}: {
+			operation: string;
+			name: string;
+			owner: string;
+			line: number;
+		}) =>
+			`${operation}: the borrow '${name}' is used after its owner '${owner}' was moved at line ${line}.`,
+	},
 } as const satisfies RangeCatalog<'7'>;

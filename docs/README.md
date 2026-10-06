@@ -30,17 +30,17 @@ collection.
 
 ## Guides
 
-| Guide                                        | Covers                                                                                                                     | Package                     |
-| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
-| [Sequences](./sequences.md)                  | Querying arrays, sets, maps and generators; validating by type                                                             | `@fulcro/collections`       |
-| [Async sequences](./async-sequences.md)      | The same, over data that arrives over time                                                                                 | `@fulcro/collections/async` |
-| [Bounded concurrency](./concurrency.md)      | Running several elements at once, for work that waits                                                                      | `@fulcro/collections/async` |
-| [Parallelism with workers](./parallelism.md) | CPU-bound work across threads, on browser and Node                                                                         | `@fulcro/parallel`          |
-| [Reflection](./reflect.md)                   | `nameOf`, `typeOf`, `defaultOf`, `is`, `as`, `constantOf`, and the transformer                                             | `@fulcro/reflect`           |
-| [Control flow as values](./functions.md)     | `switchFor`, `tryCatch`, `Result` and `Option`                                                                             | `@fulcro/functions`         |
-| [Numeric types](./types.md)                  | Fixed-width integers, floats, `BigInteger`, `Decimal`, structs, matrices, vectors, fractions, complex numbers, quaternions | `@fulcro/types`             |
-| [Memory](./memory.md)                        | `Storage<T>` over managed memory or bytes, the `Allocator` the bytes come from, and views and pointers into them           | `@fulcro/memory`            |
-| [Error codes](./errors.md)                   | What each `FULCRO` code means, and what to write instead                                                                   | every package               |
+| Guide                                        | Covers                                                                                                                      | Package                     |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| [Sequences](./sequences.md)                  | Querying arrays, sets, maps and generators; validating by type                                                              | `@fulcro/collections`       |
+| [Async sequences](./async-sequences.md)      | The same, over data that arrives over time                                                                                  | `@fulcro/collections/async` |
+| [Bounded concurrency](./concurrency.md)      | Running several elements at once, for work that waits                                                                       | `@fulcro/collections/async` |
+| [Parallelism with workers](./parallelism.md) | CPU-bound work across threads, on browser and Node                                                                          | `@fulcro/parallel`          |
+| [Reflection](./reflect.md)                   | `nameOf`, `typeOf`, `defaultOf`, `is`, `as`, `constantOf`, and the transformer                                              | `@fulcro/reflect`           |
+| [Control flow as values](./functions.md)     | `switchFor`, `tryCatch`, `Result` and `Option`                                                                              | `@fulcro/functions`         |
+| [Numeric types](./types.md)                  | Fixed-width integers, floats, `BigInteger`, `Decimal`, structs, matrices, vectors, fractions, complex numbers, quaternions  | `@fulcro/types`             |
+| [Memory](./memory.md)                        | `Storage<T>` over managed memory or bytes, the `Allocator` the bytes come from, views and pointers into them, and ownership | `@fulcro/memory`            |
+| [Error codes](./errors.md)                   | What each `FULCRO` code means, and what to write instead                                                                    | every package               |
 
 ## Which tool for which problem
 

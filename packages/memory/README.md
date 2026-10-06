@@ -13,16 +13,21 @@ npm install @fulcro/memory
 import {
 	allocate,
 	asView,
+	borrow,
+	borrowMutable,
 	createFixedBufferStorage,
 	createLinearMemory,
 	createManagedStorage,
 	createStackAllocator,
+	move,
 	nativePointerTo,
+	own,
 	pointerTo,
 	referenceTo,
 	type LinearMemory,
 	type MemoryReference,
 	type NativePointer,
+	type Owned,
 	type Pointer,
 	type StackAllocator,
 	type Storage,
@@ -136,6 +141,35 @@ particle
 
 A native pointer reads the current bytes on every access, so it keeps working
 after the memory grows. Shared memory and misaligned addresses are refused.
+
+## `Owned<T>`, `Borrowed<T>` and `MutableBorrow<T>`
+
+Say who may use values, and for how long. A storage gets one owner; its values
+are lent to any number of readers at once or to one writer alone, and a move
+hands them on and spends the old owner:
+
+```ts
+const queue: Owned<number> = own(() => createManagedStorage(64, 0));
+
+borrowMutable(queue).set(0, 7);
+
+const worker = move(queue);
+
+borrow(worker).get(0); // 7
+borrow(queue); // throws FULCRO7023: queue was moved
+```
+
+| Function               | Returns                                                       |
+| ---------------------- | ------------------------------------------------------------- |
+| `own(create)`          | The owner of the storage `create` makes                       |
+| `borrow(owner)`        | A `ReadOnlyView<T>` that ends when the owner is lent to write |
+| `borrowMutable(owner)` | A `View<T>` that ends when the owner is lent again            |
+| `move(owner)`          | A new owner of the same values; the old one is spent          |
+
+A borrow that has ended throws on its next access, and so does anything made
+from it. The optional transformer — `@fulcro/memory/transformer` for
+`ts-patch`, `@fulcro/memory/unplugin` for a bundler — refuses the same uses when
+the code is compiled. It rewrites nothing.
 
 ---
 

@@ -10,7 +10,9 @@ dele. De onde vem a própria memória é uma terceira decisão, tomada pelo
 outro lugar — uma região deles, uma posição, um valor — sem copiá-los nem ser
 dono deles é a [camada de acesso](#views-ponteiros-e-referências).
 Alcançá-los por endereço em bytes, do jeito que um módulo WebAssembly faz, é
-uma [memória linear](#memória-linear-e-ponteiros-nativos).
+uma [memória linear](#memória-linear-e-ponteiros-nativos). Dizer quem pode usar
+os valores e por quanto tempo — um dono, empréstimos que terminam, uso depois de
+um move recusado — é [ownership](#ownership).
 
 ```sh
 npm install @fulcro/memory
@@ -21,19 +23,26 @@ import {
 	allocate,
 	asReadOnlyView,
 	asView,
+	borrow,
+	borrowMutable,
 	createArenaAllocator,
 	createFixedBufferStorage,
 	createLinearMemory,
 	createManagedStorage,
 	createStackAllocator,
+	move,
 	nativePointerTo,
+	own,
 	pointerTo,
 	referenceTo,
 	type Allocation,
 	type Allocator,
+	type Borrowed,
 	type LinearMemory,
 	type MemoryReference,
+	type MutableBorrow,
 	type NativePointer,
+	type Owned,
 	type Pointer,
 	type ReadOnlyView,
 	type StackAllocator,
@@ -608,6 +617,164 @@ liberou — uma comparação por acesso, como num storage de `allocate`. Peça a
 alocador o alinhamento do tipo: uma alocação que começa onde o tipo não pode
 começar lança `FULCRO7020`.
 
+## Ownership
+
+Uma view deixa um código alcançar valores que não são dele, e não diz nada
+sobre quem mais os alcança ao mesmo tempo. Ownership diz: uma storage ganha um
+único dono, e os seus valores são emprestados por esse dono — a qualquer número
+de leitores ao mesmo tempo, ou a um único escritor — e passados adiante com um
+move que gasta o dono antigo.
+
+```ts
+interface Owned<T> {
+	readonly length: number;
+}
+
+interface Borrowed<T> extends ReadOnlyView<T> {}
+
+interface MutableBorrow<T> extends View<T> {}
+```
+
+Um empréstimo é uma view: `Borrowed<T>` é aceito onde quer que um
+`ReadOnlyView<T>` seja, e `MutableBorrow<T>` onde quer que um `View<T>` seja,
+então um código escrito contra views recebe empréstimos sem mudança. Nenhum dos
+três é confundido com outra coisa — um objeto qualquer com `length` não é um
+`Owned<number>`, nem qualquer view é um empréstimo.
+
+### `own(create)`
+
+Cria uma storage e o seu dono:
+
+```ts
+const scores: Owned<number> = own(() => createManagedStorage(100, 0));
+const particles = own(() => allocate(Particle, 10_000, arena));
+```
+
+A storage é criada dentro da função de propósito: nada mais fica com ela, então
+não há caminho por fora dos empréstimos até os seus valores. Uma storage que a
+função devolve de outro lugar — uma variável, uma view feita sobre ela antes —
+continua alcançável por ali, sem verificação. Devolver uma storage que já tem
+dono lança [`FULCRO7025`](./errors/FULCRO7xxx.md#fulcro7025); devolver um
+empréstimo lança [`FULCRO7026`](./errors/FULCRO7xxx.md#fulcro7026).
+
+Um dono expõe o seu `length` e mais nada. Os seus valores são alcançados por um
+empréstimo.
+
+### `borrow(owner)` e `borrowMutable(owner)`
+
+```ts
+const total = (values: ReadOnlyView<number>): number => {
+	let sum = 0;
+
+	for (let index = 0; index < values.length; index++) sum += values.get(index);
+
+	return sum;
+};
+
+borrowMutable(scores).set(3, 42);
+total(borrow(scores)); // 42
+```
+
+`borrow` empresta os valores para leitura. Empréstimos compartilhados convivem:
+tomar um não encerra nenhum outro. `borrowMutable` os empresta para escrita, com
+exclusividade: tomá-lo encerra todo empréstimo tomado antes, e ele termina assim
+que o dono é emprestado de novo, de qualquer forma.
+
+Um empréstimo que terminou lança
+[`FULCRO7024`](./errors/FULCRO7xxx.md#fulcro7024) no acesso seguinte — e o
+mesmo vale para toda subview, view somente leitura, view e ponteiro feitos a
+partir dele, não importa como foram feitos.
+
+| Tomar           | Encerra                                      |
+| --------------- | -------------------------------------------- |
+| `borrow`        | o `borrowMutable` anterior, se houver        |
+| `borrowMutable` | todo empréstimo anterior                     |
+| `move`          | todo empréstimo, e o dono de onde foi tomado |
+
+Um empréstimo dura até o seu último uso, não até o fim de um escopo. Tomar um
+empréstimo conflitante é sempre permitido; o que é recusado é usar o anterior
+depois dele.
+
+### `move(owner)`
+
+```ts
+const queue = own(() => createManagedStorage(64, 0));
+const worker = move(queue);
+
+borrow(worker).get(0); // ok
+borrow(queue); // lança FULCRO7023: queue foi movido
+```
+
+O novo dono possui exatamente os mesmos valores; nada é copiado. O dono antigo
+recusa tudo o que lhe pedem dali em diante, o seu `length` inclusive, com
+[`FULCRO7023`](./errors/FULCRO7xxx.md#fulcro7023).
+
+### Recusado na compilação
+
+Todas as recusas acima acontecem em runtime, nos caminhos que rodam. O
+transformer do memory recusa os mesmos usos na compilação, no uso, e diz onde
+estava o move ou o empréstimo conflitante:
+
+```text
+FULCRO7027: move: 'queue' is used after it was moved at line 2; use the owner move returned.
+FULCRO7028: borrow: the borrow 'reading' is used after borrowMutable(scores) at line 8 ended it.
+FULCRO7029: borrow: the borrow 'reading' is used after its owner 'scores' was moved at line 9.
+```
+
+Ele é opcional e não reescreve nada. Configure-o pelo `ts-patch`:
+
+```json
+{ "plugins": [{ "transform": "@fulcro/memory/transformer" }] }
+```
+
+ou, para um bundler, por `@fulcro/memory/unplugin`:
+
+```ts
+import { vite as fulcroMemory } from '@fulcro/memory/unplugin';
+
+export default defineConfig({ plugins: [fulcroMemory()] });
+```
+
+Ele convive com os plugins de `@fulcro/reflect` e `@fulcro/collections`, em
+qualquer ordem. Os seus erros vêm do build — `tsc` pelo `ts-patch`, ou o
+bundler — e não de `tsc --noEmit` nem de um editor, que não rodam plugins.
+
+Ele segue variáveis, por todos os caminhos que o código pode tomar: um move num
+ramo de um `if` deixa a variável movida depois dele, um move dentro de um laço é
+visto pela iteração seguinte, e uma função criada depois de um move não pode
+nomear o que foi movido. O que ele não segue fica com a verificação em runtime,
+que o pega quando roda:
+
+- um dono ou um empréstimo alcançado por uma propriedade, um array ou um apelido
+  (`const other = owner`);
+- uma função criada antes do move, que pode rodar antes ou depois dele;
+- uma subview ou um ponteiro feito de um empréstimo e guardado numa variável
+  própria.
+
+### O que custa
+
+Criar um dono, um empréstimo ou um move não lê nem copia nada. Cada acesso por
+um empréstimo faz uma comparação para saber se o empréstimo terminou, e então
+lê ou escreve a storage uma vez — através de qualquer número de subviews
+aninhadas. Sobre uma storage de `allocate`, a storage ainda pergunta uma vez se
+a sua memória continua viva, como sempre faz; o empréstimo não acrescenta uma
+segunda pergunta. Encerrar empréstimos custa o mesmo, não importa quantos foram
+tomados.
+
+### Segurança progressiva
+
+Cada degrau abaixo troca uma garantia por alcance:
+
+1. **Valores com dono**, alcançados por empréstimos: quem pode ler e escrever é
+   verificado em todo acesso, e na compilação com o transformer.
+2. **Views, ponteiros e referências** sobre uma storage: sem dono, então nada
+   diz quem mais está escrevendo — o índice continua verificado.
+3. **Ponteiros nativos** numa memória linear: qualquer byte dela, confiando que
+   há ali um valor do tipo.
+
+Cada degrau é alcançado chamando uma função, e em que degrau um valor está fica
+visível no tipo que você tem nas mãos.
+
 ## O que ainda não faz
 
 - **Crescer.** O comprimento de um storage é o da criação.
@@ -648,3 +815,10 @@ começar lança `FULCRO7020`.
 | [`FULCRO7020`](./errors/FULCRO7xxx.md#fulcro7020) | Um endereço onde o tipo do ponteiro não pode começar            |
 | [`FULCRO7021`](./errors/FULCRO7xxx.md#fulcro7021) | Um valor cujos bytes passam de onde o ponteiro pode ler         |
 | [`FULCRO7022`](./errors/FULCRO7xxx.md#fulcro7022) | Nem memória linear nem alocação, para apontar dentro            |
+| [`FULCRO7023`](./errors/FULCRO7xxx.md#fulcro7023) | Um dono usado depois de ser movido                              |
+| [`FULCRO7024`](./errors/FULCRO7xxx.md#fulcro7024) | Um empréstimo usado depois de terminar                          |
+| [`FULCRO7025`](./errors/FULCRO7xxx.md#fulcro7025) | Uma storage possuída uma segunda vez                            |
+| [`FULCRO7026`](./errors/FULCRO7xxx.md#fulcro7026) | Um empréstimo passado a `own` como storage                      |
+| [`FULCRO7027`](./errors/FULCRO7xxx.md#fulcro7027) | Na compilação: uma variável usada depois de ser movida          |
+| [`FULCRO7028`](./errors/FULCRO7xxx.md#fulcro7028) | Na compilação: um empréstimo usado depois de um conflitante     |
+| [`FULCRO7029`](./errors/FULCRO7xxx.md#fulcro7029) | Na compilação: um empréstimo usado depois que o dono foi movido |

@@ -18,13 +18,15 @@ under `packages/` do.
 | `@fulcro/transform-core` | Shared machinery behind the transformers                                       | `errors`, `unplugin`, peer `typescript` |
 | `@fulcro/parallel`       | Worker pool for CPU-bound work, browser and Node                               | `errors`                                |
 | `@fulcro/types`          | Numeric types with a range and layout, and structs                             | `errors`                                |
-| `@fulcro/memory`         | Where a value's bytes live and who may reach them: storage, allocation, access | `errors`                                |
+| `@fulcro/memory`         | Where a value's bytes live and who may reach them: storage, allocation, access | `errors`, `transform-core`              |
 
-`@fulcro/collections` and `@fulcro/reflect` each ship their own compile time
-transformer behind a separate entry point (`./transformer`, `./unplugin`).
-Neither knows the other exists; each claims only what it can trace back to its
-own package. `@fulcro/types` ships none: every operation on its types is a
-typed method, and nothing has to be configured to use it.
+`@fulcro/collections`, `@fulcro/reflect` and `@fulcro/memory` each ship their
+own compile time transformer behind a separate entry point (`./transformer`,
+`./unplugin`). None knows the others exist; each claims only what it can trace
+back to its own package. Memory's rewrites nothing — it refuses a use after
+`move` and a borrow used after a conflicting one, which its runtime also
+refuses. `@fulcro/types` ships none: every operation on its types is a typed
+method, and nothing has to be configured to use it.
 
 `@fulcro/memory` holds where a value's bytes live; the values and their layout
 stay in `@fulcro/types`. It never imports `@fulcro/reflect`: it reads a layout
@@ -88,8 +90,11 @@ Built output goes to each package's `dist/` and never beside its source. A
 ## Testing
 
 Testing is owned by the root, not by each package: `vitest.config.mts` wires
-both transformers into every package project, because `@fulcro/reflect`'s
-suites are meaningless without its transformer applied.
+all three transformers into every package project, because `@fulcro/reflect`'s
+suites are meaningless without its transformer applied. The one exception is
+`memory-unchecked`: the `*.unchecked.spec.ts` suites of `@fulcro/memory` break
+its ownership rules on purpose to prove the runtime refuses them, so they run
+without memory's transformer, which would refuse to compile them.
 
 Two kinds of suite, and they are not interchangeable:
 
@@ -100,7 +105,7 @@ Two kinds of suite, and they are not interchangeable:
   repository root against the published surface, deliberately _without_ the
   transformers, so they assert the runtime fallback a consumer gets before
   wiring anything up. `tests/transformers/**` is its own project again, for the
-  two plugins walking one tree together.
+  plugins walking one tree together.
 
 Every feature carries a behaviour suite **and** a performance suite; one
 without the other is unfinished. Performance is asserted by counting work —
