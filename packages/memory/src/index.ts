@@ -20,6 +20,9 @@ export type { Allocation, AllocationDomain, Allocator } from '@/allocator';
 export { type ArenaAllocator, createArenaAllocator } from '@/arenaAllocator';
 export { asReadOnlyView } from '@/asReadOnlyView';
 export { asView } from '@/asView';
+export { borrow } from '@/borrow';
+export type { Borrowed } from '@/borrowed';
+export { borrowMutable } from '@/borrowMutable';
 export {
 	createFixedBufferAllocator,
 	type FixedBufferAllocator,
@@ -29,8 +32,12 @@ export { createLinearMemory, type LinearMemory } from '@/linearMemory';
 export { createManagedAllocator } from '@/managedAllocator';
 export { createManagedStorage } from '@/managedStorage';
 export type { MemoryReference } from '@/memoryReference';
+export { move } from '@/move';
+export type { MutableBorrow } from '@/mutableBorrow';
 export type { NativePointer } from '@/nativePointer';
 export { nativePointerTo } from '@/nativePointerTo';
+export { own } from '@/own';
+export type { Owned } from '@/owned';
 export type { Pointer } from '@/pointer';
 export { pointerTo } from '@/pointerTo';
 export { createPoolAllocator, type PoolAllocator } from '@/poolAllocator';

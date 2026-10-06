@@ -761,6 +761,8 @@ describe('@fulcro/memory', () => {
 			'allocate',
 			'asReadOnlyView',
 			'asView',
+			'borrow',
+			'borrowMutable',
 			'createArenaAllocator',
 			'createFixedBufferAllocator',
 			'createFixedBufferStorage',
@@ -769,10 +771,42 @@ describe('@fulcro/memory', () => {
 			'createManagedStorage',
 			'createPoolAllocator',
 			'createStackAllocator',
+			'move',
 			'nativePointerTo',
+			'own',
 			'pointerTo',
 			'referenceTo',
 		]);
+	});
+
+	it('should lend and move owned values, and refuse a spent owner or an ended borrow at runtime', async () => {
+		const { borrow, borrowMutable, createManagedStorage, move, own } =
+			await import('@fulcro/memory');
+
+		// Nothing compiles this file through the memory transformer, so these
+		// uses — refused at compile time with it — reach the runtime check, as
+		// they would for a consumer who never wired the plugin up.
+		const first = own(() => createManagedStorage(3, 0));
+		const reading = borrow(first);
+
+		borrowMutable(first).set(1, 7);
+
+		expect(() => reading.get(1)).toThrow(
+			expect.objectContaining({
+				code: 'FULCRO7024',
+				details: { operation: 'ReadOnlyView.get' },
+			}),
+		);
+
+		const second = move(first);
+
+		expect(borrow(second).get(1)).toBe(7);
+		expect(() => borrow(first)).toThrow(
+			expect.objectContaining({
+				code: 'FULCRO7023',
+				details: { operation: 'borrow' },
+			}),
+		);
 	});
 
 	it('should write a field of a published struct at its bytes through a native pointer, and refuse it once released', async () => {
@@ -968,6 +1002,40 @@ describe('@fulcro/collections/transformer', () => {
 				}
 			).ofType(),
 		).toThrow(/was not resolved at compile time/);
+	});
+});
+
+describe('@fulcro/memory/transformer', () => {
+	it('should expose the compiler plugin as its default export', async () => {
+		const entry = await import('@fulcro/memory/transformer');
+
+		expect(typeof entry.default).toBe('function');
+	});
+
+	it('should ship inside the package whose calls it checks', () => {
+		expect(() => resolve('@fulcro/memory/transformer')).not.toThrow();
+		expect(() => resolve('@fulcro/memory/unplugin')).not.toThrow();
+	});
+
+	it('should expose an adapter for every bundler it claims to serve', async () => {
+		const adapters = await import('@fulcro/memory/unplugin');
+
+		for (const bundler of BUNDLERS) {
+			expect(typeof adapters[bundler as keyof typeof adapters]).toBe(
+				'function',
+			);
+		}
+	});
+
+	it('should leave the runtime package free of the compiler', () => {
+		// TypeScript is an optional peer: a consumer of the runtime alone never
+		// installs it, so the main entry point must not reach the transformer.
+		const { manifest } = manifestOf('@fulcro/memory');
+
+		expect(manifest.peerDependencies).toEqual({ typescript: '>=5.3.3 <7' });
+		expect(readFileSync(resolve('@fulcro/memory'), 'utf8')).not.toMatch(
+			/require\(["'][^"']*(transformer|typescript)/,
+		);
 	});
 });
 

@@ -482,3 +482,148 @@ Detalhes:
 recebeu outra coisa. Um buffer é o caso mostrado: envolva-o com
 `createLinearMemory` antes. Um objeto com a forma de uma memória linear não é
 uma — só `createLinearMemory` as cria.
+
+## FULCRO7023
+
+```text
+Error: FULCRO7023: borrow: the owner was moved; use the owner move returned.
+```
+
+Detalhes:
+
+```text
+{ operation: string }
+```
+
+Um dono foi usado depois de ser entregue a `move`. O handle que `move` gastou
+recusa tudo dali em diante — `borrow`, `borrowMutable`, `move` e o seu
+`length` — porque outro dono agora tem os mesmos valores, e dois handles agindo
+por eles anulariam o sentido de possuí-los.
+
+Use o dono que `move` devolveu. Com [o transformer do memory](../memory.md#ownership)
+configurado, o mesmo uso é recusado na compilação, como
+[FULCRO7027](#fulcro7027), onde quer que o dono antigo seja usado pelo nome.
+
+## FULCRO7024
+
+```text
+Error: FULCRO7024: ReadOnlyView.get: the borrow has ended — its owner was moved, or borrowed again in a way it cannot share; borrow again.
+```
+
+Detalhes:
+
+```text
+{ operation: string }
+```
+
+Um empréstimo — ou uma subview, uma view somente leitura, uma view ou um
+ponteiro feito a partir dele — foi usado depois que algo feito pelo seu dono o
+encerrou. Um empréstimo compartilhado termina quando o dono é emprestado com
+`borrowMutable`. Um empréstimo exclusivo termina quando o dono é emprestado de
+novo, de qualquer forma. Todo empréstimo termina quando o dono é movido.
+
+Empreste de novo depois da operação conflitante, em vez de guardar o
+empréstimo de antes dela. Com o transformer do memory configurado, um
+empréstimo guardado numa variável é recusado na compilação, como
+[FULCRO7028](#fulcro7028) ou [FULCRO7029](#fulcro7029).
+
+## FULCRO7025
+
+```text
+Error: FULCRO7025: own: the storage already has an owner, and a storage is owned once.
+```
+
+Detalhes:
+
+```text
+{ operation: string }
+```
+
+`own` recebeu um `create` que devolveu uma storage que outro `own` já tomou.
+Uma storage tem um único dono: dois emprestariam os seus valores para escrita
+enquanto o outro ainda os lê.
+
+Crie a storage dentro da função passada a `own` —
+`own(() => createManagedStorage(…))` — para que nada mais a tenha. Para entregar
+um dono a outro código, use `move`.
+
+## FULCRO7026
+
+```text
+TypeError: FULCRO7026: own: create returned a borrow, which reaches memory another owner holds; create a storage instead.
+```
+
+Detalhes:
+
+```text
+{ operation: string }
+```
+
+A função passada a `own` devolveu um empréstimo. Um empréstimo observa valores
+que já têm dono, então possuí-lo daria dois donos à mesma memória.
+
+Crie uma storage nova dentro da função. Para dar os valores a um código sem
+dar a posse, passe o próprio empréstimo.
+
+## FULCRO7027
+
+```text
+FULCRO7027: move: 'queue' is used after it was moved at line 12; use the owner move returned.
+```
+
+Detalhes:
+
+```text
+{ operation: string; name: string; line: number }
+```
+
+Um erro de compilação, no uso, emitido pelo transformer do memory. A variável
+foi entregue a `move` na linha indicada, em algum caminho que chega a este
+uso — num ramo, numa iteração anterior do laço, num `try` que pode ter rodado,
+ou numa função criada depois do move. Em runtime, o mesmo uso lança
+[FULCRO7023](#fulcro7023).
+
+Use o dono que `move` devolveu. Quando o move acontece em só um ramo, dê à
+variável um valor novo nesse ramo, ou mova-a em todos.
+
+## FULCRO7028
+
+```text
+FULCRO7028: borrow: the borrow 'reading' is used after borrowMutable(scores) at line 8 ended it.
+```
+
+Detalhes:
+
+```text
+{ operation: string; name: string; owner: string; conflict: string; line: number }
+```
+
+Um erro de compilação, no uso, emitido pelo transformer do memory. O empréstimo
+guardado na variável foi tomado de `owner`, e `conflict` — na linha indicada —
+emprestou o mesmo dono de um jeito que este empréstimo não pode compartilhar:
+para escrita, encerrando todo empréstimo anterior, ou para leitura, encerrando
+um empréstimo para escrita. Um empréstimo dura até o seu último uso, então só
+este uso posterior é recusado. Em runtime, o mesmo uso lança
+[FULCRO7024](#fulcro7024).
+
+Termine de usar o empréstimo antes de tomar o conflitante, ou empreste de novo
+depois dele.
+
+## FULCRO7029
+
+```text
+FULCRO7029: borrow: the borrow 'reading' is used after its owner 'scores' was moved at line 9.
+```
+
+Detalhes:
+
+```text
+{ operation: string; name: string; owner: string; line: number }
+```
+
+Um erro de compilação, no uso, emitido pelo transformer do memory. O empréstimo
+guardado na variável foi tomado de um dono que foi movido na linha indicada;
+todo empréstimo de um dono termina quando ele se move. Em runtime, o mesmo uso
+lança [FULCRO7024](#fulcro7024).
+
+Empreste do dono que `move` devolveu.
