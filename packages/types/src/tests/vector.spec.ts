@@ -20,13 +20,21 @@ import { type Vector, Vector as VectorOf } from '@/vector';
 
 /**
  * The error a refusal is expected to throw, carrying the code its message
- * starts with, which `toThrow` compares as well.
+ * starts with and the details it was made from, which `toThrow` compares as
+ * well.
  *
  * @param error The expected error, its message starting with its code.
- * @returns The same error, carrying that code.
+ * @param details The details the error is expected to carry.
+ * @returns The same error, carrying that code and those details.
  */
-const coded = <T extends Error>(error: T): T =>
-	Object.assign(error, { code: error.message.slice(0, 'FULCRO0000'.length) });
+const coded = <T extends Error>(
+	error: T,
+	details: Readonly<Record<string, unknown>>,
+): T =>
+	Object.assign(error, {
+		code: error.message.slice(0, 'FULCRO0000'.length),
+		details,
+	});
 
 const Column = VectorOf(DoublePrecisionFloat, 3, 1);
 const Row = VectorOf(DoublePrecisionFloat, 1, 3);
@@ -129,6 +137,7 @@ describe('Vector', () => {
 					new RangeError(
 						'FULCRO6040: Vector: expected one row or one column, received 2 rows and 3 columns. A shape with neither is a Matrix.',
 					),
+					{ operation: 'Vector', rows: '2', columns: '3' },
 				),
 			);
 		});
@@ -139,6 +148,10 @@ describe('Vector', () => {
 					new TypeError(
 						'FULCRO6034: Vector<DoublePrecisionFloat, 3, 1>.from: expected an array, received number.',
 					),
+					{
+						operation: 'Vector<DoublePrecisionFloat, 3, 1>.from',
+						received: 'number',
+					},
 				),
 			);
 		});
@@ -149,6 +162,11 @@ describe('Vector', () => {
 					new RangeError(
 						'FULCRO6038: Vector<DoublePrecisionFloat, 3, 1>.from: expected 3 elements, received 2.',
 					),
+					{
+						operation: 'Vector<DoublePrecisionFloat, 3, 1>.from',
+						expected: '3 elements',
+						received: '2',
+					},
 				),
 			);
 		});
@@ -159,6 +177,7 @@ describe('Vector', () => {
 					new TypeError(
 						'FULCRO6006: Vector<DoublePrecisionFloat, 3, 1>.from: element 1: DoublePrecisionFloat.from: expected a number, received string.',
 					),
+					{ operation: 'DoublePrecisionFloat.from', received: 'string' },
 				),
 			);
 		});
@@ -171,6 +190,11 @@ describe('Vector', () => {
 					new RangeError(
 						'FULCRO6036: Vector<DoublePrecisionFloat, 3, 1>.dot: expected a Vector<DoublePrecisionFloat, 3, 1>, received a Vector<DoublePrecisionFloat, 1, 3>.',
 					),
+					{
+						operation: 'Vector<DoublePrecisionFloat, 3, 1>.dot',
+						expected: 'Vector<DoublePrecisionFloat, 3, 1>',
+						received: 'Vector<DoublePrecisionFloat, 1, 3>',
+					},
 				),
 			);
 		});

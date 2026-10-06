@@ -163,14 +163,21 @@ const describeKind = (value: unknown): string =>
  */
 export const constantOf = <T extends Constant>(compute: () => T): T => {
 	if (typeof compute !== 'function') {
-		throw createError('FULCRO4014', describeKind(compute));
+		throw createError('FULCRO4014', {
+			operation: 'constantOf',
+			received: describeKind(compute),
+		});
 	}
 
 	const value: T = compute();
 	const unwritable: string | null = describeUnwritable(value);
 
 	if (unwritable !== null) {
-		throw createError('FULCRO4011', 'constantOf(…)', unwritable);
+		throw createError('FULCRO4011', {
+			operation: 'constantOf',
+			call: 'constantOf(…)',
+			received: unwritable,
+		});
 	}
 
 	return freezeDeeply(value);

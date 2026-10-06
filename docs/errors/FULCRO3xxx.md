@@ -16,6 +16,12 @@ text under a code that says where it happened.
 Error: FULCRO3001: file:///app/work.mjs has no callable export named "resize".
 ```
 
+Details:
+
+```text
+{ operation: string; module: string; name: string }
+```
+
 The module the pool was given loads, but the `export` it names is missing or is
 not a function. Every worker refuses to start, so the first `map()` rejects.
 
@@ -28,6 +34,12 @@ that name rather than as its default.
 Error: FULCRO3002: This module is only meaningful inside a worker.
 ```
 
+Details:
+
+```text
+{ operation: string }
+```
+
 The script the workers run, `@fulcro/parallel/worker`, was imported somewhere
 that is not a worker. Nothing needs to import it: the pool starts it itself.
 
@@ -37,6 +49,12 @@ that is not a worker. Nothing needs to import it: the pool starts it itself.
 Error: FULCRO3003: A pool needs a positive integer worker count, and was given 0.
 ```
 
+Details:
+
+```text
+{ operation: string; workers: number | undefined }
+```
+
 `createWorkerPool()` was given a `workers` option that is not a whole number of
 at least one. Leave it out to use the machine's core count.
 
@@ -44,6 +62,12 @@ at least one. Leave it out to use the machine's core count.
 
 ```text
 Error: FULCRO3004: <the text of the failure>
+```
+
+Details:
+
+```text
+{ operation: string; reason: string }
 ```
 
 A worker could not load the task module: the module was not found, or it threw
@@ -60,6 +84,12 @@ is resolved against the worker script, not against your file. Build it with
 Error: FULCRO3005: <the text your task threw>
 ```
 
+Details:
+
+```text
+{ operation: string; reason: string }
+```
+
 The task threw, or rejected, while it was working on an element. The message is
 your task's own message, word for word, after the code; the run rejects with it
 and hands out no further elements.
@@ -73,6 +103,12 @@ put what you need in the message the task throws.
 Error: FULCRO3006: The worker was given a task before it was initialised.
 ```
 
+Details:
+
+```text
+{ operation: string }
+```
+
 A worker received an element before it had loaded the task module. The pool
 never does this; seeing it means the protocol between the pool and its workers
 was broken, which is a defect in the library worth reporting.
@@ -81,6 +117,12 @@ was broken, which is a defect in the library worth reporting.
 
 ```text
 Error: FULCRO3007: The worker exited with code 1.
+```
+
+Details:
+
+```text
+{ operation: string; exitCode: number }
 ```
 
 A worker thread on Node stopped with a non-zero exit code while the pool was
@@ -94,6 +136,12 @@ waiting forever.
 Error: FULCRO3008: <the text of the failure>
 ```
 
+Details:
+
+```text
+{ operation: string; reason: string }
+```
+
 A worker in the browser raised an error that nothing inside it caught — most
 often its script, or the task module, failing to load. The message is the one
 the browser reported.
@@ -102,6 +150,12 @@ the browser reported.
 
 ```text
 Error: FULCRO3009: A message could not be cloned across the worker boundary.
+```
+
+Details:
+
+```text
+{ operation: string }
 ```
 
 An element or a result could not be copied to or from a worker. Only what the

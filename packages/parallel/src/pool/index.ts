@@ -1,4 +1,4 @@
-import { createError, type ErrorCode } from '@fulcro/errors';
+import { createError, type DetailsOf, type ErrorCode } from '@fulcro/errors';
 
 import {
 	PoolOptions,
@@ -22,10 +22,10 @@ const DEFAULT_WORKERS = 4;
 
 /**
  * A failure as it crosses the boundary: one of this package's own, as its code
- * and the values of its message, or somebody else's, as the text it had.
+ * and its details, or somebody else's, as the text it had.
  */
 type Failure =
-	| { readonly code: ErrorCode; readonly values: readonly unknown[] }
+	| { readonly code: ErrorCode; readonly details: DetailsOf<ErrorCode> }
 	| { readonly error: string };
 
 /** What a worker sends back. */
@@ -47,16 +47,21 @@ const errorFrom = (
 	failure: Failure,
 	foreign: 'FULCRO3004' | 'FULCRO3005',
 ): Error => {
-	if ('error' in failure) return createError(foreign, failure.error);
+	if ('error' in failure) {
+		return createError(foreign, {
+			operation: foreign === 'FULCRO3004' ? 'initialize' : 'run',
+			reason: failure.error,
+		});
+	}
 
-	// The worker chose the code and its values together, from the same
+	// The worker chose the code and its details together, from the same
 	// catalog, so they match; the compiler cannot see that across a message.
 	const create = createError as (
 		code: ErrorCode,
-		...values: readonly unknown[]
+		details: DetailsOf<ErrorCode>,
 	) => Error;
 
-	return create(failure.code, ...failure.values);
+	return create(failure.code, failure.details);
 };
 
 /** A worker and what it is currently doing. */
@@ -103,7 +108,10 @@ export const createPool = <T, R>(
 	const size: number = options.workers ?? availableWorkers();
 
 	if (!Number.isInteger(size) || size < 1) {
-		throw createError('FULCRO3003', options.workers);
+		throw createError('FULCRO3003', {
+			operation: 'createPool',
+			workers: options.workers,
+		});
 	}
 
 	/**

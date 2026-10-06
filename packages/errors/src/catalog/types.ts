@@ -13,221 +13,417 @@ import { RangeCatalog } from '@/definition';
 export const typesCatalog = {
 	FULCRO6001: {
 		kind: RangeError,
-		message: (operation: string) => `${operation}: division by zero.`,
+		message: ({ operation }: { operation: string }) =>
+			`${operation}: division by zero.`,
 	},
 	FULCRO6002: {
 		kind: RangeError,
-		message: (operation: string, received: string) =>
-			`${operation}: expected an integer, received ${received}.`,
+		message: ({
+			operation,
+			received,
+		}: {
+			operation: string;
+			received: string;
+		}) => `${operation}: expected an integer, received ${received}.`,
 	},
 	FULCRO6003: {
 		kind: SyntaxError,
-		message: (received: string) =>
+		message: ({ received }: { operation: string; received: string }) =>
 			`BigInteger.from: expected decimal digits with an optional sign, received ${received}.`,
 	},
 	FULCRO6004: {
 		kind: TypeError,
-		message: (received: string) =>
+		message: ({ received }: { operation: string; received: string }) =>
 			`BigInteger.from: expected a number, a bigint or a string, received ${received}.`,
 	},
 	FULCRO6005: {
 		kind: RangeError,
-		message: (operation: string, received: string) =>
+		message: ({
+			operation,
+			received,
+		}: {
+			operation: string;
+			received: string;
+		}) =>
 			`${operation}: expected an exponent of zero or more, received ${received}.`,
 	},
 	FULCRO6006: {
 		kind: TypeError,
-		message: (operation: string, received: string) =>
-			`${operation}: expected a number, received ${received}.`,
+		message: ({
+			operation,
+			received,
+		}: {
+			operation: string;
+			received: string;
+		}) => `${operation}: expected a number, received ${received}.`,
 	},
 	FULCRO6007: {
 		kind: RangeError,
-		message: (operation: string, modes: string, received: string) =>
+		message: ({
+			operation,
+			modes,
+			received,
+		}: {
+			operation: string;
+			modes: string;
+			received: string;
+		}) =>
 			`${operation}: expected a rounding mode of ${modes}, received ${received}.`,
 	},
 	FULCRO6008: {
 		kind: TypeError,
-		message: (name: string, received: string) =>
+		message: ({
+			name,
+			received,
+		}: {
+			operation: string;
+			name: string;
+			received: string;
+		}) =>
 			`struct ${name}: expected an object of methods, received ${received}.`,
 	},
 	FULCRO6009: {
 		kind: TypeError,
-		message: (name: string, method: string) =>
+		message: ({
+			name,
+			method,
+		}: {
+			operation: string;
+			name: string;
+			method: string;
+		}) =>
 			`struct ${name}: method '${method}' has the name of a field; a value could not hold both.`,
 	},
 	FULCRO6010: {
 		kind: TypeError,
-		message: (name: string, method: string) =>
+		message: ({
+			name,
+			method,
+		}: {
+			operation: string;
+			name: string;
+			method: string;
+		}) =>
 			`struct ${name}: '${method}' cannot name a method; an array index would be reordered, and '~layout' is the layout itself.`,
 	},
 	FULCRO6011: {
 		kind: TypeError,
-		message: (name: string, method: string, received: string) =>
+		message: ({
+			name,
+			method,
+			received,
+		}: {
+			operation: string;
+			name: string;
+			method: string;
+			received: string;
+		}) =>
 			`struct ${name}: method '${method}' must be a function, received ${received}.`,
 	},
 	FULCRO6012: {
 		kind: TypeError,
-		message: (received: string) =>
+		message: ({ received }: { operation: string; received: string }) =>
 			`struct: expected a name, received ${received}.`,
 	},
 	FULCRO6013: {
 		kind: TypeError,
-		message: (name: string, received: string) =>
-			`struct ${name}: expected an object of fields, received ${received}.`,
+		message: ({
+			name,
+			received,
+		}: {
+			operation: string;
+			name: string;
+			received: string;
+		}) => `struct ${name}: expected an object of fields, received ${received}.`,
 	},
 	FULCRO6014: {
 		kind: TypeError,
-		message: (name: string) => `struct ${name}: expected at least one field.`,
+		message: ({ name }: { operation: string; name: string }) =>
+			`struct ${name}: expected at least one field.`,
 	},
 	FULCRO6015: {
 		kind: TypeError,
-		message: (name: string, field: string) =>
+		message: ({
+			name,
+			field,
+		}: {
+			operation: string;
+			name: string;
+			field: string;
+		}) =>
 			`struct ${name}: '${field}' cannot name a field; an array index would be reordered, and '~layout' is the layout itself.`,
 	},
 	FULCRO6016: {
 		kind: TypeError,
-		message: (name: string, field: string) =>
+		message: ({
+			name,
+			field,
+		}: {
+			operation: string;
+			name: string;
+			field: string;
+		}) =>
 			`struct ${name}: field '${field}' has no fixed layout. Declare it with a numeric type of @fulcro/types other than BigInteger, or with another struct.`,
 	},
 	FULCRO6017: {
 		kind: TypeError,
-		message: (operation: string, received: string) =>
-			`${operation}: expected a DataView, received ${received}.`,
+		message: ({
+			operation,
+			received,
+		}: {
+			operation: string;
+			received: string;
+		}) => `${operation}: expected a DataView, received ${received}.`,
 	},
 	FULCRO6018: {
 		kind: RangeError,
-		message: (
-			operation: string,
-			size: number,
-			offset: number,
-			available: number,
-		) =>
+		message: ({
+			operation,
+			size,
+			offset,
+			available,
+		}: {
+			operation: string;
+			size: number;
+			offset: number;
+			available: number;
+		}) =>
 			`${operation}: ${size} bytes at offset ${offset} do not fit in a view of ${available} bytes.`,
 	},
 	FULCRO6019: {
 		kind: TypeError,
-		message: (operation: string, received: string) =>
-			`${operation}: expected an object, received ${received}.`,
+		message: ({
+			operation,
+			received,
+		}: {
+			operation: string;
+			received: string;
+		}) => `${operation}: expected an object, received ${received}.`,
 	},
 	FULCRO6020: {
 		kind: TypeError,
-		message: (operation: string, key: string, fields: string) =>
-			`${operation}: '${key}' is not a field; the fields are ${fields}.`,
+		message: ({
+			operation,
+			key,
+			fields,
+		}: {
+			operation: string;
+			key: string;
+			fields: string;
+		}) => `${operation}: '${key}' is not a field; the fields are ${fields}.`,
 	},
 	FULCRO6021: {
 		kind: TypeError,
-		message: (operation: string, field: string) =>
+		message: ({ operation, field }: { operation: string; field: string }) =>
 			`${operation}: missing field '${field}'.`,
 	},
 	FULCRO6022: {
 		kind: RangeError,
-		message: (
-			operation: string,
-			minimum: number,
-			maximum: number,
-			received: number,
-		) =>
+		message: ({
+			operation,
+			minimum,
+			maximum,
+			received,
+		}: {
+			operation: string;
+			minimum: number;
+			maximum: number;
+			received: number;
+		}) =>
 			`${operation}: expected an integer from ${minimum} to ${maximum}, received ${received}.`,
 	},
 	FULCRO6023: {
 		kind: SyntaxError,
-		message: (received: string) =>
+		message: ({ received }: { operation: string; received: string }) =>
 			`Decimal.from: expected a decimal literal, received ${received}.`,
 	},
 	FULCRO6024: {
 		kind: TypeError,
-		message: (received: string) =>
+		message: ({ received }: { operation: string; received: string }) =>
 			`Decimal.from: expected a Decimal, a string, a number or a bigint, received ${received}.`,
 	},
 	FULCRO6025: {
 		kind: RangeError,
-		message: (received: string) =>
+		message: ({ received }: { operation: string; received: string }) =>
 			`Decimal.power: expected an integer exponent, received ${received}.`,
 	},
 	FULCRO6026: {
 		kind: RangeError,
-		message: (received: number) =>
+		message: ({ received }: { operation: string; received: number }) =>
 			`Decimal.round: expected an integer number of places, received ${received}.`,
 	},
 	FULCRO6027: {
 		kind: TypeError,
-		message: () =>
+		message: (_details: { operation: string }) =>
 			'Decimal cannot be converted to a primitive implicitly: operators such as + and < would lose its digits. ' +
 			'Use add(), compare() or toString() instead.',
 	},
 	FULCRO6028: {
 		kind: TypeError,
-		message: (operation: string, received: string) =>
-			`${operation}: expected a number or a bigint, received ${received}.`,
+		message: ({
+			operation,
+			received,
+		}: {
+			operation: string;
+			received: string;
+		}) => `${operation}: expected a number or a bigint, received ${received}.`,
 	},
 	FULCRO6029: {
 		kind: RangeError,
-		message: (operation: string, maximum: number, received: string) =>
+		message: ({
+			operation,
+			maximum,
+			received,
+		}: {
+			operation: string;
+			maximum: number;
+			received: string;
+		}) =>
 			`${operation}: expected a count from 0 to ${maximum}, received ${received}.`,
 	},
 	FULCRO6030: {
 		kind: RangeError,
-		message: (family: string, widths: string, received: string) =>
+		message: ({
+			family,
+			widths,
+			received,
+		}: {
+			operation: string;
+			family: string;
+			widths: string;
+			received: string;
+		}) =>
 			`${family}: expected a width of ${widths} bits, received ${received}.`,
 	},
 	FULCRO6031: {
 		kind: RangeError,
-		message: (operation: string, received: string, range: string) =>
-			`${operation}: ${received} is outside ${range}.`,
+		message: ({
+			operation,
+			received,
+			range,
+		}: {
+			operation: string;
+			received: string;
+			range: string;
+		}) => `${operation}: ${received} is outside ${range}.`,
 	},
 	FULCRO6032: {
 		kind: RangeError,
-		message: (name: string, base: string, exponent: string, range: string) =>
-			`${name}.power: ${base} ** ${exponent} is outside ${range}.`,
+		message: ({
+			name,
+			base,
+			exponent,
+			range,
+		}: {
+			operation: string;
+			name: string;
+			base: string;
+			exponent: string;
+			range: string;
+		}) => `${name}.power: ${base} ** ${exponent} is outside ${range}.`,
 	},
 	FULCRO6033: {
 		kind: TypeError,
-		message: (operation: string, received: string) =>
+		message: ({
+			operation,
+			received,
+		}: {
+			operation: string;
+			received: string;
+		}) =>
 			`${operation}: expected a numeric type of @fulcro/types as the element type, received ${received}.`,
 	},
 	FULCRO6034: {
 		kind: TypeError,
-		message: (operation: string, received: string) =>
-			`${operation}: expected an array, received ${received}.`,
+		message: ({
+			operation,
+			received,
+		}: {
+			operation: string;
+			received: string;
+		}) => `${operation}: expected an array, received ${received}.`,
 	},
 	FULCRO6035: {
 		kind: RangeError,
-		message: (operation: string, dimension: string, received: string) =>
+		message: ({
+			operation,
+			dimension,
+			received,
+		}: {
+			operation: string;
+			dimension: string;
+			received: string;
+		}) =>
 			`${operation}: expected a positive integer number of ${dimension}, received ${received}.`,
 	},
 	FULCRO6036: {
 		kind: RangeError,
-		message: (operation: string, expected: string, received: string) =>
-			`${operation}: expected a ${expected}, received a ${received}.`,
+		message: ({
+			operation,
+			expected,
+			received,
+		}: {
+			operation: string;
+			expected: string;
+			received: string;
+		}) => `${operation}: expected a ${expected}, received a ${received}.`,
 	},
 	FULCRO6037: {
 		kind: RangeError,
-		message: (left: string, right: string, expected: string) =>
-			`Cannot multiply ${left} by ${right}. Expected ${expected}.`,
+		message: ({
+			left,
+			right,
+			expected,
+		}: {
+			operation: string;
+			left: string;
+			right: string;
+			expected: string;
+		}) => `Cannot multiply ${left} by ${right}. Expected ${expected}.`,
 	},
 	FULCRO6038: {
 		kind: RangeError,
-		message: (operation: string, expected: string, received: string) =>
-			`${operation}: expected ${expected}, received ${received}.`,
+		message: ({
+			operation,
+			expected,
+			received,
+		}: {
+			operation: string;
+			expected: string;
+			received: string;
+		}) => `${operation}: expected ${expected}, received ${received}.`,
 	},
 	FULCRO6039: {
 		kind: RangeError,
-		message: (name: string) =>
+		message: ({ name }: { operation: string; name: string }) =>
 			`${name}.identity: only a square matrix has an identity.`,
 	},
 	FULCRO6040: {
 		kind: RangeError,
-		message: (rows: string, columns: string) =>
+		message: ({
+			rows,
+			columns,
+		}: {
+			operation: string;
+			rows: string;
+			columns: string;
+		}) =>
 			`Vector: expected one row or one column, received ${rows} rows and ${columns} columns. A shape with neither is a Matrix.`,
 	},
 	FULCRO6041: {
 		kind: TypeError,
-		message: (received: string) =>
+		message: ({ received }: { operation: string; received: string }) =>
 			`Fraction: expected SignedInteger(n), UnsignedInteger(n) or BigInteger as the element type, received ${received}.`,
 	},
 	FULCRO6042: {
 		kind: RangeError,
-		message: (name: string, received: string) =>
-			`${name}.power: expected a whole exponent, received ${received}.`,
+		message: ({
+			name,
+			received,
+		}: {
+			operation: string;
+			name: string;
+			received: string;
+		}) => `${name}.power: expected a whole exponent, received ${received}.`,
 	},
 } as const satisfies RangeCatalog<'6'>;

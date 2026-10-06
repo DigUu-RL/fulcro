@@ -55,9 +55,9 @@ export const codedErrors = {
 		schema: [],
 		messages: {
 			constructed:
-				"'new {{name}}(...)' bypasses the catalog. Register the error in @fulcro/errors and create it with createError(code, ...values).",
+				"'new {{name}}(...)' bypasses the catalog. Register the error in @fulcro/errors and create it with createError(code, details).",
 			thrownText:
-				'A thrown string carries no code and no class. Register the error in @fulcro/errors and throw createError(code, ...values).',
+				'A thrown string carries no code and no class. Register the error in @fulcro/errors and throw createError(code, details).',
 			otherRange:
 				'{{code}} belongs to the range FULCRO{{found}}xxx, and this file is in @fulcro/{{package}}, whose range is FULCRO{{expected}}xxx.',
 			noRange:

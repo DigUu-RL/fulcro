@@ -11,6 +11,12 @@ Os erros de [fluxo de controle como valores](../functions.md). Voltar para
 Error: FULCRO2001: Operation rejected with undefined
 ```
 
+Detalhes:
+
+```text
+{ operation: string; thrown: null | undefined }
+```
+
 Não é lançado: é devolvido. A operação passada para `tryCatch()` lançou ou
 rejeitou com `null` ou `undefined`, e o `tryCatch()` guardou este erro no lugar,
 porque uma falha cujo `error` é `null` seria lida como sucesso. O que foi de

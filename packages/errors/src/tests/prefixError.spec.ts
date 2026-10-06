@@ -9,12 +9,11 @@ import { prefixError } from '@/prefixError';
 
 describe('prefixError', () => {
 	it('should place the context between the code and the original text', () => {
-		const inner = createError(
-			'FULCRO6031',
-			'SignedInteger8.from',
-			'300',
-			'-128 to 127',
-		);
+		const inner = createError('FULCRO6031', {
+			operation: 'SignedInteger8.from',
+			received: '300',
+			range: '-128 to 127',
+		});
 
 		const located = prefixError(inner, "Vector3.from: field 'x'");
 
@@ -24,7 +23,10 @@ describe('prefixError', () => {
 	});
 
 	it('should keep the code and the class', () => {
-		const inner = createError('FULCRO6023', '"1.2.3"');
+		const inner = createError('FULCRO6023', {
+			operation: 'Decimal.from',
+			received: '"1.2.3"',
+		});
 		const located = prefixError(inner, "Price.from: field 'amount'");
 
 		expect(located.code).toBe('FULCRO6023');
@@ -32,8 +34,22 @@ describe('prefixError', () => {
 		expect(located.constructor).toBe(SyntaxError);
 	});
 
+	it('should keep the details as they were, the context in the message only', () => {
+		const inner = createError('FULCRO6021', {
+			operation: 'Point.from',
+			field: 'y',
+		});
+		const located = prefixError(inner, "Segment.from: field 'end'");
+
+		expect(located.details).toBe(inner.details);
+		expect(located.details.operation).toBe('Point.from');
+	});
+
 	it('should keep the original as the cause', () => {
-		const inner = createError('FULCRO6021', 'Point.from', 'y');
+		const inner = createError('FULCRO6021', {
+			operation: 'Point.from',
+			field: 'y',
+		});
 		const located = prefixError(inner, "Segment.from: field 'end'");
 
 		expect(located.cause).toBe(inner);
@@ -41,7 +57,10 @@ describe('prefixError', () => {
 	});
 
 	it('should nest, one context per level', () => {
-		const inner = createError('FULCRO6021', 'Point.from', 'y');
+		const inner = createError('FULCRO6021', {
+			operation: 'Point.from',
+			field: 'y',
+		});
 		const middle = prefixError(inner, "Segment.from: field 'end'");
 		const outer = prefixError(middle, "Path.from: field 'last'");
 
@@ -49,6 +68,7 @@ describe('prefixError', () => {
 			"FULCRO6021: Path.from: field 'last': Segment.from: field 'end': Point.from: missing field 'y'.",
 		);
 		expect(outer.code).toBe('FULCRO6021');
+		expect(outer.details).toBe(inner.details);
 	});
 
 	it('should return an error without a code as it came', () => {
@@ -67,7 +87,7 @@ describe('prefixError', () => {
 	});
 
 	it('should return an error whose message has lost its code as it came', () => {
-		const altered = createError('FULCRO1001');
+		const altered = createError('FULCRO1001', { operation: 'first' });
 
 		altered.message = 'reworded by somebody';
 

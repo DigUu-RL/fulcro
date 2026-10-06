@@ -168,7 +168,10 @@ export const createTransformer =
 
 					refused.length = 0;
 
-					throw createError('FULCRO5003', report);
+					throw createError('FULCRO5003', {
+						operation: 'createTransformer',
+						report,
+					});
 				}
 
 				return transformed;

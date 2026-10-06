@@ -208,16 +208,19 @@ export const parseTsconfig = (
 			: typescript.findConfigFile(root, typescript.sys.fileExists);
 
 	if (configPath === undefined) {
-		throw createError('FULCRO5001', root);
+		throw createError('FULCRO5001', { operation: 'parseTsconfig', root });
 	}
 
 	const read = typescript.readConfigFile(configPath, typescript.sys.readFile);
 
 	if (read.error !== undefined) {
-		throw createError(
-			'FULCRO5002',
-			typescript.flattenDiagnosticMessageText(read.error.messageText, '\n'),
-		);
+		throw createError('FULCRO5002', {
+			operation: 'parseTsconfig',
+			diagnostic: typescript.flattenDiagnosticMessageText(
+				read.error.messageText,
+				'\n',
+			),
+		});
 	}
 
 	return typescript.parseJsonConfigFileContent(

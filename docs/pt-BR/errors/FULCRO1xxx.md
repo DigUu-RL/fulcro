@@ -17,6 +17,12 @@ vazia for um resultado normal, e não um engano.
 Error: FULCRO1001: Sequence contains no elements
 ```
 
+Detalhes:
+
+```text
+{ operation: string }
+```
+
 `first()`, `last()`, `average()`, `min()` ou `max()` de uma `Sequence` não
 encontrou nada com que responder — a sequência estava vazia, ou nada atendeu ao
 predicado.
@@ -28,6 +34,12 @@ verifique `any()` antes.
 
 ```text
 Error: FULCRO1002: An item with the same key has already been added.
+```
+
+Detalhes:
+
+```text
+{ operation: string }
 ```
 
 `toMap()` de uma `Sequence` produziu a mesma chave para dois elementos. Um map
@@ -43,6 +55,12 @@ elementos sob a sua chave.
 Error: FULCRO1003: single() found no element matching the condition.
 ```
 
+Detalhes:
+
+```text
+{ operation: string }
+```
+
 `single()` de uma `Sequence` promete exatamente um elemento, e não encontrou
 nenhum.
 
@@ -54,6 +72,12 @@ Use `singleOrNull()` onde nenhum for uma resposta aceitável.
 Error: FULCRO1004: single() found more than one element matching the condition.
 ```
 
+Detalhes:
+
+```text
+{ operation: string }
+```
+
 `single()` ou `singleOrNull()` de uma `Sequence` encontrou um segundo elemento.
 Os dois recusam: "o único" entre dois não é uma pergunta que tenha resposta.
 
@@ -63,6 +87,12 @@ Use `first()` se qualquer um servir, ou restrinja o predicado.
 
 ```text
 Error: FULCRO1005: elementAt(3) is out of range.
+```
+
+Detalhes:
+
+```text
+{ operation: string; index: number }
 ```
 
 `elementAt(index)` pediu uma posição que a sequência não alcança — o índice é
@@ -77,6 +107,12 @@ Use `elementAtOrNull(index)` onde uma sequência curta for esperada.
 Error: FULCRO1006: chunk(0) needs a positive integer: a chunk of no elements would never end the sequence.
 ```
 
+Detalhes:
+
+```text
+{ operation: string; size: number }
+```
+
 `chunk(size)` recebeu um tamanho que não é um número inteiro de pelo menos um.
 As duas sequências lançam este erro, na chamada.
 
@@ -84,6 +120,12 @@ As duas sequências lançam este erro, na chamada.
 
 ```text
 Error: FULCRO1007: median() was called on an empty sequence.
+```
+
+Detalhes:
+
+```text
+{ operation: string }
 ```
 
 Uma operação que precisa de pelo menos um elemento não encontrou nenhum.
@@ -99,6 +141,12 @@ Verifique `any()` antes, ou use a forma `…OrNull` onde ela existir.
 Error: FULCRO1008: windowed(0) needs a positive integer.
 ```
 
+Detalhes:
+
+```text
+{ operation: string; size: number }
+```
+
 `windowed(size)` de uma `Sequence` recebeu um tamanho que não é um número
 inteiro de pelo menos um.
 
@@ -108,6 +156,12 @@ inteiro de pelo menos um.
 Error: FULCRO1009: percentile(120) takes a rank between 0 and 100.
 ```
 
+Detalhes:
+
+```text
+{ operation: string; rank: number }
+```
+
 `percentile(rank)` recebeu uma posição fora de 0 a 100, ou uma que não é um
 número finito.
 
@@ -115,6 +169,12 @@ número finito.
 
 ```text
 Error: FULCRO1010: sampleStandardDeviation() needs at least two elements: a sample of one says nothing about its spread.
+```
+
+Detalhes:
+
+```text
+{ operation: string }
 ```
 
 `sampleStandardDeviation()` de uma `Sequence` divide por um a menos que a
@@ -129,6 +189,12 @@ amostra dela.
 Error: FULCRO1011: range() takes integers.
 ```
 
+Detalhes:
+
+```text
+{ operation: string }
+```
+
 `SequenceCollection.range(start, count)` recebeu um início ou uma contagem com
 parte fracionária.
 
@@ -138,12 +204,24 @@ parte fracionária.
 Error: FULCRO1012: range() cannot produce a negative count.
 ```
 
+Detalhes:
+
+```text
+{ operation: string }
+```
+
 `SequenceCollection.range(start, count)` recebeu uma contagem negativa.
 
 ## FULCRO1013
 
 ```text
 Error: FULCRO1013: repeat() takes an integer count.
+```
+
+Detalhes:
+
+```text
+{ operation: string }
 ```
 
 `SequenceCollection.repeat(value, count)` recebeu uma contagem com parte
@@ -155,12 +233,24 @@ fracionária.
 Error: FULCRO1014: repeat() cannot produce a negative count.
 ```
 
+Detalhes:
+
+```text
+{ operation: string }
+```
+
 `SequenceCollection.repeat(value, count)` recebeu uma contagem negativa.
 
 ## FULCRO1015
 
 ```text
 TypeError: FULCRO1015: cast('Order') found a string at index 4.
+```
+
+Detalhes:
+
+```text
+{ operation: string; expected: string; found: string; index: number }
 ```
 
 `cast()` encontrou um elemento que não é do tipo pedido. Ele para no primeiro, e
@@ -173,6 +263,12 @@ Use `ofType()` para pular o que não se encaixa, em vez de recusar.
 
 ```text
 Error: FULCRO1016: ofType<T>() was not resolved at compile time. …
+```
+
+Detalhes:
+
+```text
+{ operation: string }
 ```
 
 `ofType<T>()` ou `cast<T>()` foi escrito com um argumento de tipo e chegou ao
@@ -189,6 +285,12 @@ classe, um nome de `typeof` ou um predicado para `where()`.
 Error: FULCRO1017: selectAwait() needs a positive integer concurrency, and was given 0.
 ```
 
+Detalhes:
+
+```text
+{ operation: string; concurrency: number }
+```
+
 Um operador `…Await` de uma `AsyncSequence` recebeu uma `concurrency` que não é
 um número inteiro de pelo menos um. Veja
 [Concorrência limitada](../../concurrency.md).
@@ -197,6 +299,12 @@ um número inteiro de pelo menos um. Veja
 
 ```text
 Error: FULCRO1018: Collection factories were not registered. …
+```
+
+Detalhes:
+
+```text
+{ operation: string }
 ```
 
 A biblioteca foi carregada sem que o seu ponto de entrada rodasse, então as
@@ -213,6 +321,12 @@ Importe de `@fulcro/collections` ou de `@fulcro/collections/async`.
 Error: FULCRO1019: average() needs at least one element.
 ```
 
+Detalhes:
+
+```text
+{ operation: string }
+```
+
 Uma operação de uma `AsyncSequence` que precisa de pelo menos um elemento não
 encontrou nenhum: `average()`, `standardDeviation()`, `min()`, `max()`,
 `minBy()` ou `maxBy()`. A mensagem diz qual.
@@ -221,6 +335,12 @@ encontrou nenhum: `average()`, `standardDeviation()`, `min()`, `max()`,
 
 ```text
 Error: FULCRO1020: single() found no element.
+```
+
+Detalhes:
+
+```text
+{ operation: string }
 ```
 
 `single()` de uma `AsyncSequence` promete exatamente um elemento, e não
@@ -234,6 +354,12 @@ Use `singleOrNull()` onde nenhum for uma resposta aceitável.
 Error: FULCRO1021: toMap() found two elements with the key 7.
 ```
 
+Detalhes:
+
+```text
+{ operation: string; key: string }
+```
+
 `toMap()` de uma `AsyncSequence` produziu a mesma chave para dois elementos.
 Veja [FULCRO1002](#fulcro1002), o equivalente síncrono.
 
@@ -241,6 +367,12 @@ Veja [FULCRO1002](#fulcro1002), o equivalente síncrono.
 
 ```text
 Error: FULCRO1022: sampleStandardDeviation() needs at least two elements: a sample of one says nothing about the spread it was drawn from.
+```
+
+Detalhes:
+
+```text
+{ operation: string }
 ```
 
 `sampleStandardDeviation()` de uma `AsyncSequence`, pelo motivo explicado em
@@ -252,6 +384,12 @@ Error: FULCRO1022: sampleStandardDeviation() needs at least two elements: a samp
 Error: FULCRO1023: windowed() takes a positive integer size.
 ```
 
+Detalhes:
+
+```text
+{ operation: string }
+```
+
 `windowed(size)` de uma `AsyncSequence` recebeu um tamanho que não é um número
 inteiro de pelo menos um.
 
@@ -259,6 +397,12 @@ inteiro de pelo menos um.
 
 ```text
 Error: FULCRO1024: single() found more than one element.
+```
+
+Detalhes:
+
+```text
+{ operation: string }
 ```
 
 `single()` ou `singleOrNull()` de uma `AsyncSequence` encontrou um segundo

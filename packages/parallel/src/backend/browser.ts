@@ -30,13 +30,22 @@ export const spawnWorker: SpawnWorker = (url: URL): WorkerHandle => {
 			};
 
 			const onError = (event: ErrorEvent): void => {
-				handler(undefined, createError('FULCRO3008', event.message));
+				handler(
+					undefined,
+					createError('FULCRO3008', {
+						operation: 'spawnWorker',
+						reason: event.message,
+					}),
+				);
 			};
 
 			// A message the structured clone algorithm could not carry. Silent
 			// otherwise, and it would leave a run waiting forever.
 			const onMessageError = (): void => {
-				handler(undefined, createError('FULCRO3009'));
+				handler(
+					undefined,
+					createError('FULCRO3009', { operation: 'spawnWorker' }),
+				);
 			};
 
 			worker.addEventListener('message', onMessage);

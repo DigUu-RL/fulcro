@@ -7,8 +7,9 @@ import { describe, expect, it } from 'vitest';
  * Compile-time suite.
  *
  * Half of what this package promises is kept by the type system: an
- * unregistered code, a value of the wrong type, and a code declared outside its
- * package's range are compile errors, not runtime surprises. A fixture that
+ * unregistered code, a detail of the wrong type, a template whose details lack
+ * an operation or hold an object, and a code declared outside its package's
+ * range are compile errors, not runtime surprises. A fixture that
  * must not compile is checked by both compilers the repository supports, and
  * each mistake in it has to be reported on its own line.
  *
@@ -90,20 +91,28 @@ describe.each(COMPILERS)(
 			expect(lines).toContain(13);
 		});
 
-		it('should refuse a value of the wrong type', () => {
-			expect(lines).toContain(16);
+		it('should refuse a detail of the wrong type', () => {
+			expect(lines).toContain(18);
 		});
 
-		it('should refuse a template given too few values', () => {
-			expect(lines).toContain(19);
+		it('should refuse a template given too few details', () => {
+			expect(lines).toContain(22);
 		});
 
 		it('should refuse a code declared outside its range', () => {
-			expect(lines).toContain(23);
+			expect(lines).toContain(28);
+		});
+
+		it('should refuse a template whose details have no operation', () => {
+			expect(lines).toContain(38);
+		});
+
+		it('should refuse a template whose details hold an object', () => {
+			expect(lines).toContain(46);
 		});
 
 		it('should report nothing else', () => {
-			expect(lines).toEqual([13, 16, 19, 23]);
+			expect(lines).toEqual([13, 18, 22, 28, 38, 46]);
 		});
 	},
 );

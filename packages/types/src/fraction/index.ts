@@ -104,7 +104,10 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 	type Value = Fraction<T>;
 
 	if (!isIntegerDescriptor(element)) {
-		throw createError('FULCRO6041', describeKind(element));
+		throw createError('FULCRO6041', {
+			operation: 'Fraction',
+			received: describeKind(element),
+		});
 	}
 
 	const integer = element as unknown as NumericType<T, number>;
@@ -162,7 +165,7 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 	 */
 	const reduce = (operation: string, numerator: T, denominator: T): Value => {
 		if (integer.equals(denominator, zero)) {
-			throw createError('FULCRO6001', operation);
+			throw createError('FULCRO6001', { operation });
 		}
 
 		let top: T = numerator;
@@ -300,7 +303,7 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 
 		divide: (left, right) => {
 			if (integer.equals(right.numerator, zero)) {
-				throw createError('FULCRO6001', `${name}.divide`);
+				throw createError('FULCRO6001', { operation: `${name}.divide` });
 			}
 
 			return product(
@@ -315,7 +318,7 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 		// left − right × trunc(left / right): the sign of the dividend, as `%`.
 		remainder: (left, right) => {
 			if (integer.equals(right.numerator, zero)) {
-				throw createError('FULCRO6001', `${name}.remainder`);
+				throw createError('FULCRO6001', { operation: `${name}.remainder` });
 			}
 
 			const [scaledLeft, scaledRight] = cross(left, right);
@@ -330,11 +333,11 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 
 		power: (base, exponent) => {
 			if (!integer.equals(exponent.denominator, one)) {
-				throw createError(
-					'FULCRO6042',
+				throw createError('FULCRO6042', {
+					operation: `${name}.power`,
 					name,
-					`${String(exponent.numerator)}/${String(exponent.denominator)}`,
-				);
+					received: `${String(exponent.numerator)}/${String(exponent.denominator)}`,
+				});
 			}
 
 			if (!integer.lessThan(exponent.numerator, zero)) {

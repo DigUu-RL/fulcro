@@ -130,7 +130,11 @@ export const Vector = <
 	} = createMatrixOperations<T, R, C>('Vector', element, rows, columns);
 
 	if ((rows as number) !== 1 && (columns as number) !== 1) {
-		throw createError('FULCRO6040', String(rows), String(columns));
+		throw createError('FULCRO6040', {
+			operation: 'Vector',
+			rows: String(rows),
+			columns: String(columns),
+		});
 	}
 
 	const count: number = rows * columns;
@@ -140,16 +144,18 @@ export const Vector = <
 
 		from: (elements) => {
 			if (!Array.isArray(elements)) {
-				throw createError('FULCRO6034', `${name}.from`, describeKind(elements));
+				throw createError('FULCRO6034', {
+					operation: `${name}.from`,
+					received: describeKind(elements),
+				});
 			}
 
 			if (elements.length !== count) {
-				throw createError(
-					'FULCRO6038',
-					`${name}.from`,
-					`${count} elements`,
-					String(elements.length),
-				);
+				throw createError('FULCRO6038', {
+					operation: `${name}.from`,
+					expected: `${count} elements`,
+					received: String(elements.length),
+				});
 			}
 
 			// A vector's elements are one row of `count`, whichever way it stands;

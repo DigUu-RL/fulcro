@@ -118,6 +118,7 @@ describe('createFixedBufferStorage', () => {
 				new TypeError(
 					'FULCRO7004: FixedBufferStorage.set: the value is not a value of Point.',
 				),
+				{ operation: 'FixedBufferStorage.set', element: 'Point' },
 			),
 		);
 		expect(points.get(0).x).toBe(5);
@@ -148,6 +149,7 @@ describe('createFixedBufferStorage', () => {
 				new TypeError(
 					`FULCRO7003: createFixedBufferStorage: expected an element type with a name, layout.size, read, write and is; ${missing} is missing.`,
 				),
+				{ operation: 'createFixedBufferStorage', missing },
 			),
 		);
 	});

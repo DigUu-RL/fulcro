@@ -18,6 +18,12 @@ seção abaixo diz o que mais pode causá-lo.
 Error: FULCRO4001: keysOf<T>() was not resolved at compile time. …
 ```
 
+Detalhes:
+
+```text
+{ operation: string }
+```
+
 O transformer não respondeu `keysOf<T>()`. Além de um transformer que não
 rodou, `T` pode não ter chaves para ler: um primitivo, uma união, ou um
 parâmetro genérico que ainda não foi substituído.
@@ -26,6 +32,12 @@ parâmetro genérico que ainda não foi substituído.
 
 ```text
 Error: FULCRO4002: is<T>() was not resolved at compile time. …
+```
+
+Detalhes:
+
+```text
+{ operation: string }
 ```
 
 O transformer não respondeu `is<T>()` ou `as<T>()` — a mensagem diz qual. Além
@@ -41,6 +53,12 @@ Passe um teste seu como segundo argumento quando o tipo não puder ser lido.
 Error: FULCRO4003: defaultOf<T>() resolves a type, which only exists at compile time. …
 ```
 
+Detalhes:
+
+```text
+{ operation: string }
+```
+
 `defaultOf<T>()` chegou ao runtime. Ele não tem forma nenhuma em runtime: a
 chamada é sempre substituída pelo valor que ela descreve, e só o transformer
 consegue fazer isso.
@@ -49,6 +67,12 @@ consegue fazer isso.
 
 ```text
 Error: FULCRO4004: typeOf<T>() was not resolved at compile time. …
+```
+
+Detalhes:
+
+```text
+{ operation: string }
 ```
 
 A forma de `typeOf` com argumento de tipo chegou ao runtime sem resposta. A
@@ -61,6 +85,12 @@ funciona como está.
 Error: FULCRO4005: pathsOf<T>() was not resolved at compile time. …
 ```
 
+Detalhes:
+
+```text
+{ operation: string }
+```
+
 O transformer não respondeu `pathsOf<T>()`. Além de um transformer que não
 rodou, `T` pode não ter caminhos para percorrer: um primitivo, ou um parâmetro
 genérico que ainda não foi substituído.
@@ -69,6 +99,12 @@ genérico que ainda não foi substituído.
 
 ```text
 TypeError: FULCRO4006: as<Order>() refused a value of type string.
+```
+
+Detalhes:
+
+```text
+{ operation: string; named: string; received: string }
 ```
 
 `as<T>()` recebeu um valor que não é um `T`, e não conseguiu dizer mais do que
@@ -82,6 +118,12 @@ Use `is<T>()` para ramificar a partir da resposta em vez de parar.
 TypeError: FULCRO4007: as<Order>() refused a value: customer.email: expected string, got number
 ```
 
+Detalhes:
+
+```text
+{ operation: string; named: string; where: string }
+```
+
 `as<T>()` recebeu um valor que não é um `T`, e a mensagem diz o primeiro lugar
 onde ele difere.
 
@@ -89,6 +131,12 @@ onde ele difere.
 
 ```text
 Error: FULCRO4008: nameOf<T>() names a type, which only exists at compile time. …
+```
+
+Detalhes:
+
+```text
+{ operation: string }
 ```
 
 A forma de `nameOf` com argumento de tipo chegou ao runtime. As formas que
@@ -99,6 +147,12 @@ não precisam do transformer.
 
 ```text
 Error: FULCRO4009: sizeOf<T>() reads the layout a type declares, which only exists at compile time. …
+```
+
+Detalhes:
+
+```text
+{ operation: string; call: string }
 ```
 
 `sizeOf<T>()`, `alignOf<T>()`, `offsetOf<T>(field)` ou `layoutOf<T>()`
@@ -112,6 +166,12 @@ uma string literal, por exemplo uma variável guardando o nome.
 
 ```text
 FULCRO4010: constantOf(…) cannot be evaluated at compile time: 'counter' is declared with let or var, so it can change. …
+```
+
+Detalhes:
+
+```text
+{ operation: string; call: string; reason: string }
 ```
 
 Um erro de compilação, na chamada. O transformer só avalia `constantOf` quando
@@ -131,6 +191,12 @@ runtime, sem `constantOf`.
 TypeError: FULCRO4011: constantOf(…) produced an instance of Map, which cannot be written as a literal. …
 ```
 
+Detalhes:
+
+```text
+{ operation: string; call: string; received: string }
+```
+
 A função passada a `constantOf` devolveu algo que um literal não consegue
 escrever: uma função, um símbolo, uma instância de classe, um array com buracos
 ou com propriedades a mais, um objeto com getter ou com chaves símbolo, ou um
@@ -147,6 +213,12 @@ Devolva dados simples: números, strings, booleanos, bigints, `null`,
 FULCRO4012: constantOf(…) threw while it was evaluated at compile time: refused on purpose
 ```
 
+Detalhes:
+
+```text
+{ operation: string; call: string; thrown: string }
+```
+
 Um erro de compilação: a função passada a `constantOf` lançou enquanto o
 transformer a executava. A mensagem depois dos dois-pontos é o que ela lançou.
 `Math.random` é removido do contexto em que ela roda, então chamá-lo cai aqui.
@@ -157,6 +229,12 @@ transformer a executava. A mensagem depois dos dois-pontos é o que ela lançou.
 FULCRO4013: constantOf(…) did not finish within 5000 ms at compile time.
 ```
 
+Detalhes:
+
+```text
+{ operation: string; call: string; milliseconds: number }
+```
+
 Um erro de compilação: a função passada a `constantOf` passou do limite e foi
 interrompida, em vez de deixar o build travado.
 
@@ -164,6 +242,12 @@ interrompida, em vez de deixar o build travado.
 
 ```text
 TypeError: FULCRO4014: constantOf: expected a function, received number.
+```
+
+Detalhes:
+
+```text
+{ operation: string; received: string }
 ```
 
 `constantOf` recebeu algo que não é uma função, em runtime. O transformer

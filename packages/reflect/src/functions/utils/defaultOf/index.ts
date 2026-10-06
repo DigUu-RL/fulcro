@@ -36,5 +36,5 @@ import { createError } from '@fulcro/errors';
  * @throws {Error} Always, when the transformer is not enabled.
  */
 export function defaultOf<T>(): T {
-	throw createError('FULCRO4003');
+	throw createError('FULCRO4003', { operation: 'defaultOf' });
 }

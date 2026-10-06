@@ -133,7 +133,10 @@ export class Decimal {
 			return new Decimal(parseDecimal(String(value)));
 		}
 
-		throw createError('FULCRO6024', typeof value);
+		throw createError('FULCRO6024', {
+			operation: 'Decimal.from',
+			received: typeof value,
+		});
 	};
 
 	/**
@@ -247,7 +250,10 @@ export class Decimal {
 		const { kind, negative, coefficient, exponent: scale } = exponent.#parts;
 
 		if (kind !== 'finite' || scale < 0) {
-			throw createError('FULCRO6025', exponent.toString());
+			throw createError('FULCRO6025', {
+				operation: 'Decimal.power',
+				received: exponent.toString(),
+			});
 		}
 
 		const power: bigint =
@@ -301,7 +307,10 @@ export class Decimal {
 	 */
 	round(places: number = 0, mode: RoundingMode = DEFAULT_MODE): Decimal {
 		if (!Number.isSafeInteger(places)) {
-			throw createError('FULCRO6026', places);
+			throw createError('FULCRO6026', {
+				operation: 'Decimal.round',
+				received: places,
+			});
 		}
 
 		return new Decimal(
@@ -515,7 +524,10 @@ export class Decimal {
 		const { kind, negative, coefficient, exponent } = this.#parts;
 
 		if (kind !== 'finite' || exponent < 0) {
-			throw createError('FULCRO6002', 'Decimal.toBigInt', this.toString());
+			throw createError('FULCRO6002', {
+				operation: 'Decimal.toBigInt',
+				received: this.toString(),
+			});
 		}
 
 		const magnitude: bigint = coefficient * powerOfTen(exponent);
@@ -530,6 +542,6 @@ export class Decimal {
 	 * @throws {TypeError} Always.
 	 */
 	valueOf(): never {
-		throw createError('FULCRO6027');
+		throw createError('FULCRO6027', { operation: 'Decimal.valueOf' });
 	}
 }

@@ -10,6 +10,12 @@ The errors of [storage](../memory.md). Back to [all codes](../errors.md).
 RangeError: FULCRO7001: createManagedStorage: expected a length that is a non-negative safe integer, received -1.
 ```
 
+Details:
+
+```text
+{ operation: string; received: number | string }
+```
+
 A storage was asked for a length it cannot have: negative, fractional, `NaN`,
 or past `Number.MAX_SAFE_INTEGER`. The length is checked before anything is
 allocated.
@@ -21,6 +27,12 @@ from a file — round it, and check it before creating the storage.
 
 ```text
 RangeError: FULCRO7002: ManagedStorage.get: index 3 is outside a storage of length 3.
+```
+
+Details:
+
+```text
+{ operation: string; index: number | string; length: number }
 ```
 
 `get` or `set` was given an index that is not an integer from `0` to
@@ -36,6 +48,12 @@ The usual cause is a loop bound one too far — `index <= length` where
 
 ```text
 TypeError: FULCRO7003: createFixedBufferStorage: expected an element type with a name, layout.size, read, write and is; read is missing.
+```
+
+Details:
+
+```text
+{ operation: string; missing: string }
 ```
 
 `createFixedBufferStorage` was given something it cannot store values of. It
@@ -56,6 +74,12 @@ createFixedBufferStorage(Sample, 1_000);
 
 ```text
 TypeError: FULCRO7004: FixedBufferStorage.set: the value is not a value of Point.
+```
+
+Details:
+
+```text
+{ operation: string; element: string }
 ```
 
 `set` was given a value its struct does not recognise as its own — a plain

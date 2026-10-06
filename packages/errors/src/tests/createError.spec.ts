@@ -1,16 +1,17 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import { catalog } from '@/catalog';
-import { createError, ErrorCode } from '@/createError';
+import { createError, DetailsOf, ErrorCode } from '@/createError';
 import { ErrorDefinition } from '@/definition';
+import { sampleDetails } from '@/tests/sampleDetails';
 
 /**
  * Behaviour suite for `createError`.
  *
  * Driven by the catalog rather than by a hand-picked sample, so a code
  * registered tomorrow is covered by the same assertions the day it is added:
- * its prefix, its property and its class are checked without anyone having to
- * remember to write the case.
+ * its prefix, its properties and its class are checked without anyone having
+ * to remember to write the case.
  */
 
 /** Every registered code, with its definition. */
@@ -22,24 +23,18 @@ const KINDS = [Error, RangeError, SyntaxError, TypeError] as const;
 /**
  * Creates the error of any code, whatever its template takes.
  *
- * Each code is exercised with placeholder values: what is asserted is the
- * frame around the text, which does not depend on them.
- *
  * @param code The code.
- * @param definition Its entry.
  * @returns The error.
  */
-const createAny = (code: ErrorCode, definition: ErrorDefinition): Error => {
-	const values: string[] = Array.from(
-		{ length: definition.message.length },
-		(_, index) => `value${index}`,
-	);
-
-	return (createError as (code: string, ...values: string[]) => Error)(
-		code,
-		...values,
-	);
-};
+const createAny = (
+	code: ErrorCode,
+): Error & { code: string; details: unknown } =>
+	(
+		createError as (
+			code: string,
+			details: unknown,
+		) => Error & { code: string; details: unknown }
+	)(code, sampleDetails());
 
 describe('createError', () => {
 	it('should register at least one code', () => {
@@ -48,27 +43,24 @@ describe('createError', () => {
 
 	it.each(ENTRIES)(
 		'%s should carry its code as the prefix of its message',
-		(code, definition) => {
-			const error: Error = createAny(code, definition);
+		(code) => {
+			const error: Error = createAny(code);
 
 			expect(error.message.startsWith(`${code}: `)).toBe(true);
 		},
 	);
 
-	it.each(ENTRIES)(
-		'%s should carry the same code as a property',
-		(code, definition) => {
-			const error = createAny(code, definition) as Error & { code: string };
+	it.each(ENTRIES)('%s should carry the same code as a property', (code) => {
+		const error = createAny(code) as Error & { code: string };
 
-			expect(error.code).toBe(code);
-			expect(error.message.slice(0, code.length)).toBe(error.code);
-		},
-	);
+		expect(error.code).toBe(code);
+		expect(error.message.slice(0, code.length)).toBe(error.code);
+	});
 
 	it.each(ENTRIES)(
 		'%s should be an instance of the class it is registered with, and only that one',
 		(code, definition) => {
-			const error: Error = createAny(code, definition);
+			const error: Error = createAny(code);
 
 			expect(error).toBeInstanceOf(definition.kind);
 			expect(error.constructor).toBe(definition.kind);
@@ -81,16 +73,68 @@ describe('createError', () => {
 		},
 	);
 
-	it('should build the text from the values it was given', () => {
-		const error = createError('FULCRO6021', 'Vector3.from', 'x');
+	it.each(ENTRIES)(
+		'%s should carry its details, frozen, with the operation',
+		(code) => {
+			const error = createAny(code) as Error & {
+				details: { operation: string };
+			};
+
+			expect(Object.isFrozen(error.details)).toBe(true);
+			expect(error.details.operation).toBe('operation');
+		},
+	);
+
+	it('should build the text from the details it was given', () => {
+		const error = createError('FULCRO6021', {
+			operation: 'Vector3.from',
+			field: 'x',
+		});
 
 		expect(error.message).toBe("FULCRO6021: Vector3.from: missing field 'x'.");
 		expect(error).toBeInstanceOf(TypeError);
 		expect(error.code).toBe('FULCRO6021');
 	});
 
-	it('should keep the text exactly as a template with no values writes it', () => {
-		const error = createError('FULCRO3002');
+	it('should keep the details as the values they were, not their text', () => {
+		const error = createError('FULCRO7002', {
+			operation: 'ManagedStorage.get',
+			index: 12,
+			length: 10,
+		});
+
+		expect(error.details).toEqual({
+			operation: 'ManagedStorage.get',
+			index: 12,
+			length: 10,
+		});
+		expect(error.details.index).toBe(12);
+	});
+
+	it('should keep the very object it was given as the details', () => {
+		const details = { operation: 'Point.from', field: 'y' };
+		const error = createError('FULCRO6021', details);
+
+		expect(error.details).toBe(details);
+		expect(Object.isFrozen(details)).toBe(true);
+	});
+
+	it('should type the details by the code', () => {
+		const error = createError('FULCRO7002', {
+			operation: 'ManagedStorage.get',
+			index: 12,
+			length: 10,
+		});
+
+		expectTypeOf(error.details).toEqualTypeOf<DetailsOf<'FULCRO7002'>>();
+		expectTypeOf(error.details.length).toEqualTypeOf<number>();
+		expectTypeOf(error.details.index).toEqualTypeOf<number | string>();
+		expectTypeOf(error.code).toEqualTypeOf<'FULCRO7002'>();
+		expectTypeOf(error).toExtend<RangeError>();
+	});
+
+	it('should keep the text exactly as a template that reads no detail writes it', () => {
+		const error = createError('FULCRO3002', { operation: 'worker' });
 
 		expect(error.message).toBe(
 			'FULCRO3002: This module is only meaningful inside a worker.',
@@ -98,8 +142,14 @@ describe('createError', () => {
 	});
 
 	it('should set the cause a code declares, even when it is undefined', () => {
-		const fromNull = createError('FULCRO2001', null);
-		const fromUndefined = createError('FULCRO2001', undefined);
+		const fromNull = createError('FULCRO2001', {
+			operation: 'tryCatch',
+			thrown: null,
+		});
+		const fromUndefined = createError('FULCRO2001', {
+			operation: 'tryCatch',
+			thrown: undefined,
+		});
 
 		expect(fromNull.message).toBe('FULCRO2001: Operation rejected with null');
 		expect(fromNull.cause).toBeNull();
@@ -108,12 +158,14 @@ describe('createError', () => {
 	});
 
 	it('should set no cause for a code that declares none', () => {
-		expect(Object.hasOwn(createError('FULCRO1001'), 'cause')).toBe(false);
+		expect(
+			Object.hasOwn(createError('FULCRO1001', { operation: 'first' }), 'cause'),
+		).toBe(false);
 	});
 
 	it('should leave its own frame out of the stack', () => {
 		const thrower = (): never => {
-			throw createError('FULCRO1001');
+			throw createError('FULCRO1001', { operation: 'first' });
 		};
 
 		let caught: Error | undefined;

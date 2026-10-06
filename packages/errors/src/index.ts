@@ -5,7 +5,15 @@
  * Listed one by one rather than re-exported wholesale, so that adding an export
  * to a module below is never enough on its own to put it in front of consumers.
  * The catalog in particular stays internal: a consumer reads a code from
- * `error.code` and its meaning from `docs/errors/`, never from the table.
+ * `error.code`, its values from `error.details`, and its meaning from
+ * `docs/errors/`, never from the table.
  */
-export { type CodedError, createError, type ErrorCode } from '@/createError';
+export {
+	type CodedError,
+	createError,
+	type DetailsOf,
+	type ErrorCode,
+} from '@/createError';
+export { FulcroError } from '@/fulcroError';
+export { isFulcroError } from '@/isFulcroError';
 export { prefixError } from '@/prefixError';

@@ -306,7 +306,11 @@ const methodPrototype = (
 	methods: StructMethods,
 ): object => {
 	if (typeof methods !== 'object' || methods === null) {
-		throw createError('FULCRO6008', name, describeKind(methods));
+		throw createError('FULCRO6008', {
+			operation: 'struct',
+			name,
+			received: describeKind(methods),
+		});
 	}
 
 	const prototype: Record<PropertyKey, unknown> = {};
@@ -316,18 +320,31 @@ const methodPrototype = (
 		const label: string = String(key);
 
 		if (typeof key === 'string' && Object.hasOwn(fields, key)) {
-			throw createError('FULCRO6009', name, label);
+			throw createError('FULCRO6009', {
+				operation: 'struct',
+				name,
+				method: label,
+			});
 		}
 
 		if (
 			typeof key === 'string' &&
 			(ARRAY_INDEX.test(key) || key === '~layout')
 		) {
-			throw createError('FULCRO6010', name, label);
+			throw createError('FULCRO6010', {
+				operation: 'struct',
+				name,
+				method: label,
+			});
 		}
 
 		if (typeof method !== 'function') {
-			throw createError('FULCRO6011', name, label, describeKind(method));
+			throw createError('FULCRO6011', {
+				operation: 'struct',
+				name,
+				method: label,
+				received: describeKind(method),
+			});
 		}
 
 		Object.defineProperty(prototype, key, {
@@ -395,28 +412,43 @@ export const struct = <
 	methods?: TMethods & ThisType<StructValue<TFields, TMethods>>,
 ): StructType<TFields, TMethods> => {
 	if (typeof name !== 'string' || name === '') {
-		throw createError('FULCRO6012', describeKind(name));
+		throw createError('FULCRO6012', {
+			operation: 'struct',
+			received: describeKind(name),
+		});
 	}
 
 	if (typeof fields !== 'object' || fields === null) {
-		throw createError('FULCRO6013', name, describeKind(fields));
+		throw createError('FULCRO6013', {
+			operation: 'struct',
+			name,
+			received: describeKind(fields),
+		});
 	}
 
 	const keys: string[] = Object.keys(fields);
 
 	if (keys.length === 0) {
-		throw createError('FULCRO6014', name);
+		throw createError('FULCRO6014', { operation: 'struct', name });
 	}
 
 	const declared = keys.map((key) => {
 		if (ARRAY_INDEX.test(key) || key === '~layout') {
-			throw createError('FULCRO6015', name, key);
+			throw createError('FULCRO6015', {
+				operation: 'struct',
+				name,
+				field: key,
+			});
 		}
 
 		const codec: FieldCodec | undefined = codecOf(fields[key]);
 
 		if (codec === undefined) {
-			throw createError('FULCRO6016', name, key);
+			throw createError('FULCRO6016', {
+				operation: 'struct',
+				name,
+				field: key,
+			});
 		}
 
 		return { key, descriptor: fields[key], codec };
@@ -490,11 +522,10 @@ export const struct = <
 		offset: number,
 	): void => {
 		if (!(view instanceof DataView)) {
-			throw createError(
-				'FULCRO6017',
-				`${name}.${operation}`,
-				describeKind(view),
-			);
+			throw createError('FULCRO6017', {
+				operation: `${name}.${operation}`,
+				received: describeKind(view),
+			});
 		}
 
 		if (
@@ -502,13 +533,12 @@ export const struct = <
 			offset < 0 ||
 			offset + size > view.byteLength
 		) {
-			throw createError(
-				'FULCRO6018',
-				`${name}.${operation}`,
+			throw createError('FULCRO6018', {
+				operation: `${name}.${operation}`,
 				size,
 				offset,
-				view.byteLength,
-			);
+				available: view.byteLength,
+			});
 		}
 	};
 
@@ -552,12 +582,19 @@ export const struct = <
 
 		from: (source) => {
 			if (typeof source !== 'object' || source === null) {
-				throw createError('FULCRO6019', `${name}.from`, describeKind(source));
+				throw createError('FULCRO6019', {
+					operation: `${name}.from`,
+					received: describeKind(source),
+				});
 			}
 
 			for (const key of Object.keys(source)) {
 				if (!Object.hasOwn(fields, key)) {
-					throw createError('FULCRO6020', `${name}.from`, key, keys.join(', '));
+					throw createError('FULCRO6020', {
+						operation: `${name}.from`,
+						key,
+						fields: keys.join(', '),
+					});
 				}
 			}
 
@@ -565,7 +602,10 @@ export const struct = <
 
 			for (const field of plan) {
 				if (!Object.hasOwn(source, field.key)) {
-					throw createError('FULCRO6021', `${name}.from`, field.key);
+					throw createError('FULCRO6021', {
+						operation: `${name}.from`,
+						field: field.key,
+					});
 				}
 
 				try {

@@ -11,6 +11,12 @@ The errors of [control flow as values](../functions.md). Back to
 Error: FULCRO2001: Operation rejected with undefined
 ```
 
+Details:
+
+```text
+{ operation: string; thrown: null | undefined }
+```
+
 Not thrown: returned. The operation passed to `tryCatch()` threw or rejected
 with `null` or `undefined`, and `tryCatch()` stored this error in their place,
 because a failure whose `error` is `null` would read as a success. What was

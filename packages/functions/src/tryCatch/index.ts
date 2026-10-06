@@ -16,7 +16,7 @@ import { failure, type Result, success } from '@/result';
 const asStorableError = (error: unknown): NonNullable<unknown> => {
 	if (error !== null && error !== undefined) return error;
 
-	return createError('FULCRO2001', error);
+	return createError('FULCRO2001', { operation: 'tryCatch', thrown: error });
 };
 
 /**
