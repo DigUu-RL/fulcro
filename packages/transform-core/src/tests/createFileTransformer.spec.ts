@@ -88,18 +88,40 @@ const transform = (
 	).transform(fileName, fs.readFileSync(fileName, 'utf8'));
 };
 
+/** What each transformation handed back, or the error it threw. */
+let checked: unknown;
+let untouched: string | null;
+let mentions: string | null;
+
+// Each transformation builds a language service and checks a program — the
+// costly part, and not what is asserted — so they run under the hook's
+// generous ceiling rather than a test's. Inside a test, one crossed the
+// default five seconds in a full run, competing with every other project.
+beforeAll(() => {
+	try {
+		transform('checked.ts', [flagging]);
+		checked = null;
+	} catch (error: unknown) {
+		checked = error;
+	}
+
+	untouched = transform('untouched.ts', [flagging]);
+	mentions = transform('mentions.ts', []);
+});
+
 describe('createFileTransformer with analyzers', () => {
 	it('should fail the build over a refusal an analyzer reports', () => {
-		expect(() => transform('checked.ts', [flagging])).toThrow(
+		expect(checked).toBeInstanceOf(Error);
+		expect((checked as Error).message).toMatch(
 			/FULCRO5003[\s\S]*checked\.ts\(2,1\): FULCRO5999/,
 		);
 	});
 
 	it('should hand back null for a file nothing rewrote', () => {
-		expect(transform('untouched.ts', [flagging])).toBeNull();
+		expect(untouched).toBeNull();
 	});
 
 	it('should hand back null for a file naming a rewriter it never calls', () => {
-		expect(transform('mentions.ts', [])).toBeNull();
+		expect(mentions).toBeNull();
 	});
 });
