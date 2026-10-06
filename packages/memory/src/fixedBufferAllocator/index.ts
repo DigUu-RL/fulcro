@@ -1,6 +1,6 @@
 import { createError } from '@fulcro/errors';
 
-import type { Allocation, Allocator } from '@/allocator';
+import type { Allocation, AllocationDomain } from '@/allocator';
 import { requireRequest } from '@/allocator/requireRequest';
 import { bump, type BumpRegion, remaining } from '@/bump';
 import { describeBuffer } from '@/storage/describeBuffer';
@@ -8,8 +8,11 @@ import { describeBuffer } from '@/storage/describeBuffer';
 /**
  * An allocator over a buffer the caller supplied, handed out front to back and
  * taken back all at once.
+ *
+ * Also an {@link AllocationDomain}: entered with `using`, it is reset when the
+ * scope ends.
  */
-export interface FixedBufferAllocator extends Allocator {
+export interface FixedBufferAllocator extends AllocationDomain {
 	/**
 	 * Releases every allocation made so far, at once, and starts again from the
 	 * front of the buffer. Every allocation made before it reports `isLive()` as
@@ -55,6 +58,11 @@ export const createFixedBufferAllocator = (
 	// allocation is live while the generation it was made in lasts.
 	let generation = 0;
 
+	const reset = (): void => {
+		generation++;
+		region.offset = 0;
+	};
+
 	return Object.freeze({
 		allocate: (size: number, alignment: number): Allocation => {
 			requireRequest('FixedBufferAllocator.allocate', size, alignment);
@@ -79,9 +87,8 @@ export const createFixedBufferAllocator = (
 			});
 		},
 
-		reset: (): void => {
-			generation++;
-			region.offset = 0;
-		},
+		reset,
+
+		[Symbol.dispose]: reset,
 	});
 };

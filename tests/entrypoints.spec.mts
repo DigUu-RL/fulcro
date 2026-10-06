@@ -809,6 +809,46 @@ describe('@fulcro/memory', () => {
 		);
 	});
 
+	it('should end what a using scope declared: an owner, a pooled block, a fixed buffer', async () => {
+		const {
+			borrow,
+			createFixedBufferAllocator,
+			createManagedStorage,
+			createPoolAllocator,
+			own,
+		} = await import('@fulcro/memory');
+
+		const pool = createPoolAllocator(16, 1);
+		const fixed = createFixedBufferAllocator(new ArrayBuffer(16));
+		let reading: ReturnType<typeof borrow<number>> | undefined;
+		let owner: ReturnType<typeof own<number>> | undefined;
+		let block: ReturnType<typeof pool.allocate> | undefined;
+		let fixedBlock: ReturnType<typeof fixed.allocate> | undefined;
+
+		{
+			using scores = own(() => createManagedStorage(2, 5));
+			using message = pool.allocate(16, 8);
+			using scope = fixed;
+
+			owner = scores;
+			reading = borrow(scores);
+			block = message;
+			fixedBlock = scope.allocate(16, 8);
+		}
+
+		expect(() => reading?.get(0)).toThrow(
+			expect.objectContaining({ code: 'FULCRO7024' }),
+		);
+		expect(() => borrow(owner as NonNullable<typeof owner>)).toThrow(
+			expect.objectContaining({
+				code: 'FULCRO7030',
+				details: { operation: 'borrow' },
+			}),
+		);
+		expect([block?.isLive(), fixedBlock?.isLive()]).toEqual([false, false]);
+		expect(pool.allocate(16, 8).isLive()).toBe(true);
+	});
+
 	it('should write a field of a published struct at its bytes through a native pointer, and refuse it once released', async () => {
 		const { createArenaAllocator, createLinearMemory, nativePointerTo } =
 			await import('@fulcro/memory');

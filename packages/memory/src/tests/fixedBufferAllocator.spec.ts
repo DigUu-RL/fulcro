@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import type { Allocation } from '@/allocator';
+import type { Allocation, AllocationDomain } from '@/allocator';
 import {
 	createFixedBufferAllocator,
 	type FixedBufferAllocator,
@@ -105,10 +105,36 @@ describe('createFixedBufferAllocator', () => {
 		);
 	});
 
-	it('should be an allocator with a reset, and not a domain', () => {
+	it('should reset when its using scope ends', () => {
+		const buffer = new ArrayBuffer(32);
+		let held: Allocation | undefined;
+
+		{
+			using allocator = createFixedBufferAllocator(buffer);
+
+			held = allocator.allocate(16, 8);
+			allocator.allocate(16, 8);
+		}
+
+		expect(held.isLive()).toBe(false);
+	});
+
+	it('should start again from the front of the buffer after a dispose', () => {
+		const allocator: FixedBufferAllocator = createFixedBufferAllocator(
+			new ArrayBuffer(16),
+		);
+
+		allocator.allocate(16, 8);
+		allocator[Symbol.dispose]();
+		allocator[Symbol.dispose]();
+
+		expect(allocator.allocate(16, 8).bytes.byteOffset).toBe(0);
+	});
+
+	it('should be an allocator with a reset, and a domain', () => {
 		expectTypeOf(
 			createFixedBufferAllocator(new ArrayBuffer(8)),
 		).toEqualTypeOf<FixedBufferAllocator>();
-		expectTypeOf<FixedBufferAllocator>().not.toMatchTypeOf<Disposable>();
+		expectTypeOf<FixedBufferAllocator>().toMatchTypeOf<AllocationDomain>();
 	});
 });

@@ -128,6 +128,26 @@ export const movedInsideALoopThatLeaves = (): void => {
 	}
 };
 
+export const usingOwnerBorrowedInItsScope = (): number => {
+	using owner = create();
+
+	return borrow(owner).get(0);
+};
+
+export const usingOwnerMovedOut = (): Owned<number> => {
+	// Leaving the scope disposes a moved-from owner, which is not a use of it.
+	using owner = create();
+
+	return move(owner);
+};
+
+export const movedIntoAUsingDeclaration = (): number => {
+	const first = create();
+	using second = move(first);
+
+	return borrow(second).get(0);
+};
+
 export const closureCreatedBeforeTheMove = (): (() => number) => {
 	// Left to the runtime: the closure may run before the move or after it.
 	const owner = create();

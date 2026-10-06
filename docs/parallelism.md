@@ -119,6 +119,24 @@ the **first run** rather than at construction, so a pool nobody uses costs
 nothing — but one that has run and not been closed will hang your process on
 exit.
 
+Declared with `await using`, a pool closes when its scope ends, however the
+scope is left — a throw included:
+
+```ts
+{
+	await using pool = createWorkerPool<number, number>({
+		module: new URL('./work.mjs', import.meta.url),
+		export: 'square',
+	});
+
+	const squares = await pool.map([1, 2, 3]);
+} // every worker is stopped here
+```
+
+Closing a pool already closed does nothing, so calling `close()` inside the
+scope as well is harmless. `await using` needs TypeScript 5.2 or later, with
+`esnext.disposable` in `lib` or `@types/node` installed.
+
 ## What crossing a thread costs
 
 Every value is **structure-cloned** in both directions: a real copy,

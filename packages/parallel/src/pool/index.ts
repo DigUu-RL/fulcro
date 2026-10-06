@@ -396,6 +396,21 @@ export const createPool = <T, R>(
 		}
 	};
 
+	const close = async (): Promise<void> => {
+		const starting: Promise<Member[]> | null = members;
+
+		if (starting === null) return;
+
+		members = null;
+
+		// A start that failed has already terminated what it managed to spawn,
+		// and reported its cause to the run that was waiting for it. Closing
+		// is not the place to raise it a second time.
+		const running: Member[] = await starting.catch((): Member[] => []);
+
+		await Promise.all(running.map((member) => member.handle.terminate()));
+	};
+
 	return {
 		map: async (items, runOptions): Promise<R[]> => {
 			const collected: R[] = [];
@@ -413,19 +428,8 @@ export const createPool = <T, R>(
 			},
 		}),
 
-		close: async (): Promise<void> => {
-			const starting: Promise<Member[]> | null = members;
+		close,
 
-			if (starting === null) return;
-
-			members = null;
-
-			// A start that failed has already terminated what it managed to spawn,
-			// and reported its cause to the run that was waiting for it. Closing
-			// is not the place to raise it a second time.
-			const running: Member[] = await starting.catch((): Member[] => []);
-
-			await Promise.all(running.map((member) => member.handle.terminate()));
-		},
+		[Symbol.asyncDispose]: close,
 	};
 };

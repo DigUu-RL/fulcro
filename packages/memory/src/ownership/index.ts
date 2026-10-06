@@ -56,6 +56,12 @@ const ownedStorages = new WeakSet<object>();
 const borrows = new WeakSet<object>();
 
 /**
+ * Every owner disposed while it was the current one, so using it afterwards
+ * is refused as disposed rather than as moved. Weak, for the same reason.
+ */
+const disposedOwners = new WeakSet<object>();
+
+/**
  * Records that a storage now has an owner.
  *
  * @param operation Operation being performed, for the error message.
@@ -104,6 +110,17 @@ export const createOwned = <T>(state: Ownership<T>): Owned<T> => {
 		get length(): number {
 			return requireOwnership('Owned.length', handle).storage.length;
 		},
+
+		// A handle that was moved from is not the owner any more, so the end of
+		// its scope has nothing to end: the owner `move` returned keeps its
+		// borrows. Disposing twice is disposing once, as for any disposable.
+		[Symbol.dispose]: (): void => {
+			if (state.owner !== handle) return;
+
+			endBorrows(state, false);
+			state.owner = null;
+			disposedOwners.add(handle);
+		},
 	});
 
 	state.owner = handle;
@@ -135,7 +152,7 @@ export const createOwnership = <T>(storage: Storage<T>): Ownership<T> => ({
  * @param owner What was handed in as an owner.
  * @returns Its state.
  * @throws {TypeError} When the value is not an owner made by `own` or `move`.
- * @throws {Error} When the owner was moved.
+ * @throws {Error} When the owner was moved or disposed.
  */
 export const requireOwnership = <T>(
 	operation: string,
@@ -155,7 +172,12 @@ export const requireOwnership = <T>(
 		});
 	}
 
-	if (state.owner !== owner) throw createError('FULCRO7023', { operation });
+	if (state.owner !== owner) {
+		throw createError(
+			disposedOwners.has(owner as object) ? 'FULCRO7030' : 'FULCRO7023',
+			{ operation },
+		);
+	}
 
 	return state;
 };

@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import type { Allocation } from '@/allocator';
+import type { Allocation, Allocator } from '@/allocator';
 import { createManagedAllocator } from '@/managedAllocator';
 import { createPoolAllocator, type PoolAllocator } from '@/poolAllocator';
 
@@ -29,7 +29,11 @@ describe('createPoolAllocator', () => {
 		const pool: PoolAllocator = createPoolAllocator(16, 3);
 		const [first, second, third] = [0, 1, 2].map(() =>
 			pool.allocate(16, 16),
-		) as [Allocation, Allocation, Allocation];
+		) as [
+			Allocation & Disposable,
+			Allocation & Disposable,
+			Allocation & Disposable,
+		];
 
 		pool.deallocate(second);
 		pool.deallocate(first);
@@ -175,8 +179,88 @@ describe('createPoolAllocator', () => {
 		);
 	});
 
+	it('should return the block of a using allocation when its scope ends', () => {
+		const pool: PoolAllocator = createPoolAllocator(16, 1);
+		let held: Allocation | undefined;
+
+		{
+			using message = pool.allocate(16, 8);
+
+			held = message;
+			message.bytes.setUint8(0, 9);
+		}
+
+		expect(held.isLive()).toBe(false);
+		expect(pool.allocate(16, 8).bytes.byteOffset).toBe(held.bytes.byteOffset);
+	});
+
+	it('should return the block when the scope is left by a throw', () => {
+		const pool: PoolAllocator = createPoolAllocator(16, 1);
+
+		const fail = (): void => {
+			using message = pool.allocate(16, 8);
+
+			message.bytes.setUint8(0, 1);
+
+			throw new RangeError('left early');
+		};
+
+		expect(fail).toThrow(RangeError);
+		expect(() => pool.allocate(16, 8)).not.toThrow();
+	});
+
+	it('should do nothing when an allocation already given back is disposed', () => {
+		const pool: PoolAllocator = createPoolAllocator(16, 2);
+		const first = pool.allocate(16, 8);
+
+		pool.deallocate(first);
+		first[Symbol.dispose]();
+		first[Symbol.dispose]();
+
+		const [one, two] = [pool.allocate(16, 8), pool.allocate(16, 8)];
+
+		expect(one.bytes.byteOffset).not.toBe(two.bytes.byteOffset);
+		expect(() => pool.allocate(16, 8)).toThrow(
+			expect.objectContaining({ code: 'FULCRO7007' }),
+		);
+	});
+
+	it('should leave a block alone once it was handed to someone else', () => {
+		const pool: PoolAllocator = createPoolAllocator(16, 1);
+		const before = pool.allocate(16, 8);
+
+		before[Symbol.dispose]();
+
+		const after = pool.allocate(16, 8);
+
+		before[Symbol.dispose]();
+
+		expect(after.isLive()).toBe(true);
+		expect(() => pool.allocate(16, 8)).toThrow(
+			expect.objectContaining({ code: 'FULCRO7007' }),
+		);
+	});
+
+	it('should refuse to deallocate what was already disposed', () => {
+		const pool: PoolAllocator = createPoolAllocator(16, 1);
+		const message = pool.allocate(16, 8);
+
+		message[Symbol.dispose]();
+
+		expect(() => pool.deallocate(message)).toThrow(
+			expect.objectContaining({ code: 'FULCRO7009' }),
+		);
+	});
+
 	it('should be an allocator with a deallocate, and not a domain', () => {
 		expectTypeOf(createPoolAllocator(8, 1)).toEqualTypeOf<PoolAllocator>();
 		expectTypeOf<PoolAllocator>().not.toMatchTypeOf<Disposable>();
+	});
+
+	it('should hand out allocations that are disposable', () => {
+		expectTypeOf(createPoolAllocator(8, 1).allocate(8, 8)).toEqualTypeOf<
+			Allocation & Disposable
+		>();
+		expectTypeOf<PoolAllocator>().toExtend<Allocator>();
 	});
 });

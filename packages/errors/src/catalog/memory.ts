@@ -267,7 +267,7 @@ export const memoryCatalog = {
 	FULCRO7024: {
 		kind: Error,
 		message: ({ operation }: { operation: string }) =>
-			`${operation}: the borrow has ended — its owner was moved, or borrowed again in a way it cannot share; borrow again.`,
+			`${operation}: the borrow has ended — its owner was moved or disposed, or borrowed again in a way it cannot share; borrow again.`,
 	},
 	FULCRO7025: {
 		kind: Error,
@@ -323,5 +323,10 @@ export const memoryCatalog = {
 			line: number;
 		}) =>
 			`${operation}: the borrow '${name}' is used after its owner '${owner}' was moved at line ${line}.`,
+	},
+	FULCRO7030: {
+		kind: Error,
+		message: ({ operation }: { operation: string }) =>
+			`${operation}: the owner was disposed when its scope ended; nothing can be borrowed or moved from it any more.`,
 	},
 } as const satisfies RangeCatalog<'7'>;

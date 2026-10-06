@@ -76,6 +76,22 @@ export const borrowUsedAfterItsOwnerMoved = (): number => {
 	return reading.get(0); // FULCRO7029
 };
 
+export const usingOwnerBorrowedAfterMove = (): void => {
+	using owner = create();
+
+	move(owner);
+	borrow(owner); // FULCRO7027
+};
+
+export const borrowOfAUsingOwnerUsedAfterItMoved = (): number => {
+	using owner = create();
+	const reading = borrow(owner);
+
+	move(owner);
+
+	return reading.get(0); // FULCRO7029
+};
+
 export const maybeMoved = (): void => {
 	const owner = create();
 

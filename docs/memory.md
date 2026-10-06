@@ -244,13 +244,13 @@ const createParticles = (
 
 ### Choosing an allocator
 
-| Your allocations…                              | Use                          | Released by            |
-| ---------------------------------------------- | ---------------------------- | ---------------------- |
-| …have no lifetime worth managing               | `createManagedAllocator()`   | the garbage collector  |
-| …all end together: one request, one pass       | `createArenaAllocator(size)` | `reset()`, or `using`  |
-| …nest, the inner ones ending first             | `createStackAllocator(size)` | leaving a frame        |
-| …must fit a budget fixed in advance            | `createFixedBufferAllocator` | `reset()`              |
-| …are all one size and come and go in any order | `createPoolAllocator`        | `deallocate(each one)` |
+| Your allocations…                              | Use                          | Released by           |
+| ---------------------------------------------- | ---------------------------- | --------------------- |
+| …have no lifetime worth managing               | `createManagedAllocator()`   | the garbage collector |
+| …all end together: one request, one pass       | `createArenaAllocator(size)` | `reset()`, or `using` |
+| …nest, the inner ones ending first             | `createStackAllocator(size)` | leaving a frame       |
+| …must fit a budget fixed in advance            | `createFixedBufferAllocator` | `reset()`, or `using` |
+| …are all one size and come and go in any order | `createPoolAllocator`        | `deallocate`, `using` |
 
 **Managed.** `createManagedAllocator()` gives every allocation a buffer of its
 own and never releases one: the garbage collector reclaims an allocation once
@@ -285,12 +285,27 @@ lasts as long as the stack.
 **Fixed buffer.** `createFixedBufferAllocator(buffer)` hands out an
 `ArrayBuffer` you already have and never asks the engine for memory. `reset()`
 starts again from the front. What the buffer held before is overwritten with
-zeroes as it is handed out.
+zeroes as it is handed out. Like an arena, it is an allocation domain: entered
+with `using`, it resets when the scope ends.
 
 **Pool.** `createPoolAllocator(blockSize, blockCount)` cuts one buffer into
 `blockCount` blocks of `blockSize` bytes. Each allocation takes one block and
 `deallocate(allocation)` returns it, in any order. A request fits when its size
 is at most `blockSize` and its alignment divides `blockSize`.
+
+A pool's allocations are disposable on their own, so a block declared with
+`using` goes back when its scope ends:
+
+```ts
+{
+	using message = pool.allocate(48, 8);
+	// …
+} // the block is the pool's again
+```
+
+Disposing an allocation whose block already went back does nothing, even once
+the block was handed to someone else; `deallocate` on it still throws
+[`FULCRO7009`](./errors/FULCRO7xxx.md#fulcro7009).
 
 Each factory returns its allocator under its own type — `ArenaAllocator`,
 `StackAllocator`, `FixedBufferAllocator`, `PoolAllocator` — which is
@@ -301,9 +316,13 @@ specific type where you call those methods, and `Allocator` everywhere else.
 ### Allocation domains
 
 An `AllocationDomain` is an allocator that is also `Disposable`: leaving its
-`using` scope releases its whole region at once. An arena is one, and so is
-every frame of a stack. Leaving costs the same whatever was allocated — nothing
-is released one allocation at a time.
+`using` scope releases its whole region at once. An arena is one, a fixed
+buffer allocator is one, and so is every frame of a stack. Leaving costs the
+same whatever was allocated — nothing is released one allocation at a time.
+
+`using` and `await using` are TypeScript's own, and need TypeScript 5.2 or
+later with `esnext.disposable` in `lib` (or `@types/node`, which declares the
+same) — the types `Disposable` and `AsyncDisposable` come from there.
 
 ### Released memory is refused, not read
 
@@ -622,8 +641,9 @@ and its values are lent from that owner — to any number of readers at once, or
 to one writer alone — and handed on with a move that spends the old owner.
 
 ```ts
-interface Owned<T> {
+interface Owned<T> extends Disposable {
 	readonly length: number;
+	[Symbol.dispose](): void;
 }
 
 interface Borrowed<T> extends ReadOnlyView<T> {}
@@ -653,8 +673,8 @@ function returns from somewhere else — a variable, a view made over it earlier
 owner throws [`FULCRO7025`](./errors/FULCRO7xxx.md#fulcro7025); returning a
 borrow throws [`FULCRO7026`](./errors/FULCRO7xxx.md#fulcro7026).
 
-An owner exposes its `length` and nothing else. Its values are reached through
-a borrow.
+An owner exposes its `length`, and a `[Symbol.dispose]` for `using`, and
+nothing else. Its values are reached through a borrow.
 
 ### `borrow(owner)` and `borrowMutable(owner)`
 
@@ -686,6 +706,7 @@ was made.
 | `borrow`        | the `borrowMutable` before it, if any         |
 | `borrowMutable` | every borrow before it                        |
 | `move`          | every borrow, and the owner it was taken from |
+| disposing it    | every borrow, and the owner itself            |
 
 A borrow lasts until its last use, not until the end of a scope. Taking a
 conflicting borrow is always allowed; what is refused is using the earlier one
@@ -704,6 +725,39 @@ borrow(queue); // throws FULCRO7023: queue was moved
 The new owner owns the very same values; nothing is copied. The old owner
 refuses everything asked of it from then on, its `length` included, with
 [`FULCRO7023`](./errors/FULCRO7xxx.md#fulcro7023).
+
+### Ending ownership with `using`
+
+An owner declared with `using` ends with its scope, however the scope is left:
+every borrow taken from it ends, and the owner refuses everything asked of it
+afterwards with [`FULCRO7030`](./errors/FULCRO7xxx.md#fulcro7030).
+
+```ts
+{
+	using frame = stack.enter();
+	using particles = own(() => allocate(Particle, 10_000, frame));
+
+	borrowMutable(particles).set(0, Particle.from({ x: 1, y: 2 }));
+} // the borrows of particles end, then the frame releases their memory
+```
+
+Disposing ends the ownership, not the memory: the bytes belong to the
+allocator, and go back when the allocator releases them — here, when the frame
+declared before the owner is left right after it, since `using` ends the last
+declaration first.
+
+An owner moved from is not the owner any more, so the end of its scope has
+nothing to end, and the owner `move` returned keeps its borrows:
+
+```ts
+const handOver = (): Owned<number> => {
+	using scores = own(() => createManagedStorage(100, 0));
+
+	return move(scores); // leaving disposes scores, which does nothing
+};
+```
+
+Disposing twice is disposing once.
 
 ### Refused when the code is compiled
 
@@ -753,7 +807,8 @@ through a borrow makes one comparison to tell whether the borrow has ended, and
 then reads or writes the storage once — through any number of nested subviews.
 Over a storage from `allocate`, the storage also asks once whether its memory
 is still live, as it always does; the borrow adds no second question. Ending
-borrows costs the same however many were taken.
+borrows — by a borrow, a move or the end of a `using` scope — costs the same
+however many were taken, and reads nothing.
 
 ### Progressive safety
 
@@ -816,3 +871,4 @@ visible in the type you hold.
 | [`FULCRO7027`](./errors/FULCRO7xxx.md#fulcro7027) | At compile time: a variable used after it was moved      |
 | [`FULCRO7028`](./errors/FULCRO7xxx.md#fulcro7028) | At compile time: a borrow used after a conflicting one   |
 | [`FULCRO7029`](./errors/FULCRO7xxx.md#fulcro7029) | At compile time: a borrow used after its owner moved     |
+| [`FULCRO7030`](./errors/FULCRO7xxx.md#fulcro7030) | An owner used after its `using` scope disposed it        |

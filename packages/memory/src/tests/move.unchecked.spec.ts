@@ -32,7 +32,7 @@ const spent = (operation: string): Error =>
 const ended = (operation: string): Error =>
 	coded(
 		new Error(
-			`FULCRO7024: ${operation}: the borrow has ended — its owner was moved, or borrowed again in a way it cannot share; borrow again.`,
+			`FULCRO7024: ${operation}: the borrow has ended — its owner was moved or disposed, or borrowed again in a way it cannot share; borrow again.`,
 		),
 		{ operation },
 	);
