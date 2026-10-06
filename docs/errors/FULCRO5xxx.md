@@ -12,6 +12,12 @@ is being built, not while it runs. Back to [all codes](../errors.md).
 Error: FULCRO5001: No tsconfig.json found from /app. The transformer needs one to know which files belong to the program.
 ```
 
+Details:
+
+```text
+{ operation: string; root: string }
+```
+
 A bundler plugin (`@fulcro/reflect/unplugin`, `@fulcro/collections/unplugin`)
 could not find a `tsconfig.json`, searching upwards from the project root. The
 transformer answers from types, and it needs the compiler's view of the
@@ -26,6 +32,12 @@ its `tsconfig` option.
 Error: FULCRO5002: <the compiler's own message>
 ```
 
+Details:
+
+```text
+{ operation: string; diagnostic: string }
+```
+
 The `tsconfig.json` was found but could not be read — invalid JSON, or an
 `extends` pointing at a file that does not exist. The message after the code is
 TypeScript's own, and names the file and the problem.
@@ -35,6 +47,12 @@ TypeScript's own, and names the file and the problem.
 ```text
 Error: FULCRO5003: The Fulcro transformer refused calls it could not answer at compile time:
 src/tables.ts(4,23): FULCRO4010: constantOf(…) cannot be evaluated at compile time: 'counter' is declared with let or var, so it can change. …
+```
+
+Details:
+
+```text
+{ operation: string; report: string }
 ```
 
 A transformer refused one or more calls in a file — a call it owns but cannot

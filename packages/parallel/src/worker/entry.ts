@@ -1,4 +1,4 @@
-import { createError, type ErrorCode } from '@fulcro/errors';
+import { createError, type DetailsOf, type ErrorCode } from '@fulcro/errors';
 
 /**
  * The script every worker runs.
@@ -14,10 +14,10 @@ import { createError, type ErrorCode } from '@fulcro/errors';
  * `parentPort` it was handed. The shape of the protocol is identical, so the
  * difference is a handful of lines here rather than two implementations.
  *
- * A failure of its own is reported as a code and the values of its message,
- * never as a thrown error: only text survives the boundary, and the pool needs
- * the values to create the same error again on its side, class and code
- * included.
+ * A failure of its own is reported as a code and its details, never as a
+ * thrown error: an error loses its class on the way, and the pool needs the
+ * details to create the same error again on its side, class and code
+ * included. Details hold primitives only, so they clone as they are.
  */
 
 /** What the pool sends first, before any work. */
@@ -44,10 +44,12 @@ let task: ((value: unknown) => unknown) | null = null;
 let reply: (message: unknown) => void = () => {};
 
 /** One of this package's own errors, as it crosses to the pool. */
-interface CodedFailure {
-	readonly code: ErrorCode;
-	readonly values: readonly unknown[];
-}
+type CodedFailure = {
+	readonly [TCode in ErrorCode]: {
+		readonly code: TCode;
+		readonly details: DetailsOf<TCode>;
+	};
+}[ErrorCode];
 
 /**
  * Describes what somebody else's code threw — the task module failing to
@@ -81,7 +83,14 @@ const initialize = async (
 	const found: unknown = loaded[message.export];
 
 	if (typeof found !== 'function') {
-		return { code: 'FULCRO3001', values: [message.module, message.export] };
+		return {
+			code: 'FULCRO3001',
+			details: {
+				operation: 'initialize',
+				module: message.module,
+				name: message.export,
+			},
+		};
 	}
 
 	task = found as (value: unknown) => unknown;
@@ -100,7 +109,10 @@ const initialize = async (
  */
 const run = async (message: TaskMessage): Promise<void> => {
 	if (task === null) {
-		const failure: CodedFailure = { code: 'FULCRO3006', values: [] };
+		const failure: CodedFailure = {
+			code: 'FULCRO3006',
+			details: { operation: 'run' },
+		};
 
 		reply({ kind: 'failed', id: message.id, ...failure });
 
@@ -156,7 +168,7 @@ const listen = async (): Promise<void> => {
 	const { parentPort } = await import('node:worker_threads');
 
 	if (parentPort === null) {
-		throw createError('FULCRO3002');
+		throw createError('FULCRO3002', { operation: 'listen' });
 	}
 
 	reply = (message: unknown): void => {

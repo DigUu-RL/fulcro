@@ -70,7 +70,10 @@ export const parseDecimal = (text: string): DecimalParts => {
 	const [, sign = '', whole = '', fraction = '', exponentText] = match ?? [];
 
 	if (match === null || whole.length + fraction.length === 0) {
-		throw createError('FULCRO6023', describeInput(text));
+		throw createError('FULCRO6023', {
+			operation: 'Decimal.from',
+			received: describeInput(text),
+		});
 	}
 
 	const negative: boolean = sign === '-';

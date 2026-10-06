@@ -524,7 +524,7 @@ export const typeOf: TypeOfSignature = ((
 	// because `typeOf(undefined)` is a perfectly ordinary call that has to keep
 	// answering about the undefined value.
 	if (args.length === 0) {
-		throw createError('FULCRO4004');
+		throw createError('FULCRO4004', { operation: 'typeOf' });
 	}
 
 	const [value, declared] = args as [unknown, DeclaredType | undefined];

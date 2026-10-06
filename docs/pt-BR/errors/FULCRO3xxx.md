@@ -16,6 +16,12 @@ diz onde ele aconteceu.
 Error: FULCRO3001: file:///app/work.mjs has no callable export named "resize".
 ```
 
+Detalhes:
+
+```text
+{ operation: string; module: string; name: string }
+```
+
 O módulo passado ao pool carrega, mas o `export` que ele nomeia não existe ou
 não é uma função. Todos os workers se recusam a iniciar, então o primeiro
 `map()` rejeita.
@@ -29,6 +35,12 @@ não como `default`.
 Error: FULCRO3002: This module is only meaningful inside a worker.
 ```
 
+Detalhes:
+
+```text
+{ operation: string }
+```
+
 O script que os workers rodam, `@fulcro/parallel/worker`, foi importado num
 lugar que não é um worker. Ninguém precisa importá-lo: o próprio pool o inicia.
 
@@ -38,6 +50,12 @@ lugar que não é um worker. Ninguém precisa importá-lo: o próprio pool o ini
 Error: FULCRO3003: A pool needs a positive integer worker count, and was given 0.
 ```
 
+Detalhes:
+
+```text
+{ operation: string; workers: number | undefined }
+```
+
 `createWorkerPool()` recebeu uma opção `workers` que não é um número inteiro de
 pelo menos um. Omita-a para usar o número de núcleos da máquina.
 
@@ -45,6 +63,12 @@ pelo menos um. Omita-a para usar o número de núcleos da máquina.
 
 ```text
 Error: FULCRO3004: <o texto da falha>
+```
+
+Detalhes:
+
+```text
+{ operation: string; reason: string }
 ```
 
 Um worker não conseguiu carregar o módulo da task: o módulo não foi encontrado,
@@ -61,6 +85,12 @@ Construa-a com `new URL('./work.mjs', import.meta.url)`.
 Error: FULCRO3005: <o texto que a sua task lançou>
 ```
 
+Detalhes:
+
+```text
+{ operation: string; reason: string }
+```
+
 A task lançou um erro, ou rejeitou, enquanto trabalhava num elemento. A
 mensagem é a da própria task, palavra por palavra, depois do código; a execução
 rejeita com ela e não distribui mais nenhum elemento.
@@ -74,6 +104,12 @@ falhas, coloque na mensagem que a task lança o que você precisar.
 Error: FULCRO3006: The worker was given a task before it was initialised.
 ```
 
+Detalhes:
+
+```text
+{ operation: string }
+```
+
 Um worker recebeu um elemento antes de carregar o módulo da task. O pool nunca
 faz isso; ver este erro significa que o protocolo entre o pool e os seus
 workers foi quebrado, o que é um defeito da biblioteca e vale ser reportado.
@@ -82,6 +118,12 @@ workers foi quebrado, o que é um defeito da biblioteca e vale ser reportado.
 
 ```text
 Error: FULCRO3007: The worker exited with code 1.
+```
+
+Detalhes:
+
+```text
+{ operation: string; exitCode: number }
 ```
 
 Uma thread de worker no Node parou com um código de saída diferente de zero
@@ -95,6 +137,12 @@ em vez de esperar para sempre.
 Error: FULCRO3008: <o texto da falha>
 ```
 
+Detalhes:
+
+```text
+{ operation: string; reason: string }
+```
+
 Um worker no browser levantou um erro que nada dentro dele capturou — na
 maioria das vezes, o seu script ou o módulo da task falhando ao carregar. A
 mensagem é a que o browser reportou.
@@ -103,6 +151,12 @@ mensagem é a que o browser reportou.
 
 ```text
 Error: FULCRO3009: A message could not be cloned across the worker boundary.
+```
+
+Detalhes:
+
+```text
+{ operation: string }
 ```
 
 Um elemento ou um resultado não pôde ser copiado para um worker ou de volta

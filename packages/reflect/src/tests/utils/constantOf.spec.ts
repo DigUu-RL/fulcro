@@ -15,13 +15,21 @@ const evaluateAtRuntime: typeof constantOf = constantOf;
 
 /**
  * The error a refusal is expected to throw, carrying the code its message
- * starts with, which `toThrow` compares as well.
+ * starts with and the details it was made from, which `toThrow` compares as
+ * well.
  *
  * @param error The expected error, its message starting with its code.
- * @returns The same error, carrying that code.
+ * @param details The details the error is expected to carry.
+ * @returns The same error, carrying that code and those details.
  */
-const coded = <T extends Error>(error: T): T =>
-	Object.assign(error, { code: error.message.slice(0, 'FULCRO0000'.length) });
+const coded = <T extends Error>(
+	error: T,
+	details: Readonly<Record<string, unknown>>,
+): T =>
+	Object.assign(error, {
+		code: error.message.slice(0, 'FULCRO0000'.length),
+		details,
+	});
 
 /**
  * Tells whether an object and every object inside it is frozen.
@@ -46,6 +54,11 @@ const refusalFor = (value: unknown): TypeError =>
 			`FULCRO4011: constantOf(…) produced ${String(value)}, which cannot be written as a literal. ` +
 				'A constant is a number, a string, a boolean, a bigint, null or undefined, or an array or a plain object of them, each reached once.',
 		),
+		{
+			operation: 'constantOf',
+			call: 'constantOf(…)',
+			received: String(value),
+		},
 	);
 
 describe('constantOf', () => {
@@ -101,6 +114,7 @@ describe('constantOf', () => {
 					new TypeError(
 						'FULCRO4014: constantOf: expected a function, received number.',
 					),
+					{ operation: 'constantOf', received: 'number' },
 				),
 			);
 		});

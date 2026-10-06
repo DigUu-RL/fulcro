@@ -101,6 +101,7 @@ describe.each(STRATEGIES)('%s, as a Storage<T>', (name, create) => {
 				new RangeError(
 					`FULCRO7002: ${name}.get: index ${shown} is outside a storage of length 3.`,
 				),
+				{ operation: `${name}.get`, index, length: 3 },
 			),
 		);
 	});
@@ -113,6 +114,7 @@ describe.each(STRATEGIES)('%s, as a Storage<T>', (name, create) => {
 				new RangeError(
 					`FULCRO7002: ${name}.set: index 2 is outside a storage of length 2.`,
 				),
+				{ operation: `${name}.set`, index: 2, length: 2 },
 			),
 		);
 		expect(sumOfX(points)).toBe(0);
@@ -152,6 +154,7 @@ describe('Storage<T> lengths', () => {
 						new RangeError(
 							`FULCRO7001: ${name}: expected a length that is a non-negative safe integer, received ${shown}.`,
 						),
+						{ operation: name, received: length },
 					),
 				);
 			}

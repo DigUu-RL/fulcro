@@ -89,7 +89,7 @@ export function nameOf(input?: unknown): string {
 	// by the transformer, which is the only thing able to see a type. Reaching
 	// the runtime means the project compiled without it.
 	if (arguments.length === 0) {
-		throw createError('FULCRO4008');
+		throw createError('FULCRO4008', { operation: 'nameOf' });
 	}
 
 	if (typeof input === 'function') {

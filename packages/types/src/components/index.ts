@@ -100,13 +100,17 @@ export const createComponentRecord = <T, TValue>(
 
 		for (const key of Object.keys(source)) {
 			if (!keys.includes(key)) {
-				throw createError('FULCRO6020', operation, key, keys.join(', '));
+				throw createError('FULCRO6020', {
+					operation,
+					key,
+					fields: keys.join(', '),
+				});
 			}
 		}
 
 		return keys.map((key) => {
 			if (!Object.hasOwn(source, key)) {
-				throw createError('FULCRO6021', operation, key);
+				throw createError('FULCRO6021', { operation, field: key });
 			}
 
 			try {

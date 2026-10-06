@@ -230,7 +230,10 @@ export const elementOf = <T>(
 				typeof (descriptor as Record<string, unknown>)[name] !== 'function',
 		)
 	) {
-		throw createError('FULCRO6033', operation, describeKind(descriptor));
+		throw createError('FULCRO6033', {
+			operation,
+			received: describeKind(descriptor),
+		});
 	}
 
 	return descriptor as ElementType<T>;

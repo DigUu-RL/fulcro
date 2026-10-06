@@ -340,7 +340,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 			if (!predicate || predicate(item)) return item;
 		}
 
-		throw createError('FULCRO1001');
+		throw createError('FULCRO1001', { operation: 'first' });
 	}
 
 	/**
@@ -369,7 +369,9 @@ export class SequenceCollection<T> implements Sequence<T> {
 	last(predicate?: Predicate<T>): T {
 		const found: T | typeof NOT_FOUND = this.findLast(predicate);
 
-		if (found === NOT_FOUND) throw createError('FULCRO1001');
+		if (found === NOT_FOUND) {
+			throw createError('FULCRO1001', { operation: 'last' });
+		}
 
 		return found;
 	}
@@ -737,7 +739,9 @@ export class SequenceCollection<T> implements Sequence<T> {
 			counter++;
 		}
 
-		if (counter === 0) throw createError('FULCRO1001');
+		if (counter === 0) {
+			throw createError('FULCRO1001', { operation: 'average' });
+		}
 		return total / counter;
 	}
 
@@ -758,7 +762,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 			if (minimum === null || value < minimum) minimum = value;
 		}
 
-		if (minimum === null) throw createError('FULCRO1001');
+		if (minimum === null) throw createError('FULCRO1001', { operation: 'min' });
 		return minimum;
 	}
 
@@ -779,7 +783,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 			if (maximum === null || value > maximum) maximum = value;
 		}
 
-		if (maximum === null) throw createError('FULCRO1001');
+		if (maximum === null) throw createError('FULCRO1001', { operation: 'max' });
 		return maximum;
 	}
 
@@ -815,7 +819,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 			map.set(key, element);
 
 			if (map.size === storedCount) {
-				throw createError('FULCRO1002');
+				throw createError('FULCRO1002', { operation: 'toMap' });
 			}
 		}
 
@@ -943,7 +947,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 		const found: T | null = this.resolveSingle(predicate);
 
 		if (found === null) {
-			throw createError('FULCRO1003');
+			throw createError('FULCRO1003', { operation: 'single' });
 		}
 
 		return found;
@@ -984,7 +988,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 			if (predicate !== undefined && !predicate(item)) continue;
 
 			if (seen) {
-				throw createError('FULCRO1004');
+				throw createError('FULCRO1004', { operation: 'single' });
 			}
 
 			found = item;
@@ -1004,7 +1008,9 @@ export class SequenceCollection<T> implements Sequence<T> {
 	elementAt(index: number): T {
 		const found: T | null = this.elementAtOrNull(index);
 
-		if (found === null) throw createError('FULCRO1005', index);
+		if (found === null) {
+			throw createError('FULCRO1005', { operation: 'elementAt', index });
+		}
 
 		return found;
 	}
@@ -1272,7 +1278,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 */
 	chunk(size: number): Sequence<T[]> {
 		if (!Number.isInteger(size) || size < 1) {
-			throw createError('FULCRO1006', size);
+			throw createError('FULCRO1006', { operation: 'chunk', size });
 		}
 
 		const source: Iterable<T> = this.source;
@@ -1500,7 +1506,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 		}
 
 		if (best === NOT_FOUND) {
-			throw createError('FULCRO1007', operation);
+			throw createError('FULCRO1007', { operation });
 		}
 
 		return best;
@@ -1838,7 +1844,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 */
 	windowed(size: number): Sequence<T[]> {
 		if (!Number.isInteger(size) || size < 1) {
-			throw createError('FULCRO1008', size);
+			throw createError('FULCRO1008', { operation: 'windowed', size });
 		}
 
 		const source: Iterable<T> = this.source;
@@ -1958,7 +1964,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 		}
 
 		if (values.length === 0) {
-			throw createError('FULCRO1007', operation);
+			throw createError('FULCRO1007', { operation });
 		}
 
 		// Numeric rather than the default lexicographic sort, which would put
@@ -1992,7 +1998,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 */
 	percentile(rank: number, selector?: Selector<T, number>): number {
 		if (!Number.isFinite(rank) || rank < 0 || rank > 100) {
-			throw createError('FULCRO1009', rank);
+			throw createError('FULCRO1009', { operation: 'percentile', rank });
 		}
 
 		const values: number[] = this.sortedValues('percentile', selector);
@@ -2032,7 +2038,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 		}
 
 		if (values.length === 0) {
-			throw createError('FULCRO1007', operation);
+			throw createError('FULCRO1007', { operation });
 		}
 
 		const mean: number =
@@ -2082,7 +2088,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 		// observation: one measurement says nothing about the spread it came
 		// from, and answering 0 would claim that it does.
 		if (count < 2) {
-			throw createError('FULCRO1010');
+			throw createError('FULCRO1010', { operation: 'sampleStandardDeviation' });
 		}
 
 		return Math.sqrt(total / (count - 1));
@@ -2102,10 +2108,10 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 */
 	static range(start: number, count: number): Sequence<number> {
 		if (!Number.isInteger(start) || !Number.isInteger(count)) {
-			throw createError('FULCRO1011');
+			throw createError('FULCRO1011', { operation: 'range' });
 		}
 
-		if (count < 0) throw createError('FULCRO1012');
+		if (count < 0) throw createError('FULCRO1012', { operation: 'range' });
 
 		return SequenceCollection.deferred<number>(
 			{
@@ -2128,10 +2134,10 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 */
 	static repeat<T>(value: T, count: number): Sequence<T> {
 		if (!Number.isInteger(count)) {
-			throw createError('FULCRO1013');
+			throw createError('FULCRO1013', { operation: 'repeat' });
 		}
 
-		if (count < 0) throw createError('FULCRO1014');
+		if (count < 0) throw createError('FULCRO1014', { operation: 'repeat' });
 
 		return SequenceCollection.deferred<T>(
 			{
@@ -2273,7 +2279,12 @@ export class SequenceCollection<T> implements Sequence<T> {
 							// not actionable on its own.
 							const found: string = describeType(item);
 
-							throw createError('FULCRO1015', expected, found, index);
+							throw createError('FULCRO1015', {
+								operation: 'cast',
+								expected,
+								found,
+								index,
+							});
 						}
 
 						index++;

@@ -46,11 +46,12 @@ export const hasCollectionFactories = (): boolean =>
 /**
  * Resolves the registered factories.
  *
+ * @param operation Name of the calling factory function, for the error.
  * @returns The registered factories.
  * @throws {Error} When no factory has been registered yet.
  */
-const resolveFactories = (): CollectionFactories => {
-	if (!registeredFactories) throw createError('FULCRO1018');
+const resolveFactories = (operation: string): CollectionFactories => {
+	if (!registeredFactories) throw createError('FULCRO1018', { operation });
 	return registeredFactories;
 };
 
@@ -65,7 +66,7 @@ const resolveFactories = (): CollectionFactories => {
  * @throws {Error} When no factory has been registered yet.
  */
 export const createGroup = <K, T>(key: K, source: Iterable<T>): Group<K, T> => {
-	return resolveFactories().group(key, source);
+	return resolveFactories('createGroup').group(key, source);
 };
 
 /**
@@ -82,5 +83,5 @@ export const createOrderedSequence = <T>(
 	source: Iterable<T>,
 	criteria: readonly SortCriterion<T>[],
 ): OrderedSequence<T> => {
-	return resolveFactories().ordered(source, criteria);
+	return resolveFactories('createOrderedSequence').ordered(source, criteria);
 };

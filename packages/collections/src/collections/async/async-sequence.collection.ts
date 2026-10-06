@@ -396,7 +396,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	 */
 	chunk(size: number): AsyncSequence<T[]> {
 		if (!Number.isInteger(size) || size < 1) {
-			throw createError('FULCRO1006', size);
+			throw createError('FULCRO1006', { operation: 'chunk', size });
 		}
 
 		const source: AsyncIterable<T> = this.source;
@@ -616,7 +616,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 		const found: T | null = await this.firstOrNull(options);
 
 		if (found === null) {
-			throw createError('FULCRO1007', 'first');
+			throw createError('FULCRO1007', { operation: 'first' });
 		}
 
 		return found;
@@ -649,7 +649,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 		const found: T | typeof NOT_FOUND = await this.resolveLast(options);
 
 		if (found === NOT_FOUND) {
-			throw createError('FULCRO1007', 'last');
+			throw createError('FULCRO1007', { operation: 'last' });
 		}
 
 		return found;
@@ -923,12 +923,12 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 					if (!matches(item)) {
 						// Thrown at the element that failed, so a bad page of a feed
 						// is caught without the rest of it being read.
-						throw createError(
-							'FULCRO1015',
+						throw createError('FULCRO1015', {
+							operation: 'cast',
 							expected,
-							describeType(item),
+							found: describeType(item),
 							index,
-						);
+						});
 					}
 
 					index++;
@@ -1071,7 +1071,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 			count++;
 		}
 
-		if (count === 0) throw createError('FULCRO1019', 'average');
+		if (count === 0) throw createError('FULCRO1019', { operation: 'average' });
 
 		return total / count;
 	}
@@ -1195,7 +1195,9 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 			'single',
 		);
 
-		if (only === NOT_FOUND) throw createError('FULCRO1020');
+		if (only === NOT_FOUND) {
+			throw createError('FULCRO1020', { operation: 'single' });
+		}
 
 		return only as T;
 	}
@@ -1229,7 +1231,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 		const found: T | null = await this.elementAtOrNull(index, options);
 
 		if (found === null) {
-			throw createError('FULCRO1005', index);
+			throw createError('FULCRO1005', { operation: 'elementAt', index });
 		}
 
 		return found;
@@ -1314,7 +1316,10 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 			const key: K = await keySelector(item);
 
 			if (mapped.has(key)) {
-				throw createError('FULCRO1021', String(key));
+				throw createError('FULCRO1021', {
+					operation: 'toMap',
+					key: String(key),
+				});
 			}
 
 			mapped.set(
@@ -1388,7 +1393,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 		);
 
 		if (count === 0) {
-			throw createError('FULCRO1019', 'standardDeviation');
+			throw createError('FULCRO1019', { operation: 'standardDeviation' });
 		}
 
 		return Math.sqrt(squares / count);
@@ -1414,7 +1419,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 		);
 
 		if (count < 2) {
-			throw createError('FULCRO1022');
+			throw createError('FULCRO1022', { operation: 'sampleStandardDeviation' });
 		}
 
 		return Math.sqrt(squares / (count - 1));
@@ -1470,7 +1475,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 		}
 
 		if (best === NOT_FOUND) {
-			throw createError('FULCRO1019', operator);
+			throw createError('FULCRO1019', { operation: operator });
 		}
 
 		return best as number;
@@ -1514,7 +1519,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 		}
 
 		if (best === NOT_FOUND) {
-			throw createError('FULCRO1019', operator);
+			throw createError('FULCRO1019', { operation: operator });
 		}
 
 		return best as V;
@@ -1543,7 +1548,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 			// Thrown at the second element rather than after counting them all:
 			// the answer is settled, and the source may not end.
 			if (found !== NOT_FOUND) {
-				throw createError('FULCRO1024', operator);
+				throw createError('FULCRO1024', { operation: operator });
 			}
 
 			found = item;
@@ -1742,7 +1747,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	 */
 	windowed(size: number): AsyncSequence<T[]> {
 		if (!Number.isInteger(size) || size <= 0) {
-			throw createError('FULCRO1023');
+			throw createError('FULCRO1023', { operation: 'windowed' });
 		}
 
 		const source: AsyncIterable<T> = this.source;

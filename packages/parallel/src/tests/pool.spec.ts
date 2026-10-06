@@ -2,6 +2,7 @@ import process from 'node:process';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
+import { isFulcroError } from '@fulcro/errors';
 import { createWorkerPool, type WorkerPool } from '@fulcro/parallel';
 
 import { createPool } from '@/pool/index.js';
@@ -312,6 +313,31 @@ describe('the codes a failure carries', () => {
 		expect(failure.message).toMatch(
 			/^FULCRO3001: .+ has no callable export named "notAFunction"\.$/,
 		);
+	});
+
+	it('should carry the details of FULCRO3001 across the worker boundary', async () => {
+		const failure = await failureOf(
+			poolFor<number, number>('notAFunction').map([1]),
+		);
+
+		expect(isFulcroError(failure, 'FULCRO3001')).toBe(true);
+		expect(failure).toMatchObject({
+			details: {
+				operation: 'initialize',
+				module: expect.stringMatching(/\S/),
+				name: 'notAFunction',
+			},
+		});
+	});
+
+	it("should give the task's own failure details naming its text", async () => {
+		const failure = await failureOf(
+			poolFor<number, number>('explode').map([1]),
+		);
+
+		expect(failure).toMatchObject({
+			details: { operation: 'run', reason: 'the task refused' },
+		});
 	});
 
 	it('should code a module that cannot be loaded FULCRO3004', async () => {

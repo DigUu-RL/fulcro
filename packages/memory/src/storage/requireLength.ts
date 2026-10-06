@@ -15,6 +15,9 @@ import { describeValue } from '@/storage/describeValue';
  */
 export const requireLength = (operation: string, length: number): void => {
 	if (!Number.isSafeInteger(length) || length < 0) {
-		throw createError('FULCRO7001', operation, describeValue(length));
+		throw createError('FULCRO7001', {
+			operation,
+			received: typeof length === 'number' ? length : describeValue(length),
+		});
 	}
 };

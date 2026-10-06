@@ -28,7 +28,7 @@ export const assertConcurrency = (
 	concurrency: number,
 ): void => {
 	if (!Number.isInteger(concurrency) || concurrency < 1) {
-		throw createError('FULCRO1017', operation, concurrency);
+		throw createError('FULCRO1017', { operation, concurrency });
 	}
 };
 

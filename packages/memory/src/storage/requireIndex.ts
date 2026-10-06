@@ -21,6 +21,10 @@ export const requireIndex = (
 	length: number,
 ): void => {
 	if (!Number.isInteger(index) || index < 0 || index >= length) {
-		throw createError('FULCRO7002', operation, describeValue(index), length);
+		throw createError('FULCRO7002', {
+			operation,
+			index: typeof index === 'number' ? index : describeValue(index),
+			length,
+		});
 	}
 };

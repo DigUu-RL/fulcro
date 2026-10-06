@@ -117,7 +117,10 @@ export const createFixedBufferStorage = <T>(
 	const missing: string | undefined = missingPart(element);
 
 	if (missing !== undefined) {
-		throw createError('FULCRO7003', 'createFixedBufferStorage', missing);
+		throw createError('FULCRO7003', {
+			operation: 'createFixedBufferStorage',
+			missing,
+		});
 	}
 
 	requireLength('createFixedBufferStorage', length);
@@ -138,7 +141,10 @@ export const createFixedBufferStorage = <T>(
 			requireIndex('FixedBufferStorage.set', index, length);
 
 			if (!element.is(value)) {
-				throw createError('FULCRO7004', 'FixedBufferStorage.set', element.name);
+				throw createError('FULCRO7004', {
+					operation: 'FixedBufferStorage.set',
+					element: element.name,
+				});
 			}
 
 			element.write(view, index * size, value);

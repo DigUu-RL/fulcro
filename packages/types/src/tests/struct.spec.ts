@@ -20,14 +20,22 @@ import { UnsignedInteger } from '@/unsignedInteger';
  */
 
 /**
- * The error a refusal is expected to throw: the class, the whole message, and
- * the code the message starts with, which `toThrow` compares as well.
+ * The error a refusal is expected to throw: the class, the whole message, the
+ * code the message starts with and the details it was made from, which
+ * `toThrow` compares as well.
  *
  * @param error The expected error, its message starting with its code.
- * @returns The same error, carrying that code.
+ * @param details The details the error is expected to carry.
+ * @returns The same error, carrying that code and those details.
  */
-const coded = <T extends Error>(error: T): T =>
-	Object.assign(error, { code: error.message.slice(0, 'FULCRO0000'.length) });
+const coded = <T extends Error>(
+	error: T,
+	details: Readonly<Record<string, unknown>>,
+): T =>
+	Object.assign(error, {
+		code: error.message.slice(0, 'FULCRO0000'.length),
+		details,
+	});
 
 const Vector3 = struct('Vector3', {
 	x: SinglePrecisionFloat,
@@ -204,6 +212,7 @@ describe('struct', () => {
 					new TypeError(
 						"FULCRO6016: struct Account: field 'balance' has no fixed layout. Declare it with a numeric type of @fulcro/types other than BigInteger, or with another struct.",
 					),
+					{ operation: 'struct', name: 'Account', field: 'balance' },
 				),
 			);
 			expect(() =>
@@ -217,6 +226,7 @@ describe('struct', () => {
 					new TypeError(
 						'FULCRO6014: struct Empty: expected at least one field.',
 					),
+					{ operation: 'struct', name: 'Empty' },
 				),
 			);
 			expect(() => struct('', { x: SinglePrecisionFloat })).toThrow(TypeError);
@@ -280,7 +290,10 @@ describe('struct', () => {
 
 		it('should refuse a missing field, an unknown one, and a non-object', () => {
 			expect(() => Vector3.from({ x: 1, y: 2 } as never)).toThrowError(
-				coded(new TypeError("FULCRO6021: Vector3.from: missing field 'z'.")),
+				coded(new TypeError("FULCRO6021: Vector3.from: missing field 'z'."), {
+					operation: 'Vector3.from',
+					field: 'z',
+				}),
 			);
 			expect(() =>
 				Vector3.from({ x: 1, y: 2, z: 3, w: 4 } as never),
@@ -289,6 +302,7 @@ describe('struct', () => {
 					new TypeError(
 						"FULCRO6020: Vector3.from: 'w' is not a field; the fields are x, y, z.",
 					),
+					{ operation: 'Vector3.from', key: 'w', fields: 'x, y, z' },
 				),
 			);
 			expect(() => Vector3.from(null as never)).toThrowError(
@@ -296,6 +310,7 @@ describe('struct', () => {
 					new TypeError(
 						'FULCRO6019: Vector3.from: expected an object, received null.',
 					),
+					{ operation: 'Vector3.from', received: 'null' },
 				),
 			);
 		});
@@ -467,6 +482,7 @@ describe('struct', () => {
 					new TypeError(
 						"FULCRO6009: struct Clash: method 'x' has the name of a field; a value could not hold both.",
 					),
+					{ operation: 'struct', name: 'Clash', method: 'x' },
 				),
 			);
 			expect(() =>
@@ -485,6 +501,12 @@ describe('struct', () => {
 					new TypeError(
 						"FULCRO6011: struct Loose: method 'size' must be a function, received number.",
 					),
+					{
+						operation: 'struct',
+						name: 'Loose',
+						method: 'size',
+						received: 'number',
+					},
 				),
 			);
 			expect(() =>
@@ -494,6 +516,7 @@ describe('struct', () => {
 					new TypeError(
 						'FULCRO6008: struct Null: expected an object of methods, received null.',
 					),
+					{ operation: 'struct', name: 'Null', received: 'null' },
 				),
 			);
 		});
@@ -666,6 +689,12 @@ describe('struct', () => {
 					new RangeError(
 						'FULCRO6018: Vector3.write: 12 bytes at offset 4 do not fit in a view of 12 bytes.',
 					),
+					{
+						operation: 'Vector3.write',
+						size: 12,
+						offset: 4,
+						available: 12,
+					},
 				),
 			);
 			expect([...bytes].every((byte) => byte === 0)).toBe(true);

@@ -42,7 +42,7 @@ export const resolveTypeTest = (
 	// rather than guessed, because every guess available here — keeping
 	// everything, keeping nothing — is silently wrong.
 	if (type === undefined) {
-		throw createError('FULCRO1016', operator);
+		throw createError('FULCRO1016', { operation: operator });
 	}
 
 	// A shape test, which is what the transformer emits for a type with no

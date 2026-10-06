@@ -10,6 +10,12 @@ Os erros de [storage](../memory.md). Voltar para [todos os códigos](../errors.m
 RangeError: FULCRO7001: createManagedStorage: expected a length that is a non-negative safe integer, received -1.
 ```
 
+Detalhes:
+
+```text
+{ operation: string; received: number | string }
+```
+
 Um storage foi pedido com um comprimento que ele não pode ter: negativo,
 fracionário, `NaN` ou acima de `Number.MAX_SAFE_INTEGER`. O comprimento é
 conferido antes de qualquer alocação.
@@ -21,6 +27,12 @@ tamanho lido de um arquivo —, arredonde-o e confira-o antes de criar o storage
 
 ```text
 RangeError: FULCRO7002: ManagedStorage.get: index 3 is outside a storage of length 3.
+```
+
+Detalhes:
+
+```text
+{ operation: string; index: number | string; length: number }
 ```
 
 `get` ou `set` recebeu um índice que não é um inteiro de `0` a `length - 1`.
@@ -35,6 +47,12 @@ até `storage.length` e arredonde um índice calculado.
 
 ```text
 TypeError: FULCRO7003: createFixedBufferStorage: expected an element type with a name, layout.size, read, write and is; read is missing.
+```
+
+Detalhes:
+
+```text
+{ operation: string; missing: string }
 ```
 
 `createFixedBufferStorage` recebeu algo cujos valores ele não consegue guardar.
@@ -55,6 +73,12 @@ createFixedBufferStorage(Sample, 1_000);
 
 ```text
 TypeError: FULCRO7004: FixedBufferStorage.set: the value is not a value of Point.
+```
+
+Detalhes:
+
+```text
+{ operation: string; element: string }
 ```
 
 `set` recebeu um valor que a sua struct não reconhece como seu — um objeto

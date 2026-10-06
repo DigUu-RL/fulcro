@@ -18,13 +18,21 @@ import { UnsignedInteger } from '@/unsignedInteger';
 
 /**
  * The error a refusal is expected to throw, carrying the code its message
- * starts with, which `toThrow` compares as well.
+ * starts with and the details it was made from, which `toThrow` compares as
+ * well.
  *
  * @param error The expected error, its message starting with its code.
- * @returns The same error, carrying that code.
+ * @param details The details the error is expected to carry.
+ * @returns The same error, carrying that code and those details.
  */
-const coded = <T extends Error>(error: T): T =>
-	Object.assign(error, { code: error.message.slice(0, 'FULCRO0000'.length) });
+const coded = <T extends Error>(
+	error: T,
+	details: Readonly<Record<string, unknown>>,
+): T =>
+	Object.assign(error, {
+		code: error.message.slice(0, 'FULCRO0000'.length),
+		details,
+	});
 
 const Ratio = FractionOf(SignedInteger(32));
 
@@ -186,6 +194,7 @@ describe('Fraction', () => {
 					new TypeError(
 						'FULCRO6041: Fraction: expected SignedInteger(n), UnsignedInteger(n) or BigInteger as the element type, received object.',
 					),
+					{ operation: 'Fraction', received: 'object' },
 				),
 			);
 		});
@@ -196,6 +205,7 @@ describe('Fraction', () => {
 					new RangeError(
 						'FULCRO6001: Fraction<SignedInteger<32>>.from: division by zero.',
 					),
+					{ operation: 'Fraction<SignedInteger<32>>.from' },
 				),
 			);
 		});
@@ -208,6 +218,7 @@ describe('Fraction', () => {
 						new RangeError(
 							`FULCRO6001: Fraction<SignedInteger<32>>.${operation}: division by zero.`,
 						),
+						{ operation: `Fraction<SignedInteger<32>>.${operation}` },
 					),
 				);
 			},
@@ -219,6 +230,7 @@ describe('Fraction', () => {
 					new RangeError(
 						'FULCRO6001: Fraction<SignedInteger<32>>.power: division by zero.',
 					),
+					{ operation: 'Fraction<SignedInteger<32>>.power' },
 				),
 			);
 		});
@@ -229,6 +241,11 @@ describe('Fraction', () => {
 					new RangeError(
 						'FULCRO6042: Fraction<SignedInteger<32>>.power: expected a whole exponent, received 1/2.',
 					),
+					{
+						operation: 'Fraction<SignedInteger<32>>.power',
+						name: 'Fraction<SignedInteger<32>>',
+						received: '1/2',
+					},
 				),
 			);
 		});

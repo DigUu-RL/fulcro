@@ -598,7 +598,7 @@ describe('@fulcro/collections/async', () => {
 });
 
 describe('@fulcro/errors', () => {
-	it('should expose the two functions and nothing of the catalog', async () => {
+	it('should expose its functions and FulcroError, and nothing of the catalog', async () => {
 		const entry = await import('@fulcro/errors');
 
 		// The package is CommonJS; see `@fulcro/types` above for these.
@@ -612,16 +612,46 @@ describe('@fulcro/errors', () => {
 			Object.keys(entry)
 				.filter((key) => !interop.includes(key))
 				.sort(),
-		).toEqual(['createError', 'prefixError']);
+		).toEqual(['FulcroError', 'createError', 'isFulcroError', 'prefixError']);
 	});
 
 	it('should create a coded error through the published entry point', async () => {
-		const { createError } = await import('@fulcro/errors');
-		const error = createError('FULCRO6021', 'Vector3.from', 'x');
+		const { createError, FulcroError, isFulcroError } =
+			await import('@fulcro/errors');
+		const error = createError('FULCRO6021', {
+			operation: 'Vector3.from',
+			field: 'x',
+		});
 
 		expect(error).toBeInstanceOf(TypeError);
+		expect(error).toBeInstanceOf(FulcroError);
 		expect(error.code).toBe('FULCRO6021');
+		expect(error.details).toEqual({ operation: 'Vector3.from', field: 'x' });
 		expect(error.message).toBe("FULCRO6021: Vector3.from: missing field 'x'.");
+		expect(isFulcroError(error, 'FULCRO6021')).toBe(true);
+	});
+
+	it("should recognise an error another package's build threw", async () => {
+		const { FulcroError, isFulcroError } = await import('@fulcro/errors');
+		const { SignedInteger } = await import('@fulcro/types');
+		const Int8 = SignedInteger(8);
+
+		let caught: unknown;
+
+		try {
+			Int8.from(300);
+		} catch (error) {
+			caught = error;
+		}
+
+		expect(caught).toBeInstanceOf(FulcroError);
+		expect(caught).toBeInstanceOf(RangeError);
+		expect(isFulcroError(caught, 'FULCRO6031')).toBe(true);
+		expect((caught as { details: unknown }).details).toEqual({
+			operation: 'SignedInteger<8>.from',
+			received: '300',
+			range: '[-128, 127]',
+		});
 	});
 
 	it("should reach a consumer through another package's CommonJS build", async () => {
@@ -748,11 +778,14 @@ describe('@fulcro/memory', () => {
 		expect(names.get(1)).toBe('b');
 	});
 
-	it('should refuse an index outside, with its code', async () => {
+	it('should refuse an index outside, with its code and details', async () => {
 		const { createManagedStorage } = await import('@fulcro/memory');
 
 		expect(() => createManagedStorage(1, 0).get(1)).toThrow(
-			expect.objectContaining({ code: 'FULCRO7002' }),
+			expect.objectContaining({
+				code: 'FULCRO7002',
+				details: { operation: 'ManagedStorage.get', index: 1, length: 1 },
+			}),
 		);
 	});
 });

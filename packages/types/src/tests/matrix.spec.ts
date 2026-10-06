@@ -27,13 +27,21 @@ import { Vector } from '@/vector';
 
 /**
  * The error a refusal is expected to throw, carrying the code its message
- * starts with, which `toThrow` compares as well.
+ * starts with and the details it was made from, which `toThrow` compares as
+ * well.
  *
  * @param error The expected error, its message starting with its code.
- * @returns The same error, carrying that code.
+ * @param details The details the error is expected to carry.
+ * @returns The same error, carrying that code and those details.
  */
-const coded = <T extends Error>(error: T): T =>
-	Object.assign(error, { code: error.message.slice(0, 'FULCRO0000'.length) });
+const coded = <T extends Error>(
+	error: T,
+	details: Readonly<Record<string, unknown>>,
+): T =>
+	Object.assign(error, {
+		code: error.message.slice(0, 'FULCRO0000'.length),
+		details,
+	});
 
 const Pair = MatrixOf(DoublePrecisionFloat, 2, 3);
 const Tall = MatrixOf(DoublePrecisionFloat, 3, 2);
@@ -301,6 +309,7 @@ describe('Matrix', () => {
 					new TypeError(
 						'FULCRO6033: Matrix: expected a numeric type of @fulcro/types as the element type, received object.',
 					),
+					{ operation: 'Matrix', received: 'object' },
 				),
 			);
 		});
@@ -311,6 +320,7 @@ describe('Matrix', () => {
 					new RangeError(
 						`FULCRO6035: Matrix: expected a positive integer number of rows, received ${rows}.`,
 					),
+					{ operation: 'Matrix', dimension: 'rows', received: String(rows) },
 				),
 			);
 		});
@@ -321,6 +331,10 @@ describe('Matrix', () => {
 					new TypeError(
 						'FULCRO6034: Matrix<DoublePrecisionFloat, 2, 3>.from: expected an array, received string.',
 					),
+					{
+						operation: 'Matrix<DoublePrecisionFloat, 2, 3>.from',
+						received: 'string',
+					},
 				),
 			);
 		});
@@ -331,6 +345,11 @@ describe('Matrix', () => {
 					new RangeError(
 						'FULCRO6038: Matrix<DoublePrecisionFloat, 2, 3>.from: expected 2 rows, received 1.',
 					),
+					{
+						operation: 'Matrix<DoublePrecisionFloat, 2, 3>.from',
+						expected: '2 rows',
+						received: '1',
+					},
 				),
 			);
 			expect(() =>
@@ -343,6 +362,11 @@ describe('Matrix', () => {
 					new RangeError(
 						'FULCRO6038: Matrix<DoublePrecisionFloat, 2, 3>.from: expected 3 elements in row 1, received 2.',
 					),
+					{
+						operation: 'Matrix<DoublePrecisionFloat, 2, 3>.from',
+						expected: '3 elements in row 1',
+						received: '2',
+					},
 				),
 			);
 		});
@@ -358,6 +382,7 @@ describe('Matrix', () => {
 					new TypeError(
 						'FULCRO6006: Matrix<DoublePrecisionFloat, 2, 3>.from: row 1, column 1: DoublePrecisionFloat.from: expected a number, received string.',
 					),
+					{ operation: 'DoublePrecisionFloat.from', received: 'string' },
 				),
 			);
 		});
@@ -368,6 +393,12 @@ describe('Matrix', () => {
 					new RangeError(
 						'FULCRO6037: Cannot multiply Matrix<DoublePrecisionFloat, 2, 3> by Matrix<DoublePrecisionFloat, 2, 3>. Expected a matrix with 3 rows.',
 					),
+					{
+						operation: 'Matrix<DoublePrecisionFloat, 2, 3>.multiply',
+						left: 'Matrix<DoublePrecisionFloat, 2, 3>',
+						right: 'Matrix<DoublePrecisionFloat, 2, 3>',
+						expected: 'a matrix with 3 rows',
+					},
 				),
 			);
 		});
@@ -378,6 +409,11 @@ describe('Matrix', () => {
 					new RangeError(
 						'FULCRO6036: Matrix<DoublePrecisionFloat, 2, 2>.add: expected a Matrix<DoublePrecisionFloat, 2, 2>, received a Matrix<DoublePrecisionFloat, 2, 3>.',
 					),
+					{
+						operation: 'Matrix<DoublePrecisionFloat, 2, 2>.add',
+						expected: 'Matrix<DoublePrecisionFloat, 2, 2>',
+						received: 'Matrix<DoublePrecisionFloat, 2, 3>',
+					},
 				),
 			);
 		});
@@ -388,6 +424,10 @@ describe('Matrix', () => {
 					new TypeError(
 						'FULCRO6034: Matrix<DoublePrecisionFloat, 2, 3>.negate: expected an array, received an array without a shape.',
 					),
+					{
+						operation: 'Matrix<DoublePrecisionFloat, 2, 3>.negate',
+						received: 'an array without a shape',
+					},
 				),
 			);
 		});
@@ -398,6 +438,10 @@ describe('Matrix', () => {
 					new RangeError(
 						'FULCRO6039: Matrix<DoublePrecisionFloat, 2, 3>.identity: only a square matrix has an identity.',
 					),
+					{
+						operation: 'Matrix<DoublePrecisionFloat, 2, 3>.identity',
+						name: 'Matrix<DoublePrecisionFloat, 2, 3>',
+					},
 				),
 			);
 		});

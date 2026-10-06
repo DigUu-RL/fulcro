@@ -8,6 +8,8 @@ import { parallelCatalog } from '@/catalog/parallel';
 import { reflectCatalog } from '@/catalog/reflect';
 import { transformCoreCatalog } from '@/catalog/transform-core';
 import { typesCatalog } from '@/catalog/types';
+import { ErrorDefinition } from '@/definition';
+import { sampleDetails } from '@/tests/sampleDetails';
 
 /**
  * Behaviour suite for the catalog.
@@ -54,17 +56,18 @@ describe('catalog', () => {
 
 	it('should give every code a template that produces text', () => {
 		for (const [code, definition] of Object.entries(catalog)) {
-			const values: string[] = Array.from(
-				{ length: definition.message.length },
-				() => 'value',
+			const text: string = (definition as ErrorDefinition).message(
+				sampleDetails(),
 			);
-
-			const text: string = (
-				definition.message as (...values: string[]) => string
-			)(...values);
 
 			expect(text.length, code).toBeGreaterThan(0);
 			expect(text, code).not.toMatch(/^FULCRO\d{4}/);
+		}
+	});
+
+	it('should give every code a template taking one details object', () => {
+		for (const [code, definition] of Object.entries(catalog)) {
+			expect(definition.message.length, code).toBe(1);
 		}
 	});
 });

@@ -76,8 +76,12 @@ export type TypeLayout<T extends WithLayout> = {
 /**
  * The error every layout utility throws when a call reached runtime.
  *
- * @param call How the call was written, for the message.
+ * @param call How the call was written, for the message: the utility's name
+ * up to its type argument, which is what the error reports as its operation.
  * @returns The error.
  */
 export const unresolvedLayout = (call: string): Error =>
-	createError('FULCRO4009', call);
+	createError('FULCRO4009', {
+		operation: call.slice(0, call.indexOf('<')),
+		call,
+	});
