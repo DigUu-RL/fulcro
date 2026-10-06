@@ -2,7 +2,9 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import { SinglePrecisionFloat, type Struct, struct } from '@fulcro/types';
 
+import { allocate } from '@/allocate';
 import { createFixedBufferStorage } from '@/fixedBufferStorage';
+import { createManagedAllocator } from '@/managedAllocator';
 import { createManagedStorage } from '@/managedStorage';
 import type { Storage } from '@/storage';
 
@@ -30,6 +32,12 @@ const STRATEGIES = [
 	[
 		'FixedBufferStorage',
 		(length: number) => createFixedBufferStorage(Point, length),
+	],
+	// What `allocate` returns names its operations after the contract itself,
+	// since no storage strategy of its own stands behind it.
+	[
+		'Storage',
+		(length: number) => allocate(Point, length, createManagedAllocator()),
 	],
 ] as const;
 
@@ -139,6 +147,10 @@ describe('Storage<T> lengths', () => {
 		[
 			'createFixedBufferStorage',
 			(length: number) => createFixedBufferStorage(Point, length),
+		],
+		[
+			'allocate',
+			(length: number) => allocate(Point, length, createManagedAllocator()),
 		],
 	] as const)(
 		'%s should refuse a length that is not a count',

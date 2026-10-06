@@ -2,7 +2,8 @@
 
 Where a value's bytes live, and who may reach them. A value's type says what it
 is; this package decides where it is held — in ordinary JavaScript memory or in
-a buffer of fixed size — without the code that reads it having to know which.
+bytes from an allocator you choose — without the code that reads it having to
+know which.
 
 ```sh
 npm install @fulcro/memory
@@ -10,8 +11,11 @@ npm install @fulcro/memory
 
 ```ts
 import {
+	allocate,
 	createFixedBufferStorage,
 	createManagedStorage,
+	createStackAllocator,
+	type StackAllocator,
 	type Storage,
 } from '@fulcro/memory';
 ```
@@ -45,6 +49,32 @@ points.set(0, Point.from({ x: 1, y: 2 }));
 
 The structs themselves — and the numeric types their fields are made of — are
 [`@fulcro/types`](../types/README.md).
+
+## `Allocator`
+
+Where the memory comes from is chosen at the call site. `allocate` returns a
+`Storage<T>` from whichever allocator you pass:
+
+```ts
+const step = (stack: StackAllocator): void => {
+	using frame = stack.enter();
+	const particles = allocate(Particle, 10_000, frame);
+	// …
+}; // released here, all at once
+```
+
+| Allocator                    | Memory goes back                          |
+| ---------------------------- | ----------------------------------------- |
+| `createManagedAllocator`     | When the garbage collector reclaims it    |
+| `createArenaAllocator`       | All at once, on `reset()` or with `using` |
+| `createStackAllocator`       | A frame at a time, last in first out      |
+| `createFixedBufferAllocator` | All at once, on `reset()`, in your buffer |
+| `createPoolAllocator`        | One block at a time, in any order         |
+
+A storage from `allocate` refuses every `get` and `set` once its allocator
+released its memory, rather than read values that are no longer its own. Bytes
+asked for directly with `allocator.allocate` are not guarded: check
+`allocation.isLive()` before reading them.
 
 ---
 

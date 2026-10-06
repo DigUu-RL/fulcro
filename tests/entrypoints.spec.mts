@@ -747,16 +747,52 @@ describe('@fulcro/functions', () => {
 });
 
 describe('@fulcro/memory', () => {
-	it('should expose the two storage factories and nothing else', async () => {
+	it('should expose the storage and allocator factories and nothing else', async () => {
 		const entry = await import('@fulcro/memory');
 
-		// `Storage` is a type and leaves nothing at runtime. A helper of the
-		// strategies showing up here would be a surface nobody agreed.
+		// `Storage`, `Allocator` and their kin are types and leave nothing at
+		// runtime. A helper of the strategies showing up here — the bump region,
+		// the byte storage — would be a surface nobody agreed.
 		expect(
 			Object.keys(entry)
 				.filter((name) => name !== 'default')
 				.sort(),
-		).toEqual(['createFixedBufferStorage', 'createManagedStorage']);
+		).toEqual([
+			'allocate',
+			'createArenaAllocator',
+			'createFixedBufferAllocator',
+			'createFixedBufferStorage',
+			'createManagedAllocator',
+			'createManagedStorage',
+			'createPoolAllocator',
+			'createStackAllocator',
+		]);
+	});
+
+	it('should allocate a struct from the published types package, and refuse it once released', async () => {
+		const { allocate, createStackAllocator } = await import('@fulcro/memory');
+		const { SinglePrecisionFloat, struct } = await import('@fulcro/types');
+
+		const Particle = struct('Particle', {
+			x: SinglePrecisionFloat,
+			y: SinglePrecisionFloat,
+		});
+		const stack = createStackAllocator(64);
+		const frame = stack.enter();
+		const particles = allocate(Particle, 2, frame);
+
+		particles.set(1, Particle.from({ x: 1, y: 2 }));
+
+		expect(particles.get(1)).toEqual({ x: 1, y: 2 });
+
+		frame[Symbol.dispose]();
+
+		expect(() => particles.get(1)).toThrow(
+			expect.objectContaining({
+				code: 'FULCRO7009',
+				details: { operation: 'Storage.get' },
+			}),
+		);
 	});
 
 	it('should store a struct from the published types package', async () => {
