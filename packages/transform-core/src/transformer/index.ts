@@ -170,8 +170,17 @@ export const createTransformer =
 			const analysisContext: AnalysisContext = { checker, report };
 
 			return (sourceFile: typescript.SourceFile) => {
+				// Another package's transformer may run before this one and hand
+				// over a tree with rewritten, synthesized nodes in it — nodes with no
+				// position, no parent and no symbol. An analyzer is promised the
+				// file as written, which is the tree that one came from.
+				const written: typescript.SourceFile = typescript.getOriginalNode(
+					sourceFile,
+					typescript.isSourceFile,
+				);
+
 				for (const analyzer of analyzers) {
-					analyzer.analyze(sourceFile, analysisContext);
+					analyzer.analyze(written, analysisContext);
 				}
 
 				const transformed = typescript.visitNode(

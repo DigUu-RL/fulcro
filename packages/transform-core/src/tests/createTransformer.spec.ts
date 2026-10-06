@@ -157,6 +157,24 @@ describe('createTransformer with analyzers', () => {
 		expect(printed).toContain('renamed(flag(2))');
 	});
 
+	it('should hand the analyzer the file as written when another transformer ran first', () => {
+		const seen: typescript.SourceFile[] = [];
+		const recording: FileAnalyzer = {
+			functionNames: ['flag'],
+			analyze: (sourceFile): void => {
+				seen.push(sourceFile);
+			},
+		};
+		const result = typescript.transform(fixture, [
+			createTransformer([renaming])(program),
+			createTransformer([], [recording])(program),
+		]);
+
+		result.dispose();
+
+		expect(seen).toEqual([fixture]);
+	});
+
 	it('should rewrite as before with no analyzer at all', () => {
 		expect(run([])).toContain('renamed(flag(2))');
 	});
