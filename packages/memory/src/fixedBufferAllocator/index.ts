@@ -3,6 +3,7 @@ import { createError } from '@fulcro/errors';
 import type { Allocation, Allocator } from '@/allocator';
 import { requireRequest } from '@/allocator/requireRequest';
 import { bump, type BumpRegion, remaining } from '@/bump';
+import { describeBuffer } from '@/storage/describeBuffer';
 
 /**
  * An allocator over a buffer the caller supplied, handed out front to back and
@@ -16,25 +17,6 @@ export interface FixedBufferAllocator extends Allocator {
 	 */
 	reset(): void;
 }
-
-/**
- * Describes what was handed in where a buffer was expected: the name of its
- * class when it is an object — `SharedArrayBuffer`, `Uint8Array` — and its
- * kind otherwise.
- *
- * Never the value itself, unlike a length: `16` in place of a buffer reads as
- * a size, which is the mistake being reported.
- *
- * @param value Value handed in.
- * @returns Its description.
- */
-const describeBuffer = (value: unknown): string => {
-	if (value === null) return 'null';
-
-	return typeof value === 'object'
-		? Object.prototype.toString.call(value).slice('[object '.length, -1)
-		: typeof value;
-};
 
 /**
  * Creates an allocator over a buffer you already have, which never asks the

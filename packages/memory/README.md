@@ -14,11 +14,15 @@ import {
 	allocate,
 	asView,
 	createFixedBufferStorage,
+	createLinearMemory,
 	createManagedStorage,
 	createStackAllocator,
+	nativePointerTo,
 	pointerTo,
 	referenceTo,
+	type LinearMemory,
 	type MemoryReference,
+	type NativePointer,
 	type Pointer,
 	type StackAllocator,
 	type Storage,
@@ -107,6 +111,31 @@ const hits: MemoryReference<number> = referenceTo(0);
 Making a view, or a subview of one, reads nothing however long it is. A view
 over a storage from `allocate` refuses once the memory is released, as the
 storage does.
+
+## `LinearMemory` and `NativePointer<T>`
+
+Reach values by byte address — a field in the middle of a struct, the same
+bytes read as another type, what a WebAssembly module wrote — with no copy:
+
+```ts
+const memory: LinearMemory = createLinearMemory(
+	instance.exports.memory as WebAssembly.Memory,
+);
+const particle: NativePointer<Particle> = nativePointerTo(memory, 64, Particle);
+
+particle
+	.at(Particle.layout.fields.velocity.offset, Point)
+	.set(Point.from({ x: 0, y: -9.8 })); // writes the field, in place
+```
+
+| Function                                    | Returns                                                          |
+| ------------------------------------------- | ---------------------------------------------------------------- |
+| `createLinearMemory(backing)`               | An address space over an `ArrayBuffer` or a `WebAssembly.Memory` |
+| `nativePointerTo(memory, address, element)` | A pointer anywhere in that memory                                |
+| `nativePointerTo(allocation, element)`      | A pointer bounded to an allocation, refused once released        |
+
+A native pointer reads the current bytes on every access, so it keeps working
+after the memory grows. Shared memory and misaligned addresses are refused.
 
 ---
 

@@ -25,9 +25,12 @@ export {
 	type FixedBufferAllocator,
 } from '@/fixedBufferAllocator';
 export { createFixedBufferStorage } from '@/fixedBufferStorage';
+export { createLinearMemory, type LinearMemory } from '@/linearMemory';
 export { createManagedAllocator } from '@/managedAllocator';
 export { createManagedStorage } from '@/managedStorage';
 export type { MemoryReference } from '@/memoryReference';
+export type { NativePointer } from '@/nativePointer';
+export { nativePointerTo } from '@/nativePointerTo';
 export type { Pointer } from '@/pointer';
 export { pointerTo } from '@/pointerTo';
 export { createPoolAllocator, type PoolAllocator } from '@/poolAllocator';

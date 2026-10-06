@@ -764,13 +764,60 @@ describe('@fulcro/memory', () => {
 			'createArenaAllocator',
 			'createFixedBufferAllocator',
 			'createFixedBufferStorage',
+			'createLinearMemory',
 			'createManagedAllocator',
 			'createManagedStorage',
 			'createPoolAllocator',
 			'createStackAllocator',
+			'nativePointerTo',
 			'pointerTo',
 			'referenceTo',
 		]);
+	});
+
+	it('should write a field of a published struct at its bytes through a native pointer, and refuse it once released', async () => {
+		const { createArenaAllocator, createLinearMemory, nativePointerTo } =
+			await import('@fulcro/memory');
+		const { SinglePrecisionFloat, struct } = await import('@fulcro/types');
+
+		const Point = struct('Point', {
+			x: SinglePrecisionFloat,
+			y: SinglePrecisionFloat,
+		});
+		const Particle = struct('Particle', { position: Point, velocity: Point });
+
+		// Without the transformers, the velocity still sits at bytes 8–15 of a
+		// particle, and the pointer writes exactly those.
+		const buffer = new ArrayBuffer(32);
+		const raw = new DataView(buffer);
+		const velocity = nativePointerTo(
+			createLinearMemory(buffer),
+			8,
+			Particle,
+		).at(8, Point);
+
+		velocity.set(Point.from({ x: 3, y: -4 }));
+
+		expect([raw.getFloat32(16, true), raw.getFloat32(20, true)]).toEqual([
+			3, -4,
+		]);
+		expect(
+			Array.from(new Uint8Array(buffer)).flatMap((byte, address) =>
+				byte === 0 ? [] : [address],
+			),
+		).toEqual([18, 19, 22, 23]);
+
+		const arena = createArenaAllocator(64);
+		const pointer = nativePointerTo(arena.allocate(16, 8), Particle);
+
+		arena.reset();
+
+		expect(() => pointer.get()).toThrow(
+			expect.objectContaining({
+				code: 'FULCRO7009',
+				details: { operation: 'NativePointer.get' },
+			}),
+		);
 	});
 
 	it('should allocate a struct from the published types package, and refuse it once released', async () => {

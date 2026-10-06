@@ -8,7 +8,9 @@ that your code is written against, and the strategies that hold the values
 behind it. Where the memory itself comes from is a third decision, made by the
 [`Allocator`](#allocators) you pass in. Reaching into values held somewhere
 else — a region of them, one position, one value — without copying or owning
-them is the [access layer](#views-pointers-and-references).
+them is the [access layer](#views-pointers-and-references). Reaching them by
+byte address, the way a WebAssembly module does, is a
+[linear memory](#linear-memory-and-native-pointers).
 
 ```sh
 npm install @fulcro/memory
@@ -21,13 +23,17 @@ import {
 	asView,
 	createArenaAllocator,
 	createFixedBufferStorage,
+	createLinearMemory,
 	createManagedStorage,
 	createStackAllocator,
+	nativePointerTo,
 	pointerTo,
 	referenceTo,
 	type Allocation,
 	type Allocator,
+	type LinearMemory,
 	type MemoryReference,
+	type NativePointer,
 	type Pointer,
 	type ReadOnlyView,
 	type StackAllocator,
@@ -468,15 +474,147 @@ Anything else throws [`FULCRO7017`](./errors/FULCRO7xxx.md#fulcro7017). A
 storage or a reference written outside this package is accepted by its shape,
 exactly like one made here.
 
+## Linear memory and native pointers
+
+A `Pointer<T>` counts values. Some code needs to count bytes instead: point at
+one field in the middle of a struct, read the same bytes as another type, or
+read what a WebAssembly module wrote at an address it returned. For that,
+Fulcro sees a block of bytes as one address space — a **linear memory**, in
+which address `0` is the first byte — and points into it by byte address.
+
+```ts
+interface LinearMemory {
+	readonly byteLength: number;
+}
+
+interface NativePointer<T> extends MemoryReference<T> {
+	readonly memory: LinearMemory;
+	readonly address: number;
+	get(): T;
+	set(value: T): void;
+	at(byteOffset: number): NativePointer<T>;
+	at<TOther>(
+		byteOffset: number,
+		element: AlignedElement<TOther>,
+	): NativePointer<TOther>;
+}
+```
+
+### `createLinearMemory`
+
+`createLinearMemory(backing)` spans an `ArrayBuffer`, or the
+`WebAssembly.Memory` a module exports:
+
+```ts
+const { instance } = await WebAssembly.instantiate(bytes);
+const moduleExports = instance.exports as {
+	memory: WebAssembly.Memory;
+	latest: () => number;
+};
+const memory: LinearMemory = createLinearMemory(moduleExports.memory);
+
+memory.byteLength; // 65536, one page
+```
+
+TypeScript types each export of a module as any kind of export at all —
+function, memory, table or global — so say which one each is, as above, before
+handing it on.
+
+Nothing is copied, and the memory stays its owner's: the module goes on using
+it as before. `byteLength` is the length now, and goes up when the module
+grows its memory or a resizable buffer resizes.
+
+A memory shared between threads is refused, a `SharedArrayBuffer` or a shared
+`WebAssembly.Memory`, with
+[`FULCRO7018`](./errors/FULCRO7xxx.md#fulcro7018). So is a typed array, which
+covers only part of its buffer. Pass the buffer itself.
+
+### `nativePointerTo(memory, address, element)`
+
+Points at a byte address of a memory, at a value of the element type — a
+struct, as for `allocate`:
+
+```ts
+const latest: NativePointer<Reading> = nativePointerTo(
+	memory,
+	moduleExports.latest(),
+	Reading,
+);
+
+latest.get(); // the reading the module wrote, read where it wrote it
+latest.set(Reading.from({ value: 0 })); // and the module sees this
+```
+
+`at(byteOffset)` moves the pointer by bytes, forwards or back, and leaves the
+one it came from as it was. Give it a type as well, and it reads the bytes
+there as that type. That is how a pointer reaches one field of a struct, in
+place:
+
+```ts
+const particle: NativePointer<Particle> = nativePointerTo(memory, 64, Particle);
+const velocity: NativePointer<Point> = particle.at(
+	Particle.layout.fields.velocity.offset,
+	Point,
+);
+
+velocity.set(Point.from({ x: 0, y: -9.8 })); // writes the particle's velocity
+```
+
+An address is an integer from `0` to the memory's length; the length itself is
+allowed, so a loop can step onto the end. Anything else throws
+[`FULCRO7019`](./errors/FULCRO7xxx.md#fulcro7019). An address must also be a
+multiple of the type's alignment, or it throws
+[`FULCRO7020`](./errors/FULCRO7xxx.md#fulcro7020). Reading or writing where the
+value's bytes do not all fit throws
+[`FULCRO7021`](./errors/FULCRO7xxx.md#fulcro7021).
+
+**It follows the memory as it grows.** Growing a WebAssembly memory replaces
+its buffer and leaves every view of the old one empty. A native pointer holds
+the memory and the address, never a view, so it reads the current bytes on
+every access. That costs one property read per access; a new view is made only
+after a growth, not on every access.
+
+**Nothing watches over the address.** A pointer made from a memory may reach
+any byte of it, and trusts that a value of its type is there. That is what an
+address handed over by a module is. When the bytes came from an allocator,
+point at the allocation instead.
+
+### `nativePointerTo(allocation, element)`
+
+Points at the first byte of an allocation:
+
+```ts
+const allocation = arena.allocate(Header.layout.size, Header.layout.alignment);
+const header: NativePointer<Header> = nativePointerTo(allocation, Header);
+
+header.set(Header.from({ version: 2, length: 0 }));
+arena.reset();
+header.get(); // throws FULCRO7009 — the bytes are the arena's again
+```
+
+Every allocator works, one you wrote included: the memory is the buffer the
+allocation was carved from, and the address is where the allocation starts in
+it. Two allocations from one arena may sit in different buffers, so compare
+addresses only within one memory.
+
+Such a pointer, and every pointer moved from it, reaches only the allocation's
+bytes. A move past them throws `FULCRO7019`. Before every read and write it
+asks the allocation whether it is still live, and throws
+[`FULCRO7009`](./errors/FULCRO7xxx.md#fulcro7009) once the allocator released
+it — one comparison per access, as for a storage from `allocate`. Ask the
+allocator for the type's alignment: an allocation that starts where the type
+may not throws `FULCRO7020`.
+
 ## What it does not do yet
 
 - **Grow.** A storage's length is the one it was created with.
 - **Hand out its bytes.** A storage's buffer is private to it, and a view
   reads values, not bytes. A view over raw bytes is planned with binary
   serialization.
-- **Address memory by bytes.** A pointer's position counts values. A byte
-  address in a block of memory, the way a WebAssembly module sees it, is a
-  separate feature still to come.
+- **Share memory between threads.** A shared linear memory is refused until
+  the package can say who may write what, and when.
+- **Address more than a 32-bit memory.** Addresses are numbers; a 64-bit
+  memory's addresses are `bigint`s, and are refused.
 - **Iterate.** Walk it with an index, as above.
 - **Allocate outside the engine's memory.** Every allocator hands out bytes of
   an `ArrayBuffer`.
@@ -502,3 +640,8 @@ exactly like one made here.
 | [`FULCRO7015`](./errors/FULCRO7xxx.md#fulcro7015) | A position an array shrank past after it was viewed      |
 | [`FULCRO7016`](./errors/FULCRO7xxx.md#fulcro7016) | A pointer outside `0` to its source's length             |
 | [`FULCRO7017`](./errors/FULCRO7xxx.md#fulcro7017) | Something that is not a source a view can be made over   |
+| [`FULCRO7018`](./errors/FULCRO7xxx.md#fulcro7018) | A linear memory over something unaddressable, or shared  |
+| [`FULCRO7019`](./errors/FULCRO7xxx.md#fulcro7019) | A native pointer outside where it may point              |
+| [`FULCRO7020`](./errors/FULCRO7xxx.md#fulcro7020) | An address the pointer's type may not start at           |
+| [`FULCRO7021`](./errors/FULCRO7xxx.md#fulcro7021) | A value whose bytes run past where a pointer may read    |
+| [`FULCRO7022`](./errors/FULCRO7xxx.md#fulcro7022) | Neither a linear memory nor an allocation, to point into |
