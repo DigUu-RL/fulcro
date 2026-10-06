@@ -3,6 +3,7 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 import { SinglePrecisionFloat, type Struct, struct } from '@fulcro/types';
 
 import { allocate } from '@/allocate';
+import { asView } from '@/asView';
 import { createFixedBufferStorage } from '@/fixedBufferStorage';
 import { createManagedAllocator } from '@/managedAllocator';
 import { createManagedStorage } from '@/managedStorage';
@@ -38,6 +39,13 @@ const STRATEGIES = [
 	[
 		'Storage',
 		(length: number) => allocate(Point, length, createManagedAllocator()),
+	],
+	// A view is accepted wherever a storage is; this one sits inside a larger
+	// buffer, so a position it got wrong would land on a neighbour.
+	[
+		'View',
+		(length: number): Storage<Point> =>
+			asView(createFixedBufferStorage(Point, length + 2), 1, length),
 	],
 ] as const;
 

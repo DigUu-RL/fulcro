@@ -2,7 +2,7 @@
 
 🇧🇷 Português (Brasil): [Leia esta documentação em português](../pt-BR/errors/FULCRO7xxx.md)
 
-The errors of [storage and allocators](../memory.md). Back to
+The errors of [storage, allocators and views](../memory.md). Back to
 [all codes](../errors.md).
 
 ## FULCRO7001
@@ -285,3 +285,94 @@ what it was, never its value.
 
 Pass the buffer itself — `array.buffer` for a typed array, keeping in mind it
 may be larger than the array — or `new ArrayBuffer(size)`.
+
+## FULCRO7014
+
+```text
+RangeError: FULCRO7014: asView: 3 values from position 8 do not fit in a source of 10.
+```
+
+Details:
+
+```text
+{
+	operation: string;
+	start: number | string;
+	length: number | string;
+	available: number;
+}
+```
+
+A view was asked for a region that runs outside what it is cut from: a start
+before `0` or past the end, a negative length, a length that goes past the
+last value, or a position that is not an integer. `asView`, `asReadOnlyView`
+and `subview` report it the same way. For `subview`, `available` is the length
+of the view, not of its source: a subview stays inside the view it is cut
+from. When the length was omitted, `length` is the rest of the source from
+`start`.
+
+Nothing was created. Check the start against `source.length` before asking.
+To observe everything from a start onwards, omit the length rather than
+computing it.
+
+## FULCRO7015
+
+```text
+RangeError: FULCRO7015: View.get: position 2 is past the end of the array, which now holds 2 values; it shrank after it was viewed.
+```
+
+Details:
+
+```text
+{ operation: string; index: number; length: number }
+```
+
+A view over an array was read or written at a position the array no longer
+reaches: the array shrank — `pop`, `splice`, `length = …` — after the view was
+made. `index` is the position in the array, and `length` how long the array is
+now. An array would have answered `undefined`, so the view refuses instead.
+
+Make the view again after changing the array's length, or hold the values in a
+storage, whose length cannot change.
+
+## FULCRO7016
+
+```text
+RangeError: FULCRO7016: Pointer.offset: position 5 is outside 0 to 4, where a pointer into 4 values may point.
+```
+
+Details:
+
+```text
+{ operation: string; index: number | string; length: number }
+```
+
+`pointerTo` or `offset` was asked for a position a pointer cannot take. A
+pointer into `length` values may point anywhere from `0` to `length`, the
+position one past the last value included, so a loop can step onto the end.
+Anything before `0`, beyond that end, or not an integer is refused, and no
+pointer is made.
+
+Stop a loop at `cursor.index < source.length` rather than stepping past it.
+Reading or writing at the end is a different error,
+[`FULCRO7002`](#fulcro7002).
+
+## FULCRO7017
+
+```text
+TypeError: FULCRO7017: asView: expected a storage, a view, an array, a pointer or a memory reference, received an object with get but no set.
+```
+
+Details:
+
+```text
+{ operation: string; expected: string; received: string }
+```
+
+`asView`, `asReadOnlyView` or `pointerTo` was given something it cannot reach
+into. `expected` lists what that function accepts, and `received` describes
+what it got, never its contents. The most common case is the one shown: a
+read-only view handed to `asView`, which would write it.
+
+Pass a read-only source to `asReadOnlyView` instead. `pointerTo` takes a
+storage, a view or an array, not a pointer: move a pointer with `offset`.

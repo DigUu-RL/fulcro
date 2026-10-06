@@ -747,7 +747,7 @@ describe('@fulcro/functions', () => {
 });
 
 describe('@fulcro/memory', () => {
-	it('should expose the storage and allocator factories and nothing else', async () => {
+	it('should expose the storage, allocator and access functions and nothing else', async () => {
 		const entry = await import('@fulcro/memory');
 
 		// `Storage`, `Allocator` and their kin are types and leave nothing at
@@ -759,6 +759,8 @@ describe('@fulcro/memory', () => {
 				.sort(),
 		).toEqual([
 			'allocate',
+			'asReadOnlyView',
+			'asView',
 			'createArenaAllocator',
 			'createFixedBufferAllocator',
 			'createFixedBufferStorage',
@@ -766,6 +768,8 @@ describe('@fulcro/memory', () => {
 			'createManagedStorage',
 			'createPoolAllocator',
 			'createStackAllocator',
+			'pointerTo',
+			'referenceTo',
 		]);
 	});
 
@@ -812,6 +816,38 @@ describe('@fulcro/memory', () => {
 
 		expect(points.get(1)).toEqual({ x: 1, y: 2 });
 		expect(names.get(1)).toBe('b');
+	});
+
+	it('should view, point into and reference values, copying nothing', async () => {
+		const {
+			asReadOnlyView,
+			asView,
+			createManagedStorage,
+			pointerTo,
+			referenceTo,
+		} = await import('@fulcro/memory');
+
+		const scores = createManagedStorage(4, 0);
+		const middle = asView(scores, 1, 2);
+
+		middle.set(0, 10);
+		pointerTo(middle, 1).set(20);
+
+		expect([scores.get(1), scores.get(2)]).toEqual([10, 20]);
+		expect('set' in asReadOnlyView(middle)).toBe(false);
+		expect('set' in middle.readOnly()).toBe(false);
+		expect(asView(referenceTo(5)).get(0)).toBe(5);
+		expect(() => middle.subview(1, 2)).toThrow(
+			expect.objectContaining({
+				code: 'FULCRO7014',
+				details: {
+					operation: 'View.subview',
+					start: 1,
+					length: 2,
+					available: 2,
+				},
+			}),
+		);
 	});
 
 	it('should refuse an index outside, with its code and details', async () => {

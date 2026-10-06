@@ -1,4 +1,4 @@
-# Memory: `Storage<T>` and `Allocator`
+# Memory: `Storage<T>`, `Allocator` and `View<T>`
 
 🇧🇷 Português (Brasil): [Leia esta documentação em português](./pt-BR/memory.md)
 
@@ -6,7 +6,9 @@ A value's type says what it is. Where its bytes live is a separate decision, and
 this package makes it a separate piece of code: one contract, `Storage<T>`,
 that your code is written against, and the strategies that hold the values
 behind it. Where the memory itself comes from is a third decision, made by the
-[`Allocator`](#allocators) you pass in.
+[`Allocator`](#allocators) you pass in. Reaching into values held somewhere
+else — a region of them, one position, one value — without copying or owning
+them is the [access layer](#views-pointers-and-references).
 
 ```sh
 npm install @fulcro/memory
@@ -15,14 +17,22 @@ npm install @fulcro/memory
 ```ts
 import {
 	allocate,
+	asReadOnlyView,
+	asView,
 	createArenaAllocator,
 	createFixedBufferStorage,
 	createManagedStorage,
 	createStackAllocator,
+	pointerTo,
+	referenceTo,
 	type Allocation,
 	type Allocator,
+	type MemoryReference,
+	type Pointer,
+	type ReadOnlyView,
 	type StackAllocator,
 	type Storage,
+	type View,
 } from '@fulcro/memory';
 ```
 
@@ -312,11 +322,161 @@ accept it without this package changing. Honour the contract in full: exactly
 another live allocation, and `isLive()` false from the moment they are
 released.
 
+## Views, pointers and references
+
+A storage owns its values. Code that only has to reach some of them — sum a
+range, fill the second half, bump one counter — should not need the whole
+storage, and should not get a copy either. Three types do that reaching, and
+none of them owns anything:
+
+```text
+Pointer<T>          where one value is
+View<T>             where a region starts, and how long it is
+MemoryReference<T>  one value that can be read and replaced
+```
+
+### `View<T>` and `ReadOnlyView<T>`
+
+```ts
+interface ReadOnlyView<T> {
+	readonly length: number;
+	get(index: number): T;
+	subview(start: number, length?: number): ReadOnlyView<T>;
+}
+
+interface View<T> extends ReadOnlyView<T> {
+	set(index: number, value: T): void;
+	subview(start: number, length?: number): View<T>;
+	readOnly(): ReadOnlyView<T>;
+}
+```
+
+`asView(source, start?, length?)` observes a region of a storage, of another
+view or of an array:
+
+```ts
+const scores: Storage<number> = createManagedStorage(100, 0);
+const firstTen: View<number> = asView(scores, 0, 10);
+const rest: View<number> = asView(scores, 10); // positions 10 to 99
+
+firstTen.set(3, 42);
+scores.get(3); // 42 — the view wrote the storage
+```
+
+Nothing is copied, at any length. A view remembers its source, where its region
+starts and how long it is; every `get` and `set` goes to the source, so the
+view and the source never disagree. `subview` cuts a part of a view the same
+way, and a subview of a subview reads the original source directly, so nesting
+them costs nothing on each access.
+
+An index is a position inside the view, from `0` to `length - 1`, and anything
+else throws [`FULCRO7002`](./errors/FULCRO7xxx.md#fulcro7002) — even where the
+source goes on past the view. A region that does not fit inside its source
+throws [`FULCRO7014`](./errors/FULCRO7xxx.md#fulcro7014). An empty region is
+allowed anywhere, the end included, as in an array.
+
+A view has the shape of a `Storage<T>`, so every function written against the
+contract accepts one:
+
+```ts
+total(asView(prices, 10, 5)); // the `total` from the contract above
+```
+
+**Read-only.** `asReadOnlyView(source, start?, length?)` and `view.readOnly()`
+return a `ReadOnlyView<T>`, the thing to hand to code that should only read. It
+has no `set`, in its type and at runtime. The object has no such property, so a
+cast does not get the right to write back. It also accepts a `readonly` array
+and another read-only view, which `asView` refuses because it would write them.
+
+**Over an array.** The array is observed in place. It can shrink afterwards,
+which a storage cannot, and a position it no longer reaches throws
+[`FULCRO7015`](./errors/FULCRO7xxx.md#fulcro7015) rather than reading
+`undefined`. A view keeps the length it was made with when the array grows.
+
+**It does not outlive the memory.** Over a storage from `allocate`, every access
+still checks whether the allocator released the bytes, and throws
+[`FULCRO7009`](./errors/FULCRO7xxx.md#fulcro7009) once it has, exactly as the
+storage would. A view owns nothing, so it has nothing to release.
+
+### `Pointer<T>`
+
+`pointerTo(source, index)` points at one position of a storage, a view or an
+array:
+
+```ts
+const queue: Storage<string> = createManagedStorage(8, '');
+const head: Pointer<string> = pointerTo(queue, 0);
+
+head.set('first');
+head.offset(1).set('second');
+queue.get(1); // 'second'
+```
+
+`offset(delta)` returns a new pointer, forwards or back, and leaves the one it
+came from as it was. A pointer may stand one past the last value, so a loop can
+step onto the end and stop there:
+
+```ts
+for (
+	let cursor = pointerTo(queue, 0);
+	cursor.index < queue.length;
+	cursor = cursor.offset(1)
+) {
+	cursor.get();
+}
+```
+
+Reading or writing at the end throws `FULCRO7002`. Pointing outside `0` to the
+length throws [`FULCRO7016`](./errors/FULCRO7xxx.md#fulcro7016).
+`asView(pointer, length)` observes the region that starts at the pointer: one
+value when the length is omitted.
+
+### `MemoryReference<T>`
+
+`referenceTo(value)` makes one value that can be read and replaced. Hand it to
+code that has to change a value it does not own:
+
+```ts
+const increment = (counter: MemoryReference<number>): void => {
+	counter.set(counter.get() + 1);
+};
+
+const hits = referenceTo(0);
+
+increment(hits);
+hits.get(); // 1
+```
+
+The value is held as it is, never copied. A reference has no position and no
+arithmetic. That is what a pointer adds, and every `Pointer<T>` is a
+`MemoryReference<T>` too, so `increment(pointerTo(queue, 3))` works.
+`asView(reference)` observes it as a view of length `1`.
+
+### What a source can be
+
+| Source                   | `asView` | `asReadOnlyView` | `pointerTo` |
+| ------------------------ | -------- | ---------------- | ----------- |
+| A `Storage<T>`, any kind | yes      | yes              | yes         |
+| A `View<T>`              | yes      | yes              | yes         |
+| A `ReadOnlyView<T>`      | no       | yes              | no          |
+| A `T[]`                  | yes      | yes              | yes         |
+| A `readonly T[]`         | no       | yes              | no          |
+| A `Pointer<T>`           | yes      | yes              | no          |
+| A `MemoryReference<T>`   | yes      | yes              | no          |
+
+Anything else throws [`FULCRO7017`](./errors/FULCRO7xxx.md#fulcro7017). A
+storage or a reference written outside this package is accepted by its shape,
+exactly like one made here.
+
 ## What it does not do yet
 
 - **Grow.** A storage's length is the one it was created with.
-- **Hand out its bytes.** A storage's buffer is private to it; a view into it
-  is the next feature of this package.
+- **Hand out its bytes.** A storage's buffer is private to it, and a view
+  reads values, not bytes. A view over raw bytes is planned with binary
+  serialization.
+- **Address memory by bytes.** A pointer's position counts values. A byte
+  address in a block of memory, the way a WebAssembly module sees it, is a
+  separate feature still to come.
 - **Iterate.** Walk it with an index, as above.
 - **Allocate outside the engine's memory.** Every allocator hands out bytes of
   an `ArrayBuffer`.
@@ -338,3 +498,7 @@ released.
 | [`FULCRO7011`](./errors/FULCRO7xxx.md#fulcro7011) | An allocation returned to a pool that did not make it    |
 | [`FULCRO7012`](./errors/FULCRO7xxx.md#fulcro7012) | A stack frame allocated from after it was left           |
 | [`FULCRO7013`](./errors/FULCRO7xxx.md#fulcro7013) | Something other than an `ArrayBuffer` for a fixed buffer |
+| [`FULCRO7014`](./errors/FULCRO7xxx.md#fulcro7014) | A region that does not fit inside its source             |
+| [`FULCRO7015`](./errors/FULCRO7xxx.md#fulcro7015) | A position an array shrank past after it was viewed      |
+| [`FULCRO7016`](./errors/FULCRO7xxx.md#fulcro7016) | A pointer outside `0` to its source's length             |
+| [`FULCRO7017`](./errors/FULCRO7xxx.md#fulcro7017) | Something that is not a source a view can be made over   |

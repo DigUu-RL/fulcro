@@ -12,11 +12,17 @@ npm install @fulcro/memory
 ```ts
 import {
 	allocate,
+	asView,
 	createFixedBufferStorage,
 	createManagedStorage,
 	createStackAllocator,
+	pointerTo,
+	referenceTo,
+	type MemoryReference,
+	type Pointer,
 	type StackAllocator,
 	type Storage,
+	type View,
 } from '@fulcro/memory';
 ```
 
@@ -75,6 +81,32 @@ A storage from `allocate` refuses every `get` and `set` once its allocator
 released its memory, rather than read values that are no longer its own. Bytes
 asked for directly with `allocator.allocate` are not guarded: check
 `allocation.isLive()` before reading them.
+
+## `View<T>`, `Pointer<T>` and `MemoryReference<T>`
+
+Reach into values held somewhere else without copying them or owning them:
+
+```ts
+const scores = createManagedStorage(100, 0);
+const firstTen: View<number> = asView(scores, 0, 10);
+
+firstTen.set(3, 42); // writes scores[3]
+average(firstTen.readOnly()); // no `set`, in its type or at runtime
+
+const cursor: Pointer<number> = pointerTo(scores, 0).offset(5);
+const hits: MemoryReference<number> = referenceTo(0);
+```
+
+| Function                                  | Returns                                                 |
+| ----------------------------------------- | ------------------------------------------------------- |
+| `asView(source, start?, length?)`         | A region of a storage, a view or an array, read & write |
+| `asReadOnlyView(source, start?, length?)` | The same region, read only                              |
+| `pointerTo(source, index)`                | One position, which `offset` moves                      |
+| `referenceTo(value)`                      | One value that can be read and replaced                 |
+
+Making a view, or a subview of one, reads nothing however long it is. A view
+over a storage from `allocate` refuses once the memory is released, as the
+storage does.
 
 ---
 

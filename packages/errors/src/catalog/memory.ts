@@ -137,4 +137,57 @@ export const memoryCatalog = {
 			received: string;
 		}) => `${operation}: expected an ArrayBuffer, received ${received}.`,
 	},
+	FULCRO7014: {
+		kind: RangeError,
+		message: ({
+			operation,
+			start,
+			length,
+			available,
+		}: {
+			operation: string;
+			start: number | string;
+			length: number | string;
+			available: number;
+		}) =>
+			`${operation}: ${length} values from position ${start} do not fit in a source of ${available}.`,
+	},
+	FULCRO7015: {
+		kind: RangeError,
+		message: ({
+			operation,
+			index,
+			length,
+		}: {
+			operation: string;
+			index: number;
+			length: number;
+		}) =>
+			`${operation}: position ${index} is past the end of the array, which now holds ${length} values; it shrank after it was viewed.`,
+	},
+	FULCRO7016: {
+		kind: RangeError,
+		message: ({
+			operation,
+			index,
+			length,
+		}: {
+			operation: string;
+			index: number | string;
+			length: number;
+		}) =>
+			`${operation}: position ${index} is outside 0 to ${length}, where a pointer into ${length} values may point.`,
+	},
+	FULCRO7017: {
+		kind: TypeError,
+		message: ({
+			operation,
+			expected,
+			received,
+		}: {
+			operation: string;
+			expected: string;
+			received: string;
+		}) => `${operation}: expected ${expected}, received ${received}.`,
+	},
 } as const satisfies RangeCatalog<'7'>;
