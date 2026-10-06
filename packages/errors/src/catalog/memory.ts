@@ -190,4 +190,73 @@ export const memoryCatalog = {
 			received: string;
 		}) => `${operation}: expected ${expected}, received ${received}.`,
 	},
+	FULCRO7018: {
+		kind: TypeError,
+		message: ({
+			operation,
+			received,
+		}: {
+			operation: string;
+			received: string;
+		}) =>
+			`${operation}: expected an ArrayBuffer or a WebAssembly.Memory that is not shared, received ${received}.`,
+	},
+	FULCRO7019: {
+		kind: RangeError,
+		message: ({
+			operation,
+			address,
+			start,
+			end,
+		}: {
+			operation: string;
+			address: number | string;
+			start: number;
+			end: number;
+		}) =>
+			`${operation}: address ${address} is outside ${start} to ${end}, where this pointer may point.`,
+	},
+	FULCRO7020: {
+		kind: RangeError,
+		message: ({
+			operation,
+			address,
+			alignment,
+			element,
+		}: {
+			operation: string;
+			address: number;
+			alignment: number;
+			element: string;
+		}) =>
+			`${operation}: address ${address} is not a multiple of ${alignment}, where a value of ${element} may start.`,
+	},
+	FULCRO7021: {
+		kind: RangeError,
+		message: ({
+			operation,
+			address,
+			size,
+			element,
+			end,
+		}: {
+			operation: string;
+			address: number;
+			size: number;
+			element: string;
+			end: number;
+		}) =>
+			`${operation}: the ${size} bytes of ${element} at address ${address} run past ${end}, the end of where this pointer may read.`,
+	},
+	FULCRO7022: {
+		kind: TypeError,
+		message: ({
+			operation,
+			received,
+		}: {
+			operation: string;
+			received: string;
+		}) =>
+			`${operation}: expected a linear memory or an allocation, received ${received}.`,
+	},
 } as const satisfies RangeCatalog<'7'>;

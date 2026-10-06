@@ -376,3 +376,107 @@ read-only view handed to `asView`, which would write it.
 
 Pass a read-only source to `asReadOnlyView` instead. `pointerTo` takes a
 storage, a view or an array, not a pointer: move a pointer with `offset`.
+
+## FULCRO7018
+
+```text
+TypeError: FULCRO7018: createLinearMemory: expected an ArrayBuffer or a WebAssembly.Memory that is not shared, received WebAssembly.Memory over a SharedArrayBuffer.
+```
+
+Details:
+
+```text
+{ operation: string; received: string }
+```
+
+A linear memory was asked to span something it cannot address: not an
+`ArrayBuffer`, not an object whose `buffer` is one, or a memory whose bytes are
+shared between threads. A typed array or a `DataView` is refused too, because
+it covers only part of its buffer. `received` names what was handed in, never
+its contents. `nativePointerTo` reports an allocation over a
+`SharedArrayBuffer` the same way.
+
+Pass the `ArrayBuffer` itself, or the `WebAssembly.Memory` a module exports.
+A shared memory is refused on purpose: reading and writing the same bytes from
+two threads needs an agreement this package does not make yet.
+
+## FULCRO7019
+
+```text
+RangeError: FULCRO7019: NativePointer.at: address 32 is outside 8 to 24, where this pointer may point.
+```
+
+Details:
+
+```text
+{ operation: string; address: number | string; start: number; end: number }
+```
+
+`nativePointerTo` or `at` was asked for an address the pointer cannot hold. A
+pointer made from a memory may point anywhere from `0` to the memory's length;
+one made from an allocation, from where the allocation starts to where it
+ends. The end itself is allowed, so a loop can step onto it. An address that is
+not a safe integer — a fraction, `NaN`, a `bigint` from a 64-bit memory — is
+refused too, and described rather than shown.
+
+Check the address a module handed you against `memory.byteLength`, and move a
+pointer from an allocation only within the bytes you asked for.
+
+## FULCRO7020
+
+```text
+RangeError: FULCRO7020: nativePointerTo: address 4 is not a multiple of 8, where a value of Sample may start.
+```
+
+Details:
+
+```text
+{ operation: string; address: number; alignment: number; element: string }
+```
+
+The address is inside the memory, but a value of this type may not start
+there: its layout says it starts at a multiple of `alignment`. Reading
+misaligned bytes would give an answer, just not the value anybody wrote.
+
+Usually the address is a field offset added to the wrong base, or the
+allocation was asked for a smaller alignment than the type's: pass
+`Type.layout.alignment` when you allocate the bytes. To read the bytes at that
+address as a type that may start there, give `at` that type.
+
+## FULCRO7021
+
+```text
+RangeError: FULCRO7021: NativePointer.get: the 8 bytes of Sample at address 16 run past 16, the end of where this pointer may read.
+```
+
+Details:
+
+```text
+{ operation: string; address: number; size: number; element: string; end: number }
+```
+
+A pointer was read or written where the value's bytes do not all fit: at the
+end of its memory or its allocation, or close enough to it that the last bytes
+fall outside. It also happens when the buffer shrank after the pointer was
+made, or was transferred and has no bytes left. `end` is where the pointer may
+read up to now.
+
+Stop a loop before the end rather than at it. Over a buffer that resizes, make
+sure it is large enough before reading.
+
+## FULCRO7022
+
+```text
+TypeError: FULCRO7022: nativePointerTo: expected a linear memory or an allocation, received ArrayBuffer.
+```
+
+Details:
+
+```text
+{ operation: string; received: string }
+```
+
+`nativePointerTo` takes a linear memory and an address, or an allocation. It
+was handed something else. A buffer is the case shown: wrap it with
+`createLinearMemory` first. An object shaped like a linear memory is not one —
+only `createLinearMemory` makes them.
