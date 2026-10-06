@@ -18,6 +18,8 @@
 export { allocate } from '@/allocate';
 export type { Allocation, AllocationDomain, Allocator } from '@/allocator';
 export { type ArenaAllocator, createArenaAllocator } from '@/arenaAllocator';
+export { asReadOnlyView } from '@/asReadOnlyView';
+export { asView } from '@/asView';
 export {
 	createFixedBufferAllocator,
 	type FixedBufferAllocator,
@@ -25,6 +27,11 @@ export {
 export { createFixedBufferStorage } from '@/fixedBufferStorage';
 export { createManagedAllocator } from '@/managedAllocator';
 export { createManagedStorage } from '@/managedStorage';
+export type { MemoryReference } from '@/memoryReference';
+export type { Pointer } from '@/pointer';
+export { pointerTo } from '@/pointerTo';
 export { createPoolAllocator, type PoolAllocator } from '@/poolAllocator';
+export { referenceTo } from '@/referenceTo';
 export { createStackAllocator, type StackAllocator } from '@/stackAllocator';
 export type { Storage } from '@/storage';
+export type { ReadOnlyView, View } from '@/view';
