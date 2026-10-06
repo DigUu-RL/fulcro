@@ -231,6 +231,7 @@ export default defineConfig({
 			project('memory'),
 			workerPool(),
 			project('reflect'),
+			project('transform-core'),
 			project('types'),
 			entryPoints(),
 			transformers(),

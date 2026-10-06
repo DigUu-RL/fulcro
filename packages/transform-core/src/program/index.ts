@@ -5,7 +5,7 @@ import typescript from 'typescript';
 
 import { createError } from '@fulcro/errors';
 
-import { CallRewriter } from '@/shared';
+import { CallRewriter, FileAnalyzer } from '@/shared';
 import { createTransformer, TransformerOptions } from '@/transformer';
 
 /**
@@ -34,12 +34,17 @@ const HANDLED_EXTENSIONS = ['.ts', '.mts', '.cts'];
  * and this core belongs to none of them.
  *
  * @param rewriters Rewriters the core was built with.
+ * @param analyzers Analyzers the core was built with.
  * @returns A pattern matching any of their function names as a whole word.
  */
-const buildUtilityPattern = (rewriters: readonly CallRewriter[]): RegExp => {
-	const names: string = rewriters
-		.map((rewriter) => rewriter.functionName)
-		.join('|');
+const buildUtilityPattern = (
+	rewriters: readonly CallRewriter[],
+	analyzers: readonly FileAnalyzer[],
+): RegExp => {
+	const names: string = [
+		...rewriters.map((rewriter) => rewriter.functionName),
+		...analyzers.flatMap((analyzer) => analyzer.functionNames),
+	].join('|');
 
 	return new RegExp(`\\b(${names})\\b`);
 };
@@ -273,15 +278,18 @@ export interface FileTransformer {
  *
  * @param rewriters Rewriters of the package this core is serving.
  * @param options Options of the core.
+ * @param analyzers Analyzers of the package this core is serving; none when
+ * omitted.
  * @returns A transformer usable by any bundler adapter.
  */
 export const createFileTransformer = (
 	rewriters: readonly CallRewriter[],
 	options: TransformCoreOptions = {},
+	analyzers: readonly FileAnalyzer[] = [],
 ): FileTransformer => {
 	const root: string = options.root ?? process.cwd();
-	const utilityPattern: RegExp = buildUtilityPattern(rewriters);
-	const transformer = createTransformer(rewriters);
+	const utilityPattern: RegExp = buildUtilityPattern(rewriters, analyzers);
+	const transformer = createTransformer(rewriters, analyzers);
 
 	let host: ProgramHost | undefined;
 	let service: typescript.LanguageService | undefined;
@@ -327,6 +335,15 @@ export const createFileTransformer = (
 		);
 
 		const [transformed] = result.transformed;
+
+		// Nothing rewritten — every file an analyzer only checks, and every file
+		// that merely mentions a utility's name. Printing it anyway would hand the
+		// bundler a reformatted copy without a source map for nothing.
+		if (transformed === sourceFile) {
+			result.dispose();
+
+			return null;
+		}
 
 		const printed: string = typescript
 			.createPrinter({ newLine: typescript.NewLineKind.LineFeed })
