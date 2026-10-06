@@ -1,0 +1,134 @@
+import { createError } from '@fulcro/errors';
+
+import type { Allocation, Allocator } from '@/allocator';
+import { requireRequest, requireSize } from '@/allocator/requireRequest';
+import { requireLength } from '@/storage/requireLength';
+
+/**
+ * An allocator of blocks of one size, each returned on its own, in any order.
+ */
+export interface PoolAllocator extends Allocator {
+	/**
+	 * Returns one allocation's block to the pool, for the next request to reuse.
+	 * The allocation reports `isLive()` as `false` from now on.
+	 *
+	 * @param allocation An allocation this pool made and has not taken back.
+	 * @throws {Error} When this pool did not make it, or already took it back.
+	 */
+	deallocate(allocation: Allocation): void;
+}
+
+/** Which block an allocation holds, and the block's generation at the time. */
+interface Lease {
+	readonly block: number;
+	readonly generation: number;
+}
+
+/**
+ * Creates a pool: one buffer cut into blocks of the same size, each handed out
+ * whole and returned on its own.
+ *
+ * ```ts
+ * const pool: PoolAllocator = createPoolAllocator(64, 1024);
+ *
+ * const message = pool.allocate(48, 8);
+ * // …
+ * pool.deallocate(message);
+ * ```
+ *
+ * For many objects of one size whose lifetimes do not nest — connections,
+ * messages, entities that come and go in any order. Allocating and returning
+ * a block cost the same whatever the pool holds, the buffer is allocated once,
+ * at creation, and a request is refused when every block is out.
+ *
+ * Every block starts at a multiple of `blockSize`, so a request is accepted
+ * when its size fits a block and its alignment divides the block size.
+ *
+ * @param blockSize Size of each block, in bytes.
+ * @param blockCount How many blocks.
+ * @returns The pool, frozen.
+ * @throws {RangeError} When the block size or the block count is not a
+ * non-negative safe integer.
+ */
+export const createPoolAllocator = (
+	blockSize: number,
+	blockCount: number,
+): PoolAllocator => {
+	requireSize('createPoolAllocator', blockSize);
+	requireLength('createPoolAllocator', blockCount);
+
+	const capacity: number = blockSize * blockCount;
+	const buffer = new ArrayBuffer(capacity);
+
+	// The free blocks, the next one to hand out last, so the pool fills from
+	// the front of the buffer.
+	const free: number[] = Array.from(
+		{ length: blockCount },
+		(_, index) => blockCount - 1 - index,
+	);
+
+	// A block's generation moves on every time it comes back, which is what
+	// tells an allocation still holding it from one that held it before.
+	const generations = new Float64Array(blockCount);
+	const leases = new WeakMap<Allocation, Lease>();
+
+	return Object.freeze({
+		allocate: (size: number, alignment: number): Allocation => {
+			requireRequest('PoolAllocator.allocate', size, alignment);
+
+			if (size > blockSize || blockSize % alignment !== 0) {
+				throw createError('FULCRO7010', {
+					operation: 'PoolAllocator.allocate',
+					requested: size,
+					alignment,
+					blockSize,
+				});
+			}
+
+			const block: number | undefined = free.pop();
+
+			if (block === undefined) {
+				throw createError('FULCRO7007', {
+					operation: 'PoolAllocator.allocate',
+					requested: size,
+					alignment,
+					available: 0,
+					capacity,
+				});
+			}
+
+			const start: number = block * blockSize;
+			const generation: number = generations[block] as number;
+
+			new Uint8Array(buffer, start, size).fill(0);
+
+			const allocation: Allocation = Object.freeze({
+				bytes: new DataView(buffer, start, size),
+				isLive: (): boolean => generations[block] === generation,
+			});
+
+			leases.set(allocation, { block, generation });
+
+			return allocation;
+		},
+
+		deallocate: (allocation: Allocation): void => {
+			const lease: Lease | undefined = leases.get(allocation);
+
+			if (lease === undefined) {
+				throw createError('FULCRO7011', {
+					operation: 'PoolAllocator.deallocate',
+				});
+			}
+
+			if (generations[lease.block] !== lease.generation) {
+				throw createError('FULCRO7009', {
+					operation: 'PoolAllocator.deallocate',
+				});
+			}
+
+			generations[lease.block] = lease.generation + 1;
+			free.push(lease.block);
+		},
+	});
+};

@@ -15,6 +15,16 @@
  * Listed one by one rather than re-exported wholesale, so that adding an export
  * to a module below is never enough on its own to put it in front of consumers.
  */
+export { allocate } from '@/allocate';
+export type { Allocation, AllocationDomain, Allocator } from '@/allocator';
+export { type ArenaAllocator, createArenaAllocator } from '@/arenaAllocator';
+export {
+	createFixedBufferAllocator,
+	type FixedBufferAllocator,
+} from '@/fixedBufferAllocator';
 export { createFixedBufferStorage } from '@/fixedBufferStorage';
+export { createManagedAllocator } from '@/managedAllocator';
 export { createManagedStorage } from '@/managedStorage';
+export { createPoolAllocator, type PoolAllocator } from '@/poolAllocator';
+export { createStackAllocator, type StackAllocator } from '@/stackAllocator';
 export type { Storage } from '@/storage';
