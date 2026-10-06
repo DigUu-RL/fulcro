@@ -507,7 +507,7 @@ configurado, o mesmo uso é recusado na compilação, como
 ## FULCRO7024
 
 ```text
-Error: FULCRO7024: ReadOnlyView.get: the borrow has ended — its owner was moved, or borrowed again in a way it cannot share; borrow again.
+Error: FULCRO7024: ReadOnlyView.get: the borrow has ended — its owner was moved or disposed, or borrowed again in a way it cannot share; borrow again.
 ```
 
 Detalhes:
@@ -520,7 +520,8 @@ Um empréstimo — ou uma subview, uma view somente leitura, uma view ou um
 ponteiro feito a partir dele — foi usado depois que algo feito pelo seu dono o
 encerrou. Um empréstimo compartilhado termina quando o dono é emprestado com
 `borrowMutable`. Um empréstimo exclusivo termina quando o dono é emprestado de
-novo, de qualquer forma. Todo empréstimo termina quando o dono é movido.
+novo, de qualquer forma. Todo empréstimo termina quando o dono é movido, e
+quando é descartado — no fim do seu escopo `using`.
 
 Empreste de novo depois da operação conflitante, em vez de guardar o
 empréstimo de antes dela. Com o transformer do memory configurado, um
@@ -627,3 +628,27 @@ todo empréstimo de um dono termina quando ele se move. Em runtime, o mesmo uso
 lança [FULCRO7024](#fulcro7024).
 
 Empreste do dono que `move` devolveu.
+
+## FULCRO7030
+
+```text
+Error: FULCRO7030: borrow: the owner was disposed when its scope ended; nothing can be borrowed or moved from it any more.
+```
+
+Detalhes:
+
+```text
+{ operation: string }
+```
+
+Um dono foi usado depois de descartado — no fim do escopo `using` que o
+declarou, ou por uma chamada a `[Symbol.dispose]()` feita à mão. Descartar
+encerra a posse: todo empréstimo tomado dele termina, e o dono recusa `borrow`,
+`borrowMutable`, `move` e o seu `length` dali em diante. A memória em si não é
+liberada; isso é assunto do seu alocador.
+
+O dono foi alcançado de fora do seu escopo — guardado numa variável declarada
+mais para fora, ou capturado por uma função que rodou depois. Declare o dono no
+escopo que o usa, ou faça `move` dele antes de o escopo terminar: um dono de
+onde se moveu não é descartado, e o dono que o `move` devolveu sobrevive ao
+escopo.

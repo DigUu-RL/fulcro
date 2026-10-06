@@ -119,8 +119,18 @@ export type SpawnWorker = (url: URL) => WorkerHandle;
  * saturated by one run — at the cost of a run identity in every message.
  *
  * A `stream` therefore holds the pool until it is finished or abandoned.
+ *
+ * Declared with `await using`, the pool closes when the scope ends, however
+ * the scope is left:
+ *
+ * ```ts
+ * {
+ * 	await using pool = createWorkerPool<number, number>({ module, export: 'square' });
+ * 	const squares = await pool.map([1, 2, 3]);
+ * } // every worker is stopped here
+ * ```
  */
-export interface WorkerPool<T, R> {
+export interface WorkerPool<T, R> extends AsyncDisposable {
 	/**
 	 * Runs every element through the workers and collects the results.
 	 *
@@ -158,4 +168,12 @@ export interface WorkerPool<T, R> {
 	 * @returns A promise settling when every worker is gone.
 	 */
 	readonly close: () => Promise<void>;
+
+	/**
+	 * Stops every worker, exactly as `close` does. Called by `await using` when
+	 * the scope ends; closing a pool already closed does nothing.
+	 *
+	 * @returns A promise settling when every worker is gone.
+	 */
+	[Symbol.asyncDispose](): Promise<void>;
 }

@@ -83,8 +83,8 @@ const step = (stack: StackAllocator): void => {
 | `createManagedAllocator`     | When the garbage collector reclaims it    |
 | `createArenaAllocator`       | All at once, on `reset()` or with `using` |
 | `createStackAllocator`       | A frame at a time, last in first out      |
-| `createFixedBufferAllocator` | All at once, on `reset()`, in your buffer |
-| `createPoolAllocator`        | One block at a time, in any order         |
+| `createFixedBufferAllocator` | All at once, on `reset()` or with `using` |
+| `createPoolAllocator`        | One block at a time, or with `using`      |
 
 A storage from `allocate` refuses every `get` and `set` once its allocator
 released its memory, rather than read values that are no longer its own. Bytes
@@ -167,9 +167,10 @@ borrow(queue); // throws FULCRO7023: queue was moved
 | `move(owner)`          | A new owner of the same values; the old one is spent          |
 
 A borrow that has ended throws on its next access, and so does anything made
-from it. The optional transformer — `@fulcro/memory/transformer` for
-`ts-patch`, `@fulcro/memory/unplugin` for a bundler — refuses the same uses when
-the code is compiled. It rewrites nothing.
+from it. Declared with `using`, an owner ends with its scope — every borrow of
+it ends there — unless it was moved out first. The optional transformer —
+`@fulcro/memory/transformer` for `ts-patch`, `@fulcro/memory/unplugin` for a
+bundler — refuses the same uses when the code is compiled. It rewrites nothing.
 
 ---
 

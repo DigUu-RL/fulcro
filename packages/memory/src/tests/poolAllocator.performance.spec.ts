@@ -69,6 +69,36 @@ describe('createPoolAllocator, counted', () => {
 		expect(buffers.made).toBe(0);
 	});
 
+	it('should return exactly the blocks disposed, zeroing none of them', () => {
+		const pool: PoolAllocator = createPoolAllocator(64, BLOCKS);
+		const taken = Array.from({ length: BLOCKS }, () => pool.allocate(64, 8));
+
+		for (const allocation of taken) allocation.bytes.setUint8(0, 0xaa);
+
+		// Disposing twice, as a block given back by hand and then left by its
+		// scope would be, must not return any block a second time.
+		for (const allocation of shuffle([...taken])) {
+			allocation[Symbol.dispose]();
+			allocation[Symbol.dispose]();
+		}
+
+		const marked: number = taken.filter(
+			(allocation) =>
+				new Uint8Array(allocation.bytes.buffer)[allocation.bytes.byteOffset] ===
+				0xaa,
+		).length;
+		const again = new Set(
+			Array.from(
+				{ length: BLOCKS },
+				() => pool.allocate(64, 8).bytes.byteOffset,
+			),
+		);
+
+		expect(marked).toBe(BLOCKS);
+		expect(again.size).toBe(BLOCKS);
+		expect(() => pool.allocate(64, 8)).toThrow();
+	});
+
 	it('should hand every block out again after a shuffled return, none twice', () => {
 		const pool: PoolAllocator = createPoolAllocator(64, BLOCKS);
 		const first: Allocation[] = Array.from({ length: BLOCKS }, () =>

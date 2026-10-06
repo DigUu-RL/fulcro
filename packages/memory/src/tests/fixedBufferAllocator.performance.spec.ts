@@ -41,4 +41,25 @@ describe('createFixedBufferAllocator, counted', () => {
 
 		expect(buffers.made).toBe(0);
 	});
+
+	it('should make no buffer however many using scopes end over it', () => {
+		const memory = new ArrayBuffer(PER_PASS * 16);
+		const allocator: FixedBufferAllocator = createFixedBufferAllocator(memory);
+		const buffers = watchBuffers();
+		let filled = 0;
+
+		for (let pass = 0; pass < PASSES; pass++) {
+			using scope = allocator;
+
+			// A pass that did not start from the front would run out of room
+			// before filling the buffer again.
+			for (let index = 0; index < PER_PASS; index++) {
+				scope.allocate(16, 8);
+				filled++;
+			}
+		}
+
+		expect(filled).toBe(PASSES * PER_PASS);
+		expect(buffers.made).toBe(0);
+	});
 });

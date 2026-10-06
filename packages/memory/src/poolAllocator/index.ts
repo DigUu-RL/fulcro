@@ -9,6 +9,28 @@ import { requireLength } from '@/storage/requireLength';
  */
 export interface PoolAllocator extends Allocator {
 	/**
+	 * Reserves one block. The allocation it returns can give its block back on
+	 * its own, so `using` returns it when the scope ends:
+	 *
+	 * ```ts
+	 * {
+	 * 	using message = pool.allocate(48, 8);
+	 * 	// …
+	 * } // the block is the pool's again
+	 * ```
+	 *
+	 * Disposing an allocation whose block was already returned does nothing,
+	 * even once the block was handed to someone else.
+	 *
+	 * @param size How many bytes, at most the block size.
+	 * @param alignment A power of two dividing the block size.
+	 * @returns The allocation, disposable.
+	 * @throws {RangeError} When the request does not fit a block, or every
+	 * block is out.
+	 */
+	allocate(size: number, alignment: number): Allocation & Disposable;
+
+	/**
 	 * Returns one allocation's block to the pool, for the next request to reuse.
 	 * The allocation reports `isLive()` as `false` from now on.
 	 *
@@ -72,8 +94,18 @@ export const createPoolAllocator = (
 	const generations = new Float64Array(blockCount);
 	const leases = new WeakMap<Allocation, Lease>();
 
+	/**
+	 * Gives a block back, for the next request to reuse.
+	 *
+	 * @param lease The block, and the generation that held it.
+	 */
+	const giveBack = (lease: Lease): void => {
+		generations[lease.block] = lease.generation + 1;
+		free.push(lease.block);
+	};
+
 	return Object.freeze({
-		allocate: (size: number, alignment: number): Allocation => {
+		allocate: (size: number, alignment: number): Allocation & Disposable => {
 			requireRequest('PoolAllocator.allocate', size, alignment);
 
 			if (size > blockSize || blockSize % alignment !== 0) {
@@ -98,16 +130,26 @@ export const createPoolAllocator = (
 			}
 
 			const start: number = block * blockSize;
-			const generation: number = generations[block] as number;
+			const lease: Lease = {
+				block,
+				generation: generations[block] as number,
+			};
+			const isLive = (): boolean => generations[block] === lease.generation;
 
 			new Uint8Array(buffer, start, size).fill(0);
 
-			const allocation: Allocation = Object.freeze({
+			const allocation: Allocation & Disposable = Object.freeze({
 				bytes: new DataView(buffer, start, size),
-				isLive: (): boolean => generations[block] === generation,
+				isLive,
+
+				// Returning a block twice, or one already handed on, would put it
+				// in the free list beside its new holder; the generation tells.
+				[Symbol.dispose]: (): void => {
+					if (isLive()) giveBack(lease);
+				},
 			});
 
-			leases.set(allocation, { block, generation });
+			leases.set(allocation, lease);
 
 			return allocation;
 		},
@@ -127,8 +169,7 @@ export const createPoolAllocator = (
 				});
 			}
 
-			generations[lease.block] = lease.generation + 1;
-			free.push(lease.block);
+			giveBack(lease);
 		},
 	});
 };

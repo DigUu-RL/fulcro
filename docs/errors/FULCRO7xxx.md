@@ -505,7 +505,7 @@ wired up, the same use is refused when the code is compiled, as
 ## FULCRO7024
 
 ```text
-Error: FULCRO7024: ReadOnlyView.get: the borrow has ended — its owner was moved, or borrowed again in a way it cannot share; borrow again.
+Error: FULCRO7024: ReadOnlyView.get: the borrow has ended — its owner was moved or disposed, or borrowed again in a way it cannot share; borrow again.
 ```
 
 Details:
@@ -517,7 +517,8 @@ Details:
 A borrow, or a subview, a read-only view, a view or a pointer made from one,
 was used after something its owner did ended it. A shared borrow ends when the
 owner is lent with `borrowMutable`. An exclusive borrow ends when the owner is
-lent again, either way. Every borrow ends when the owner is moved.
+lent again, either way. Every borrow ends when the owner is moved, and when it
+is disposed — at the end of its `using` scope.
 
 Borrow again after the conflicting operation, rather than holding on to the
 borrow from before it. With the memory transformer wired up, a borrow kept in
@@ -623,3 +624,26 @@ borrow of an owner ends when it moves. At runtime the same use throws
 [FULCRO7024](#fulcro7024).
 
 Borrow from the owner `move` returned.
+
+## FULCRO7030
+
+```text
+Error: FULCRO7030: borrow: the owner was disposed when its scope ended; nothing can be borrowed or moved from it any more.
+```
+
+Details:
+
+```text
+{ operation: string }
+```
+
+An owner was used after it was disposed — at the end of the `using` scope that
+declared it, or by calling `[Symbol.dispose]()` by hand. Disposing ends the
+ownership: every borrow taken from it ends, and the owner refuses `borrow`,
+`borrowMutable`, `move` and its `length` from then on. The memory itself is not
+released; that is its allocator's business.
+
+The owner reached here from outside its scope — kept in a variable declared
+further out, or captured by a function that ran later. Declare the owner in the
+scope that uses it, or `move` it out before the scope ends: an owner moved from
+is not disposed, and the owner `move` returned outlives the scope.

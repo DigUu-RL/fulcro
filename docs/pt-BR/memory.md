@@ -245,13 +245,13 @@ const createParticles = (
 
 ### Escolhendo um alocador
 
-| As suas alocações…                                  | Use                          | Liberadas por          |
-| --------------------------------------------------- | ---------------------------- | ---------------------- |
-| …não têm um tempo de vida que valha gerenciar       | `createManagedAllocator()`   | o garbage collector    |
-| …terminam todas juntas: uma requisição, uma passada | `createArenaAllocator(size)` | `reset()`, ou `using`  |
-| …se aninham, as internas terminando primeiro        | `createStackAllocator(size)` | sair de um quadro      |
-| …têm de caber num orçamento fixado de antemão       | `createFixedBufferAllocator` | `reset()`              |
-| …têm todas um tamanho e vêm e vão em qualquer ordem | `createPoolAllocator`        | `deallocate(cada uma)` |
+| As suas alocações…                                  | Use                          | Liberadas por         |
+| --------------------------------------------------- | ---------------------------- | --------------------- |
+| …não têm um tempo de vida que valha gerenciar       | `createManagedAllocator()`   | o garbage collector   |
+| …terminam todas juntas: uma requisição, uma passada | `createArenaAllocator(size)` | `reset()`, ou `using` |
+| …se aninham, as internas terminando primeiro        | `createStackAllocator(size)` | sair de um quadro     |
+| …têm de caber num orçamento fixado de antemão       | `createFixedBufferAllocator` | `reset()`, ou `using` |
+| …têm todas um tamanho e vêm e vão em qualquer ordem | `createPoolAllocator`        | `deallocate`, `using` |
 
 **Gerenciado.** `createManagedAllocator()` dá a cada alocação um buffer próprio
 e nunca libera nenhum: o garbage collector recupera uma alocação quando nada
@@ -284,13 +284,29 @@ reserva memória que dura tanto quanto a pilha.
 
 **Buffer fixo.** `createFixedBufferAllocator(buffer)` entrega um `ArrayBuffer`
 que você já tem e nunca pede memória ao engine. `reset()` recomeça da frente.
-O que o buffer guardava antes é sobrescrito com zeros conforme é entregue.
+O que o buffer guardava antes é sobrescrito com zeros conforme é entregue. Como
+uma arena, é um domínio de alocação: entrado com `using`, é resetado quando o
+escopo termina.
 
 **Pool.** `createPoolAllocator(blockSize, blockCount)` corta um buffer em
 `blockCount` blocos de `blockSize` bytes. Cada alocação toma um bloco e
 `deallocate(allocation)` o devolve, em qualquer ordem. Uma requisição cabe
 quando o seu tamanho é no máximo `blockSize` e o seu alinhamento divide
 `blockSize`.
+
+As alocações de um pool são descartáveis por conta própria, então um bloco
+declarado com `using` volta quando o seu escopo termina:
+
+```ts
+{
+	using message = pool.allocate(48, 8);
+	// …
+} // o bloco é do pool de novo
+```
+
+Descartar uma alocação cujo bloco já voltou não faz nada, mesmo depois de o
+bloco ter sido entregue a outro; `deallocate` sobre ela continua lançando
+[`FULCRO7009`](./errors/FULCRO7xxx.md#fulcro7009).
 
 Cada factory devolve o seu alocador com um tipo próprio — `ArenaAllocator`,
 `StackAllocator`, `FixedBufferAllocator`, `PoolAllocator` —, que é `Allocator`
@@ -301,9 +317,13 @@ você chama esses métodos, e `Allocator` em todo o resto.
 ### Domínios de alocação
 
 Um `AllocationDomain` é um alocador que também é `Disposable`: sair do seu
-escopo `using` libera toda a sua região de uma vez. Uma arena é um, e cada
-quadro de uma pilha também. Sair custa o mesmo seja o que for que se alocou —
-nada é liberado uma alocação por vez.
+escopo `using` libera toda a sua região de uma vez. Uma arena é um, um alocador
+de buffer fixo é um, e cada quadro de uma pilha também. Sair custa o mesmo seja
+o que for que se alocou — nada é liberado uma alocação por vez.
+
+`using` e `await using` são do próprio TypeScript, e pedem TypeScript 5.2 ou
+posterior com `esnext.disposable` em `lib` (ou `@types/node`, que declara o
+mesmo) — é de lá que vêm os tipos `Disposable` e `AsyncDisposable`.
 
 ### Memória liberada é recusada, não lida
 
@@ -626,8 +646,9 @@ de leitores ao mesmo tempo, ou a um único escritor — e passados adiante com u
 move que gasta o dono antigo.
 
 ```ts
-interface Owned<T> {
+interface Owned<T> extends Disposable {
 	readonly length: number;
+	[Symbol.dispose](): void;
 }
 
 interface Borrowed<T> extends ReadOnlyView<T> {}
@@ -657,8 +678,8 @@ continua alcançável por ali, sem verificação. Devolver uma storage que já t
 dono lança [`FULCRO7025`](./errors/FULCRO7xxx.md#fulcro7025); devolver um
 empréstimo lança [`FULCRO7026`](./errors/FULCRO7xxx.md#fulcro7026).
 
-Um dono expõe o seu `length` e mais nada. Os seus valores são alcançados por um
-empréstimo.
+Um dono expõe o seu `length`, e um `[Symbol.dispose]` para o `using`, e mais
+nada. Os seus valores são alcançados por um empréstimo.
 
 ### `borrow(owner)` e `borrowMutable(owner)`
 
@@ -690,6 +711,7 @@ partir dele, não importa como foram feitos.
 | `borrow`        | o `borrowMutable` anterior, se houver        |
 | `borrowMutable` | todo empréstimo anterior                     |
 | `move`          | todo empréstimo, e o dono de onde foi tomado |
+| descartá-lo     | todo empréstimo, e o próprio dono            |
 
 Um empréstimo dura até o seu último uso, não até o fim de um escopo. Tomar um
 empréstimo conflitante é sempre permitido; o que é recusado é usar o anterior
@@ -708,6 +730,39 @@ borrow(queue); // lança FULCRO7023: queue foi movido
 O novo dono possui exatamente os mesmos valores; nada é copiado. O dono antigo
 recusa tudo o que lhe pedem dali em diante, o seu `length` inclusive, com
 [`FULCRO7023`](./errors/FULCRO7xxx.md#fulcro7023).
+
+### Encerrando a posse com `using`
+
+Um dono declarado com `using` termina com o seu escopo, termine o escopo como
+terminar: todo empréstimo tomado dele termina, e o dono recusa tudo o que lhe
+pedem depois com [`FULCRO7030`](./errors/FULCRO7xxx.md#fulcro7030).
+
+```ts
+{
+	using frame = stack.enter();
+	using particles = own(() => allocate(Particle, 10_000, frame));
+
+	borrowMutable(particles).set(0, Particle.from({ x: 1, y: 2 }));
+} // os empréstimos de particles terminam, e depois o quadro libera a memória deles
+```
+
+Descartar encerra a posse, não a memória: os bytes pertencem ao alocador, e
+voltam quando o alocador os libera — aqui, quando o quadro declarado antes do
+dono é deixado logo depois dele, já que o `using` encerra primeiro a última
+declaração.
+
+Um dono de onde se moveu não é mais o dono, então o fim do seu escopo não tem o
+que encerrar, e o dono que o `move` devolveu mantém os seus empréstimos:
+
+```ts
+const handOver = (): Owned<number> => {
+	using scores = own(() => createManagedStorage(100, 0));
+
+	return move(scores); // sair descarta scores, o que não faz nada
+};
+```
+
+Descartar duas vezes é descartar uma.
 
 ### Recusado na compilação
 
@@ -758,8 +813,9 @@ um empréstimo faz uma comparação para saber se o empréstimo terminou, e ent�
 lê ou escreve a storage uma vez — através de qualquer número de subviews
 aninhadas. Sobre uma storage de `allocate`, a storage ainda pergunta uma vez se
 a sua memória continua viva, como sempre faz; o empréstimo não acrescenta uma
-segunda pergunta. Encerrar empréstimos custa o mesmo, não importa quantos foram
-tomados.
+segunda pergunta. Encerrar empréstimos — por um empréstimo, um move ou o fim de
+um escopo `using` — custa o mesmo, não importa quantos foram tomados, e não lê
+nada.
 
 ### Segurança progressiva
 
@@ -822,3 +878,4 @@ visível no tipo que você tem nas mãos.
 | [`FULCRO7027`](./errors/FULCRO7xxx.md#fulcro7027) | Na compilação: uma variável usada depois de ser movida          |
 | [`FULCRO7028`](./errors/FULCRO7xxx.md#fulcro7028) | Na compilação: um empréstimo usado depois de um conflitante     |
 | [`FULCRO7029`](./errors/FULCRO7xxx.md#fulcro7029) | Na compilação: um empréstimo usado depois que o dono foi movido |
+| [`FULCRO7030`](./errors/FULCRO7xxx.md#fulcro7030) | Um dono usado depois que o seu escopo `using` o descartou       |

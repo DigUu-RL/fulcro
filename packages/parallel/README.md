@@ -95,6 +95,15 @@ the **first run** rather than at construction, so a pool nobody uses costs
 nothing — but one that has run and not been closed will hang your process on
 exit.
 
+Or let the scope close it, however the scope is left:
+
+```ts
+await using pool = createWorkerPool<Row, Parsed>({
+	module,
+	export: 'parseRow',
+});
+```
+
 ## What crossing a thread costs
 
 Every value is **structure-cloned** in both directions: a real copy,
