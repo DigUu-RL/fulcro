@@ -2,8 +2,8 @@
 
 🇧🇷 Português (Brasil): [Leia esta documentação em português](../pt-BR/errors/FULCRO3xxx.md)
 
-The errors of the [worker pool](../parallelism.md). Back to
-[all codes](../errors.md).
+The errors of the [worker pool](../parallelism.md) and of
+[structured tasks](../tasks.md). Back to [all codes](../errors.md).
 
 A worker is a separate thread, and only text crosses back from it. Where an
 error started in a worker, the pool creates it again on your side: the
@@ -183,3 +183,62 @@ the two. A closed pool stays closed and starts no thread for the run.
 Create a new pool if there is more work, or close the pool only once nothing
 else will be handed to it — at shutdown, or at the end of an `await using`
 scope.
+
+## FULCRO3011
+
+```text
+Error: FULCRO3011: The task scope has ended, and an ended scope starts nothing.
+```
+
+Details:
+
+```text
+{ operation: string }
+```
+
+`spawn()` was called on a [task scope](../tasks.md) after `join()` had finished
+or after the scope was disposed. A scope that has ended waits for nothing, so a
+task started in it would outlive it — which is the one thing a scope exists to
+prevent.
+
+Spawn every task before the scope ends: from the code that owns the scope, or
+from a task still running in it — `join` waits for those too. Create a new
+scope for work that comes later.
+
+## FULCRO3012
+
+```text
+RangeError: FULCRO3012: A task scope needs a positive integer concurrency, or Infinity, and was given 0.
+```
+
+Details:
+
+```text
+{ operation: string, concurrency: number }
+```
+
+`createTaskScope({ concurrency })` was given a limit that is not a whole number
+of at least one: zero, a negative number, a fraction or `NaN`. `concurrency`
+is the value given.
+
+Pass how many tasks may run at once, or leave `concurrency` out for no limit.
+
+## FULCRO3013
+
+```text
+Error: FULCRO3013: The task rejected with undefined, which cannot be told apart from no failure.
+```
+
+Details:
+
+```text
+{ operation: string, thrown: null | undefined }
+```
+
+The work handed to `spawn()` in a [task scope](../tasks.md) rejected, or
+threw, `null` or `undefined`. A failure that is nothing cannot be held as one,
+and as the reason for calling the other tasks off it would become an unrelated
+`AbortError`. This error stands in for it, the same object everywhere the
+failure is reported. `thrown` is the value, also kept as `cause`.
+
+Reject with an `Error` that says what went wrong.

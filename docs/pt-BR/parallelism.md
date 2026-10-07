@@ -3,8 +3,7 @@
 🇺🇸 English: [Read this documentation in English](../parallelism.md)
 
 Um pool de workers para trabalho que **não está esperando por nada** — fazer
-parsing, calcular hashes, comprimir, transformar. Roda no browser e no Node. Sem
-dependências.
+parsing, calcular hashes, comprimir, transformar. Roda no browser e no Node.
 
 ```sh
 npm install @fulcro/parallel
@@ -18,10 +17,11 @@ import { createWorkerPool } from '@fulcro/parallel';
 
 Provavelmente não, e vale resolver isso antes de continuar lendo.
 
-| O seu trabalho                                | Use                                                        |
-| --------------------------------------------- | ---------------------------------------------------------- |
-| Esperando uma rede, um disco, um banco        | [`selectAwait`](../concurrency.md) — concorrência limitada |
-| Gastando CPU: parsing, hashing, redimensionar | Este                                                       |
+| O seu trabalho                                 | Use                                                        |
+| ---------------------------------------------- | ---------------------------------------------------------- |
+| Esperando uma rede, um disco, um banco         | [`selectAwait`](../concurrency.md) — concorrência limitada |
+| Vários trabalhos que esperam, como uma unidade | [Tasks estruturadas](./tasks.md)                           |
+| Gastando CPU: parsing, hashing, redimensionar  | Este                                                       |
 
 Threads **não fazem nada** por um trabalho que espera — nunca houve tempo ocioso
 para preencher, e você acrescentou o custo de copiar dados entre realms a algo
@@ -222,6 +222,9 @@ O mesmo vale nos dois lugares em que nada está esperando pelos workers:
 - **Um `stream` cujo loop está ocupado** com o último resultado tem os seus
   workers parados no cancelamento, e não no próximo pedido — que pode nunca
   vir. A rejeição chega a você nesse próximo pedido.
+
+Uma [task](./tasks.md) controla um pool do mesmo jeito, com `token.signal`,
+então cancelar a task também para os workers.
 
 ## Falhas
 

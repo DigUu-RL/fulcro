@@ -2,8 +2,8 @@
 
 🇺🇸 English: [Read this documentation in English](../../errors/FULCRO3xxx.md)
 
-Os erros do [pool de workers](../parallelism.md). Voltar para
-[todos os códigos](../errors.md).
+Os erros do [pool de workers](../parallelism.md) e das
+[tasks estruturadas](../tasks.md). Voltar para [todos os códigos](../errors.md).
 
 Um worker é uma thread separada, e só texto volta dela. Quando um erro começou
 num worker, o pool o cria de novo do seu lado: os erros da própria biblioteca
@@ -185,3 +185,63 @@ nenhuma thread para a execução.
 
 Crie um pool novo se houver mais trabalho, ou feche o pool só quando nada mais
 for entregue a ele — no encerramento, ou no fim de um escopo `await using`.
+
+## FULCRO3011
+
+```text
+Error: FULCRO3011: The task scope has ended, and an ended scope starts nothing.
+```
+
+Detalhes:
+
+```text
+{ operation: string }
+```
+
+`spawn()` foi chamado num [escopo de tasks](../tasks.md) depois que `join()`
+terminou ou depois que o escopo foi descartado. Um escopo que terminou não
+espera mais nada, então uma task iniciada nele sobreviveria a ele — que é
+justamente o que um escopo existe para impedir.
+
+Crie todas as tasks antes de o escopo terminar: no código que é dono do escopo,
+ou numa task que ainda esteja rodando nele — `join` espera essas também. Crie um
+escopo novo para trabalho que vem depois.
+
+## FULCRO3012
+
+```text
+RangeError: FULCRO3012: A task scope needs a positive integer concurrency, or Infinity, and was given 0.
+```
+
+Detalhes:
+
+```text
+{ operation: string, concurrency: number }
+```
+
+`createTaskScope({ concurrency })` recebeu um limite que não é um número inteiro
+de pelo menos um: zero, um número negativo, uma fração ou `NaN`. `concurrency`
+é o valor recebido.
+
+Passe quantas tasks podem rodar ao mesmo tempo, ou omita `concurrency` para não
+ter limite.
+
+## FULCRO3013
+
+```text
+Error: FULCRO3013: The task rejected with undefined, which cannot be told apart from no failure.
+```
+
+Detalhes:
+
+```text
+{ operation: string, thrown: null | undefined }
+```
+
+O trabalho entregue a `spawn()` num [escopo de tasks](../tasks.md) rejeitou — ou
+lançou — `null` ou `undefined`. Uma falha que não é nada não pode ser guardada
+como falha, e como motivo para cancelar as outras tasks viraria um `AbortError`
+sem relação com ela. Este erro fica no lugar dela, o mesmo objeto onde quer que
+a falha seja informada. `thrown` é o valor, guardado também como `cause`.
+
+Rejeite com um `Error` que diga o que deu errado.

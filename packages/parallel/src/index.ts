@@ -12,11 +12,19 @@ import { spawnWorker } from '@/backend/node.js';
 import { createPool } from '@/pool/index.js';
 
 export type {
+	CancellationSource,
+	CancellationToken,
 	PoolOptions,
 	RunOptions,
+	Task,
+	TaskScope,
+	TaskScopeOptions,
 	TaskSource,
+	TaskWork,
 	WorkerPool,
 } from '@/@types/index.js';
+export { createCancellationSource } from '@/cancellation/index.js';
+export { createTaskScope } from '@/task/index.js';
 
 /** The script the workers run, resolved relative to this module. */
 const WORKER_URL = new URL('./worker/entry.js', import.meta.url);

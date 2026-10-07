@@ -681,6 +681,41 @@ describe('@fulcro/errors', () => {
 	});
 });
 
+describe('@fulcro/parallel', () => {
+	it('should expose the pool, the task scope and the cancellation, and nothing they are built from', async () => {
+		const entry: Record<string, unknown> = await import('@fulcro/parallel');
+
+		expect(Object.keys(entry).sort()).toEqual([
+			'createCancellationSource',
+			'createTaskScope',
+			'createWorkerPool',
+		]);
+	});
+
+	it('should run a scope of tasks, and read a failure through its Result', async () => {
+		const { createTaskScope } = await import('@fulcro/parallel');
+		const scope = createTaskScope({ concurrency: 2 });
+
+		const doubled = scope.spawn(async () => 21 * 2);
+		const broken = scope.spawn(() => Promise.reject(new Error('broken')));
+
+		await expect(scope.join()).rejects.toThrow('broken');
+		expect(await doubled).toBe(42);
+		expect((await broken.settled).isFailure()).toBe(true);
+	});
+
+	it('should hand a parent cancellation down to a child as a platform signal', async () => {
+		const { createCancellationSource } = await import('@fulcro/parallel');
+		const parent = createCancellationSource();
+		const child = createCancellationSource(parent.token);
+
+		parent.cancel('stop');
+
+		expect(child.token.signal).toBeInstanceOf(AbortSignal);
+		expect(child.token.signal.reason).toBe('stop');
+	});
+});
+
 describe('@fulcro/functions', () => {
 	it('should expose the helpers and the constructors', async () => {
 		const entry = await import('@fulcro/functions');
