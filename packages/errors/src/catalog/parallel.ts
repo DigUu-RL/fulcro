@@ -69,4 +69,21 @@ export const parallelCatalog = {
 		message: (_details: { operation: string }) =>
 			'The pool was closed, and a closed pool runs nothing.',
 	},
+	FULCRO3011: {
+		kind: Error,
+		message: (_details: { operation: string }) =>
+			'The task scope has ended, and an ended scope starts nothing.',
+	},
+	FULCRO3012: {
+		kind: RangeError,
+		message: ({ concurrency }: { operation: string; concurrency: number }) =>
+			`A task scope needs a positive integer concurrency, or Infinity, and was given ${concurrency}.`,
+	},
+	FULCRO3013: {
+		kind: Error,
+		message: ({ thrown }: { operation: string; thrown: null | undefined }) =>
+			`The task rejected with ${String(thrown)}, which cannot be told apart from no failure.`,
+		cause: ({ thrown }: { operation: string; thrown: null | undefined }) =>
+			thrown,
+	},
 } as const satisfies RangeCatalog<'3'>;

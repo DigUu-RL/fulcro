@@ -3,7 +3,7 @@
 🇧🇷 Português (Brasil): [Leia esta documentação em português](./pt-BR/parallelism.md)
 
 A worker pool for work that is **not waiting on anything** — parsing, hashing,
-compressing, transforming. Runs on the browser and on Node. No dependencies.
+compressing, transforming. Runs on the browser and on Node.
 
 ```sh
 npm install @fulcro/parallel
@@ -20,6 +20,7 @@ Probably not, and that is worth settling before reading further.
 | Your work                                | Reach for                                               |
 | ---------------------------------------- | ------------------------------------------------------- |
 | Waiting on a network, a disk, a database | [`selectAwait`](./concurrency.md) — bounded concurrency |
+| Several waiting jobs as one unit         | [Structured tasks](./tasks.md)                          |
 | Burning CPU: parsing, hashing, resizing  | This                                                    |
 
 Threads do **nothing** for work that waits — there was never any idle time to
@@ -218,6 +219,9 @@ The same holds in the two places where nothing is waiting on the workers:
 - **A `stream` whose loop is busy** with the last result has its workers
   stopped at the abort, not on the next pull — which may never come. The
   rejection reaches you on that next pull.
+
+A [task](./tasks.md) drives a pool the same way, with `token.signal`, so
+calling the task off stops the workers too.
 
 ## Failures
 

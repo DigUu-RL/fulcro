@@ -35,6 +35,7 @@ collection.
 | [Sequences](./sequences.md)                  | Querying arrays, sets, maps and generators; validating by type                                                              | `@fulcro/collections`       |
 | [Async sequences](./async-sequences.md)      | The same, over data that arrives over time                                                                                  | `@fulcro/collections/async` |
 | [Bounded concurrency](./concurrency.md)      | Running several elements at once, for work that waits                                                                       | `@fulcro/collections/async` |
+| [Structured tasks](./tasks.md)               | Tasks that start and end together, with cancellation, for work that waits                                                   | `@fulcro/parallel`          |
 | [Parallelism with workers](./parallelism.md) | CPU-bound work across threads, on browser and Node                                                                          | `@fulcro/parallel`          |
 | [Reflection](./reflect.md)                   | `nameOf`, `typeOf`, `defaultOf`, `is`, `as`, `constantOf`, and the transformer                                              | `@fulcro/reflect`           |
 | [Control flow as values](./functions.md)     | `switchFor`, `tryCatch`, `Result` and `Option`                                                                              | `@fulcro/functions`         |
@@ -49,6 +50,7 @@ collection.
 | An array or a `Set` to query                       | [Sequences](./sequences.md)                           |
 | Rows arriving from a cursor, a stream, an API      | [Async sequences](./async-sequences.md)               |
 | A hundred requests to make, and they are slow      | [Bounded concurrency](./concurrency.md)               |
+| Several requests that succeed or fail as one       | [Structured tasks](./tasks.md)                        |
 | A hundred files to parse, and the CPU is the limit | [Parallelism](./parallelism.md)                       |
 | **A payload you cannot trust, and a type for it**  | [`as`](./reflect.md)                                  |
 | A payload you would rather branch on than throw    | [`is`](./reflect.md)                                  |

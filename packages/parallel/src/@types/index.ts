@@ -1,3 +1,5 @@
+import type { Result } from '@fulcro/functions';
+
 /**
  * Where the work lives.
  *
@@ -188,6 +190,241 @@ export interface WorkerPool<T, R> extends AsyncDisposable {
 	 * the scope ends; closing a pool already closed does nothing.
 	 *
 	 * @returns A promise settling when every worker is gone.
+	 */
+	[Symbol.asyncDispose](): Promise<void>;
+}
+
+/**
+ * The side of a cancellation that work reads: whether it has been called off,
+ * and why.
+ *
+ * Work receives a token and never the source behind it, so the code that
+ * started something is the only code that can stop it.
+ *
+ * The token carries the platform's `AbortSignal` rather than replacing it.
+ * `fetch`, timers, streams and a {@link WorkerPool} run all accept a signal,
+ * and `token.signal` hands them this cancellation with nothing to adapt.
+ */
+export interface CancellationToken {
+	/** Whether the work has been called off. Once true, it stays true. */
+	readonly isCancelled: boolean;
+
+	/**
+	 * Why the work was called off: the value given to `cancel`, or an
+	 * `AbortError` `DOMException` when it was given none. `undefined` while the
+	 * work is still wanted.
+	 */
+	readonly reason: unknown;
+
+	/** The same cancellation, as a signal the platform's own APIs accept. */
+	readonly signal: AbortSignal;
+
+	/**
+	 * Throws the reason if the work has been called off, and does nothing
+	 * otherwise.
+	 *
+	 * The check a loop makes between steps, so that work which never awaits
+	 * anything still stops at the next step rather than at the end.
+	 *
+	 * @throws {unknown} The reason, once the work has been called off.
+	 */
+	readonly throwIfCancelled: () => void;
+
+	/**
+	 * Registers what to do when the work is called off.
+	 *
+	 * Called at most once. When the work has already been called off it is
+	 * called at once, before this returns, so registering late never misses
+	 * the cancellation it came for.
+	 *
+	 * Release what the handler holds by disposing what this returns — with
+	 * `using`, or by hand. A long-lived token otherwise keeps every handler
+	 * ever registered on it, along with whatever each one closed over.
+	 *
+	 * @param handler Called with the reason.
+	 * @returns A registration that removes the handler when disposed.
+	 */
+	readonly onCancelled: (handler: (reason: unknown) => void) => Disposable;
+}
+
+/**
+ * The side of a cancellation that calls the work off.
+ *
+ * Kept by whoever started the work; the {@link CancellationToken} is what is
+ * handed on. A source made under a parent token is cancelled with it, and
+ * disposing the source releases its hold on that parent:
+ *
+ * ```ts
+ * using child = createCancellationSource(parent);
+ * await download(url, child.token);
+ * ```
+ */
+export interface CancellationSource extends Disposable {
+	/** The token to hand to the work. */
+	readonly token: CancellationToken;
+
+	/**
+	 * Calls the work off.
+	 *
+	 * Only the first call counts; a later one, with whatever reason, does
+	 * nothing. Handlers registered on the token run before this returns.
+	 *
+	 * @param reason Why. Without one, the token reports an `AbortError`
+	 * `DOMException`, as an aborted signal does.
+	 */
+	readonly cancel: (reason?: unknown) => void;
+
+	/**
+	 * Stops following the parent token. Called by `using` when the scope ends.
+	 *
+	 * The source is not cancelled by this, and the parent keeps nothing of it
+	 * afterwards: a parent that lives for the whole process would otherwise
+	 * hold every child ever made under it.
+	 */
+	[Symbol.dispose](): void;
+}
+
+/**
+ * Work handed to a {@link TaskScope}.
+ *
+ * Usually waiting rather than computing — a request, a query, a file. A task
+ * runs on the calling thread and never on a worker; CPU-bound work belongs to a
+ * {@link WorkerPool}, which a task can drive with `token.signal`.
+ *
+ * @template T Type the work produces.
+ * @param token Says when the work has been called off. Pass `token.signal` to
+ * whatever accepts one.
+ * @returns What the work produces, or a promise of it.
+ */
+export type TaskWork<T> = (token: CancellationToken) => T | PromiseLike<T>;
+
+/**
+ * One piece of work running inside a {@link TaskScope}.
+ *
+ * Awaited directly, a task gives its value or throws its failure. `settled`
+ * gives the same outcome as a `Result`, for a caller that wants to read a
+ * failure as a value.
+ *
+ * A task nobody awaits cannot end the process: its failure reaches the scope,
+ * which reports it from `join`, or when the scope is disposed.
+ *
+ * @template T Type the work produces.
+ */
+export interface Task<T> extends PromiseLike<T> {
+	/**
+	 * The outcome, which never rejects: a success with the value, or a failure
+	 * with what the work threw — or with the reason, when the task was called
+	 * off.
+	 */
+	readonly settled: Promise<Result<T, unknown>>;
+
+	/** Says when this task has been called off, by itself or by its scope. */
+	readonly token: CancellationToken;
+
+	/**
+	 * Calls this task off, and only this task.
+	 *
+	 * A task still waiting for its turn never starts. A running one is told
+	 * through its token, and its rejection afterwards counts as a cancellation,
+	 * not as a failure of the scope — its siblings carry on.
+	 *
+	 * "Afterwards" is when the scope reads the rejection, a microtask after the
+	 * work rejected: a call landing in between turns a failure into a
+	 * cancellation. Nothing can tell the two orders apart, because a promise
+	 * says that it rejected and never when.
+	 *
+	 * @param reason Why. Without one, an `AbortError` `DOMException`.
+	 */
+	readonly cancel: (reason?: unknown) => void;
+}
+
+/** How a {@link TaskScope} is built. */
+export interface TaskScopeOptions {
+	/**
+	 * How many tasks may run at once.
+	 *
+	 * A task spawned beyond the limit waits, unstarted, for one to finish, so
+	 * ten thousand requests can be spawned at once and only this many are ever
+	 * in flight. A waiting task has started nothing: it holds only what it
+	 * needs to start, or to be called off. Defaults to no limit.
+	 *
+	 * The limit speeds up nothing CPU-bound: every task shares the one thread,
+	 * and spreading that work across cores is what a {@link WorkerPool} does.
+	 */
+	readonly concurrency?: number;
+
+	/**
+	 * A cancellation the scope follows: when it is called off, so is every
+	 * task in the scope.
+	 */
+	readonly token?: CancellationToken;
+}
+
+/**
+ * Tasks that start together and end together.
+ *
+ * No task outlives its scope. Declared with `await using`, the scope waits for
+ * every task when it ends, calling off the ones still running:
+ *
+ * ```ts
+ * await using scope = createTaskScope({ concurrency: 8 });
+ *
+ * const pages = urls.map((url) =>
+ * 	scope.spawn((token) => fetch(url, { signal: token.signal })),
+ * );
+ *
+ * await scope.join();
+ * ```
+ *
+ * The first task to fail calls every other task off: the running ones are
+ * told through their tokens, and the waiting ones never start. `join` then
+ * rejects with that failure. A task called off on its own, with
+ * `task.cancel()`, is not a failure and affects nothing else.
+ */
+export interface TaskScope extends AsyncDisposable {
+	/** Says when the scope has been called off; every task's token follows it. */
+	readonly token: CancellationToken;
+
+	/**
+	 * Starts a task in the scope, or queues it when the scope is at its
+	 * concurrency limit.
+	 *
+	 * The work starts on a later microtask, never during this call. In a scope
+	 * already called off it never starts, and the task rejects with the reason.
+	 *
+	 * @template T Type the work produces.
+	 * @param work The work, handed its task's token.
+	 * @returns The task.
+	 * @throws {Error} FULCRO3011 once the scope has been joined or disposed.
+	 */
+	readonly spawn: <T>(work: TaskWork<T>) => Task<T>;
+
+	/**
+	 * Waits for every task, including those spawned while waiting, then closes
+	 * the scope to new ones and lets go of the parent token, if it had one.
+	 *
+	 * @returns A promise settling once every task has. It rejects with the
+	 * first failure, or with the reason when the scope was called off.
+	 */
+	readonly join: () => Promise<void>;
+
+	/**
+	 * Calls every task in the scope off.
+	 *
+	 * Only the first call counts.
+	 *
+	 * @param reason Why. Without one, an `AbortError` `DOMException`.
+	 */
+	readonly cancel: (reason?: unknown) => void;
+
+	/**
+	 * Calls off what is still running, waits for every task and closes the
+	 * scope. Called by `await using` when the scope ends.
+	 *
+	 * A failure `join` has not already reported is thrown here, so a task that
+	 * failed is never silent because nobody joined.
+	 *
+	 * @returns A promise settling once every task has.
 	 */
 	[Symbol.asyncDispose](): Promise<void>;
 }

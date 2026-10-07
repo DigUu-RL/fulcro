@@ -1,7 +1,9 @@
 # @fulcro/parallel
 
-A worker pool for work that is **not waiting on anything** — parsing, hashing,
-compressing, transforming. Runs on the browser and on Node. No dependencies.
+Two tools, kept apart on purpose. A worker pool for work that is **not waiting
+on anything** — parsing, hashing, compressing, transforming. And structured
+tasks, with cancellation, for work that **waits**. Runs on the browser and on
+Node.
 
 ```sh
 npm install @fulcro/parallel
@@ -9,6 +11,7 @@ npm install @fulcro/parallel
 
 ```ts
 import { createWorkerPool } from '@fulcro/parallel';
+import { createCancellationSource, createTaskScope } from '@fulcro/parallel';
 ```
 
 ## Is this the tool you want?
@@ -18,6 +21,7 @@ Probably not, and that is worth settling before reading further.
 | Your work                                | Reach for                                               |
 | ---------------------------------------- | ------------------------------------------------------- |
 | Waiting on a network, a disk, a database | [`selectAwait`](../collections/README.md) — concurrency |
+| Several waiting jobs as one unit         | [Structured tasks](#structured-tasks)                   |
 | Burning CPU: parsing, hashing, resizing  | This                                                    |
 
 Threads do **nothing** for work that waits — there was never any idle time to
@@ -182,6 +186,35 @@ starts a fresh set. A worker that dies between runs is replaced the same way.
 A module that will not load, or an export that is not a function, rejects on the
 first run rather than hanging.
 
+## Structured tasks
+
+```ts
+await using scope = createTaskScope({ concurrency: 8 });
+
+for (const url of urls) {
+	scope.spawn((token) => fetch(url, { signal: token.signal }));
+}
+
+await scope.join();
+```
+
+No task outlives its scope: `await using` waits for every task when the block
+ends, calling off the ones still running. With `concurrency`, a task beyond the
+limit waits without starting anything. The first task to fail calls
+the others off and `join` rejects with it; `task.cancel()` calls one task off
+without failing the rest. A failure nobody joined is thrown when the scope
+ends, never lost.
+
+`createCancellationSource(parent?)` is the cancellation behind it: the source
+calls work off, the token tells the work, and `token.signal` is an ordinary
+`AbortSignal` for `fetch`, timers and `pool.map`. Tasks run on the calling
+thread, so they overlap waiting and never computing — that is what the pool is
+for.
+
+The types a signature needs — `TaskScope`, `TaskScopeOptions`, `Task<T>`,
+`TaskWork<T>`, `CancellationSource`, `CancellationToken` — are exported for
+annotating your own code. See [docs/tasks.md](../../docs/tasks.md).
+
 ## Browser and Node
 
 One implementation, two thin adapters. Almost everything this needs is a web
@@ -195,5 +228,6 @@ script portably, and it does not exist in CommonJS.
 
 ---
 
-**Full guide:** [docs/parallelism.md](../../docs/parallelism.md) — scenarios,
-worked examples and the failure modes worth knowing before you meet them.
+**Full guides:** [docs/parallelism.md](../../docs/parallelism.md) and
+[docs/tasks.md](../../docs/tasks.md) — scenarios, worked examples and the
+failure modes worth knowing before you meet them.
