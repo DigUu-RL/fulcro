@@ -1,6 +1,6 @@
 {
 	"name": "@fulcro/parallel",
-	"version": "1.2.0",
+	"version": "1.3.0",
 	"description": "Structured tasks with cancellation for work that waits, and a worker pool for CPU-bound work, on the browser and on Node.",
 	"keywords": [
 		"worker",
@@ -31,7 +31,7 @@
 	],
 	"sideEffects": false,
 	"dependencies": {
-		"@fulcro/errors": "^2.1.0",
+		"@fulcro/errors": "^2.2.0",
 		"@fulcro/functions": "^2.1.0"
 	},
 	"engines": {
