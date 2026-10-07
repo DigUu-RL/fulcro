@@ -1,7 +1,8 @@
 import process from 'node:process';
 
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, expectTypeOf, it } from 'vitest';
 
+import { isFulcroError } from '@fulcro/errors';
 import { createWorkerPool, type WorkerPool } from '@fulcro/parallel';
 
 import { createPool } from '@/pool/index.js';
@@ -314,6 +315,31 @@ describe('the codes a failure carries', () => {
 		);
 	});
 
+	it('should carry the details of FULCRO3001 across the worker boundary', async () => {
+		const failure = await failureOf(
+			poolFor<number, number>('notAFunction').map([1]),
+		);
+
+		expect(isFulcroError(failure, 'FULCRO3001')).toBe(true);
+		expect(failure).toMatchObject({
+			details: {
+				operation: 'initialize',
+				module: expect.stringMatching(/\S/),
+				name: 'notAFunction',
+			},
+		});
+	});
+
+	it("should give the task's own failure details naming its text", async () => {
+		const failure = await failureOf(
+			poolFor<number, number>('explode').map([1]),
+		);
+
+		expect(failure).toMatchObject({
+			details: { operation: 'run', reason: 'the task refused' },
+		});
+	});
+
 	it('should code a module that cannot be loaded FULCRO3004', async () => {
 		const pool = createWorkerPool<number, number>({
 			module: new URL('./fixtures/missing.mjs', import.meta.url),
@@ -373,6 +399,103 @@ describe('lifecycle', () => {
 		await pool.close();
 
 		await expect(pool.close()).resolves.toBeUndefined();
+	});
+
+	it('should stop its threads when an await using scope ends', async () => {
+		// Not registered for closing: a pool the scope failed to close would keep
+		// its threads, and the run would hang rather than pass.
+		let doubled: number[] = [];
+
+		{
+			await using pool = createWorkerPool<number, number>({
+				module: WORK,
+				export: 'double',
+				workers: 2,
+			});
+
+			doubled = await pool.map([1, 2, 3]);
+		}
+
+		expect(doubled).toEqual([2, 4, 6]);
+	});
+});
+
+describe('await using', () => {
+	it('should terminate every worker when the scope ends', async () => {
+		const fake = createFakeWorkers();
+		let work: Promise<number[]> | undefined;
+
+		{
+			await using pool = drivenPool<number, number>(fake, 3);
+
+			work = pool.map([1, 2, 3]);
+
+			await until(() => fake.inFlight() === 3, 'every worker to be busy');
+
+			fake.completeAll();
+
+			expect(await work).toEqual([1, 2, 3]);
+		}
+
+		expect(fake.spawned()).toBe(3);
+		expect(fake.terminated()).toBe(3);
+	});
+
+	it('should terminate every worker when the scope is left by a throw', async () => {
+		const fake = createFakeWorkers();
+		const failure = new RangeError('left early');
+
+		const leave = async (): Promise<void> => {
+			await using pool = drivenPool<number, number>(fake, 2);
+
+			const work = pool.map([1, 2]);
+
+			await until(() => fake.inFlight() === 2, 'both workers to be busy');
+
+			fake.completeAll();
+			await work;
+
+			throw failure;
+		};
+
+		await expect(leave()).rejects.toBe(failure);
+
+		expect(fake.terminated()).toBe(2);
+	});
+
+	it('should start nothing and stop nothing for a pool never run', async () => {
+		const fake = createFakeWorkers();
+
+		{
+			await using pool = drivenPool<number, number>(fake, 2);
+
+			expect(pool).toBeDefined();
+		}
+
+		expect(fake.spawned()).toBe(0);
+		expect(fake.terminated()).toBe(0);
+	});
+
+	it('should do nothing more for a pool already closed inside the scope', async () => {
+		const fake = createFakeWorkers();
+
+		{
+			await using pool = drivenPool<number, number>(fake, 2);
+
+			const work = pool.map([1]);
+
+			await until(() => fake.inFlight() === 1, 'the element to be handed out');
+
+			fake.completeAll();
+			await work;
+			await pool.close();
+		}
+
+		expect(fake.terminated()).toBe(2);
+	});
+
+	it('should be asynchronously disposable by type', () => {
+		expectTypeOf<WorkerPool<number, number>>().toExtend<AsyncDisposable>();
 	});
 });
 

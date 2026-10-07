@@ -1,6 +1,6 @@
 {
 	"name": "@fulcro/transform-core",
-	"version": "1.2.0",
+	"version": "1.3.0",
 	"description": "Shared machinery behind the Fulcro compile time transformers. Installed for you; not meant to be depended on directly.",
 	"keywords": [
 		"typescript",
@@ -29,12 +29,12 @@
 	],
 	"sideEffects": false,
 	"scripts": {
-		"build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
+		"build": "tsc -p tsconfig.build.json && node ../../tools/build/rewrite-aliases.mjs",
 		"typecheck": "tsc --noEmit -p tsconfig.json",
 		"prepublishOnly": "npm run build"
 	},
 	"dependencies": {
-		"@fulcro/errors": "^1.1.0",
+		"@fulcro/errors": "^2.0.0",
 		"unplugin": "^3.3.0"
 	},
 	"peerDependencies": {

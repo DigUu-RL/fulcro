@@ -65,7 +65,7 @@ export const pathsOf = <T>(
 	paths?: readonly TypePath[],
 ): readonly TypePath[] => {
 	if (paths === undefined) {
-		throw createError('FULCRO4005');
+		throw createError('FULCRO4005', { operation: 'pathsOf' });
 	}
 
 	return paths;

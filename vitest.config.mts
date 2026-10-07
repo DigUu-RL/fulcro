@@ -1,6 +1,7 @@
 import { defineConfig, type ViteUserConfig } from 'vitest/config';
 
 import { vite as collectionsTransformer } from '@fulcro/collections/unplugin';
+import { vite as memoryTransformer } from '@fulcro/memory/unplugin';
 import { vite as reflectTransformer } from '@fulcro/reflect/unplugin';
 
 /**
@@ -35,10 +36,14 @@ const project = (name: string): ViteUserConfig => ({
 	// checker. Without these the suites would exercise only the runtime
 	// fallbacks: `defaultOf` would throw, and so would `ofType<T>()`.
 	//
-	// Both are applied to every project, and they do not interfere: each claims
-	// only the calls whose declarations it can trace back to its own package, so
-	// a project using neither is left untouched by both.
-	plugins: [reflectTransformer(), collectionsTransformer()],
+	// All three are applied to every project, and they do not interfere: each
+	// claims only the calls whose declarations it can trace back to its own
+	// package, so a project using none is left untouched by all.
+	plugins: [
+		reflectTransformer(),
+		collectionsTransformer(),
+		memoryTransformer(),
+	],
 
 	// The `@/*` alias is declared once, in the tsconfig of each package, and
 	// read back from there rather than repeated as a Vite alias — so a path the
@@ -49,6 +54,7 @@ const project = (name: string): ViteUserConfig => ({
 		name,
 		globals: true,
 		include: ['src/**/*.spec.ts', 'src/**/*.test.ts'],
+		exclude: ['src/**/*.unchecked.spec.ts'],
 
 		// The transformer suites build a whole TypeScript program in `beforeAll`
 		// — the standard library and the built declarations, type-checked — and
@@ -107,6 +113,34 @@ const workerPool = (): ViteUserConfig => {
 };
 
 /**
+ * The suites of `@fulcro/memory` that break its ownership rules on purpose.
+ *
+ * Proving that the runtime refuses a moved owner or an ended borrow takes code
+ * that uses one, and that is exactly what the package's own transformer
+ * refuses to compile: applied here, it would fail the whole file before a
+ * single assertion ran. These suites — `*.unchecked.spec.ts`, and nothing
+ * else — therefore run without it, with the other two still applied, so they
+ * prove what a consumer gets who has not wired the transformer up. Every other
+ * memory suite keeps it, and so goes on proving the legal uses compile.
+ *
+ * @returns The project configuration.
+ */
+const memoryUnchecked = (): ViteUserConfig => {
+	const base: ViteUserConfig = project('memory');
+
+	return {
+		...base,
+		plugins: [reflectTransformer(), collectionsTransformer()],
+		test: {
+			...base.test,
+			name: 'memory-unchecked',
+			include: ['src/**/*.unchecked.spec.ts'],
+			exclude: [],
+		},
+	};
+};
+
+/**
  * The packages as a consumer resolves them, rather than as sources.
  *
  * Rooted at the repository rather than at a package, and — unlike every project
@@ -128,11 +162,11 @@ const entryPoints = (): ViteUserConfig => ({
 });
 
 /**
- * The compile time plugins applied together, as a consumer using both
- * libraries applies them.
+ * The compile time plugins applied together, as a consumer using several of
+ * the libraries applies them.
  *
  * Its own project rather than part of the entry point suite: what it checks is
- * not a published surface but whether two transformers can walk one tree
+ * not a published surface but whether the transformers can walk one tree
  * without treading on each other. It applies them itself, so no plugin is wired
  * in here.
  *
@@ -164,6 +198,23 @@ const lint = (): ViteUserConfig => ({
 		name: 'eslint',
 		globals: true,
 		include: ['tests/eslint/**/*.spec.mts'],
+	},
+});
+
+/**
+ * The repository's own build tools.
+ *
+ * Its own project for the reason the lint rules have one: what it checks is how
+ * the packages are built, not the library. The suites build a small package in
+ * a temporary directory and run the tool over it.
+ *
+ * @returns The project configuration.
+ */
+const build = (): ViteUserConfig => ({
+	test: {
+		name: 'build',
+		globals: true,
+		include: ['tests/build/**/*.spec.mts'],
 	},
 });
 
@@ -211,12 +262,16 @@ export default defineConfig({
 			project('collections'),
 			project('errors'),
 			project('functions'),
+			project('memory'),
+			memoryUnchecked(),
 			workerPool(),
 			project('reflect'),
+			project('transform-core'),
 			project('types'),
 			entryPoints(),
 			transformers(),
 			lint(),
+			build(),
 			hooks(),
 			claude(),
 		],

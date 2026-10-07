@@ -200,7 +200,10 @@ const describeValue = (value: unknown): string => {
  * @returns Never.
  */
 const rejectKind = (name: string, operation: string, value: unknown): never => {
-	throw createError('FULCRO6028', `${name}.${operation}`, typeof value);
+	throw createError('FULCRO6028', {
+		operation: `${name}.${operation}`,
+		received: typeof value,
+	});
 };
 
 /**
@@ -216,7 +219,10 @@ const rejectFraction = (
 	operation: string,
 	value: number,
 ): never => {
-	throw createError('FULCRO6002', `${name}.${operation}`, describeValue(value));
+	throw createError('FULCRO6002', {
+		operation: `${name}.${operation}`,
+		received: describeValue(value),
+	});
 };
 
 /**
@@ -227,7 +233,10 @@ const rejectFraction = (
  * @returns Never.
  */
 const rejectNegativeExponent = (name: string, exponent: unknown): never => {
-	throw createError('FULCRO6005', `${name}.power`, describeValue(exponent));
+	throw createError('FULCRO6005', {
+		operation: `${name}.power`,
+		received: describeValue(exponent),
+	});
 };
 
 /**
@@ -245,12 +254,11 @@ const rejectCount = (
 	width: number,
 	count: unknown,
 ): never => {
-	throw createError(
-		'FULCRO6029',
-		`${name}.${operation}`,
-		width - 1,
-		describeValue(count),
-	);
+	throw createError('FULCRO6029', {
+		operation: `${name}.${operation}`,
+		maximum: width - 1,
+		received: describeValue(count),
+	});
 };
 
 /**
@@ -273,12 +281,15 @@ export const createIntegerType = <T>(
 	name: string,
 ): IntegerType<T> => {
 	if (!INTEGER_WIDTHS.includes(width)) {
-		throw createError(
-			'FULCRO6030',
-			signed ? 'SignedInteger' : 'UnsignedInteger',
-			INTEGER_WIDTHS.join(', '),
-			describeValue(width),
-		);
+		// The family is what was called, so it is the operation as well.
+		const family: string = signed ? 'SignedInteger' : 'UnsignedInteger';
+
+		throw createError('FULCRO6030', {
+			operation: family,
+			family,
+			widths: INTEGER_WIDTHS.join(', '),
+			received: describeValue(width),
+		});
 	}
 
 	const minimum: bigint = signed ? -(1n << BigInt(width - 1)) : 0n;
@@ -324,12 +335,11 @@ const createNumberIntegerType = <T>(
 	 */
 	const accept = (operation: string, value: number): T => {
 		if (value < low || value > high) {
-			throw createError(
-				'FULCRO6031',
-				`${name}.${operation}`,
-				describeValue(value),
+			throw createError('FULCRO6031', {
+				operation: `${name}.${operation}`,
+				received: describeValue(value),
 				range,
-			);
+			});
 		}
 
 		return (value === 0 ? 0 : value) as T;
@@ -355,7 +365,7 @@ const createNumberIntegerType = <T>(
 	 */
 	const requireDivisor = (operation: string, divisor: number): void => {
 		if (divisor === 0) {
-			throw createError('FULCRO6001', `${name}.${operation}`);
+			throw createError('FULCRO6001', { operation: `${name}.${operation}` });
 		}
 	};
 
@@ -389,12 +399,11 @@ const createNumberIntegerType = <T>(
 		from: (value: number | bigint): T => {
 			if (typeof value === 'bigint') {
 				if (value < minimum || value > maximum) {
-					throw createError(
-						'FULCRO6031',
-						`${name}.from`,
-						describeValue(value),
+					throw createError('FULCRO6031', {
+						operation: `${name}.from`,
+						received: describeValue(value),
 						range,
-					);
+					});
 				}
 
 				return Number(value) as T;
@@ -563,12 +572,11 @@ const createBigIntegerType = <T>(
 		reported: number | bigint = value,
 	): T => {
 		if (value < minimum || value > maximum) {
-			throw createError(
-				'FULCRO6031',
-				`${name}.${operation}`,
-				describeValue(reported),
+			throw createError('FULCRO6031', {
+				operation: `${name}.${operation}`,
+				received: describeValue(reported),
 				range,
-			);
+			});
 		}
 
 		return value as T;
@@ -598,7 +606,7 @@ const createBigIntegerType = <T>(
 	 */
 	const requireDivisor = (operation: string, divisor: bigint): void => {
 		if (divisor === 0n) {
-			throw createError('FULCRO6001', `${name}.${operation}`);
+			throw createError('FULCRO6001', { operation: `${name}.${operation}` });
 		}
 	};
 
@@ -685,13 +693,13 @@ const createBigIntegerType = <T>(
 			const magnitude: bigint = value < 0n ? -value : value;
 
 			if (magnitude >= 2n && power >= BigInt(width)) {
-				throw createError(
-					'FULCRO6032',
+				throw createError('FULCRO6032', {
+					operation: `${name}.power`,
 					name,
-					describeValue(value),
-					describeValue(power),
+					base: describeValue(value),
+					exponent: describeValue(power),
 					range,
-				);
+				});
 			}
 
 			return accept('power', value ** power);

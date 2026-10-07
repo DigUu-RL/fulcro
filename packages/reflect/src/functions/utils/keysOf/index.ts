@@ -39,7 +39,7 @@ export const keysOf = <T>(
 	keys?: readonly (string & keyof T)[],
 ): readonly (string & keyof T)[] => {
 	if (keys === undefined) {
-		throw createError('FULCRO4001');
+		throw createError('FULCRO4001', { operation: 'keysOf' });
 	}
 
 	return keys;

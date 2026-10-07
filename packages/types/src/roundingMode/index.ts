@@ -48,10 +48,9 @@ export const requireRoundingMode = (
 		return mode as RoundingMode;
 	}
 
-	throw createError(
-		'FULCRO6007',
+	throw createError('FULCRO6007', {
 		operation,
-		[...ROUNDING_MODES].join(', '),
-		JSON.stringify(mode) ?? String(mode),
-	);
+		modes: [...ROUNDING_MODES].join(', '),
+		received: JSON.stringify(mode) ?? String(mode),
+	});
 };

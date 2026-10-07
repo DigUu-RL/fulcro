@@ -39,13 +39,12 @@ export const requireDigits = (
 		digits < minimum ||
 		digits > MAXIMUM_DIGITS
 	) {
-		throw createError(
-			'FULCRO6022',
-			`Decimal.${operation}`,
+		throw createError('FULCRO6022', {
+			operation: `Decimal.${operation}`,
 			minimum,
-			MAXIMUM_DIGITS,
-			digits,
-		);
+			maximum: MAXIMUM_DIGITS,
+			received: digits,
+		});
 	}
 
 	return digits;

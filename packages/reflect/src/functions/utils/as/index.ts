@@ -64,6 +64,10 @@ export const as = <T>(value: unknown, test?: TypeTest<T>): T => {
 	const where: string | null = test.explain?.(value) ?? null;
 
 	throw where === null
-		? createError('FULCRO4006', named, describe(value))
-		: createError('FULCRO4007', named, where);
+		? createError('FULCRO4006', {
+				operation: 'as',
+				named,
+				received: describe(value),
+			})
+		: createError('FULCRO4007', { operation: 'as', named, where });
 };

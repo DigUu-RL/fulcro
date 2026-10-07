@@ -33,6 +33,7 @@ const PACKAGE_NAMES = [
 	'@fulcro/collections',
 	'@fulcro/errors',
 	'@fulcro/functions',
+	'@fulcro/memory',
 	'@fulcro/parallel',
 	'@fulcro/reflect',
 	'@fulcro/transform-core',
@@ -597,7 +598,7 @@ describe('@fulcro/collections/async', () => {
 });
 
 describe('@fulcro/errors', () => {
-	it('should expose the two functions and nothing of the catalog', async () => {
+	it('should expose its functions and FulcroError, and nothing of the catalog', async () => {
 		const entry = await import('@fulcro/errors');
 
 		// The package is CommonJS; see `@fulcro/types` above for these.
@@ -611,16 +612,46 @@ describe('@fulcro/errors', () => {
 			Object.keys(entry)
 				.filter((key) => !interop.includes(key))
 				.sort(),
-		).toEqual(['createError', 'prefixError']);
+		).toEqual(['FulcroError', 'createError', 'isFulcroError', 'prefixError']);
 	});
 
 	it('should create a coded error through the published entry point', async () => {
-		const { createError } = await import('@fulcro/errors');
-		const error = createError('FULCRO6021', 'Vector3.from', 'x');
+		const { createError, FulcroError, isFulcroError } =
+			await import('@fulcro/errors');
+		const error = createError('FULCRO6021', {
+			operation: 'Vector3.from',
+			field: 'x',
+		});
 
 		expect(error).toBeInstanceOf(TypeError);
+		expect(error).toBeInstanceOf(FulcroError);
 		expect(error.code).toBe('FULCRO6021');
+		expect(error.details).toEqual({ operation: 'Vector3.from', field: 'x' });
 		expect(error.message).toBe("FULCRO6021: Vector3.from: missing field 'x'.");
+		expect(isFulcroError(error, 'FULCRO6021')).toBe(true);
+	});
+
+	it("should recognise an error another package's build threw", async () => {
+		const { FulcroError, isFulcroError } = await import('@fulcro/errors');
+		const { SignedInteger } = await import('@fulcro/types');
+		const Int8 = SignedInteger(8);
+
+		let caught: unknown;
+
+		try {
+			Int8.from(300);
+		} catch (error) {
+			caught = error;
+		}
+
+		expect(caught).toBeInstanceOf(FulcroError);
+		expect(caught).toBeInstanceOf(RangeError);
+		expect(isFulcroError(caught, 'FULCRO6031')).toBe(true);
+		expect((caught as { details: unknown }).details).toEqual({
+			operation: 'SignedInteger<8>.from',
+			received: '300',
+			range: '[-128, 127]',
+		});
 	});
 
 	it("should reach a consumer through another package's CommonJS build", async () => {
@@ -715,6 +746,243 @@ describe('@fulcro/functions', () => {
 	});
 });
 
+describe('@fulcro/memory', () => {
+	it('should expose the storage, allocator and access functions and nothing else', async () => {
+		const entry = await import('@fulcro/memory');
+
+		// `Storage`, `Allocator` and their kin are types and leave nothing at
+		// runtime. A helper of the strategies showing up here — the bump region,
+		// the byte storage — would be a surface nobody agreed.
+		expect(
+			Object.keys(entry)
+				.filter((name) => name !== 'default')
+				.sort(),
+		).toEqual([
+			'allocate',
+			'asReadOnlyView',
+			'asView',
+			'borrow',
+			'borrowMutable',
+			'createArenaAllocator',
+			'createFixedBufferAllocator',
+			'createFixedBufferStorage',
+			'createLinearMemory',
+			'createManagedAllocator',
+			'createManagedStorage',
+			'createPoolAllocator',
+			'createStackAllocator',
+			'move',
+			'nativePointerTo',
+			'own',
+			'pointerTo',
+			'referenceTo',
+		]);
+	});
+
+	it('should lend and move owned values, and refuse a spent owner or an ended borrow at runtime', async () => {
+		const { borrow, borrowMutable, createManagedStorage, move, own } =
+			await import('@fulcro/memory');
+
+		// Nothing compiles this file through the memory transformer, so these
+		// uses — refused at compile time with it — reach the runtime check, as
+		// they would for a consumer who never wired the plugin up.
+		const first = own(() => createManagedStorage(3, 0));
+		const reading = borrow(first);
+
+		borrowMutable(first).set(1, 7);
+
+		expect(() => reading.get(1)).toThrow(
+			expect.objectContaining({
+				code: 'FULCRO7024',
+				details: { operation: 'ReadOnlyView.get' },
+			}),
+		);
+
+		const second = move(first);
+
+		expect(borrow(second).get(1)).toBe(7);
+		expect(() => borrow(first)).toThrow(
+			expect.objectContaining({
+				code: 'FULCRO7023',
+				details: { operation: 'borrow' },
+			}),
+		);
+	});
+
+	it('should end what a using scope declared: an owner, a pooled block, a fixed buffer', async () => {
+		const {
+			borrow,
+			createFixedBufferAllocator,
+			createManagedStorage,
+			createPoolAllocator,
+			own,
+		} = await import('@fulcro/memory');
+
+		const pool = createPoolAllocator(16, 1);
+		const fixed = createFixedBufferAllocator(new ArrayBuffer(16));
+		let reading: ReturnType<typeof borrow<number>> | undefined;
+		let owner: ReturnType<typeof own<number>> | undefined;
+		let block: ReturnType<typeof pool.allocate> | undefined;
+		let fixedBlock: ReturnType<typeof fixed.allocate> | undefined;
+
+		{
+			using scores = own(() => createManagedStorage(2, 5));
+			using message = pool.allocate(16, 8);
+			using scope = fixed;
+
+			owner = scores;
+			reading = borrow(scores);
+			block = message;
+			fixedBlock = scope.allocate(16, 8);
+		}
+
+		expect(() => reading?.get(0)).toThrow(
+			expect.objectContaining({ code: 'FULCRO7024' }),
+		);
+		expect(() => borrow(owner as NonNullable<typeof owner>)).toThrow(
+			expect.objectContaining({
+				code: 'FULCRO7030',
+				details: { operation: 'borrow' },
+			}),
+		);
+		expect([block?.isLive(), fixedBlock?.isLive()]).toEqual([false, false]);
+		expect(pool.allocate(16, 8).isLive()).toBe(true);
+	});
+
+	it('should write a field of a published struct at its bytes through a native pointer, and refuse it once released', async () => {
+		const { createArenaAllocator, createLinearMemory, nativePointerTo } =
+			await import('@fulcro/memory');
+		const { SinglePrecisionFloat, struct } = await import('@fulcro/types');
+
+		const Point = struct('Point', {
+			x: SinglePrecisionFloat,
+			y: SinglePrecisionFloat,
+		});
+		const Particle = struct('Particle', { position: Point, velocity: Point });
+
+		// Without the transformers, the velocity still sits at bytes 8–15 of a
+		// particle, and the pointer writes exactly those.
+		const buffer = new ArrayBuffer(32);
+		const raw = new DataView(buffer);
+		const velocity = nativePointerTo(
+			createLinearMemory(buffer),
+			8,
+			Particle,
+		).at(8, Point);
+
+		velocity.set(Point.from({ x: 3, y: -4 }));
+
+		expect([raw.getFloat32(16, true), raw.getFloat32(20, true)]).toEqual([
+			3, -4,
+		]);
+		expect(
+			Array.from(new Uint8Array(buffer)).flatMap((byte, address) =>
+				byte === 0 ? [] : [address],
+			),
+		).toEqual([18, 19, 22, 23]);
+
+		const arena = createArenaAllocator(64);
+		const pointer = nativePointerTo(arena.allocate(16, 8), Particle);
+
+		arena.reset();
+
+		expect(() => pointer.get()).toThrow(
+			expect.objectContaining({
+				code: 'FULCRO7009',
+				details: { operation: 'NativePointer.get' },
+			}),
+		);
+	});
+
+	it('should allocate a struct from the published types package, and refuse it once released', async () => {
+		const { allocate, createStackAllocator } = await import('@fulcro/memory');
+		const { SinglePrecisionFloat, struct } = await import('@fulcro/types');
+
+		const Particle = struct('Particle', {
+			x: SinglePrecisionFloat,
+			y: SinglePrecisionFloat,
+		});
+		const stack = createStackAllocator(64);
+		const frame = stack.enter();
+		const particles = allocate(Particle, 2, frame);
+
+		particles.set(1, Particle.from({ x: 1, y: 2 }));
+
+		expect(particles.get(1)).toEqual({ x: 1, y: 2 });
+
+		frame[Symbol.dispose]();
+
+		expect(() => particles.get(1)).toThrow(
+			expect.objectContaining({
+				code: 'FULCRO7009',
+				details: { operation: 'Storage.get' },
+			}),
+		);
+	});
+
+	it('should store a struct from the published types package', async () => {
+		const { createFixedBufferStorage, createManagedStorage } =
+			await import('@fulcro/memory');
+		const { SinglePrecisionFloat, struct } = await import('@fulcro/types');
+
+		const Point = struct('Point', {
+			x: SinglePrecisionFloat,
+			y: SinglePrecisionFloat,
+		});
+		const points = createFixedBufferStorage(Point, 2);
+		const names = createManagedStorage(2, '');
+
+		points.set(1, Point.from({ x: 1, y: 2 }));
+		names.set(1, 'b');
+
+		expect(points.get(1)).toEqual({ x: 1, y: 2 });
+		expect(names.get(1)).toBe('b');
+	});
+
+	it('should view, point into and reference values, copying nothing', async () => {
+		const {
+			asReadOnlyView,
+			asView,
+			createManagedStorage,
+			pointerTo,
+			referenceTo,
+		} = await import('@fulcro/memory');
+
+		const scores = createManagedStorage(4, 0);
+		const middle = asView(scores, 1, 2);
+
+		middle.set(0, 10);
+		pointerTo(middle, 1).set(20);
+
+		expect([scores.get(1), scores.get(2)]).toEqual([10, 20]);
+		expect('set' in asReadOnlyView(middle)).toBe(false);
+		expect('set' in middle.readOnly()).toBe(false);
+		expect(asView(referenceTo(5)).get(0)).toBe(5);
+		expect(() => middle.subview(1, 2)).toThrow(
+			expect.objectContaining({
+				code: 'FULCRO7014',
+				details: {
+					operation: 'View.subview',
+					start: 1,
+					length: 2,
+					available: 2,
+				},
+			}),
+		);
+	});
+
+	it('should refuse an index outside, with its code and details', async () => {
+		const { createManagedStorage } = await import('@fulcro/memory');
+
+		expect(() => createManagedStorage(1, 0).get(1)).toThrow(
+			expect.objectContaining({
+				code: 'FULCRO7002',
+				details: { operation: 'ManagedStorage.get', index: 1, length: 1 },
+			}),
+		);
+	});
+});
+
 /** Bundlers every `/unplugin` entry point claims to serve. */
 const BUNDLERS = [
 	'vite',
@@ -774,6 +1042,40 @@ describe('@fulcro/collections/transformer', () => {
 				}
 			).ofType(),
 		).toThrow(/was not resolved at compile time/);
+	});
+});
+
+describe('@fulcro/memory/transformer', () => {
+	it('should expose the compiler plugin as its default export', async () => {
+		const entry = await import('@fulcro/memory/transformer');
+
+		expect(typeof entry.default).toBe('function');
+	});
+
+	it('should ship inside the package whose calls it checks', () => {
+		expect(() => resolve('@fulcro/memory/transformer')).not.toThrow();
+		expect(() => resolve('@fulcro/memory/unplugin')).not.toThrow();
+	});
+
+	it('should expose an adapter for every bundler it claims to serve', async () => {
+		const adapters = await import('@fulcro/memory/unplugin');
+
+		for (const bundler of BUNDLERS) {
+			expect(typeof adapters[bundler as keyof typeof adapters]).toBe(
+				'function',
+			);
+		}
+	});
+
+	it('should leave the runtime package free of the compiler', () => {
+		// TypeScript is an optional peer: a consumer of the runtime alone never
+		// installs it, so the main entry point must not reach the transformer.
+		const { manifest } = manifestOf('@fulcro/memory');
+
+		expect(manifest.peerDependencies).toEqual({ typescript: '>=5.3.3 <7' });
+		expect(readFileSync(resolve('@fulcro/memory'), 'utf8')).not.toMatch(
+			/require\(["'][^"']*(transformer|typescript)/,
+		);
 	});
 });
 

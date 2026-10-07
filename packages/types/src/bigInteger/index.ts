@@ -27,7 +27,7 @@ const INTEGER_LITERAL = /^[+-]?\d+$/;
  */
 const requireDivisor = (operation: string, divisor: bigint): void => {
 	if (divisor === 0n) {
-		throw createError('FULCRO6001', `BigInteger.${operation}`);
+		throw createError('FULCRO6001', { operation: `BigInteger.${operation}` });
 	}
 };
 
@@ -50,7 +50,10 @@ export const BigInteger: NumericType<BigInteger, number | bigint | string> = {
 
 		if (typeof value === 'number') {
 			if (!Number.isInteger(value)) {
-				throw createError('FULCRO6002', 'BigInteger.from', String(value));
+				throw createError('FULCRO6002', {
+					operation: 'BigInteger.from',
+					received: String(value),
+				});
 			}
 
 			return BigInt(value) as BigInteger;
@@ -61,13 +64,19 @@ export const BigInteger: NumericType<BigInteger, number | bigint | string> = {
 			// whitespace. A decimal type accepting a hexadecimal string is a
 			// surprise nobody reading `from('0x10')` expects to be 16.
 			if (!INTEGER_LITERAL.test(value)) {
-				throw createError('FULCRO6003', JSON.stringify(value));
+				throw createError('FULCRO6003', {
+					operation: 'BigInteger.from',
+					received: JSON.stringify(value),
+				});
 			}
 
 			return BigInt(value) as BigInteger;
 		}
 
-		throw createError('FULCRO6004', typeof value);
+		throw createError('FULCRO6004', {
+			operation: 'BigInteger.from',
+			received: typeof value,
+		});
 	},
 
 	is: (value: unknown): value is BigInteger => typeof value === 'bigint',
@@ -95,7 +104,10 @@ export const BigInteger: NumericType<BigInteger, number | bigint | string> = {
 
 	power: (base: BigInteger, exponent: BigInteger): BigInteger => {
 		if (exponent < 0n) {
-			throw createError('FULCRO6005', 'BigInteger.power', `${exponent}n`);
+			throw createError('FULCRO6005', {
+				operation: 'BigInteger.power',
+				received: `${exponent}n`,
+			});
 		}
 
 		return (base ** exponent) as BigInteger;

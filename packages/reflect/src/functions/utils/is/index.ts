@@ -60,7 +60,7 @@ export const refuseUnresolved: (operator: string) => never = (
 	// From here the two ways a call can arrive unresolved are
 	// indistinguishable, so both are named. Guessing between them would be
 	// presenting a coin toss as a diagnosis.
-	throw createError('FULCRO4002', operator);
+	throw createError('FULCRO4002', { operation: operator });
 };
 
 /**

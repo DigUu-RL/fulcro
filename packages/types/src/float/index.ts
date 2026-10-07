@@ -40,7 +40,10 @@ export const createFloatType = <T>(
 		// first and then into the format rounds twice, and the second rounding
 		// can land on the wrong neighbour.
 		if (typeof value !== 'number') {
-			throw createError('FULCRO6006', `${name}.from`, typeof value);
+			throw createError('FULCRO6006', {
+				operation: `${name}.from`,
+				received: typeof value,
+			});
 		}
 
 		return round(value) as T;

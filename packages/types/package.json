@@ -1,6 +1,6 @@
 {
 	"name": "@fulcro/types",
-	"version": "1.2.0",
+	"version": "1.3.0",
 	"description": "Numeric types with a defined range and layout: fixed-width integers, half, single and double precision floats, and a decimal128 Decimal.",
 	"keywords": [
 		"integer",
@@ -26,7 +26,7 @@
 	],
 	"sideEffects": false,
 	"dependencies": {
-		"@fulcro/errors": "^1.1.0"
+		"@fulcro/errors": "^2.0.0"
 	},
 	"engines": {
 		"node": ">=22"
@@ -44,7 +44,7 @@
 		"url": "https://github.com/DigUu-RL/fulcro/issues"
 	},
 	"scripts": {
-		"build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
+		"build": "tsc -p tsconfig.build.json && node ../../tools/build/rewrite-aliases.mjs",
 		"typecheck": "tsc --noEmit -p tsconfig.json",
 		"prepublishOnly": "npm run build"
 	}

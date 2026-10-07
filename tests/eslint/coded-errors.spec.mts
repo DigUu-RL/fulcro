@@ -144,6 +144,7 @@ describe('the ranges', () => {
 			reflect: '4',
 			'transform-core': '5',
 			types: '6',
+			memory: '7',
 		});
 	});
 });

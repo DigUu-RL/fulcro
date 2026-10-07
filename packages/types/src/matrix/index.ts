@@ -272,7 +272,10 @@ const shapeOf = (
 	value: unknown,
 ): { readonly rows: number; readonly columns: number } => {
 	if (!Array.isArray(value)) {
-		throw createError('FULCRO6034', operation, describeKind(value));
+		throw createError('FULCRO6034', {
+			operation,
+			received: describeKind(value),
+		});
 	}
 
 	const { rows, columns } = value as { rows?: unknown; columns?: unknown };
@@ -282,7 +285,10 @@ const shapeOf = (
 		typeof columns !== 'number' ||
 		rows * columns !== value.length
 	) {
-		throw createError('FULCRO6034', operation, 'an array without a shape');
+		throw createError('FULCRO6034', {
+			operation,
+			received: 'an array without a shape',
+		});
 	}
 
 	return { rows, columns };
@@ -302,7 +308,11 @@ const requireDimension = (
 	value: unknown,
 ): void => {
 	if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 1) {
-		throw createError('FULCRO6035', operation, dimension, String(value));
+		throw createError('FULCRO6035', {
+			operation,
+			dimension,
+			received: String(value),
+		});
 	}
 };
 
@@ -375,12 +385,11 @@ export const createMatrixOperations = <T, R extends number, C extends number>(
 		const shape = shapeOf(operation, value);
 
 		if (shape.rows !== rows || shape.columns !== columns) {
-			throw createError(
-				'FULCRO6036',
+			throw createError('FULCRO6036', {
 				operation,
-				name,
-				describeShape(element.name, shape.rows, shape.columns),
-			);
+				expected: name,
+				received: describeShape(element.name, shape.rows, shape.columns),
+			});
 		}
 	};
 
@@ -460,12 +469,12 @@ export const createMatrixOperations = <T, R extends number, C extends number>(
 			const shape = shapeOf(`${name}.multiply`, right);
 
 			if (shape.rows !== columns) {
-				throw createError(
-					'FULCRO6037',
-					describeShape(element.name, rows, columns),
-					describeShape(element.name, shape.rows, shape.columns),
-					`${shape.columns === 1 ? 'a vector' : 'a matrix'} with ${columns} rows`,
-				);
+				throw createError('FULCRO6037', {
+					operation: `${name}.multiply`,
+					left: describeShape(element.name, rows, columns),
+					right: describeShape(element.name, shape.rows, shape.columns),
+					expected: `${shape.columns === 1 ? 'a vector' : 'a matrix'} with ${columns} rows`,
+				});
 			}
 
 			const width: number = shape.columns;
@@ -545,16 +554,18 @@ export const convertElements = <T>(
 	label: (row: number, column: number) => string,
 ): T[] => {
 	if (!Array.isArray(rows)) {
-		throw createError('FULCRO6034', operation, describeKind(rows));
+		throw createError('FULCRO6034', {
+			operation,
+			received: describeKind(rows),
+		});
 	}
 
 	if (rows.length !== rowCount) {
-		throw createError(
-			'FULCRO6038',
+		throw createError('FULCRO6038', {
 			operation,
-			`${rowCount} rows`,
-			String(rows.length),
-		);
+			expected: `${rowCount} rows`,
+			received: String(rows.length),
+		});
 	}
 
 	const elements: T[] = new Array<T>(rowCount * columnCount);
@@ -563,16 +574,18 @@ export const convertElements = <T>(
 		const items: unknown = rows[row];
 
 		if (!Array.isArray(items)) {
-			throw createError('FULCRO6034', operation, describeKind(items));
+			throw createError('FULCRO6034', {
+				operation,
+				received: describeKind(items),
+			});
 		}
 
 		if (items.length !== columnCount) {
-			throw createError(
-				'FULCRO6038',
+			throw createError('FULCRO6038', {
 				operation,
-				`${columnCount} elements in row ${row}`,
-				String(items.length),
-			);
+				expected: `${columnCount} elements in row ${row}`,
+				received: String(items.length),
+			});
 		}
 
 		for (let column = 0; column < columnCount; column++) {
@@ -655,7 +668,10 @@ export const Matrix = <
 
 		identity: () => {
 			if ((rows as number) !== columns) {
-				throw createError('FULCRO6039', name);
+				throw createError('FULCRO6039', {
+					operation: `${name}.identity`,
+					name,
+				});
 			}
 
 			// Built once: the value is frozen, so every caller can share it, and

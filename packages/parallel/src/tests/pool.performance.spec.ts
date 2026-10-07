@@ -72,6 +72,21 @@ describe('what one run costs', () => {
 	});
 });
 
+describe('what an await using scope costs', () => {
+	it('should stop exactly the workers it started, once, after many batches', async () => {
+		const fake = createFakeWorkers({ auto: true });
+
+		{
+			await using pool = countedPool(fake, 4);
+
+			for (let batch = 0; batch < 5; batch++) await pool.map(ELEMENTS);
+		}
+
+		expect([fake.spawned(), fake.terminated()]).toEqual([4, 4]);
+		expect(fake.posted()).toHaveLength(ELEMENTS.length * 5);
+	});
+});
+
 describe('what overlapping runs cost', () => {
 	it('should hold the bound across two runs on one pool', async () => {
 		// The bound is a property of the pool, not of a run. Two runs sharing

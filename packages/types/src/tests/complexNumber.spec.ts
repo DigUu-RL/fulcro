@@ -22,13 +22,21 @@ import { struct } from '@/struct';
 
 /**
  * The error a refusal is expected to throw, carrying the code its message
- * starts with, which `toThrow` compares as well.
+ * starts with and the details it was made from, which `toThrow` compares as
+ * well.
  *
  * @param error The expected error, its message starting with its code.
- * @returns The same error, carrying that code.
+ * @param details The details the error is expected to carry.
+ * @returns The same error, carrying that code and those details.
  */
-const coded = <T extends Error>(error: T): T =>
-	Object.assign(error, { code: error.message.slice(0, 'FULCRO0000'.length) });
+const coded = <T extends Error>(
+	error: T,
+	details: Readonly<Record<string, unknown>>,
+): T =>
+	Object.assign(error, {
+		code: error.message.slice(0, 'FULCRO0000'.length),
+		details,
+	});
 
 const Complex = ComplexNumberOf(DoublePrecisionFloat);
 const i = Complex.from({ real: 0, imaginary: 1 });
@@ -186,6 +194,7 @@ describe('ComplexNumber', () => {
 					new TypeError(
 						'FULCRO6033: ComplexNumber: expected a numeric type of @fulcro/types as the element type, received object.',
 					),
+					{ operation: 'ComplexNumber', received: 'object' },
 				),
 			);
 		});
@@ -196,6 +205,10 @@ describe('ComplexNumber', () => {
 					new TypeError(
 						"FULCRO6021: ComplexNumber<DoublePrecisionFloat>.from: missing field 'imaginary'.",
 					),
+					{
+						operation: 'ComplexNumber<DoublePrecisionFloat>.from',
+						field: 'imaginary',
+					},
 				),
 			);
 			expect(() =>
@@ -205,6 +218,11 @@ describe('ComplexNumber', () => {
 					new TypeError(
 						"FULCRO6020: ComplexNumber<DoublePrecisionFloat>.from: 'other' is not a field; the fields are real, imaginary.",
 					),
+					{
+						operation: 'ComplexNumber<DoublePrecisionFloat>.from',
+						key: 'other',
+						fields: 'real, imaginary',
+					},
 				),
 			);
 		});
@@ -215,6 +233,7 @@ describe('ComplexNumber', () => {
 					new TypeError(
 						"FULCRO6006: ComplexNumber<DoublePrecisionFloat>.from: field 'imaginary': DoublePrecisionFloat.from: expected a number, received string.",
 					),
+					{ operation: 'DoublePrecisionFloat.from', received: 'string' },
 				),
 			);
 		});

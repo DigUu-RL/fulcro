@@ -20,6 +20,12 @@ frente.
 RangeError: FULCRO6001: SignedInteger<32>.divide: division by zero.
 ```
 
+Detalhes:
+
+```text
+{ operation: string }
+```
+
 `divide()` ou `remainder()` de um tipo inteiro ou de `BigInteger` recebeu um
 divisor zero. Um inteiro não tem infinito com que responder.
 
@@ -30,6 +36,12 @@ Uma `Fraction` também o lança: `from()` com denominador zero, `divide()` ou
 
 ```text
 RangeError: FULCRO6002: SignedInteger<32>.from: expected an integer, received 1.5.
+```
+
+Detalhes:
+
+```text
+{ operation: string; received: string }
 ```
 
 Uma conversão para inteiro recebeu um número com parte fracionária, ou um que
@@ -44,6 +56,12 @@ Arredonde o valor antes, decidindo como, e converta o resultado.
 SyntaxError: FULCRO6003: BigInteger.from: expected decimal digits with an optional sign, received "0x10".
 ```
 
+Detalhes:
+
+```text
+{ operation: string; received: string }
+```
+
 `BigInteger.from()` recebeu uma string que não é formada por dígitos decimais.
 Hexadecimal, expoentes, separadores e espaços em volta são todos recusados,
 para que ninguém se surpreenda com o que uma string queria dizer.
@@ -54,12 +72,24 @@ para que ninguém se surpreenda com o que uma string queria dizer.
 TypeError: FULCRO6004: BigInteger.from: expected a number, a bigint or a string, received object.
 ```
 
+Detalhes:
+
+```text
+{ operation: string; received: string }
+```
+
 `BigInteger.from()` recebeu um valor de um tipo que ele não converte.
 
 ## FULCRO6005
 
 ```text
 RangeError: FULCRO6005: SignedInteger<32>.power: expected an exponent of zero or more, received -1.
+```
+
+Detalhes:
+
+```text
+{ operation: string; received: string }
 ```
 
 `power()` de um tipo inteiro ou de `BigInteger` recebeu um expoente negativo,
@@ -69,6 +99,12 @@ cujo resultado é uma fração que nenhum inteiro consegue guardar.
 
 ```text
 TypeError: FULCRO6006: SinglePrecisionFloat.from: expected a number, received string.
+```
+
+Detalhes:
+
+```text
+{ operation: string; received: string }
 ```
 
 `from()` de `HalfPrecisionFloat`, `SinglePrecisionFloat` ou
@@ -82,6 +118,12 @@ pode cair no vizinho errado.
 RangeError: FULCRO6007: Decimal.round: expected a rounding mode of ceiling, floor, truncate, halfEven, halfAwayFromZero, received "nearest".
 ```
 
+Detalhes:
+
+```text
+{ operation: string; modes: string; received: string }
+```
+
 Uma operação de `Decimal` recebeu um modo de arredondamento que não é nenhum dos
 cinco que ele conhece.
 
@@ -89,6 +131,12 @@ cinco que ele conhece.
 
 ```text
 TypeError: FULCRO6008: struct Point: expected an object of methods, received null.
+```
+
+Detalhes:
+
+```text
+{ operation: string; name: string; received: string }
 ```
 
 O terceiro argumento de `struct()` foi passado, e não é um objeto.
@@ -99,6 +147,12 @@ O terceiro argumento de `struct()` foi passado, e não é um objeto.
 TypeError: FULCRO6009: struct Point: method 'x' has the name of a field; a value could not hold both.
 ```
 
+Detalhes:
+
+```text
+{ operation: string; name: string; method: string }
+```
+
 Um método de uma `struct()` tem o mesmo nome de um dos seus campos. Renomeie um
 dos dois.
 
@@ -106,6 +160,12 @@ dos dois.
 
 ```text
 TypeError: FULCRO6010: struct Point: '0' cannot name a method; …
+```
+
+Detalhes:
+
+```text
+{ operation: string; name: string; method: string }
 ```
 
 Um método de uma `struct()` tem nome de índice de array, ou `~layout`. A
@@ -118,12 +178,24 @@ o nome sob o qual o próprio layout é declarado.
 TypeError: FULCRO6011: struct Point: method 'length' must be a function, received number.
 ```
 
+Detalhes:
+
+```text
+{ operation: string; name: string; method: string; received: string }
+```
+
 Uma entrada do objeto de métodos de uma `struct()` não é uma função.
 
 ## FULCRO6012
 
 ```text
 TypeError: FULCRO6012: struct: expected a name, received undefined.
+```
+
+Detalhes:
+
+```text
+{ operation: string; received: string }
 ```
 
 `struct()` foi chamada sem nome, ou com um nome vazio. O nome é o início de toda
@@ -135,12 +207,24 @@ mensagem sobre a struct.
 TypeError: FULCRO6013: struct Point: expected an object of fields, received undefined.
 ```
 
+Detalhes:
+
+```text
+{ operation: string; name: string; received: string }
+```
+
 O segundo argumento de `struct()` não é um objeto.
 
 ## FULCRO6014
 
 ```text
 TypeError: FULCRO6014: struct Empty: expected at least one field.
+```
+
+Detalhes:
+
+```text
+{ operation: string; name: string }
 ```
 
 `struct()` não recebeu nenhum campo. Uma struct sem nada dentro não tem layout
@@ -150,6 +234,12 @@ para declarar.
 
 ```text
 TypeError: FULCRO6015: struct Point: '0' cannot name a field; …
+```
+
+Detalhes:
+
+```text
+{ operation: string; name: string; field: string }
 ```
 
 Um campo de uma `struct()` tem nome de índice de array, ou `~layout`. Um índice
@@ -162,6 +252,12 @@ layout.
 TypeError: FULCRO6016: struct Account: field 'balance' has no fixed layout. …
 ```
 
+Detalhes:
+
+```text
+{ operation: string; name: string; field: string }
+```
+
 Um campo de uma `struct()` foi declarado com um tipo que não tem tamanho fixo:
 `BigInteger`, ou algo que nem é um tipo numérico. Declare-o com um tipo
 numérico de largura fixa, ou com outra struct.
@@ -172,6 +268,12 @@ numérico de largura fixa, ou com outra struct.
 TypeError: FULCRO6017: Vector3.write: expected a DataView, received object.
 ```
 
+Detalhes:
+
+```text
+{ operation: string; received: string }
+```
+
 `read()` ou `write()` de uma struct recebeu algo que não é um `DataView`.
 Envolva o buffer: `new DataView(buffer)`.
 
@@ -179,6 +281,12 @@ Envolva o buffer: `new DataView(buffer)`.
 
 ```text
 RangeError: FULCRO6018: Vector3.write: 12 bytes at offset 4 do not fit in a view of 12 bytes.
+```
+
+Detalhes:
+
+```text
+{ operation: string; size: number; offset: number; available: number }
 ```
 
 `read()` ou `write()` de uma struct recebeu um offset negativo, não inteiro, ou
@@ -191,12 +299,24 @@ alterado.
 TypeError: FULCRO6019: Vector3.from: expected an object, received null.
 ```
 
+Detalhes:
+
+```text
+{ operation: string; received: string }
+```
+
 `from()` de uma struct recebeu algo que não é um objeto.
 
 ## FULCRO6020
 
 ```text
 TypeError: FULCRO6020: Vector3.from: 'w' is not a field; the fields are x, y, z.
+```
+
+Detalhes:
+
+```text
+{ operation: string; key: string; fields: string }
 ```
 
 `from()` de uma struct recebeu uma propriedade que a struct não declara. Ela é
@@ -212,6 +332,12 @@ um `ComplexNumber` ou de um `Quaternion`.
 TypeError: FULCRO6021: Vector3.from: missing field 'z'.
 ```
 
+Detalhes:
+
+```text
+{ operation: string; field: string }
+```
+
 `from()` de uma struct não recebeu um dos seus campos. Todo campo é
 obrigatório; não existe valor padrão para preencher.
 
@@ -225,6 +351,12 @@ número sozinho em vez de um objeto.
 RangeError: FULCRO6022: Decimal.toFixed: expected an integer from 0 to 100, received -1.
 ```
 
+Detalhes:
+
+```text
+{ operation: string; minimum: number; maximum: number; received: number }
+```
+
 `toFixed()`, `toPrecision()` ou `toExponential()` de um `Decimal` recebeu um
 número de dígitos fora da faixa que o método correspondente de `Number` aceita.
 
@@ -232,6 +364,12 @@ número de dígitos fora da faixa que o método correspondente de `Number` aceit
 
 ```text
 SyntaxError: FULCRO6023: Decimal.from: expected a decimal literal, received "1.2.3".
+```
+
+Detalhes:
+
+```text
+{ operation: string; received: string }
 ```
 
 `Decimal.from()` recebeu uma string que não é um número decimal.
@@ -242,12 +380,24 @@ SyntaxError: FULCRO6023: Decimal.from: expected a decimal literal, received "1.2
 TypeError: FULCRO6024: Decimal.from: expected a Decimal, a string, a number or a bigint, received object.
 ```
 
+Detalhes:
+
+```text
+{ operation: string; received: string }
+```
+
 `Decimal.from()` recebeu um valor de um tipo que ele não converte.
 
 ## FULCRO6025
 
 ```text
 RangeError: FULCRO6025: Decimal.power: expected an integer exponent, received 0.5.
+```
+
+Detalhes:
+
+```text
+{ operation: string; received: string }
 ```
 
 `power()` de um `Decimal` recebeu um expoente que não é inteiro, ou que não é
@@ -259,6 +409,12 @@ finito.
 RangeError: FULCRO6026: Decimal.round: expected an integer number of places, received 1.5.
 ```
 
+Detalhes:
+
+```text
+{ operation: string; received: number }
+```
+
 `round(places)` de um `Decimal` recebeu um número de casas que não é um inteiro
 seguro.
 
@@ -266,6 +422,12 @@ seguro.
 
 ```text
 TypeError: FULCRO6027: Decimal cannot be converted to a primitive implicitly: …
+```
+
+Detalhes:
+
+```text
+{ operation: string }
 ```
 
 Um `Decimal` foi usado com um operador — `+`, `<`, a aritmética de um template
@@ -280,6 +442,12 @@ Use os seus métodos: `add()`, `compare()`, `toString()`.
 TypeError: FULCRO6028: SignedInteger<32>.from: expected a number or a bigint, received string.
 ```
 
+Detalhes:
+
+```text
+{ operation: string; received: string }
+```
+
 `from()` ou `wrap()` de um tipo inteiro recebeu algo que não é um `number` nem
 um `bigint`.
 
@@ -287,6 +455,12 @@ um `bigint`.
 
 ```text
 RangeError: FULCRO6029: SignedInteger<32>.shiftLeft: expected a count from 0 to 31, received 32.
+```
+
+Detalhes:
+
+```text
+{ operation: string; maximum: number; received: string }
 ```
 
 Um deslocamento de bits de um tipo inteiro recebeu uma contagem fora da largura
@@ -298,6 +472,12 @@ do tipo.
 RangeError: FULCRO6030: SignedInteger: expected a width of 8, 16, 32, 64, 128 bits, received 12.
 ```
 
+Detalhes:
+
+```text
+{ operation: string; family: string; widths: string; received: string }
+```
+
 `SignedInteger(width)` ou `UnsignedInteger(width)` recebeu uma largura que não
 existe. A mensagem lista as larguras disponíveis.
 
@@ -305,6 +485,12 @@ existe. A mensagem lista as larguras disponíveis.
 
 ```text
 RangeError: FULCRO6031: SignedInteger<8>.add: 200 is outside [-128, 127].
+```
+
+Detalhes:
+
+```text
+{ operation: string; received: string; range: string }
 ```
 
 Uma operação de inteiro produziu — ou recebeu — um valor fora da faixa do tipo:
@@ -320,6 +506,12 @@ tipo mais largo quando não for.
 RangeError: FULCRO6032: SignedInteger<64>.power: 3n ** 200n is outside [-9223372036854775808, 9223372036854775807].
 ```
 
+Detalhes:
+
+```text
+{ operation: string; name: string; base: string; exponent: string; range: string }
+```
+
 `power()` de um tipo inteiro de 64 ou 128 bits produziria um resultado fora da
 sua faixa. Ele é recusado antes de o resultado ser calculado, o que, para um
 expoente grande, já seria caro por si só.
@@ -328,6 +520,12 @@ expoente grande, já seria caro por si só.
 
 ```text
 TypeError: FULCRO6033: Matrix: expected a numeric type of @fulcro/types as the element type, received object.
+```
+
+Detalhes:
+
+```text
+{ operation: string; received: string }
 ```
 
 `Matrix()`, `Vector()`, `ComplexNumber()` ou `Quaternion()` recebeu um tipo de
@@ -341,6 +539,12 @@ tem, e também `Fraction`, `ComplexNumber` e `Quaternion`.
 TypeError: FULCRO6034: Matrix<DoublePrecisionFloat, 2, 3>.from: expected an array, received string.
 ```
 
+Detalhes:
+
+```text
+{ operation: string; received: string }
+```
+
 `from()` de uma matriz ou de um vetor recebeu algo que não é um array — ou uma
 linha da matriz não era um. Também é lançado quando um operando de uma operação
 de matriz é um array sem forma: um array comum, e não um valor feito por
@@ -352,6 +556,12 @@ de matriz é um array sem forma: um array comum, e não um valor feito por
 RangeError: FULCRO6035: Matrix: expected a positive integer number of rows, received 0.
 ```
 
+Detalhes:
+
+```text
+{ operation: string; dimension: string; received: string }
+```
+
 `Matrix()` ou `Vector()` foi declarado com um número de linhas ou de colunas
 que não é um inteiro positivo.
 
@@ -359,6 +569,12 @@ que não é um inteiro positivo.
 
 ```text
 RangeError: FULCRO6036: Matrix<DoublePrecisionFloat, 2, 2>.add: expected a Matrix<DoublePrecisionFloat, 2, 2>, received a Matrix<DoublePrecisionFloat, 2, 3>.
+```
+
+Detalhes:
+
+```text
+{ operation: string; expected: string; received: string }
 ```
 
 Um operando de `add()`, `subtract()`, `negate()`, `scale()`, `transpose()` ou
@@ -371,6 +587,12 @@ recusa isso antes de executar; o erro é para quem passou por ele.
 RangeError: FULCRO6037: Cannot multiply Matrix<SinglePrecisionFloat, 3, 4> by Vector<SinglePrecisionFloat, 2, 1>. Expected a vector with 4 rows.
 ```
 
+Detalhes:
+
+```text
+{ operation: string; left: string; right: string; expected: string }
+```
+
 `multiply()` recebeu um operando da direita cujas linhas não batem com as
 colunas do da esquerda. O compilador recusa a mesma chamada com a mesma frase,
 em termos de `T`; esta é a checagem em runtime para quem passou por ele.
@@ -379,6 +601,12 @@ em termos de `T`; esta é a checagem em runtime para quem passou por ele.
 
 ```text
 RangeError: FULCRO6038: Matrix<DoublePrecisionFloat, 2, 3>.from: expected 2 rows, received 1.
+```
+
+Detalhes:
+
+```text
+{ operation: string; expected: string; received: string }
 ```
 
 `from()` de uma matriz não recebeu tantas linhas quanto a matriz tem, ou uma
@@ -391,6 +619,12 @@ recebeu tantos elementos quanto o vetor tem.
 RangeError: FULCRO6039: Matrix<DoublePrecisionFloat, 2, 3>.identity: only a square matrix has an identity.
 ```
 
+Detalhes:
+
+```text
+{ operation: string; name: string }
+```
+
 `identity()` foi chamado numa matriz que não é quadrada. O compilador recusa
 isso antes de executar.
 
@@ -398,6 +632,12 @@ isso antes de executar.
 
 ```text
 RangeError: FULCRO6040: Vector: expected one row or one column, received 2 rows and 3 columns. A shape with neither is a Matrix.
+```
+
+Detalhes:
+
+```text
+{ operation: string; rows: string; columns: string }
 ```
 
 `Vector()` foi declarado sem uma linha só nem uma coluna só. O compilador
@@ -409,6 +649,12 @@ recusa isso antes de executar; declare a forma com `Matrix()`.
 TypeError: FULCRO6041: Fraction: expected SignedInteger(n), UnsignedInteger(n) or BigInteger as the element type, received object.
 ```
 
+Detalhes:
+
+```text
+{ operation: string; received: string }
+```
+
 `Fraction()` recebeu um tipo que não é inteiro. Uma fração de floats
 arredondaria, que é justamente o que uma fração existe para evitar.
 
@@ -416,6 +662,12 @@ arredondaria, que é justamente o que uma fração existe para evitar.
 
 ```text
 RangeError: FULCRO6042: Fraction<SignedInteger<32>>.power: expected a whole exponent, received 1/2.
+```
+
+Detalhes:
+
+```text
+{ operation: string; name: string; received: string }
 ```
 
 `power()` de uma fração recebeu um expoente que não é inteiro. Uma potência

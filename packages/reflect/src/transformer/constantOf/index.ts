@@ -482,8 +482,16 @@ const run = (script: string): Outcome => {
 			message:
 				(thrown as { code?: unknown } | null)?.code ===
 				'ERR_SCRIPT_EXECUTION_TIMEOUT'
-					? createError('FULCRO4013', CALL, EVALUATION_TIMEOUT).message
-					: createError('FULCRO4012', CALL, describeThrown(thrown)).message,
+					? createError('FULCRO4013', {
+							operation: 'constantOf',
+							call: CALL,
+							milliseconds: EVALUATION_TIMEOUT,
+						}).message
+					: createError('FULCRO4012', {
+							operation: 'constantOf',
+							call: CALL,
+							thrown: describeThrown(thrown),
+						}).message,
 		};
 	}
 };
@@ -531,7 +539,11 @@ const computeOutcome = (
 ): Outcome => {
 	const refuse = (reason: string): Outcome => ({
 		kind: 'refused',
-		message: createError('FULCRO4010', CALL, reason).message,
+		message: createError('FULCRO4010', {
+			operation: 'constantOf',
+			call: CALL,
+			reason,
+		}).message,
 	});
 
 	if (call.arguments.length !== 1) {
@@ -574,7 +586,11 @@ const computeOutcome = (
 		? outcome
 		: {
 				kind: 'refused',
-				message: createError('FULCRO4011', CALL, unwritable).message,
+				message: createError('FULCRO4011', {
+					operation: 'constantOf',
+					call: CALL,
+					received: unwritable,
+				}).message,
 			};
 };
 

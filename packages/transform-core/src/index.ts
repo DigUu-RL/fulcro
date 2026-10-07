@@ -2,13 +2,14 @@
  * Shared machinery behind the Fulcro compile time transformers.
  *
  * **Not a package to depend on directly.** It is installed for you by
- * `@fulcro/reflect` and `@fulcro/collections`, each of which ships its own
- * transformer built on this, and its shape is theirs to change.
+ * `@fulcro/reflect`, `@fulcro/collections` and `@fulcro/memory`, each of which
+ * ships its own transformer built on this, and its shape is theirs to change.
  *
  * What lives here is everything that has nothing to do with any particular
- * utility: following a call back to the declaration that owns it, walking a
- * source file once, building and keeping a program for the bundlers that have
- * no checker of their own, and the adapter surface `unplugin` expects.
+ * utility: following a call back to the declaration — and the package — that
+ * owns it, walking a source file once, running the analyzers that check a
+ * whole file, building and keeping a program for the bundlers that have no
+ * checker of their own, and the adapter surface `unplugin` expects.
  *
  * What lives in each library instead is the part that knows what to emit — how
  * `defaultOf` fills a tuple, how `ofType` turns a type argument into a runtime
@@ -23,8 +24,11 @@ export {
 	type TransformCoreOptions,
 } from '@/program';
 export {
+	type AnalysisContext,
 	type CallForm,
 	type CallRewriter,
+	type CallTarget,
+	type FileAnalyzer,
 	IDENTIFIER_PATTERN,
 	isOwnedCall,
 	isTupleType,

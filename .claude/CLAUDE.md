@@ -9,21 +9,29 @@ invariants in `.claude/rules/`.
 A private npm workspace root. Nothing publishes from the root; the packages
 under `packages/` do.
 
-| Package                  | What it is                                                      | Runtime deps                            |
-| ------------------------ | --------------------------------------------------------------- | --------------------------------------- |
-| `@fulcro/errors`         | Every error of every package: its code, message and class       | none                                    |
-| `@fulcro/collections`    | Lazily evaluated sequences, plus `cast<T>()` runtime validation | `errors`, `transform-core`              |
-| `@fulcro/reflect`        | `nameOf`, `typeOf`, `defaultOf`, `sizeOf`, transformer included | `errors`, `transform-core`              |
-| `@fulcro/functions`      | `switchFor`, `tryCatch` — control flow as values                | `errors`                                |
-| `@fulcro/transform-core` | Shared machinery behind the transformers                        | `errors`, `unplugin`, peer `typescript` |
-| `@fulcro/parallel`       | Worker pool for CPU-bound work, browser and Node                | `errors`                                |
-| `@fulcro/types`          | Numeric types with a range and layout, and structs              | `errors`                                |
+| Package                  | What it is                                                                     | Runtime deps                            |
+| ------------------------ | ------------------------------------------------------------------------------ | --------------------------------------- |
+| `@fulcro/errors`         | Every error of every package: its code, message and class                      | none                                    |
+| `@fulcro/collections`    | Lazily evaluated sequences, plus `cast<T>()` runtime validation                | `errors`, `transform-core`              |
+| `@fulcro/reflect`        | `nameOf`, `typeOf`, `defaultOf`, `sizeOf`, transformer included                | `errors`, `transform-core`              |
+| `@fulcro/functions`      | `switchFor`, `tryCatch` — control flow as values                               | `errors`                                |
+| `@fulcro/transform-core` | Shared machinery behind the transformers                                       | `errors`, `unplugin`, peer `typescript` |
+| `@fulcro/parallel`       | Worker pool for CPU-bound work, browser and Node                               | `errors`                                |
+| `@fulcro/types`          | Numeric types with a range and layout, and structs                             | `errors`                                |
+| `@fulcro/memory`         | Where a value's bytes live and who may reach them: storage, allocation, access | `errors`, `transform-core`              |
 
-`@fulcro/collections` and `@fulcro/reflect` each ship their own compile time
-transformer behind a separate entry point (`./transformer`, `./unplugin`).
-Neither knows the other exists; each claims only what it can trace back to its
-own package. `@fulcro/types` ships none: every operation on its types is a
-typed method, and nothing has to be configured to use it.
+`@fulcro/collections`, `@fulcro/reflect` and `@fulcro/memory` each ship their
+own compile time transformer behind a separate entry point (`./transformer`,
+`./unplugin`). None knows the others exist; each claims only what it can trace
+back to its own package. Memory's rewrites nothing — it refuses a use after
+`move` and a borrow used after a conflicting one, which its runtime also
+refuses. `@fulcro/types` ships none: every operation on its types is a typed
+method, and nothing has to be configured to use it.
+
+`@fulcro/memory` holds where a value's bytes live; the values and their layout
+stay in `@fulcro/types`. It never imports `@fulcro/reflect`: it reads a layout
+from the descriptor `@fulcro/types` builds, and leaves the edge from reflect to
+memory free for the features that will need it.
 
 `@fulcro/errors` sits below everything else: every error any package creates
 comes from its catalog, with a `FULCRO` code from that package's range. See
@@ -46,7 +54,9 @@ Run from the repository root. These are the scripts that exist today — read
 | `npm run validate:claude`                 | Structural validation of the `.claude` tree                                 |
 | `npm run changeset`                       | Records a version bump for a shipped change                                 |
 
-Each package builds with `tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json`.
+Each package builds with
+`tsc -p tsconfig.build.json && node ../../tools/build/rewrite-aliases.mjs`: the
+second step turns the `@/…` imports `tsc` leaves in `dist` into relative paths.
 
 `npm test` builds first on purpose: the harness loads the transformers from
 `dist`, and the entry point suite runs entirely against built output.
@@ -80,8 +90,11 @@ Built output goes to each package's `dist/` and never beside its source. A
 ## Testing
 
 Testing is owned by the root, not by each package: `vitest.config.mts` wires
-both transformers into every package project, because `@fulcro/reflect`'s
-suites are meaningless without its transformer applied.
+all three transformers into every package project, because `@fulcro/reflect`'s
+suites are meaningless without its transformer applied. The one exception is
+`memory-unchecked`: the `*.unchecked.spec.ts` suites of `@fulcro/memory` break
+its ownership rules on purpose to prove the runtime refuses them, so they run
+without memory's transformer, which would refuse to compile them.
 
 Two kinds of suite, and they are not interchangeable:
 
@@ -92,7 +105,7 @@ Two kinds of suite, and they are not interchangeable:
   repository root against the published surface, deliberately _without_ the
   transformers, so they assert the runtime fallback a consumer gets before
   wiring anything up. `tests/transformers/**` is its own project again, for the
-  two plugins walking one tree together.
+  plugins walking one tree together.
 
 Every feature carries a behaviour suite **and** a performance suite; one
 without the other is unfinished. Performance is asserted by counting work —

@@ -3,10 +3,13 @@ import { describe, expect, it } from 'vitest';
 import { catalog } from '@/catalog';
 import { collectionsCatalog } from '@/catalog/collections';
 import { functionsCatalog } from '@/catalog/functions';
+import { memoryCatalog } from '@/catalog/memory';
 import { parallelCatalog } from '@/catalog/parallel';
 import { reflectCatalog } from '@/catalog/reflect';
 import { transformCoreCatalog } from '@/catalog/transform-core';
 import { typesCatalog } from '@/catalog/types';
+import { ErrorDefinition } from '@/definition';
+import { sampleDetails } from '@/tests/sampleDetails';
 
 /**
  * Behaviour suite for the catalog.
@@ -25,6 +28,7 @@ const RANGES = [
 	['@fulcro/reflect', '4', reflectCatalog],
 	['@fulcro/transform-core', '5', transformCoreCatalog],
 	['@fulcro/types', '6', typesCatalog],
+	['@fulcro/memory', '7', memoryCatalog],
 ] as const;
 
 /** The spelling every code follows. */
@@ -52,17 +56,18 @@ describe('catalog', () => {
 
 	it('should give every code a template that produces text', () => {
 		for (const [code, definition] of Object.entries(catalog)) {
-			const values: string[] = Array.from(
-				{ length: definition.message.length },
-				() => 'value',
+			const text: string = (definition as ErrorDefinition).message(
+				sampleDetails(),
 			);
-
-			const text: string = (
-				definition.message as (...values: string[]) => string
-			)(...values);
 
 			expect(text.length, code).toBeGreaterThan(0);
 			expect(text, code).not.toMatch(/^FULCRO\d{4}/);
+		}
+	});
+
+	it('should give every code a template taking one details object', () => {
+		for (const [code, definition] of Object.entries(catalog)) {
+			expect(definition.message.length, code).toBe(1);
 		}
 	});
 });

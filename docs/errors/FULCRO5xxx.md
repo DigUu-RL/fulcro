@@ -3,13 +3,20 @@
 🇧🇷 Português (Brasil): [Leia esta documentação em português](../pt-BR/errors/FULCRO5xxx.md)
 
 The errors of the machinery behind the compile-time transformers of
-`@fulcro/collections` and `@fulcro/reflect`. They are raised while your project
-is being built, not while it runs. Back to [all codes](../errors.md).
+`@fulcro/collections`, `@fulcro/reflect` and `@fulcro/memory`. They are raised
+while your project is being built, not while it runs. Back to
+[all codes](../errors.md).
 
 ## FULCRO5001
 
 ```text
 Error: FULCRO5001: No tsconfig.json found from /app. The transformer needs one to know which files belong to the program.
+```
+
+Details:
+
+```text
+{ operation: string; root: string }
 ```
 
 A bundler plugin (`@fulcro/reflect/unplugin`, `@fulcro/collections/unplugin`)
@@ -26,6 +33,12 @@ its `tsconfig` option.
 Error: FULCRO5002: <the compiler's own message>
 ```
 
+Details:
+
+```text
+{ operation: string; diagnostic: string }
+```
+
 The `tsconfig.json` was found but could not be read — invalid JSON, or an
 `extends` pointing at a file that does not exist. The message after the code is
 TypeScript's own, and names the file and the problem.
@@ -35,6 +48,12 @@ TypeScript's own, and names the file and the problem.
 ```text
 Error: FULCRO5003: The Fulcro transformer refused calls it could not answer at compile time:
 src/tables.ts(4,23): FULCRO4010: constantOf(…) cannot be evaluated at compile time: 'counter' is declared with let or var, so it can change. …
+```
+
+Details:
+
+```text
+{ operation: string; report: string }
 ```
 
 A transformer refused one or more calls in a file — a call it owns but cannot

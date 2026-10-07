@@ -37,7 +37,13 @@ export const spawnWorker: SpawnWorker = (url: URL): WorkerHandle => {
 
 			const onExit = (code: number): void => {
 				if (code !== 0) {
-					handler(undefined, createError('FULCRO3007', code));
+					handler(
+						undefined,
+						createError('FULCRO3007', {
+							operation: 'spawnWorker',
+							exitCode: code,
+						}),
+					);
 				}
 			};
 

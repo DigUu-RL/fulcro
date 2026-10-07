@@ -1,5 +1,24 @@
 # @fulcro/transform-core
 
+## 1.3.0
+
+### Minor Changes
+
+- 8c40c25: Every error now carries `details`: the values its message was written from, by name and frozen, always with the `operation` that failed — `error.details.index` instead of reading the number back out of the message. Recognise one with `isFulcroError(error, 'FULCRO7002')`, which narrows `details` to that code's fields, or with `error instanceof FulcroError`; the built-in class (`RangeError`, `TypeError`) is unchanged, and `DetailsOf<'FULCRO7002'>` names one code's details. Messages and classes are unchanged. **Breaking, in `@fulcro/errors` only:** `createError(code, ...values)` is now `createError(code, details)`, so `createError('FULCRO6021', 'Vector3.from', 'x')` becomes `createError('FULCRO6021', { operation: 'Vector3.from', field: 'x' })`. `CodedError` remains as a deprecated name for `FulcroError`.
+- 1fc85fa: A transformer can now check a whole file without rewriting it: `createTransformer`, `createFileTransformer` and `createTransformerUnplugin` take a list of `FileAnalyzer`s, run once per file before any rewriter. A call target can name the package that must declare it (`packageName`), so a library laid out as `<utility>/index` no longer claims a consumer's own function of the same name and folder. A file nothing rewrote now comes back from the bundler core as `null`, keeping the original and its source map.
+
+### Patch Changes
+
+- Updated dependencies [d83a1ba]
+- Updated dependencies [21d09a1]
+- Updated dependencies [4eb7eae]
+- Updated dependencies [1dfec8b]
+- Updated dependencies [7e921ba]
+- Updated dependencies [d16fa12]
+- Updated dependencies [1cd194e]
+- Updated dependencies [8c40c25]
+  - @fulcro/errors@2.0.0
+
 ## 1.2.0
 
 ### Minor Changes

@@ -32,7 +32,8 @@ green; this skill takes that answer and asks the further question a green tree
 does not settle — whether what would ship is what was reviewed, and whether
 anything would ship at all. `/api-audit`, `/docs-sync` and `/dependency-audit`
 each own one surface of that, and this skill runs them rather than re-deriving
-what they read. `/pre-merge` is the wider gate that will call this one.
+what they read. `/pre-merge` is the wider gate, and calls this one when the
+merge it judges is into `main`.
 
 ## Invocation
 
