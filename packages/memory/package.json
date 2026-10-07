@@ -1,6 +1,6 @@
 {
 	"name": "@fulcro/memory",
-	"version": "0.0.0",
+	"version": "0.1.0",
 	"description": "Where a value's bytes live and who may reach them: storage, allocation and access to memory regions.",
 	"keywords": [
 		"memory",
@@ -33,11 +33,11 @@
 	],
 	"sideEffects": false,
 	"dependencies": {
-		"@fulcro/errors": "^1.1.0",
-		"@fulcro/transform-core": "^1.2.0"
+		"@fulcro/errors": "^2.0.0",
+		"@fulcro/transform-core": "^1.3.0"
 	},
 	"devDependencies": {
-		"@fulcro/types": "^1.2.0"
+		"@fulcro/types": "^1.3.0"
 	},
 	"peerDependencies": {
 		"typescript": ">=5.3.3 <7"

@@ -1,10 +1,6 @@
-# @fulcro/errors
+# @fulcro/memory
 
-## 2.0.0
-
-### Major Changes
-
-- 8c40c25: Every error now carries `details`: the values its message was written from, by name and frozen, always with the `operation` that failed — `error.details.index` instead of reading the number back out of the message. Recognise one with `isFulcroError(error, 'FULCRO7002')`, which narrows `details` to that code's fields, or with `error instanceof FulcroError`; the built-in class (`RangeError`, `TypeError`) is unchanged, and `DetailsOf<'FULCRO7002'>` names one code's details. Messages and classes are unchanged. **Breaking, in `@fulcro/errors` only:** `createError(code, ...values)` is now `createError(code, details)`, so `createError('FULCRO6021', 'Vector3.from', 'x')` becomes `createError('FULCRO6021', { operation: 'Vector3.from', field: 'x' })`. `CodedError` remains as a deprecated name for `FulcroError`.
+## 0.1.0
 
 ### Minor Changes
 
@@ -15,61 +11,18 @@
 - 7e921ba: Add ownership: `own(create)` creates a storage and returns its `Owned<T>`, whose values are reached only by borrowing them. `borrow(owner)` lends them for reading as a `Borrowed<T>`, a `ReadOnlyView<T>` that any number of readers can hold at once; `borrowMutable(owner)` lends them for writing as a `MutableBorrow<T>`, a `View<T>` that ends every borrow before it. `move(owner)` hands the same values to a new owner and spends the old one. A spent owner, and a borrow something later ended — with every subview, view and pointer made from it — throw on their next access. The optional transformer at `@fulcro/memory/transformer` (or `@fulcro/memory/unplugin`) refuses the same uses when the code is compiled, following variables through branches, loops and closures; it rewrites nothing. `@fulcro/transform-core` is now a dependency, and `typescript` an optional peer. Their errors are `FULCRO7023`–`FULCRO7029`.
 - d16fa12: Release what a scope holds when the scope ends, with TypeScript's own `using` and `await using`. An `Owned<T>` is now `Disposable`: leaving its `using` scope ends every borrow taken from it and spends the owner, which then refuses everything with `FULCRO7030`; an owner already moved from is left alone, so the owner `move` returned keeps its borrows. A `PoolAllocator`'s allocations are disposable on their own and return their block, a `FixedBufferAllocator` is an `AllocationDomain` that resets like an arena, and a `WorkerPool` is `AsyncDisposable`, closing its workers at the end of an `await using` scope. The text of `FULCRO7024` now names disposal among the ways a borrow ends.
 - 1cd194e: Add `Storage<T>`, one contract for a fixed number of values held by index, with two strategies behind it: `createManagedStorage`, which holds any value as it is in an ordinary array, and `createFixedBufferStorage`, which holds the values of a struct from `@fulcro/types` as bytes, end to end in one buffer. Their errors are `FULCRO7001`–`FULCRO7004`.
-
-## 1.1.0
-
-### Minor Changes
-
-- b9b4ce1: `@fulcro/types` gains the mathematics types: `Matrix`, `Vector`, `Fraction`,
-  `ComplexNumber` and `Quaternion`, each declared over any numeric type of the
-  package — or over one another — and doing its arithmetic through that type's
-  descriptor. Dimensions are type parameters: `Matrix(SinglePrecisionFloat, 3, 4)`
-  multiplies a vector of 4 rows, and a product whose shapes do not meet does not
-  compile, with no plugin. When the element type has a layout, so does the type
-  built on it, so it can be a struct's field and `sizeOf` reads it.
-
-  `@fulcro/reflect` gains `constantOf(() => …)`: with the transformer, the
-  function runs while the program compiles and the call is replaced by a frozen
-  literal of its result; without it, the function runs at runtime with the same
-  answer. A function the transformer cannot prove constant is a compile error at
-  the call, never a silent fallback.
-
-  `@fulcro/transform-core` lets a rewriter refuse a call as a compile error:
-  through `ts-patch`'s `addDiagnostic` where it is available, and as
-  `FULCRO5003` listing every refusal of a file otherwise. The transformer factory
-  takes `ts-patch`'s extras as a third argument.
-
-  `@fulcro/errors` registers `FULCRO4010`–`FULCRO4014`, `FULCRO5003` and
-  `FULCRO6033`–`FULCRO6042`.
-
-## 1.0.1
+- 8c40c25: Every error now carries `details`: the values its message was written from, by name and frozen, always with the `operation` that failed — `error.details.index` instead of reading the number back out of the message. Recognise one with `isFulcroError(error, 'FULCRO7002')`, which narrows `details` to that code's fields, or with `error instanceof FulcroError`; the built-in class (`RangeError`, `TypeError`) is unchanged, and `DetailsOf<'FULCRO7002'>` names one code's details. Messages and classes are unchanged. **Breaking, in `@fulcro/errors` only:** `createError(code, ...values)` is now `createError(code, details)`, so `createError('FULCRO6021', 'Vector3.from', 'x')` becomes `createError('FULCRO6021', { operation: 'Vector3.from', field: 'x' })`. `CodedError` remains as a deprecated name for `FulcroError`.
 
 ### Patch Changes
 
-- e257819: `offsetOf<T>(field)` and `layoutOf<T>()` answer where a struct's fields sit, at
-  compile time: `offsetOf<Vector3>('y')` becomes `4`, and `layoutOf<Vector3>()`
-  becomes a frozen object equal to `Vector3.layout`. A name that is not a field is
-  a type error. The layout of a struct value's type now also lists each field's
-  size and alignment, in declaration order, which is what the transformer places
-  the fields from — including for a struct imported from a built package.
-  `FULCRO4009` names the two new utilities in its message.
-
-## 1.0.0
-
-### Major Changes
-
-- c24bd4c: Every error now carries a stable `FULCRO` code, at the start of its message and
-  as `error.code`: `TypeError: FULCRO6021: Vector3.from: missing field 'x'.` The
-  class of each error is unchanged, so `instanceof` keeps working, but every
-  message now starts with its code — code that compares a message as a whole, or
-  anchors a pattern at its start, has to be updated. Match on `error.code`
-  instead: the code keeps its meaning across releases, while the wording after it
-  may improve.
-
-  The codes live in the new `@fulcro/errors` package, which every other package
-  depends on. What each one means, and what to write instead, is in
-  `docs/errors.md`.
-
-  `@fulcro/parallel`: an error thrown by a task inside a worker now rejects as
-  `FULCRO3005` with the task's own message kept after the code; the library's own
-  errors cross the worker boundary with their own code and class.
+- Updated dependencies [d83a1ba]
+- Updated dependencies [21d09a1]
+- Updated dependencies [4eb7eae]
+- Updated dependencies [1dfec8b]
+- Updated dependencies [7e921ba]
+- Updated dependencies [d16fa12]
+- Updated dependencies [1cd194e]
+- Updated dependencies [8c40c25]
+- Updated dependencies [1fc85fa]
+  - @fulcro/errors@2.0.0
+  - @fulcro/transform-core@1.3.0
