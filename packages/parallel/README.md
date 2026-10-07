@@ -95,6 +95,10 @@ the **first run** rather than at construction, so a pool nobody uses costs
 nothing — but one that has run and not been closed will hang your process on
 exit.
 
+A closed pool stays closed. A run started afterwards, or one still waiting for
+its turn when you closed, rejects with
+[`FULCRO3010`](../../docs/errors/FULCRO3xxx.md#fulcro3010) and starts no thread.
+
 Or let the scope close it, however the scope is left:
 
 ```ts
@@ -161,11 +165,19 @@ killed, that element produces no result, and the pool discards itself rather
 than handing the next run a thread still busy with something nobody is waiting
 for. The next run builds a fresh one.
 
+A run still waiting for its turn behind another rejects as soon as you abort,
+and a `stream` stops its workers at the abort even while your loop is busy with
+the last result.
+
 ## Failures
 
 A task that throws rejects the run with its message. The error's _message_
 crosses, not the error object: a custom error class loses its prototype in a
 structured clone, and the message is what a caller reads anyway.
+
+The first failure is the one you get, and it takes the rest of the run with it:
+the elements still in flight are terminated with their workers, and the next run
+starts a fresh set. A worker that dies between runs is replaced the same way.
 
 A module that will not load, or an export that is not a function, rejects on the
 first run rather than hanging.

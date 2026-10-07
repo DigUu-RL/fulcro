@@ -42,6 +42,24 @@ export const burn = (rounds) => {
 };
 
 /**
+ * Doubles a number, then throws once the answer has gone back.
+ *
+ * Stands in for what a task leaves behind — a timer, a promise nobody awaited —
+ * failing after the run that started it has finished, while nothing is waiting
+ * on this worker.
+ *
+ * @param {number} value Number to double.
+ * @returns {number} Twice the number.
+ */
+export const doubleThenThrow = (value) => {
+	setTimeout(() => {
+		throw new Error('left behind by an earlier task');
+	}, 0);
+
+	return value * 2;
+};
+
+/**
  * Always throws, for the failure assertions.
  *
  * @returns {never} Never returns.

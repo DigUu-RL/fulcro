@@ -34,6 +34,9 @@ export interface FakeOptions {
 
 	/** Workers, by index, whose `terminate` rejects. */
 	readonly unstoppable?: readonly number[];
+
+	/** Holds every `terminate` unsettled until `finishStopping` is called. */
+	readonly slowToStop?: boolean;
 }
 
 /** The workers, and what they have been asked to do so far. */
@@ -79,6 +82,15 @@ export interface FakeWorkers {
 
 	/** Reports that one task threw. */
 	readonly fail: (id: number, message: string) => void;
+
+	/**
+	 * Kills one worker the way an error nobody caught does: its handlers hear
+	 * the failure, and anything posted to it afterwards goes nowhere.
+	 */
+	readonly crash: (worker: number) => void;
+
+	/** Settles every `terminate` held by `slowToStop`. */
+	readonly finishStopping: () => void;
 }
 
 /**
@@ -98,6 +110,12 @@ export const createFakeWorkers = (options: FakeOptions = {}): FakeWorkers => {
 
 	/** Workers told to stop, by the order they were created in. */
 	const stopped = new Set<number>();
+
+	/** Workers that died, by the order they were created in. */
+	const dead = new Set<number>();
+
+	/** Terminations held back by `slowToStop`. */
+	const held: (() => void)[] = [];
 
 	let spawned = 0;
 	let inFlight = 0;
@@ -156,6 +174,8 @@ export const createFakeWorkers = (options: FakeOptions = {}): FakeWorkers => {
 			post: (message: unknown): void => {
 				const incoming = message as Incoming;
 
+				if (dead.has(index)) return;
+
 				if (incoming.kind === 'init') {
 					queueMicrotask(() => {
 						emit(
@@ -191,12 +211,24 @@ export const createFakeWorkers = (options: FakeOptions = {}): FakeWorkers => {
 			terminate: async (): Promise<void> => {
 				stopped.add(index);
 
+				// A terminated thread takes its task with it: nothing will answer
+				// it, so it is no longer in flight.
+				for (const [id, task] of [...running]) {
+					if (task.worker === index) settle(id);
+				}
+
 				// What a real worker does: a terminated thread exits with a
 				// non-zero code, and both adapters turn that into a failure on
 				// whatever handlers are still registered. A run whose workers are
 				// taken away underneath it therefore rejects rather than waiting
 				// for replies that will never come.
 				emit(index, undefined, new Error('The worker exited with code 1.'));
+
+				if (options.slowToStop === true) {
+					await new Promise<void>((resolve) => {
+						held.push(resolve);
+					});
+				}
 
 				if (options.unstoppable?.includes(index) === true) {
 					throw new Error(`Worker ${index} would not stop.`);
@@ -224,6 +256,15 @@ export const createFakeWorkers = (options: FakeOptions = {}): FakeWorkers => {
 			const task = settle(id);
 
 			emit(task.worker, { kind: 'failed', id, error: message });
+		},
+
+		crash: (worker: number): void => {
+			dead.add(worker);
+			emit(worker, undefined, new Error(`Worker ${worker} crashed.`));
+		},
+
+		finishStopping: (): void => {
+			for (const resolve of held.splice(0)) resolve();
 		},
 	};
 };

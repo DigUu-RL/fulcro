@@ -83,6 +83,51 @@ const drivenPool = <T, R>(
 		NOWHERE,
 	);
 
+/** How a piece of work ended, read without waiting for it. */
+interface Outcome<V> {
+	settled: boolean;
+	value?: V;
+	error?: unknown;
+}
+
+/**
+ * Records how a promise settles, so a test can wait for it with `until`.
+ *
+ * Awaiting the promise itself would hang the test, rather than fail it, on
+ * exactly the defects these cases exist to catch: a run that never learns it
+ * was called off, a run that waits on a thread that is gone.
+ *
+ * @template V Type the promise resolves to.
+ * @param work The promise to watch.
+ * @returns The outcome, filled in when it settles.
+ */
+const watch = <V>(work: Promise<V>): Outcome<V> => {
+	const outcome: Outcome<V> = { settled: false };
+
+	work.then(
+		(value) => {
+			outcome.settled = true;
+			outcome.value = value;
+		},
+		(error: unknown) => {
+			outcome.settled = true;
+			outcome.error = error;
+		},
+	);
+
+	return outcome;
+};
+
+/**
+ * Lets the microtask queue run for a while, for asserting that something did
+ * *not* happen.
+ *
+ * @param count How many turns to give it.
+ */
+const turns = async (count = 50): Promise<void> => {
+	for (let turn = 0; turn < count; turn++) await Promise.resolve();
+};
+
 describe('running work on workers', () => {
 	it('should process every element', async () => {
 		const results = await poolFor<number, number>('double').map([1, 2, 3, 4]);
@@ -255,6 +300,22 @@ describe('when things go wrong', () => {
 		await expect(
 			poolFor<number, number>('notAFunction').map([1]),
 		).rejects.toThrow(/callable export/i);
+	});
+
+	it('should survive a worker that fails after its run has finished', async () => {
+		// On Node a worker error with no listener is thrown in the main thread,
+		// and between two runs nothing used to listen: the suite would report
+		// it as an uncaught exception. The wait is for the worker's own timer to
+		// fire, not a measurement of anything.
+		const pool = poolFor<number, number>('doubleThenThrow', 1);
+
+		expect(await pool.map([1])).toEqual([2]);
+
+		await new Promise<void>((resolve) => {
+			setTimeout(resolve, 250);
+		});
+
+		expect(await pool.map([2])).toEqual([4]);
 	});
 
 	it('should reject when the module cannot be loaded', async () => {
@@ -586,15 +647,22 @@ describe('interleaving', () => {
 		expect(await second).toEqual([10, 20, 30]);
 	});
 
-	it('should leave no handler registered when a run ends', async () => {
+	it('should leave only the pool’s own handler on each worker when a run ends', async () => {
+		// One per worker stays for the worker's whole life, so that a failure
+		// between runs is seen; the run's own are gone, so the count holds
+		// however many batches go through.
 		const fake = createFakeWorkers({ auto: true });
 		const pool = drivenPool<number, number>(fake, 2);
 
 		for (let batch = 0; batch < 3; batch++) {
 			await pool.map([1, 2, 3]);
 
-			expect(fake.handlers()).toBe(0);
+			expect(fake.handlers()).toBe(2);
 		}
+
+		await pool.close();
+
+		expect(fake.handlers()).toBe(0);
 	});
 });
 
@@ -650,6 +718,234 @@ describe('cancelling, in order', () => {
 
 		await expect(work).rejects.toBe(reason);
 	});
+
+	it('should reject a run still waiting for its turn as soon as it is called off', async () => {
+		const fake = createFakeWorkers();
+		const pool = drivenPool<number, number>(fake, 2);
+		const controller = new AbortController();
+		const reason = new Error('called off');
+
+		const first = pool.map([1, 2]);
+		const second = watch(pool.map([10, 20], { signal: controller.signal }));
+		const third = pool.map([100]);
+
+		await until(() => fake.inFlight() === 2, 'the first run to start');
+
+		controller.abort(reason);
+
+		await until(() => second.settled, 'the queued run to reject');
+
+		expect(second.error).toBe(reason);
+
+		// Giving up its place must not let the run behind it overtake the run
+		// that is still going.
+		await turns();
+
+		expect(fake.posted()).toEqual([1, 2]);
+
+		fake.completeAll();
+
+		expect(await first).toEqual([1, 2]);
+
+		await until(() => fake.inFlight() === 1, 'the third run to start');
+
+		fake.completeAll();
+
+		expect(await third).toEqual([100]);
+		expect(fake.posted()).toEqual([1, 2, 100]);
+	});
+
+	it('should stop the workers when a stream is called off while its consumer is busy', async () => {
+		// The consumer holds the first result and has not asked for the next, so
+		// nothing inside the run is waiting to be woken. Stopping the workers on
+		// its next pull would leave them running for as long as it takes — or
+		// for ever, if it never pulls again.
+		const fake = createFakeWorkers();
+		const pool = drivenPool<number, number>(fake, 2);
+		const controller = new AbortController();
+		const reason = new Error('called off');
+
+		const iterator = pool
+			.stream([1, 2, 3, 4], { signal: controller.signal })
+			[Symbol.asyncIterator]();
+
+		const first = iterator.next();
+
+		await until(() => fake.inFlight() === 2, 'both workers to be busy');
+
+		fake.complete(0);
+
+		expect(await first).toEqual({ done: false, value: 1 });
+
+		controller.abort(reason);
+
+		await until(() => fake.terminated() === 2, 'the workers to be stopped');
+
+		await expect(iterator.next()).rejects.toBe(reason);
+	});
+});
+
+describe('a task that fails', () => {
+	it('should terminate the siblings still in flight, then start afresh', async () => {
+		const fake = createFakeWorkers();
+		const pool = drivenPool<number, number>(fake, 3);
+
+		const work = pool.map([1, 2, 3, 4]);
+
+		await until(() => fake.inFlight() === 3, 'every worker to be busy');
+
+		fake.fail(0, 'the first one broke');
+
+		await expect(work).rejects.toMatchObject({
+			code: 'FULCRO3005',
+			details: { reason: 'the first one broke' },
+		});
+
+		expect(fake.posted()).toEqual([1, 2, 3]);
+		expect(fake.terminated()).toBe(3);
+
+		const next = pool.map([9]);
+
+		await until(() => fake.inFlight() === 1, 'the next run to start');
+
+		fake.completeAll();
+
+		expect(await next).toEqual([9]);
+		expect(fake.spawned()).toBe(6);
+	});
+
+	it('should reject with the first failure when several arrive together', async () => {
+		const fake = createFakeWorkers();
+		const pool = drivenPool<number, number>(fake, 2);
+
+		const work = pool.map([1, 2]);
+
+		await until(() => fake.inFlight() === 2, 'both workers to be busy');
+
+		fake.fail(1, 'first');
+		fake.fail(0, 'second');
+
+		await expect(work).rejects.toMatchObject({ details: { reason: 'first' } });
+	});
+});
+
+describe('a worker that dies between runs', () => {
+	it('should be replaced rather than handed the next element', async () => {
+		const fake = createFakeWorkers({ auto: true });
+		const pool = drivenPool<number, number>(fake, 2);
+
+		expect(await pool.map([1, 2])).toEqual([1, 2]);
+
+		fake.crash(0);
+
+		const next = watch(pool.map([3, 4]));
+
+		await until(() => next.settled, 'the next run to finish');
+
+		expect(next).toEqual({ settled: true, value: [3, 4] });
+		expect(fake.spawned()).toBe(4);
+		expect(fake.terminated()).toBe(2);
+	});
+});
+
+describe('closing', () => {
+	it('should refuse a run that was waiting when the pool closed, and start nothing for it', async () => {
+		const fake = createFakeWorkers();
+		const pool = drivenPool<number, number>(fake, 2);
+
+		const first = watch(pool.map([1, 2]));
+		const second = watch(pool.map([10]));
+
+		await until(() => fake.inFlight() === 2, 'the first run to start');
+
+		await pool.close();
+
+		await until(
+			() => first.settled && second.settled,
+			'both runs to be settled',
+		);
+
+		expect(first.error).toMatchObject({
+			message: expect.stringMatching(/exited/i),
+		});
+		expect(second.error).toMatchObject({
+			code: 'FULCRO3010',
+			details: { operation: 'map' },
+		});
+		expect(fake.spawned()).toBe(2);
+	});
+
+	it('should refuse every run once closed, from either method', async () => {
+		const fake = createFakeWorkers({ auto: true });
+		const pool = drivenPool<number, number>(fake, 2);
+
+		await pool.map([1]);
+		await pool.close();
+
+		await expect(pool.map([2])).rejects.toMatchObject({
+			code: 'FULCRO3010',
+			details: { operation: 'map' },
+		});
+
+		const reading = async (): Promise<void> => {
+			for await (const value of pool.stream([2])) expect(value).toBe(2);
+		};
+
+		await expect(reading()).rejects.toMatchObject({
+			code: 'FULCRO3010',
+			details: { operation: 'stream' },
+		});
+
+		expect(fake.spawned()).toBe(2);
+	});
+
+	it('should refuse a pool closed before it ever ran', async () => {
+		const fake = createFakeWorkers({ auto: true });
+		const pool = drivenPool<number, number>(fake, 2);
+
+		await pool.close();
+
+		await expect(pool.map([1])).rejects.toMatchObject({ code: 'FULCRO3010' });
+
+		expect(fake.spawned()).toBe(0);
+	});
+
+	it('should not settle while a run that was called off is still stopping its workers', async () => {
+		const fake = createFakeWorkers({ slowToStop: true });
+		const pool = drivenPool<number, number>(fake, 2);
+		const controller = new AbortController();
+		const reason = new Error('called off');
+
+		const work = watch(pool.map([1, 2, 3], { signal: controller.signal }));
+
+		await until(() => fake.inFlight() === 2, 'both workers to be busy');
+
+		controller.abort(reason);
+
+		await until(() => fake.terminated() === 2, 'the workers to be told');
+
+		const closing = watch(pool.close());
+
+		await turns();
+
+		expect(closing.settled).toBe(false);
+
+		fake.finishStopping();
+
+		await until(() => closing.settled && work.settled, 'both to settle');
+
+		expect(closing.error).toBeUndefined();
+		expect(work.error).toBe(reason);
+	});
+
+	it('should hand a second close the same promise as the first', async () => {
+		const fake = createFakeWorkers({ auto: true });
+		const pool = drivenPool<number, number>(fake, 2);
+
+		await pool.map([1]);
+
+		expect(pool.close()).toBe(pool.close());
+	});
 });
 
 describe('starting', () => {
@@ -698,6 +994,11 @@ describe('starting', () => {
 
 		expect(fake.terminated()).toBe(2);
 
-		await expect(work).rejects.toThrow(/exited/i);
+		// The run asked before the close, and is refused for it rather than
+		// handed threads that are already gone.
+		await expect(work).rejects.toMatchObject({
+			code: 'FULCRO3010',
+			details: { operation: 'map' },
+		});
 	});
 });
