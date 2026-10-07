@@ -64,4 +64,9 @@ export const parallelCatalog = {
 		message: (_details: { operation: string }) =>
 			'A message could not be cloned across the worker boundary.',
 	},
+	FULCRO3010: {
+		kind: Error,
+		message: (_details: { operation: string }) =>
+			'The pool was closed, and a closed pool runs nothing.',
+	},
 } as const satisfies RangeCatalog<'3'>;

@@ -70,7 +70,53 @@ interface Member {
 
 	/** The element it is working on, if any. */
 	busyWith: number | null;
+
+	/**
+	 * False once the worker has failed or exited, whether or not a run was
+	 * listening at the time.
+	 */
+	alive: boolean;
+
+	/** Removes the listener that keeps `alive` current. */
+	readonly forget: () => void;
 }
+
+/**
+ * Waits for a run's turn, unless its signal calls it off first.
+ *
+ * A run queued behind another one has registered nothing on its signal yet,
+ * so without this an abort would reach it only when the run ahead finished —
+ * which, behind a long stream, is the whole of that stream.
+ *
+ * @param queued Settles when the run ahead has finished.
+ * @param signal Signal calling this run off.
+ * @returns A promise settling when it is this run's turn, or rejecting with
+ * the abort reason.
+ */
+const turnAfter = (
+	queued: Promise<void>,
+	signal: AbortSignal | undefined,
+): Promise<void> => {
+	if (signal === undefined) return queued;
+
+	return new Promise<void>((resolve, reject) => {
+		const onAbort = (): void => {
+			reject(signal.reason);
+		};
+
+		if (signal.aborted) {
+			onAbort();
+			return;
+		}
+
+		signal.addEventListener('abort', onAbort, { once: true });
+
+		void queued.then(() => {
+			signal.removeEventListener('abort', onAbort);
+			resolve();
+		});
+	});
+};
 
 /**
  * How many workers the machine can usefully run.
@@ -125,82 +171,173 @@ export const createPool = <T, R>(
 	let members: Promise<Member[]> | null = null;
 
 	/**
-	 * Starts the workers and waits for each to load the task module.
-	 *
-	 * Deferred to the first run, so a pool nobody uses costs no threads. Every
-	 * worker is told what to import once, rather than per element.
-	 *
-	 * @returns The members, ready for work.
+	 * Whether `close` has been called. A closed pool stays closed: a run that
+	 * was waiting for its turn when the pool closed would otherwise start a
+	 * fresh set of threads after `close` had already promised they were gone.
 	 */
-	const ready = (): Promise<Member[]> => {
-		if (members !== null) return members;
+	let closed = false;
 
-		const starting = (async (): Promise<Member[]> => {
-			const started: Member[] = Array.from({ length: size }, () => ({
-				handle: spawn(workerUrl),
-				busyWith: null,
-			}));
+	/** The close in progress or finished, which a second call shares. */
+	let closing: Promise<void> | null = null;
 
-			// The handler that waits for `ready` is wanted for the length of the
-			// start and no longer: a run registers its own, and one left behind
-			// here would read that run's replies as well.
-			const stops: (() => void)[] = [];
+	/** Terminations still in progress, which `close` waits for as well. */
+	const retiring = new Set<Promise<void>>();
 
-			try {
-				await Promise.all(
-					started.map(
-						(member) =>
-							new Promise<void>((resolve, reject) => {
-								stops.push(
-									member.handle.listen((message, failure) => {
-										if (failure !== undefined) {
-											reject(failure);
-											return;
-										}
+	/**
+	 * Terminates workers the pool is finished with.
+	 *
+	 * `allSettled` rather than `all`: this runs while a run is already throwing
+	 * the abort or the failure the caller is waiting to read, and a worker that
+	 * also fails to terminate must not replace it.
+	 *
+	 * @param retired The workers to stop.
+	 * @returns A promise settling when every one of them has been told to stop.
+	 */
+	const retire = (retired: readonly Member[]): Promise<void> => {
+		const stopping: Promise<void> = Promise.allSettled(
+			retired.map((member) => member.handle.terminate()),
+		).then(() => {
+			for (const member of retired) member.forget();
+		});
 
-										const reply = message as Outgoing;
+		retiring.add(stopping);
 
-										if (reply.kind === 'ready') resolve();
-										if (reply.kind === 'broken') {
-											reject(errorFrom(reply, 'FULCRO3004'));
-										}
-									}),
-								);
+		void stopping.then(() => retiring.delete(stopping));
 
-								member.handle.post({
-									kind: 'init',
-									module:
-										typeof options.module === 'string'
-											? options.module
-											: options.module.href,
-									export: options.export,
-								});
-							}),
-					),
-				);
-			} catch (error) {
-				// One worker failing to load says nothing about the others, which
-				// are already running and would otherwise outlive the pool that
-				// never finished being built. `allSettled` rather than `all`: the
-				// load failure is the cause the caller needs, and a termination
-				// that also fails must not take its place.
-				members = null;
+		return stopping;
+	};
 
-				await Promise.allSettled(
-					started.map((member) => member.handle.terminate()),
-				);
+	/**
+	 * Starts one worker, with a listener kept for as long as the worker is.
+	 *
+	 * A run listens only while it runs, and a worker can fail between runs: on
+	 * Node an error with nobody listening is thrown in the main thread and ends
+	 * the process, and a worker that exited unseen would take the next run's
+	 * element and never answer. This listener is what makes both visible.
+	 *
+	 * @returns The worker, not yet initialised.
+	 */
+	const enlist = (): Member => {
+		const handle: WorkerHandle = spawn(workerUrl);
 
-				throw error;
-			} finally {
-				for (const stop of stops) stop();
-			}
+		const member: Member = {
+			handle,
+			busyWith: null,
+			alive: true,
+			forget: handle.listen((_message, failure) => {
+				if (failure !== undefined) member.alive = false;
+			}),
+		};
 
-			return started;
-		})();
+		return member;
+	};
+
+	/**
+	 * Spawns a full set of workers and waits for each to load the task module.
+	 *
+	 * Every worker is told what to import once, rather than per element.
+	 *
+	 * @returns The members, once every one has loaded the task module.
+	 */
+	const start = async (): Promise<Member[]> => {
+		const started: Member[] = Array.from({ length: size }, enlist);
+
+		// The handler that waits for `ready` is wanted for the length of the
+		// start and no longer: a run registers its own, and one left behind
+		// here would read that run's replies as well.
+		const stops: (() => void)[] = [];
+
+		try {
+			await Promise.all(
+				started.map(
+					(member) =>
+						new Promise<void>((resolve, reject) => {
+							stops.push(
+								member.handle.listen((message, failure) => {
+									if (failure !== undefined) {
+										reject(failure);
+										return;
+									}
+
+									const reply = message as Outgoing;
+
+									if (reply.kind === 'ready') resolve();
+									if (reply.kind === 'broken') {
+										reject(errorFrom(reply, 'FULCRO3004'));
+									}
+								}),
+							);
+
+							member.handle.post({
+								kind: 'init',
+								module:
+									typeof options.module === 'string'
+										? options.module
+										: options.module.href,
+								export: options.export,
+							});
+						}),
+				),
+			);
+		} catch (error) {
+			// One worker failing to load says nothing about the others, which
+			// are already running and would otherwise outlive the pool that
+			// never finished being built. The load failure is the cause the
+			// caller needs, which is why `retire` settles rather than throws.
+			members = null;
+
+			await retire(started);
+
+			throw error;
+		} finally {
+			for (const stop of stops) stop();
+		}
+
+		return started;
+	};
+
+	/**
+	 * The workers a run is to use, started if there are none.
+	 *
+	 * Deferred to the first run, so a pool nobody uses costs no threads. A set
+	 * with a worker that died since the last run is replaced rather than reused.
+	 *
+	 * @param operation The call the run came from, for the error a closed pool
+	 * gives.
+	 * @returns The members, ready for work.
+	 * @throws {Error} FULCRO3010 when the pool was closed.
+	 */
+	const ready = async (operation: string): Promise<Member[]> => {
+		const refuse = (): Error => createError('FULCRO3010', { operation });
+
+		if (closed) throw refuse();
+
+		const current: Promise<Member[]> | null = members;
+
+		if (current !== null) {
+			const running: Member[] = await current;
+
+			if (closed) throw refuse();
+			if (running.every((member) => member.alive)) return running;
+
+			if (members === current) members = null;
+
+			await retire(running);
+
+			if (closed) throw refuse();
+		}
+
+		const starting: Promise<Member[]> = start();
 
 		members = starting;
 
-		return starting;
+		const started: Member[] = await starting;
+
+		// A close that arrived during the handshake has terminated these
+		// already, and a run handed them would wait on threads that are gone.
+		if (closed) throw refuse();
+
+		return started;
 	};
 
 	/** The run in progress, which the next one waits for. */
@@ -211,11 +348,13 @@ export const createPool = <T, R>(
 	 *
 	 * @param items Elements to process.
 	 * @param runOptions Cancellation and transfers.
+	 * @param operation The call the run came from.
 	 * @returns The results, in completion order, each tagged with its position.
 	 */
 	const run = async function* (
 		items: Iterable<T>,
-		runOptions?: RunOptions,
+		runOptions: RunOptions | undefined,
+		operation: string,
 	): AsyncIterable<{ position: number; value: R }> {
 		const signal: AbortSignal | undefined = runOptions?.signal;
 
@@ -224,7 +363,7 @@ export const createPool = <T, R>(
 		// workers that took them.
 		signal?.throwIfAborted();
 
-		const pool: Member[] = await ready();
+		const pool: Member[] = await ready(operation);
 		const pending: T[] = [...items];
 
 		if (pending.length === 0) return;
@@ -277,11 +416,42 @@ export const createPool = <T, R>(
 			}),
 		);
 
+		/** The termination of this run's workers, once one has begun. */
+		let discarding: Promise<void> | null = null;
+
+		/**
+		 * Gives up every worker of this run.
+		 *
+		 * A worker cannot be asked to stop mid-task, only terminated. So a run
+		 * that ends while elements are still out — aborted, failed, or simply
+		 * abandoned by its consumer — discards the whole pool rather than handing
+		 * the next run a worker still busy with something nobody is waiting for.
+		 * The next run builds a fresh one, and the cost of that is paid only by a
+		 * run that did not finish.
+		 *
+		 * @returns A promise settling when every worker has been told to stop.
+		 */
+		const discard = (): Promise<void> => {
+			if (discarding === null) {
+				members = null;
+				outstanding.clear();
+				discarding = retire(pool);
+			}
+
+			return discarding;
+		};
+
 		// An abort is not a reply, so nothing else would wake the loop: a run
 		// whose workers are all busy would learn it had been called off only when
 		// one of them finished on its own, which is the whole duration the pool
-		// exists to spend.
-		const onAbort = (): void => notify();
+		// exists to spend. And a stream whose consumer is busy with the last
+		// result is not waiting to be woken at all, so the workers are stopped
+		// here rather than on the consumer's next pull, which may never come.
+		const onAbort = (): void => {
+			if (outstanding.size > 0) void discard();
+
+			notify();
+		};
 
 		signal?.addEventListener('abort', onAbort);
 
@@ -336,25 +506,7 @@ export const createPool = <T, R>(
 
 			for (const stop of stops) stop();
 
-			// A worker cannot be asked to stop mid-task, only terminated. So a run
-			// that ends while elements are still out — aborted, failed, or simply
-			// abandoned by its consumer — discards the whole pool rather than
-			// handing the next run a worker still busy with something nobody is
-			// waiting for. The next run builds a fresh one, and the cost of that
-			// is paid only by a run that did not finish.
-			if (outstanding.size > 0) {
-				const discarded: Member[] = pool;
-
-				members = null;
-				outstanding.clear();
-
-				// `allSettled`, because this runs while the run is already throwing
-				// the abort or the task failure the caller is waiting to read, and a
-				// worker that also fails to terminate must not replace it.
-				await Promise.allSettled(
-					discarded.map((member) => member.handle.terminate()),
-				);
-			}
+			if (outstanding.size > 0 || discarding !== null) await discard();
 		}
 	};
 
@@ -369,11 +521,13 @@ export const createPool = <T, R>(
 	 *
 	 * @param items Elements to process.
 	 * @param runOptions Cancellation and transfers.
+	 * @param operation The call the run came from.
 	 * @returns The results, in completion order, each tagged with its position.
 	 */
 	const process = async function* (
 		items: Iterable<T>,
-		runOptions?: RunOptions,
+		runOptions: RunOptions | undefined,
+		operation: string,
 	): AsyncIterable<{ position: number; value: R }> {
 		const queued: Promise<void> = inProgress;
 
@@ -388,34 +542,56 @@ export const createPool = <T, R>(
 		});
 
 		try {
-			await queued;
+			await turnAfter(queued, runOptions?.signal);
 
-			yield* run(items, runOptions);
+			yield* run(items, runOptions, operation);
 		} finally {
-			release();
+			// After the run ahead as well as after this one: a run called off
+			// while still queued gives up its place, and the run behind it must
+			// not overtake the run that is still going.
+			void queued.then(release);
 		}
 	};
 
-	const close = async (): Promise<void> => {
-		const starting: Promise<Member[]> | null = members;
+	const close = (): Promise<void> => {
+		closing ??= (async (): Promise<void> => {
+			closed = true;
 
-		if (starting === null) return;
+			const starting: Promise<Member[]> | null = members;
 
-		members = null;
+			members = null;
 
-		// A start that failed has already terminated what it managed to spawn,
-		// and reported its cause to the run that was waiting for it. Closing
-		// is not the place to raise it a second time.
-		const running: Member[] = await starting.catch((): Member[] => []);
+			if (starting !== null) {
+				// A start that failed has already terminated what it managed to
+				// spawn, and reported its cause to the run that was waiting for it.
+				// Closing is not the place to raise it a second time.
+				const running: Member[] = await starting.catch((): Member[] => []);
 
-		await Promise.all(running.map((member) => member.handle.terminate()));
+				try {
+					await Promise.all(running.map((member) => member.handle.terminate()));
+				} finally {
+					for (const member of running) member.forget();
+				}
+			}
+
+			// A run that gave its workers up — aborted, or failed with elements
+			// still out — may still be terminating them, and `close` promises
+			// that every worker is gone when it settles.
+			await Promise.all([...retiring]);
+		})();
+
+		return closing;
 	};
 
 	return {
 		map: async (items, runOptions): Promise<R[]> => {
 			const collected: R[] = [];
 
-			for await (const { position, value } of process(items, runOptions)) {
+			for await (const { position, value } of process(
+				items,
+				runOptions,
+				'map',
+			)) {
 				collected[position] = value;
 			}
 
@@ -424,7 +600,9 @@ export const createPool = <T, R>(
 
 		stream: (items, runOptions): AsyncIterable<R> => ({
 			async *[Symbol.asyncIterator](): AsyncIterator<R> {
-				for await (const { value } of process(items, runOptions)) yield value;
+				for await (const { value } of process(items, runOptions, 'stream')) {
+					yield value;
+				}
 			},
 		}),
 

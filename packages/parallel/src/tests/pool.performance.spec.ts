@@ -87,6 +87,58 @@ describe('what an await using scope costs', () => {
 	});
 });
 
+describe('what a failure costs', () => {
+	it('should rebuild once after a worker died between runs, not once per run', async () => {
+		const fake = createFakeWorkers({ auto: true });
+		const pool = countedPool(fake, 4);
+
+		await pool.map(ELEMENTS);
+
+		fake.crash(2);
+
+		for (let batch = 0; batch < 5; batch++) await pool.map(ELEMENTS);
+
+		expect([fake.spawned(), fake.terminated()]).toEqual([8, 4]);
+		expect(fake.posted()).toHaveLength(ELEMENTS.length * 6);
+	});
+
+	it('should hand out nothing for a run called off while it waited', async () => {
+		const fake = createFakeWorkers({ auto: true });
+		const pool = countedPool(fake, 4);
+		const controller = new AbortController();
+
+		const first = pool.map(ELEMENTS);
+		const second = pool.map(ELEMENTS, { signal: controller.signal });
+
+		controller.abort();
+
+		await expect(second).rejects.toBeDefined();
+		await first;
+
+		expect(fake.posted()).toEqual(ELEMENTS);
+	});
+
+	it('should start no worker for any run refused after close', async () => {
+		const fake = createFakeWorkers({ auto: true });
+		const pool = countedPool(fake, 4);
+
+		await pool.map(ELEMENTS);
+		await pool.close();
+
+		const refused = await Promise.allSettled(
+			Array.from({ length: 10 }, () => pool.map(ELEMENTS)),
+		);
+
+		expect(refused.every((outcome) => outcome.status === 'rejected')).toBe(
+			true,
+		);
+		expect([fake.spawned(), fake.posted().length]).toEqual([
+			4,
+			ELEMENTS.length,
+		]);
+	});
+});
+
 describe('what overlapping runs cost', () => {
 	it('should hold the bound across two runs on one pool', async () => {
 		// The bound is a property of the pool, not of a run. Two runs sharing

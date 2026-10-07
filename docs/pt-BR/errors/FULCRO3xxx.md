@@ -2,7 +2,7 @@
 
 🇺🇸 English: [Read this documentation in English](../../errors/FULCRO3xxx.md)
 
-Os erros do [pool de workers](../../parallelism.md). Voltar para
+Os erros do [pool de workers](../parallelism.md). Voltar para
 [todos os códigos](../errors.md).
 
 Um worker é uma thread separada, e só texto volta dela. Quando um erro começou
@@ -165,3 +165,23 @@ arrays, maps, typed arrays — não funções, instâncias de classes com métod
 nós do DOM.
 
 Envie dados simples, e reconstrua os objetos mais ricos do outro lado.
+
+## FULCRO3010
+
+```text
+Error: FULCRO3010: The pool was closed, and a closed pool runs nothing.
+```
+
+Detalhes:
+
+```text
+{ operation: string }
+```
+
+`map()` ou `stream()` foi chamado num pool depois de `close()`, ou ainda
+esperava a sua vez atrás de outra execução quando o pool foi fechado.
+`operation` diz qual dos dois. Um pool fechado continua fechado e não inicia
+nenhuma thread para a execução.
+
+Crie um pool novo se houver mais trabalho, ou feche o pool só quando nada mais
+for entregue a ele — no encerramento, ou no fim de um escopo `await using`.

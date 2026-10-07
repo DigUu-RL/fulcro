@@ -49,6 +49,7 @@ export interface RunOptions {
 	 * Aborting stops handing out new elements and rejects. Unlike a promise,
 	 * a worker genuinely *can* be stopped — but the one holding an element is
 	 * terminated rather than interrupted, so its element produces no result.
+	 * A run still waiting for its turn rejects at once and gives its place up.
 	 */
 	readonly signal?: AbortSignal;
 
@@ -118,7 +119,13 @@ export type SpawnWorker = (url: URL) => WorkerHandle;
  * throughput a pool this size does not have — the workers are already
  * saturated by one run — at the cost of a run identity in every message.
  *
- * A `stream` therefore holds the pool until it is finished or abandoned.
+ * A `stream` therefore holds the pool until it is finished or returned: a
+ * `for await` returns it on `break` or on a throw, but an iterator taken by
+ * hand and dropped without calling `return()` holds it for good.
+ *
+ * A task that fails rejects the run with its error and terminates the
+ * elements still in flight with it; the next run starts a fresh set of
+ * workers. So does a run after a worker died between runs.
  *
  * Declared with `await using`, the pool closes when the scope ends, however
  * the scope is left:
@@ -139,7 +146,8 @@ export interface WorkerPool<T, R> extends AsyncDisposable {
 	 *
 	 * @param items Elements to process.
 	 * @param options Cancellation and transfers.
-	 * @returns A promise of the results, in input order.
+	 * @returns A promise of the results, in input order. It rejects with
+	 * FULCRO3010 once the pool is closed.
 	 */
 	readonly map: (items: Iterable<T>, options?: RunOptions) => Promise<R[]>;
 
@@ -152,7 +160,8 @@ export interface WorkerPool<T, R> extends AsyncDisposable {
 	 *
 	 * @param items Elements to process.
 	 * @param options Cancellation and transfers.
-	 * @returns The results, in completion order.
+	 * @returns The results, in completion order. Reading them rejects with
+	 * FULCRO3010 once the pool is closed.
 	 */
 	readonly stream: (
 		items: Iterable<T>,
@@ -165,7 +174,12 @@ export interface WorkerPool<T, R> extends AsyncDisposable {
 	 * A pool holds threads, which keep a Node process alive until they are
 	 * stopped. Always close a pool you are finished with.
 	 *
-	 * @returns A promise settling when every worker is gone.
+	 * A closed pool stays closed: every run started afterwards, and every run
+	 * still waiting for its turn, rejects with FULCRO3010 and starts no
+	 * thread. A second call shares the first one's promise.
+	 *
+	 * @returns A promise settling when every worker is gone, including those
+	 * a run that was called off is still terminating.
 	 */
 	readonly close: () => Promise<void>;
 
