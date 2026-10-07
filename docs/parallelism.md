@@ -1,5 +1,7 @@
 # Parallelism with workers
 
+🇧🇷 Português (Brasil): [Leia esta documentação em português](./pt-BR/parallelism.md)
+
 A worker pool for work that is **not waiting on anything** — parsing, hashing,
 compressing, transforming. Runs on the browser and on Node. No dependencies.
 
@@ -102,7 +104,9 @@ the replies back, and buys nothing: one run already saturates the workers.
 
 The consequence worth knowing is that a `stream` holds the pool for as long as
 you read it. Finish it, or `break` out of the `for await`, before starting
-another run.
+another run. A `for await` hands the pool back on `break` and on a throw; an
+iterator you take by hand has to be finished or given its `return()`, or it
+holds the pool for good.
 
 `map` and `stream` also read the elements you hand them **in full** before
 dispatching any, so a generator of ten million rows becomes ten million rows in
@@ -136,6 +140,13 @@ scope is left — a throw included:
 Closing a pool already closed does nothing, so calling `close()` inside the
 scope as well is harmless. `await using` needs TypeScript 5.2 or later, with
 `esnext.disposable` in `lib` or `@types/node` installed.
+
+A closed pool stays closed. A run started afterwards, or one still waiting for
+its turn when you closed, rejects with
+[`FULCRO3010`](./errors/FULCRO3xxx.md#fulcro3010) and starts no thread — so a
+shutdown handler that closes the pool cannot be undone by a request that
+arrived just before it. `close()` settles once every worker is gone, including
+those a run you called off is still stopping.
 
 ## What crossing a thread costs
 
@@ -199,11 +210,31 @@ the run rejects straight away, even with every worker mid-task. Abort before a
 run has handed anything out and no element is dispatched at all — the workers
 are not even started.
 
+The same holds in the two places where nothing is waiting on the workers:
+
+- **A run queued behind another** rejects as soon as you abort, rather than
+  when the run ahead of it finishes, and gives its place up without letting the
+  runs behind it overtake.
+- **A `stream` whose loop is busy** with the last result has its workers
+  stopped at the abort, not on the next pull — which may never come. The
+  rejection reaches you on that next pull.
+
 ## Failures
 
 A task that throws rejects the run with its message. The error's _message_
 crosses, not the error object: a custom error class loses its prototype in a
 structured clone, and the message is what a caller reads anyway.
+
+The first failure is the one you get, and it takes the rest of the run with it.
+A worker cannot be interrupted, only terminated, so the elements still in flight
+are terminated with their workers and produce no result, and later failures in
+the same run are not reported. The next run starts a fresh set of workers.
+
+A worker can also die while no run is using it — a timer or a promise a task
+left behind throws after the run has finished, or the thread runs out of memory.
+The pool keeps listening to every worker for its whole life, so this neither
+escapes as an uncaught exception nor reaches the next run: that run starts a
+fresh set instead of handing an element to a thread that is gone.
 
 A module that will not load, or an export that is not a function, rejects on the
 first run rather than hanging.

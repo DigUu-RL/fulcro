@@ -163,3 +163,23 @@ structured clone algorithm accepts can cross: plain data, arrays, maps, typed
 arrays — not functions, class instances with methods, or DOM nodes.
 
 Send plain data, and rebuild richer objects on the other side.
+
+## FULCRO3010
+
+```text
+Error: FULCRO3010: The pool was closed, and a closed pool runs nothing.
+```
+
+Details:
+
+```text
+{ operation: string }
+```
+
+`map()` or `stream()` was called on a pool after `close()`, or was still waiting
+for its turn behind another run when the pool closed. `operation` says which of
+the two. A closed pool stays closed and starts no thread for the run.
+
+Create a new pool if there is more work, or close the pool only once nothing
+else will be handed to it — at shutdown, or at the end of an `await using`
+scope.
