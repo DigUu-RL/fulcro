@@ -1,20 +1,10 @@
-import {
-	mkdirSync,
-	mkdtempSync,
-	readFileSync,
-	rmSync,
-	writeFileSync,
-} from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import {
-	outDirOf,
-	rewriteAliases,
-	rewriteText,
-} from '../../tools/build/rewrite-aliases.mjs';
+import { outDirOf, rewriteAliases, rewriteText } from '../../tools/build/rewrite-aliases.mjs';
 
 /**
  * Behaviour suite for the alias rewrite every package's build ends with.
@@ -84,11 +74,7 @@ describe('rewrite-aliases', () => {
 		const file = path.join(root, 'dist/pool/index.d.ts');
 
 		expect(
-			rewriteText(
-				path.join(root, 'dist'),
-				file,
-				"import type { Storage } from '@/storage';",
-			),
+			rewriteText(path.join(root, 'dist'), file, "import type { Storage } from '@/storage';"),
 		).toBe("import type { Storage } from '../storage/index.js';");
 	});
 
@@ -96,11 +82,7 @@ describe('rewrite-aliases', () => {
 		const file = path.join(root, 'dist/index.js');
 
 		expect(
-			rewriteText(
-				path.join(root, 'dist'),
-				file,
-				"export { createPool } from '@/pool/index.js';",
-			),
+			rewriteText(path.join(root, 'dist'), file, "export { createPool } from '@/pool/index.js';"),
 		).toBe("export { createPool } from './pool/index.js';");
 	});
 
@@ -113,17 +95,13 @@ describe('rewrite-aliases', () => {
 				file,
 				"type T = import('@/storage').Storage<number>;\nimport '@/pool';",
 			),
-		).toBe(
-			"type T = import('./storage/index.js').Storage<number>;\nimport './pool/index.js';",
-		);
+		).toBe("type T = import('./storage/index.js').Storage<number>;\nimport './pool/index.js';");
 	});
 
 	it('should leave a path mentioned in a comment as it was written', () => {
 		const text = ' * see `@/storage` for the contract';
 
-		expect(
-			rewriteText(path.join(root, 'dist'), path.join(root, 'dist/x.js'), text),
-		).toBe(text);
+		expect(rewriteText(path.join(root, 'dist'), path.join(root, 'dist/x.js'), text)).toBe(text);
 	});
 
 	it('should refuse a specifier that resolves to nothing it emitted', () => {
@@ -145,9 +123,7 @@ describe('rewrite-aliases', () => {
 		expect(readFileSync(path.join(root, 'dist/index.js'), 'utf8')).toBe(
 			'require("./storage/index.js");',
 		);
-		expect(readFileSync(path.join(root, 'dist/plain.js'), 'utf8')).toBe(
-			'module.exports = 1;',
-		);
+		expect(readFileSync(path.join(root, 'dist/plain.js'), 'utf8')).toBe('module.exports = 1;');
 	});
 
 	it('should read a tsconfig written with comments', () => {
@@ -161,10 +137,7 @@ describe('rewrite-aliases', () => {
 
 	it.each([
 		['no alias', { rootDir: './src', outDir: './dist' }],
-		[
-			'another alias',
-			{ rootDir: './src', outDir: './dist', paths: { '~/*': ['./src/*'] } },
-		],
+		['another alias', { rootDir: './src', outDir: './dist', paths: { '~/*': ['./src/*'] } }],
 		[
 			'an alias outside rootDir',
 			{ rootDir: './src', outDir: './dist', paths: { '@/*': ['./lib/*'] } },

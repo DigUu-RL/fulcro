@@ -35,10 +35,7 @@ let scriptsEvaluated = 0;
 // Building the program is what costs, and a hook has the generous ceiling the
 // transformer suites are given; a test body does not.
 beforeAll(() => {
-	const fixture: string = path.resolve(
-		__dirname,
-		'../transformer/constantOf.sample.ts',
-	);
+	const fixture: string = path.resolve(__dirname, '../transformer/constantOf.sample.ts');
 	const program: ts.Program = ts.createProgram([fixture], {
 		target: ts.ScriptTarget.ES2022,
 		module: ts.ModuleKind.ESNext,
@@ -46,22 +43,12 @@ beforeAll(() => {
 		strict: true,
 		skipLibCheck: true,
 	});
-	const transform = transformer(
-		program,
-		{},
-		{ addDiagnostic: () => undefined },
-	);
+	const transform = transformer(program, {}, { addDiagnostic: () => undefined });
 
 	vi.mocked(vm.runInContext).mockClear();
-	program.emit(
-		program.getSourceFile(fixture),
-		() => undefined,
-		undefined,
-		false,
-		{
-			before: [transform],
-		},
-	);
+	program.emit(program.getSourceFile(fixture), () => undefined, undefined, false, {
+		before: [transform],
+	});
 
 	// Each evaluation hands the context two scripts: the one removing
 	// `Math.random`, and its own.

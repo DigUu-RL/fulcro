@@ -39,9 +39,7 @@ beforeAll(() => {
 	}
 
 	workspace = createWorkspace(files);
-	fileNames = Object.keys(files).map((name) =>
-		path.join(workspace.root, ...name.split('/')),
-	);
+	fileNames = Object.keys(files).map((name) => path.join(workspace.root, ...name.split('/')));
 	program = typescript.createProgram(fileNames, {
 		module: typescript.ModuleKind.ESNext,
 		strict: true,
@@ -61,10 +59,7 @@ describe('createTransformer with analyzers, counted', () => {
 				counts[slot]++;
 			},
 		});
-		const transformer = createTransformer(
-			[],
-			[counting(0), counting(1)],
-		)(program);
+		const transformer = createTransformer([], [counting(0), counting(1)])(program);
 
 		for (const fileName of fileNames) {
 			const source = program.getSourceFile(

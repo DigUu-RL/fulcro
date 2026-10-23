@@ -92,9 +92,7 @@ export interface WorkerHandle {
 	 * itself.
 	 * @returns A function removing the handler.
 	 */
-	readonly listen: (
-		handler: (message: unknown, failure?: unknown) => void,
-	) => () => void;
+	readonly listen: (handler: (message: unknown, failure?: unknown) => void) => () => void;
 
 	/** Stops the worker, discarding whatever it was doing. */
 	readonly terminate: () => Promise<void>;
@@ -165,10 +163,7 @@ export interface WorkerPool<T, R> extends AsyncDisposable {
 	 * @returns The results, in completion order. Reading them rejects with
 	 * FULCRO3010 once the pool is closed.
 	 */
-	readonly stream: (
-		items: Iterable<T>,
-		options?: RunOptions,
-	) => AsyncIterable<R>;
+	readonly stream: (items: Iterable<T>, options?: RunOptions) => AsyncIterable<R>;
 
 	/**
 	 * Stops every worker.

@@ -44,12 +44,9 @@ export const countedStorage = (
  * @param length How many values.
  * @returns The array, behind a counting proxy, and the counts it updates.
  */
-export const countedArray = (
-	length: number,
-): { array: number[]; counts: SourceCounts } => {
+export const countedArray = (length: number): { array: number[]; counts: SourceCounts } => {
 	const counts: SourceCounts = { reads: 0, writes: 0 };
-	const isElement = (key: string | symbol): boolean =>
-		typeof key === 'string' && /^\d+$/.test(key);
+	const isElement = (key: string | symbol): boolean => typeof key === 'string' && /^\d+$/.test(key);
 
 	return {
 		counts,

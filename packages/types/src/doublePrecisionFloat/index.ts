@@ -10,8 +10,7 @@ import type { BoundedNumericType } from '@/numericType';
  * exists so that a double is named as a choice rather than left as the default
  * nobody chose, and so that it carries a layout like the other formats.
  */
-export type DoublePrecisionFloat = Branded<number, 'DoublePrecisionFloat'> &
-	Layout<8, 8>;
+export type DoublePrecisionFloat = Branded<number, 'DoublePrecisionFloat'> & Layout<8, 8>;
 
 /**
  * The descriptor of {@link DoublePrecisionFloat}.
@@ -20,7 +19,5 @@ export type DoublePrecisionFloat = Branded<number, 'DoublePrecisionFloat'> &
  * DoublePrecisionFloat.from(0.1); // 0.1
  * ```
  */
-export const DoublePrecisionFloat: BoundedNumericType<
-	DoublePrecisionFloat,
-	number
-> = createFloatType('DoublePrecisionFloat', Number.MAX_VALUE, (value) => value);
+export const DoublePrecisionFloat: BoundedNumericType<DoublePrecisionFloat, number> =
+	createFloatType('DoublePrecisionFloat', Number.MAX_VALUE, (value) => value);

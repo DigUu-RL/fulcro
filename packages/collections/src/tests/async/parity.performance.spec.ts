@@ -55,9 +55,7 @@ beforeAll(() => {
  * @param values Elements to yield.
  * @returns The asynchronous iterable and a reader of how far it got.
  */
-const counted = <T>(
-	values: readonly T[],
-): { source: AsyncIterable<T>; pulled: () => number } => {
+const counted = <T>(values: readonly T[]): { source: AsyncIterable<T>; pulled: () => number } => {
 	let pulled = 0;
 
 	return {
@@ -83,27 +81,14 @@ const endless = (): AsyncIterable<number> => ({
 describe('the terminals read the source once', () => {
 	it.each([
 		['sum', (sequence: AsyncSequenceOf<Order>) => sequence.sum((o) => o.total)],
-		[
-			'average',
-			(sequence: AsyncSequenceOf<Order>) => sequence.average((o) => o.total),
-		],
+		['average', (sequence: AsyncSequenceOf<Order>) => sequence.average((o) => o.total)],
 		['min', (sequence: AsyncSequenceOf<Order>) => sequence.min((o) => o.total)],
-		[
-			'maxBy',
-			(sequence: AsyncSequenceOf<Order>) => sequence.maxBy((o) => o.total),
-		],
-		[
-			'countBy',
-			(sequence: AsyncSequenceOf<Order>) => sequence.countBy((o) => o.region),
-		],
-		[
-			'toLookup',
-			(sequence: AsyncSequenceOf<Order>) => sequence.toLookup((o) => o.region),
-		],
+		['maxBy', (sequence: AsyncSequenceOf<Order>) => sequence.maxBy((o) => o.total)],
+		['countBy', (sequence: AsyncSequenceOf<Order>) => sequence.countBy((o) => o.region)],
+		['toLookup', (sequence: AsyncSequenceOf<Order>) => sequence.toLookup((o) => o.region)],
 		[
 			'standardDeviation',
-			(sequence: AsyncSequenceOf<Order>) =>
-				sequence.standardDeviation((o) => o.total),
+			(sequence: AsyncSequenceOf<Order>) => sequence.standardDeviation((o) => o.total),
 		],
 	])('should pull %s elements exactly once each', async (_label, run) => {
 		const { source, pulled } = counted(orders);
@@ -129,9 +114,7 @@ describe('the terminals that can stop, stop', () => {
 	it('should leave single at the second element', async () => {
 		const { source, pulled } = counted(orders);
 
-		await expect(
-			AsyncSequenceCollection.from(source).single(),
-		).rejects.toThrow();
+		await expect(AsyncSequenceCollection.from(source).single()).rejects.toThrow();
 
 		expect(pulled()).toBe(2);
 	});
@@ -139,11 +122,7 @@ describe('the terminals that can stop, stop', () => {
 	it('should leave sequenceEqual at the first difference', async () => {
 		const { source, pulled } = counted(orders);
 
-		const different: readonly Order[] = [
-			orders[0],
-			{ ...orders[1], id: -1 },
-			...orders.slice(2),
-		];
+		const different: readonly Order[] = [orders[0], { ...orders[1], id: -1 }, ...orders.slice(2)];
 
 		await AsyncSequenceCollection.from(source).sequenceEqual(different);
 
@@ -174,9 +153,7 @@ describe('the windows hold a window, not the stream', () => {
 		// source would fail: over an endless source, these still produce. A test
 		// that only checked the values would pass on a version that buffered
 		// everything — this one would never return.
-		const first = await build(AsyncSequenceCollection.from(endless()))
-			.take(2)
-			.toArray();
+		const first = await build(AsyncSequenceCollection.from(endless())).take(2).toArray();
 
 		expect(first).toHaveLength(2);
 	});
@@ -186,19 +163,14 @@ describe('the windows hold a window, not the stream', () => {
 		// stays a step ahead of what is yielded rather than a stream ahead.
 		const { source, pulled } = counted(orders);
 
-		const first = await AsyncSequenceCollection.from(source)
-			.skipLast(5)
-			.take(1)
-			.toArray();
+		const first = await AsyncSequenceCollection.from(source).skipLast(5).take(1).toArray();
 
 		expect(first).toHaveLength(1);
 		expect(pulled()).toBeLessThanOrEqual(7);
 	});
 
 	/** Shorthand for the sequence type the cases above are handed. */
-	type AsyncSequenceOfNumbers = ReturnType<
-		typeof AsyncSequenceCollection.from<number>
-	>;
+	type AsyncSequenceOfNumbers = ReturnType<typeof AsyncSequenceCollection.from<number>>;
 });
 
 describe('takeLast is the one that cannot stream, and says so', () => {
@@ -207,9 +179,7 @@ describe('takeLast is the one that cannot stream, and says so', () => {
 		// does keep bounded is memory: five elements, not fifty thousand.
 		const { source, pulled } = counted(orders);
 
-		const iterator = AsyncSequenceCollection.from(source)
-			.takeLast(5)
-			[Symbol.asyncIterator]();
+		const iterator = AsyncSequenceCollection.from(source).takeLast(5)[Symbol.asyncIterator]();
 
 		const first = await iterator.next();
 
@@ -274,9 +244,7 @@ describe('smoke ceilings', () => {
 	it('should aggregate fifty thousand records within a generous ceiling', async () => {
 		const started: number = performance.now();
 
-		const total: number = await AsyncSequenceCollection.from(orders).sum(
-			(order) => order.total,
-		);
+		const total: number = await AsyncSequenceCollection.from(orders).sum((order) => order.total);
 
 		// A smoke ceiling, not a budget: it exists to catch the regression that
 		// turns seconds into minutes.

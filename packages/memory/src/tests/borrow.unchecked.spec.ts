@@ -49,9 +49,7 @@ describe('borrow, unchecked', () => {
 		borrowMutable(owner);
 
 		expect(() => subview.get(0)).toThrow(ended('ReadOnlyView.get'));
-		expect(() => viewed.get(0)).toThrow(
-			expect.objectContaining({ code: 'FULCRO7024' }),
-		);
+		expect(() => viewed.get(0)).toThrow(expect.objectContaining({ code: 'FULCRO7024' }));
 	});
 
 	it('should end an exclusive borrow taken before it, and not the other way round', () => {

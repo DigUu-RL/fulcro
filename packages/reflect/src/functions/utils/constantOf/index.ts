@@ -72,8 +72,7 @@ export const describeUnwritable = (
 	// A plain object's prototype is its realm's `Object.prototype`, whose own
 	// prototype is null — whichever realm made it.
 	if (prototype !== null && Object.getPrototypeOf(prototype) !== null) {
-		const name: unknown = (prototype as { constructor?: { name?: unknown } })
-			.constructor?.name;
+		const name: unknown = (prototype as { constructor?: { name?: unknown } }).constructor?.name;
 
 		return typeof name === 'string' && name !== ''
 			? `an instance of ${name}`
@@ -84,9 +83,7 @@ export const describeUnwritable = (
 		return 'an object with symbol keys';
 	}
 
-	for (const [key, descriptor] of Object.entries(
-		Object.getOwnPropertyDescriptors(object),
-	)) {
+	for (const [key, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(object))) {
 		if (!('value' in descriptor)) return `an object whose '${key}' is a getter`;
 
 		const inner: string | null = describeUnwritable(descriptor.value, seen);
@@ -119,8 +116,7 @@ const freezeDeeply = <T>(value: T): T => {
  * @param value Value being reported.
  * @returns Its kind.
  */
-const describeKind = (value: unknown): string =>
-	value === null ? 'null' : typeof value;
+const describeKind = (value: unknown): string => (value === null ? 'null' : typeof value);
 
 /**
  * A value computed once, at compile time, and written into the output as a

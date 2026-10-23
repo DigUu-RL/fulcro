@@ -1,12 +1,6 @@
 import { createError, type DetailsOf, type ErrorCode } from '@fulcro/errors';
 
-import {
-	PoolOptions,
-	RunOptions,
-	SpawnWorker,
-	WorkerHandle,
-	WorkerPool,
-} from '@/@types/index.js';
+import { PoolOptions, RunOptions, SpawnWorker, WorkerHandle, WorkerPool } from '@/@types/index.js';
 
 /**
  * The pool, with the one platform-specific piece handed in.
@@ -25,8 +19,7 @@ const DEFAULT_WORKERS = 4;
  * and its details, or somebody else's, as the text it had.
  */
 type Failure =
-	| { readonly code: ErrorCode; readonly details: DetailsOf<ErrorCode> }
-	| { readonly error: string };
+	{ readonly code: ErrorCode; readonly details: DetailsOf<ErrorCode> } | { readonly error: string };
 
 /** What a worker sends back. */
 type Outgoing =
@@ -43,10 +36,7 @@ type Outgoing =
  * loading the task module, or running the task.
  * @returns The error.
  */
-const errorFrom = (
-	failure: Failure,
-	foreign: 'FULCRO3004' | 'FULCRO3005',
-): Error => {
+const errorFrom = (failure: Failure, foreign: 'FULCRO3004' | 'FULCRO3005'): Error => {
 	if ('error' in failure) {
 		return createError(foreign, {
 			operation: foreign === 'FULCRO3004' ? 'initialize' : 'run',
@@ -56,10 +46,7 @@ const errorFrom = (
 
 	// The worker chose the code and its details together, from the same
 	// catalog, so they match; the compiler cannot see that across a message.
-	const create = createError as (
-		code: ErrorCode,
-		details: DetailsOf<ErrorCode>,
-	) => Error;
+	const create = createError as (code: ErrorCode, details: DetailsOf<ErrorCode>) => Error;
 
 	return create(failure.code, failure.details);
 };
@@ -93,10 +80,7 @@ interface Member {
  * @returns A promise settling when it is this run's turn, or rejecting with
  * the abort reason.
  */
-const turnAfter = (
-	queued: Promise<void>,
-	signal: AbortSignal | undefined,
-): Promise<void> => {
+const turnAfter = (queued: Promise<void>, signal: AbortSignal | undefined): Promise<void> => {
 	if (signal === undefined) return queued;
 
 	return new Promise<void>((resolve, reject) => {
@@ -270,10 +254,7 @@ export const createPool = <T, R>(
 
 							member.handle.post({
 								kind: 'init',
-								module:
-									typeof options.module === 'string'
-										? options.module
-										: options.module.href,
+								module: typeof options.module === 'string' ? options.module : options.module.href,
 								export: options.export,
 							});
 						}),
@@ -469,10 +450,7 @@ export const createPool = <T, R>(
 				member.busyWith = position;
 				outstanding.set(position, member);
 
-				member.handle.post(
-					{ kind: 'task', id: position, value },
-					runOptions?.transfer?.(value),
-				);
+				member.handle.post({ kind: 'task', id: position, value }, runOptions?.transfer?.(value));
 			}
 		};
 
@@ -587,11 +565,7 @@ export const createPool = <T, R>(
 		map: async (items, runOptions): Promise<R[]> => {
 			const collected: R[] = [];
 
-			for await (const { position, value } of process(
-				items,
-				runOptions,
-				'map',
-			)) {
+			for await (const { position, value } of process(items, runOptions, 'map')) {
 				collected[position] = value;
 			}
 

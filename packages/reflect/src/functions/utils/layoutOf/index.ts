@@ -1,8 +1,4 @@
-import {
-	type TypeLayout,
-	unresolvedLayout,
-	type WithLayout,
-} from '@/functions/utils/layout';
+import { type TypeLayout, unresolvedLayout, type WithLayout } from '@/functions/utils/layout';
 
 /**
  * The whole layout of a type: its size, its alignment and, for a struct, where

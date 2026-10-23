@@ -1,11 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import {
-	DoublePrecisionFloat,
-	type Struct,
-	struct,
-	UnsignedInteger,
-} from '@fulcro/types';
+import { DoublePrecisionFloat, type Struct, struct, UnsignedInteger } from '@fulcro/types';
 
 import { allocate } from '@/allocate';
 import type { Allocation, Allocator } from '@/allocator';
@@ -90,10 +85,6 @@ describe('allocate, counted', () => {
 		for (let index = 0; index < VOLUME; index++) samples.set(index, sample);
 		for (let index = 0; index < VOLUME; index++) samples.get(index);
 
-		expect([livenessChecks, reads, writes]).toEqual([
-			2 * VOLUME,
-			VOLUME,
-			VOLUME,
-		]);
+		expect([livenessChecks, reads, writes]).toEqual([2 * VOLUME, VOLUME, VOLUME]);
 	});
 });

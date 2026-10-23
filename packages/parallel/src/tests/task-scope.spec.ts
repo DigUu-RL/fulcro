@@ -513,9 +513,7 @@ describe('await using', () => {
 
 		await scope[Symbol.asyncDispose]();
 
-		expect(() => scope.spawn(() => 1)).toThrow(
-			expect.objectContaining({ code: 'FULCRO3011' }),
-		);
+		expect(() => scope.spawn(() => 1)).toThrow(expect.objectContaining({ code: 'FULCRO3011' }));
 	});
 });
 
@@ -546,18 +544,15 @@ describe('a task nobody awaits', () => {
 });
 
 describe('concurrency', () => {
-	it.each([0, -1, 1.5, Number.NaN])(
-		'should refuse %s with FULCRO3012',
-		(concurrency) => {
-			expect(() => createTaskScope({ concurrency })).toThrow(
-				expect.objectContaining({
-					code: 'FULCRO3012',
-					name: 'RangeError',
-					details: { operation: 'createTaskScope', concurrency },
-				}),
-			);
-		},
-	);
+	it.each([0, -1, 1.5, Number.NaN])('should refuse %s with FULCRO3012', (concurrency) => {
+		expect(() => createTaskScope({ concurrency })).toThrow(
+			expect.objectContaining({
+				code: 'FULCRO3012',
+				name: 'RangeError',
+				details: { operation: 'createTaskScope', concurrency },
+			}),
+		);
+	});
 
 	it('should accept Infinity, which is also the default', async () => {
 		const scope = createTaskScope({ concurrency: Number.POSITIVE_INFINITY });
@@ -596,9 +591,7 @@ describe('types', () => {
 	it('should be awaitable as its value, and settle as a Result', () => {
 		expectTypeOf<Awaited<Task<number>>>().toEqualTypeOf<number>();
 
-		expectTypeOf<Task<number>['settled']>().toEqualTypeOf<
-			Promise<Result<number, unknown>>
-		>();
+		expectTypeOf<Task<number>['settled']>().toEqualTypeOf<Promise<Result<number, unknown>>>();
 	});
 
 	it('should be async disposable, so await using ends it', () => {

@@ -39,10 +39,7 @@ const IMPORTS =
  * @returns How many questions, and how many refusals.
  */
 const questionsFor = (text: string): { questions: number; refused: number } => {
-	const fileName: string = path
-		.resolve(__dirname, 'counted.virtual.ts')
-		.split(path.sep)
-		.join('/');
+	const fileName: string = path.resolve(__dirname, 'counted.virtual.ts').split(path.sep).join('/');
 	const options: ts.CompilerOptions = {
 		target: ts.ScriptTarget.ES2022,
 		module: ts.ModuleKind.ESNext,
@@ -75,19 +72,14 @@ const questionsFor = (text: string): { questions: number; refused: number } => {
 				? (...args: unknown[]) => {
 						questions++;
 
-						return (value as (...inner: unknown[]) => unknown).apply(
-							target,
-							args,
-						);
+						return (value as (...inner: unknown[]) => unknown).apply(target, args);
 					}
 				: value;
 		},
 	});
 	const counted: ts.Program = new Proxy(program, {
 		get: (target, key, receiver) =>
-			key === 'getTypeChecker'
-				? () => counting
-				: Reflect.get(target, key, receiver),
+			key === 'getTypeChecker' ? () => counting : Reflect.get(target, key, receiver),
 	});
 	let refused = 0;
 
@@ -106,9 +98,7 @@ const questionsFor = (text: string): { questions: number; refused: number } => {
  */
 const unitsOf = (count: number): string =>
 	IMPORTS +
-	Array.from({ length: count }, (_, index) =>
-		UNIT.replace('{n}', String(index)),
-	).join('\n');
+	Array.from({ length: count }, (_, index) => UNIT.replace('{n}', String(index))).join('\n');
 
 /** What the transformer asked of files of none, fifty and a hundred units. */
 let empty: { questions: number; refused: number };
@@ -127,9 +117,7 @@ describe('ownership rules, counted', () => {
 	it('should ask the checker twice as much for a file twice as long', () => {
 		expect(once.refused + twice.refused).toBe(0);
 		expect(once.questions).toBeGreaterThan(empty.questions);
-		expect(twice.questions - empty.questions).toBe(
-			2 * (once.questions - empty.questions),
-		);
+		expect(twice.questions - empty.questions).toBe(2 * (once.questions - empty.questions));
 	});
 
 	it('should ask nothing of a file that names none of its functions', () => {

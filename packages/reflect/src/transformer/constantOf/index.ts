@@ -111,10 +111,7 @@ interface Assembly {
  * The outcome of every call already evaluated, per program, so a constant read
  * by several others is still evaluated once.
  */
-const outcomes = new WeakMap<
-	typescript.TypeChecker,
-	Map<typescript.CallExpression, Outcome>
->();
+const outcomes = new WeakMap<typescript.TypeChecker, Map<typescript.CallExpression, Outcome>>();
 
 /**
  * Tells whether a node sits inside another, in the same file.
@@ -136,22 +133,17 @@ const isWithin = (inner: typescript.Node, outer: typescript.Node): boolean =>
  * @param root Node being proved, beyond which no ancestor is looked at.
  * @returns `true` when it reads a binding.
  */
-const isValueReference = (
-	identifier: typescript.Identifier,
-	root: typescript.Node,
-): boolean => {
+const isValueReference = (identifier: typescript.Identifier, root: typescript.Node): boolean => {
 	const { parent } = identifier;
 
 	if (
-		(typescript.isPropertyAccessExpression(parent) &&
-			parent.name === identifier) ||
+		(typescript.isPropertyAccessExpression(parent) && parent.name === identifier) ||
 		(typescript.isPropertyAssignment(parent) && parent.name === identifier) ||
 		(typescript.isMethodDeclaration(parent) && parent.name === identifier) ||
 		(typescript.isPropertyDeclaration(parent) && parent.name === identifier) ||
 		(typescript.isGetAccessor(parent) && parent.name === identifier) ||
 		(typescript.isSetAccessor(parent) && parent.name === identifier) ||
-		(typescript.isBindingElement(parent) &&
-			parent.propertyName === identifier) ||
+		(typescript.isBindingElement(parent) && parent.propertyName === identifier) ||
 		typescript.isLabeledStatement(parent) ||
 		typescript.isBreakOrContinueStatement(parent)
 	) {
@@ -221,20 +213,13 @@ const prove = (
 
 		if (typescript.isIdentifier(current) && isValueReference(current, node)) {
 			const shorthand: boolean =
-				typescript.isShorthandPropertyAssignment(current.parent) &&
-				current.parent.name === current;
+				typescript.isShorthandPropertyAssignment(current.parent) && current.parent.name === current;
 			const symbol: typescript.Symbol | undefined = shorthand
 				? checker.getShorthandAssignmentValueSymbol(current.parent)
 				: checker.getSymbolAtLocation(current);
 
 			if (symbol !== undefined) {
-				const binding: string | Failure = bind(
-					current.text,
-					symbol,
-					node,
-					context,
-					assembly,
-				);
+				const binding: string | Failure = bind(current.text, symbol, node, context, assembly);
 
 				if (typeof binding !== 'string') {
 					failure = binding;
@@ -261,9 +246,7 @@ const prove = (
 
 	let text: string = source.text.slice(start, node.end);
 
-	for (const replacement of replacements.sort(
-		(left, right) => right.start - left.start,
-	)) {
+	for (const replacement of replacements.sort((left, right) => right.start - left.start)) {
 		text =
 			text.slice(0, replacement.start - start) +
 			replacement.text +
@@ -316,11 +299,8 @@ const bind = (
 ): string | Failure => {
 	const { checker } = context;
 	const resolved: typescript.Symbol =
-		(symbol.flags & typescript.SymbolFlags.Alias) !== 0
-			? checker.getAliasedSymbol(symbol)
-			: symbol;
-	const declarations: readonly typescript.Declaration[] =
-		resolved.declarations ?? [];
+		(symbol.flags & typescript.SymbolFlags.Alias) !== 0 ? checker.getAliasedSymbol(symbol) : symbol;
+	const declarations: readonly typescript.Declaration[] = resolved.declarations ?? [];
 
 	// `undefined` is the one built-in the checker gives a symbol with no
 	// declaration at all.
@@ -413,9 +393,7 @@ const bind = (
 			return { reason: `'${name}' is a constant that could not be evaluated` };
 		}
 
-		assembly.declarations.push(
-			`const ${binding} = ${printLiteral(outcome.value)};`,
-		);
+		assembly.declarations.push(`const ${binding} = ${printLiteral(outcome.value)};`);
 
 		return binding;
 	}
@@ -480,8 +458,7 @@ const run = (script: string): Outcome => {
 		return {
 			kind: 'refused',
 			message:
-				(thrown as { code?: unknown } | null)?.code ===
-				'ERR_SCRIPT_EXECUTION_TIMEOUT'
+				(thrown as { code?: unknown } | null)?.code === 'ERR_SCRIPT_EXECUTION_TIMEOUT'
 					? createError('FULCRO4013', {
 							operation: 'constantOf',
 							call: CALL,
@@ -503,12 +480,10 @@ const run = (script: string): Outcome => {
  * @param context Compilation in progress.
  * @returns Its value, or why it has none.
  */
-const evaluate = (
-	call: typescript.CallExpression,
-	context: RewriteContext,
-): Outcome => {
-	let evaluated: Map<typescript.CallExpression, Outcome> | undefined =
-		outcomes.get(context.checker);
+const evaluate = (call: typescript.CallExpression, context: RewriteContext): Outcome => {
+	let evaluated: Map<typescript.CallExpression, Outcome> | undefined = outcomes.get(
+		context.checker,
+	);
 
 	if (evaluated === undefined) {
 		evaluated = new Map();
@@ -533,10 +508,7 @@ const evaluate = (
  * @param context Compilation in progress.
  * @returns Its value, or why it has none.
  */
-const computeOutcome = (
-	call: typescript.CallExpression,
-	context: RewriteContext,
-): Outcome => {
+const computeOutcome = (call: typescript.CallExpression, context: RewriteContext): Outcome => {
 	const refuse = (reason: string): Outcome => ({
 		kind: 'refused',
 		message: createError('FULCRO4010', {

@@ -73,12 +73,8 @@ const describeForeign = (error: unknown): { readonly error: string } => ({
  * module has no such export, or it is not callable.
  * @throws When the module itself cannot be loaded.
  */
-const initialize = async (
-	message: InitMessage,
-): Promise<CodedFailure | null> => {
-	const loaded: Record<string, unknown> = (await import(
-		message.module
-	)) as Record<string, unknown>;
+const initialize = async (message: InitMessage): Promise<CodedFailure | null> => {
+	const loaded: Record<string, unknown> = (await import(message.module)) as Record<string, unknown>;
 
 	const found: unknown = loaded[message.export];
 
@@ -136,9 +132,7 @@ const receive = async (message: Incoming): Promise<void> => {
 		try {
 			const failure: CodedFailure | null = await initialize(message);
 
-			reply(
-				failure === null ? { kind: 'ready' } : { kind: 'broken', ...failure },
-			);
+			reply(failure === null ? { kind: 'ready' } : { kind: 'broken', ...failure });
 		} catch (error) {
 			reply({ kind: 'broken', ...describeForeign(error) });
 		}

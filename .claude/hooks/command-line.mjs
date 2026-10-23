@@ -48,15 +48,7 @@ const PREFIXES = new Set([
 /**
  * Names that mean a directory tree is being deleted, whatever the shell.
  */
-const REMOVERS = new Set([
-	'rm',
-	'rmdir',
-	'remove-item',
-	'ri',
-	'rd',
-	'erase',
-	'del',
-]);
+const REMOVERS = new Set(['rm', 'rmdir', 'remove-item', 'ri', 'rd', 'erase', 'del']);
 
 /**
  * Targets that are a whole machine, a whole home or a whole checkout.

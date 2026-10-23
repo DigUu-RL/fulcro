@@ -62,9 +62,7 @@ describe('borrowMutable, unchecked', () => {
 
 		expect(() => subview.set(0, 1)).toThrow(ended('View.set'));
 		expect(() => readOnly.get(0)).toThrow(ended('ReadOnlyView.get'));
-		expect(() => viewed.set(0, 1)).toThrow(
-			expect.objectContaining({ code: 'FULCRO7024' }),
-		);
+		expect(() => viewed.set(0, 1)).toThrow(expect.objectContaining({ code: 'FULCRO7024' }));
 	});
 
 	it('should leave the values written before it ended in place', () => {

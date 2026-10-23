@@ -37,10 +37,10 @@ describe('createManagedAllocator, counted', () => {
 			allocator.allocate(index % 7, 1 << (index % 4));
 		}
 
-		const asked: number = Array.from(
-			{ length: VOLUME },
-			(_, index) => index % 7,
-		).reduce((sum, size) => sum + size, 0);
+		const asked: number = Array.from({ length: VOLUME }, (_, index) => index % 7).reduce(
+			(sum, size) => sum + size,
+			0,
+		);
 
 		expect(buffers.made).toBe(VOLUME);
 		expect(buffers.bytes).toBe(asked);

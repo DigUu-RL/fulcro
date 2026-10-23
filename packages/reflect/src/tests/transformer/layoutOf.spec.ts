@@ -45,9 +45,7 @@ interface Compiled {
  * @returns For each fixture, its emitted JavaScript and its errors.
  */
 const compile = (...fileNames: string[]): Compiled[] => {
-	const fixtures: string[] = fileNames.map((fileName) =>
-		path.resolve(__dirname, fileName),
-	);
+	const fixtures: string[] = fileNames.map((fileName) => path.resolve(__dirname, fileName));
 	const program: ts.Program = ts.createProgram(fixtures, COMPILER_OPTIONS);
 	const transform = transformer(program, { projectRoot: PROJECT_ROOT });
 
@@ -67,9 +65,7 @@ const compile = (...fileNames: string[]): Compiled[] => {
 
 		const errors: readonly ts.Diagnostic[] = ts
 			.getPreEmitDiagnostics(program, source)
-			.filter(
-				(diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error,
-			);
+			.filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error);
 
 		return { emitted, errors };
 	});
@@ -82,10 +78,7 @@ let accepted: Compiled;
 let rejected: Compiled;
 
 beforeAll(() => {
-	[accepted, rejected] = compile(
-		'fieldLayout.sample.ts',
-		'fieldLayout.rejected.fixture.ts',
-	);
+	[accepted, rejected] = compile('fieldLayout.sample.ts', 'fieldLayout.rejected.fixture.ts');
 });
 
 /**
@@ -118,9 +111,7 @@ const deeplyFrozen = (value: unknown): boolean =>
 describe('layoutOf at compile time', () => {
 	it('should compile the fixture without errors', () => {
 		expect(
-			accepted.errors.map((error) =>
-				ts.flattenDiagnosticMessageText(error.messageText, '\n'),
-			),
+			accepted.errors.map((error) => ts.flattenDiagnosticMessageText(error.messageText, '\n')),
 		).toEqual([]);
 	});
 
@@ -163,15 +154,11 @@ describe('layoutOf at compile time', () => {
 	});
 
 	it('should leave a generic parameter as a call', () => {
-		expect(accepted.emitted).toMatch(
-			/export const genericLayout = \(\) => layoutOf\(\);/,
-		);
+		expect(accepted.emitted).toMatch(/export const genericLayout = \(\) => layoutOf\(\);/);
 	});
 
 	it('should leave a union of structs placing their fields differently as a call', () => {
-		expect(accepted.emitted).toMatch(
-			/export const unionLayout = \(\) => layoutOf\(\);/,
-		);
+		expect(accepted.emitted).toMatch(/export const unionLayout = \(\) => layoutOf\(\);/);
 	});
 
 	it('should refuse a type with no layout at the call site', () => {
@@ -187,8 +174,6 @@ describe('layoutOf at compile time', () => {
 			})
 			.filter((line) => line.includes('layoutOf'));
 
-		expect(refused).toEqual([
-			'export const stringLayout = layoutOf<string>();',
-		]);
+		expect(refused).toEqual(['export const stringLayout = layoutOf<string>();']);
 	});
 });

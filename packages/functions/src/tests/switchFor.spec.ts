@@ -241,11 +241,7 @@ describe('switchFor, predicate form', () => {
 	it('should treat a falsy result as a result rather than as no match', () => {
 		// The branch is chosen by its condition, never by what it produces, so
 		// a branch returning 0 or '' must still win over the fallback.
-		expect(switchFor(1, [{ when: () => true, then: () => 0 }], () => -1)).toBe(
-			0,
-		);
-		expect(
-			switchFor(1, [{ when: () => true, then: () => '' }], () => 'x'),
-		).toBe('');
+		expect(switchFor(1, [{ when: () => true, then: () => 0 }], () => -1)).toBe(0);
+		expect(switchFor(1, [{ when: () => true, then: () => '' }], () => 'x')).toBe('');
 	});
 });

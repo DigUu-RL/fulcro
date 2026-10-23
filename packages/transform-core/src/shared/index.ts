@@ -50,10 +50,7 @@ export interface FileAnalyzer {
 	 * @param sourceFile File as written, before any rewriter touched it.
 	 * @param context Compilation in progress.
 	 */
-	readonly analyze: (
-		sourceFile: typescript.SourceFile,
-		context: AnalysisContext,
-	) => void;
+	readonly analyze: (sourceFile: typescript.SourceFile, context: AnalysisContext) => void;
 }
 
 /** Everything a rewriter needs from the compilation in progress. */
@@ -164,8 +161,7 @@ export const IDENTIFIER_PATTERN = /^[A-Za-z_$][\w$]*$/;
  * @param name Folder of the utility inside the output of `@fulcro/reflect`.
  * @returns The segment to look for in a declaration path.
  */
-export const utilityModuleSegment = (name: string): string =>
-	path.join('functions', 'utils', name);
+export const utilityModuleSegment = (name: string): string => path.join('functions', 'utils', name);
 
 /**
  * Name of the package each directory belongs to, once looked up.
@@ -209,11 +205,7 @@ const packageNameIn = (directory: string): string | null => {
 	const parent: string = path.dirname(directory);
 	const declared: string | null | undefined = manifestNameIn(directory);
 	const found: string | null =
-		declared !== undefined
-			? declared
-			: parent === directory
-				? null
-				: packageNameIn(parent);
+		declared !== undefined ? declared : parent === directory ? null : packageNameIn(parent);
 
 	packageNames.set(directory, found);
 
@@ -266,28 +258,21 @@ export const isOwnedCall = (
 	if (named === null) return false;
 	if (named.text !== rewriter.functionName) return false;
 
-	const symbol: typescript.Symbol | undefined =
-		checker.getSymbolAtLocation(named);
+	const symbol: typescript.Symbol | undefined = checker.getSymbolAtLocation(named);
 
 	const resolved: typescript.Symbol | undefined =
 		symbol !== undefined && (symbol.flags & typescript.SymbolFlags.Alias) !== 0
 			? checker.getAliasedSymbol(symbol)
 			: symbol;
 
-	const declarations: readonly typescript.Declaration[] =
-		resolved?.declarations ?? [];
+	const declarations: readonly typescript.Declaration[] = resolved?.declarations ?? [];
 
 	return declarations.some((declaration) => {
-		const fileName: string = path.normalize(
-			declaration.getSourceFile().fileName,
-		);
+		const fileName: string = path.normalize(declaration.getSourceFile().fileName);
 
 		if (!fileName.includes(rewriter.moduleSegment)) return false;
 
-		return (
-			rewriter.packageName === undefined ||
-			packageNameOf(fileName) === rewriter.packageName
-		);
+		return rewriter.packageName === undefined || packageNameOf(fileName) === rewriter.packageName;
 	});
 };
 
@@ -302,6 +287,4 @@ export const isOwnedCall = (
  */
 export const isTupleType = (type: typescript.ObjectType): boolean =>
 	(type.objectFlags & typescript.ObjectFlags.Reference) !== 0 &&
-	((type as typescript.TypeReference).target.objectFlags &
-		typescript.ObjectFlags.Tuple) !==
-		0;
+	((type as typescript.TypeReference).target.objectFlags & typescript.ObjectFlags.Tuple) !== 0;

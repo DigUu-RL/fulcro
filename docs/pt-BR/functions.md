@@ -11,15 +11,7 @@ npm install @fulcro/functions
 ```
 
 ```ts
-import {
-	failure,
-	none,
-	optionOf,
-	some,
-	success,
-	switchFor,
-	tryCatch,
-} from '@fulcro/functions';
+import { failure, none, optionOf, some, success, switchFor, tryCatch } from '@fulcro/functions';
 ```
 
 ## `switchFor`
@@ -155,9 +147,7 @@ O resultado de uma operação, como valor: ou um **sucesso**, com o valor que el
 produziu, ou uma **falha**, com o erro com que ela falhou.
 
 ```ts
-const parsed: Result<number, string> = Number.isNaN(n)
-	? failure('not a number')
-	: success(n);
+const parsed: Result<number, string> = Number.isNaN(n) ? failure('not a number') : success(n);
 ```
 
 |           | `value` | `error`          |
@@ -289,8 +279,8 @@ const outcomes = await AsyncSequenceCollection.from(ids)
 	.selectAwait((id) => tryCatch(() => loadUser(id)), { concurrency: 8 })
 	.toArray();
 
-const [loaded, failed] = SequenceCollection.from(outcomes).partition(
-	(outcome) => outcome.isSuccess(),
+const [loaded, failed] = SequenceCollection.from(outcomes).partition((outcome) =>
+	outcome.isSuccess(),
 );
 ```
 

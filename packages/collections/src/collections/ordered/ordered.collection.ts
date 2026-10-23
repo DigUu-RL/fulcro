@@ -36,10 +36,7 @@ export class OrderedSequenceCollection<T>
 	 * @param source Sequence to be sorted.
 	 * @param criteria Sorting criteria applied in order of precedence.
 	 */
-	private constructor(
-		source: Iterable<T>,
-		criteria: readonly SortCriterion<T>[],
-	) {
+	private constructor(source: Iterable<T>, criteria: readonly SortCriterion<T>[]) {
 		super(
 			{
 				// A plain method rather than a generator: the sort has to
@@ -76,10 +73,7 @@ export class OrderedSequenceCollection<T>
 	 * @param criteria Sorting criteria applied in order of precedence.
 	 * @returns A new array holding the sorted elements.
 	 */
-	private static sort<T>(
-		source: Iterable<T>,
-		criteria: readonly SortCriterion<T>[],
-	): T[] {
+	private static sort<T>(source: Iterable<T>, criteria: readonly SortCriterion<T>[]): T[] {
 		const elements: T[] = SequenceCollection.materialize(source);
 		const length: number = elements.length;
 
@@ -89,11 +83,7 @@ export class OrderedSequenceCollection<T>
 		const keys: unknown[][] = new Array<unknown[]>(criteriaCount);
 		const directions: Int8Array = new Int8Array(criteriaCount);
 
-		for (
-			let criterionIndex = 0;
-			criterionIndex < criteriaCount;
-			criterionIndex++
-		) {
+		for (let criterionIndex = 0; criterionIndex < criteriaCount; criterionIndex++) {
 			const criterion: SortCriterion<T> = criteria[criterionIndex];
 			const keySelector: Selector<T, unknown> = criterion.keySelector;
 			const extracted: unknown[] = new Array<unknown>(length);
@@ -110,11 +100,7 @@ export class OrderedSequenceCollection<T>
 		for (let index = 0; index < length; index++) positions[index] = index;
 
 		positions.sort((left, right) => {
-			for (
-				let criterionIndex = 0;
-				criterionIndex < criteriaCount;
-				criterionIndex++
-			) {
+			for (let criterionIndex = 0; criterionIndex < criteriaCount; criterionIndex++) {
 				const extracted: unknown[] = keys[criterionIndex];
 				const leftKey = extracted[left] as never;
 				const rightKey = extracted[right] as never;
@@ -151,10 +137,7 @@ export class OrderedSequenceCollection<T>
 	): OrderedSequence<T> {
 		const instance = new OrderedSequenceCollection<T>(source, criteria);
 
-		return SequenceCollection.createIndexedProxy<
-			T,
-			OrderedSequenceCollection<T>
-		>(instance);
+		return SequenceCollection.createIndexedProxy<T, OrderedSequenceCollection<T>>(instance);
 	}
 
 	/**

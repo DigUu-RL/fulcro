@@ -127,12 +127,8 @@ describe('own', () => {
 	});
 
 	it('should infer the type of the values from the storage created', () => {
-		expectTypeOf(own(() => createManagedStorage(1, 0))).toEqualTypeOf<
-			Owned<number>
-		>();
-		expectTypeOf(own(() => createManagedStorage(1, 'a'))).toEqualTypeOf<
-			Owned<string>
-		>();
+		expectTypeOf(own(() => createManagedStorage(1, 0))).toEqualTypeOf<Owned<number>>();
+		expectTypeOf(own(() => createManagedStorage(1, 'a'))).toEqualTypeOf<Owned<string>>();
 	});
 
 	it('should not take a plain object with a length for an owner', () => {

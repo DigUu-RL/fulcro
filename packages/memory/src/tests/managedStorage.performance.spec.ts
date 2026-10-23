@@ -61,10 +61,7 @@ describe('createManagedStorage, counted', () => {
 
 	it('should not look inside a value it holds or hands back', () => {
 		const touches = { count: 0 };
-		const orders: Storage<Order | null> = createManagedStorage<Order | null>(
-			VOLUME,
-			null,
-		);
+		const orders: Storage<Order | null> = createManagedStorage<Order | null>(VOLUME, null);
 
 		for (let index = 0; index < VOLUME; index++) {
 			orders.set(index, watchedOrder(index, touches));

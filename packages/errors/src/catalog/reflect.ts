@@ -39,25 +39,13 @@ export const reflectCatalog = {
 	},
 	FULCRO4006: {
 		kind: TypeError,
-		message: ({
-			named,
-			received,
-		}: {
-			operation: string;
-			named: string;
-			received: string;
-		}) => `as<${named}>() refused a value of type ${received}.`,
+		message: ({ named, received }: { operation: string; named: string; received: string }) =>
+			`as<${named}>() refused a value of type ${received}.`,
 	},
 	FULCRO4007: {
 		kind: TypeError,
-		message: ({
-			named,
-			where,
-		}: {
-			operation: string;
-			named: string;
-			where: string;
-		}) => `as<${named}>() refused a value: ${where}`,
+		message: ({ named, where }: { operation: string; named: string; where: string }) =>
+			`as<${named}>() refused a value: ${where}`,
 	},
 	FULCRO4008: {
 		kind: Error,
@@ -76,52 +64,26 @@ export const reflectCatalog = {
 	},
 	FULCRO4010: {
 		kind: Error,
-		message: ({
-			call,
-			reason,
-		}: {
-			operation: string;
-			call: string;
-			reason: string;
-		}) =>
+		message: ({ call, reason }: { operation: string; call: string; reason: string }) =>
 			`${call} cannot be evaluated at compile time: ${reason}. ` +
 			'Everything the function reads has to be a const, a function or a built-in the compiler can see the source of; ' +
 			'compute the value at runtime instead, without constantOf, if it cannot be.',
 	},
 	FULCRO4011: {
 		kind: TypeError,
-		message: ({
-			call,
-			received,
-		}: {
-			operation: string;
-			call: string;
-			received: string;
-		}) =>
+		message: ({ call, received }: { operation: string; call: string; received: string }) =>
 			`${call} produced ${received}, which cannot be written as a literal. ` +
 			'A constant is a number, a string, a boolean, a bigint, null or undefined, or an array or a plain object of them, each reached once.',
 	},
 	FULCRO4012: {
 		kind: Error,
-		message: ({
-			call,
-			thrown,
-		}: {
-			operation: string;
-			call: string;
-			thrown: string;
-		}) => `${call} threw while it was evaluated at compile time: ${thrown}`,
+		message: ({ call, thrown }: { operation: string; call: string; thrown: string }) =>
+			`${call} threw while it was evaluated at compile time: ${thrown}`,
 	},
 	FULCRO4013: {
 		kind: Error,
-		message: ({
-			call,
-			milliseconds,
-		}: {
-			operation: string;
-			call: string;
-			milliseconds: number;
-		}) => `${call} did not finish within ${milliseconds} ms at compile time.`,
+		message: ({ call, milliseconds }: { operation: string; call: string; milliseconds: number }) =>
+			`${call} did not finish within ${milliseconds} ms at compile time.`,
 	},
 	FULCRO4014: {
 		kind: TypeError,

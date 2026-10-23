@@ -236,10 +236,8 @@ Code that needs memory takes an `Allocator` and leaves the choice to its
 caller:
 
 ```ts
-const createParticles = (
-	count: number,
-	allocator: Allocator,
-): Storage<Particle> => allocate(Particle, count, allocator);
+const createParticles = (count: number, allocator: Allocator): Storage<Particle> =>
+	allocate(Particle, count, allocator);
 ```
 
 ### Choosing an allocator
@@ -451,11 +449,7 @@ came from as it was. A pointer may stand one past the last value, so a loop can
 step onto the end and stop there:
 
 ```ts
-for (
-	let cursor = pointerTo(queue, 0);
-	cursor.index < queue.length;
-	cursor = cursor.offset(1)
-) {
+for (let cursor = pointerTo(queue, 0); cursor.index < queue.length; cursor = cursor.offset(1)) {
 	cursor.get();
 }
 ```
@@ -521,10 +515,7 @@ interface NativePointer<T> extends MemoryReference<T> {
 	get(): T;
 	set(value: T): void;
 	at(byteOffset: number): NativePointer<T>;
-	at<TOther>(
-		byteOffset: number,
-		element: AlignedElement<TOther>,
-	): NativePointer<TOther>;
+	at<TOther>(byteOffset: number, element: AlignedElement<TOther>): NativePointer<TOther>;
 }
 ```
 
@@ -563,11 +554,7 @@ Points at a byte address of a memory, at a value of the element type — a
 struct, as for `allocate`:
 
 ```ts
-const latest: NativePointer<Reading> = nativePointerTo(
-	memory,
-	moduleExports.latest(),
-	Reading,
-);
+const latest: NativePointer<Reading> = nativePointerTo(memory, moduleExports.latest(), Reading);
 
 latest.get(); // the reading the module wrote, read where it wrote it
 latest.set(Reading.from({ value: 0 })); // and the module sees this
@@ -580,10 +567,7 @@ place:
 
 ```ts
 const particle: NativePointer<Particle> = nativePointerTo(memory, 64, Particle);
-const velocity: NativePointer<Point> = particle.at(
-	Particle.layout.fields.velocity.offset,
-	Point,
-);
+const velocity: NativePointer<Point> = particle.at(Particle.layout.fields.velocity.offset, Point);
 
 velocity.set(Point.from({ x: 0, y: -9.8 })); // writes the particle's velocity
 ```

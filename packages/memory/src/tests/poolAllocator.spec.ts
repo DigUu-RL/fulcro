@@ -18,18 +18,14 @@ import { coded } from './coded';
 describe('createPoolAllocator', () => {
 	it('should fill from the front, one block per allocation', () => {
 		const pool: PoolAllocator = createPoolAllocator(32, 4);
-		const offsets: number[] = [0, 1, 2].map(
-			() => pool.allocate(8, 8).bytes.byteOffset,
-		);
+		const offsets: number[] = [0, 1, 2].map(() => pool.allocate(8, 8).bytes.byteOffset);
 
 		expect(offsets).toEqual([0, 32, 64]);
 	});
 
 	it('should take blocks back in any order', () => {
 		const pool: PoolAllocator = createPoolAllocator(16, 3);
-		const [first, second, third] = [0, 1, 2].map(() =>
-			pool.allocate(16, 16),
-		) as [
+		const [first, second, third] = [0, 1, 2].map(() => pool.allocate(16, 16)) as [
 			Allocation & Disposable,
 			Allocation & Disposable,
 			Allocation & Disposable,
@@ -38,11 +34,7 @@ describe('createPoolAllocator', () => {
 		pool.deallocate(second);
 		pool.deallocate(first);
 
-		expect([first.isLive(), second.isLive(), third.isLive()]).toEqual([
-			false,
-			false,
-			true,
-		]);
+		expect([first.isLive(), second.isLive(), third.isLive()]).toEqual([false, false, true]);
 	});
 
 	it('should reuse a returned block, zeroed, without the old allocation coming back to life', () => {
@@ -86,43 +78,35 @@ describe('createPoolAllocator', () => {
 		[48, 16],
 		[1, 1],
 		[0, 8],
-	])(
-		'should accept %s bytes aligned to %s from blocks of 48 bytes',
-		(requested, alignment) => {
-			const pool: PoolAllocator = createPoolAllocator(48, 2);
+	])('should accept %s bytes aligned to %s from blocks of 48 bytes', (requested, alignment) => {
+		const pool: PoolAllocator = createPoolAllocator(48, 2);
 
-			pool.allocate(1, 1);
+		pool.allocate(1, 1);
 
-			const { bytes } = pool.allocate(requested, alignment);
+		const { bytes } = pool.allocate(requested, alignment);
 
-			expect(bytes.byteLength).toBe(requested);
-			expect(bytes.byteOffset % alignment).toBe(0);
-		},
-	);
+		expect(bytes.byteLength).toBe(requested);
+		expect(bytes.byteOffset % alignment).toBe(0);
+	});
 
 	it.each([
 		[49, 8],
 		[8, 32],
-	])(
-		'should refuse %s bytes aligned to %s from blocks of 48 bytes',
-		(requested, alignment) => {
-			expect(() =>
-				createPoolAllocator(48, 2).allocate(requested, alignment),
-			).toThrowError(
-				coded(
-					new RangeError(
-						`FULCRO7010: PoolAllocator.allocate: ${requested} bytes aligned to ${alignment} do not fit a pool block of 48 bytes.`,
-					),
-					{
-						operation: 'PoolAllocator.allocate',
-						requested,
-						alignment,
-						blockSize: 48,
-					},
+	])('should refuse %s bytes aligned to %s from blocks of 48 bytes', (requested, alignment) => {
+		expect(() => createPoolAllocator(48, 2).allocate(requested, alignment)).toThrowError(
+			coded(
+				new RangeError(
+					`FULCRO7010: PoolAllocator.allocate: ${requested} bytes aligned to ${alignment} do not fit a pool block of 48 bytes.`,
 				),
-			);
-		},
-	);
+				{
+					operation: 'PoolAllocator.allocate',
+					requested,
+					alignment,
+					blockSize: 48,
+				},
+			),
+		);
+	});
 
 	it('should refuse to take back an allocation it did not make', () => {
 		const pool: PoolAllocator = createPoolAllocator(16, 2);
@@ -220,9 +204,7 @@ describe('createPoolAllocator', () => {
 		const [one, two] = [pool.allocate(16, 8), pool.allocate(16, 8)];
 
 		expect(one.bytes.byteOffset).not.toBe(two.bytes.byteOffset);
-		expect(() => pool.allocate(16, 8)).toThrow(
-			expect.objectContaining({ code: 'FULCRO7007' }),
-		);
+		expect(() => pool.allocate(16, 8)).toThrow(expect.objectContaining({ code: 'FULCRO7007' }));
 	});
 
 	it('should leave a block alone once it was handed to someone else', () => {
@@ -236,9 +218,7 @@ describe('createPoolAllocator', () => {
 		before[Symbol.dispose]();
 
 		expect(after.isLive()).toBe(true);
-		expect(() => pool.allocate(16, 8)).toThrow(
-			expect.objectContaining({ code: 'FULCRO7007' }),
-		);
+		expect(() => pool.allocate(16, 8)).toThrow(expect.objectContaining({ code: 'FULCRO7007' }));
 	});
 
 	it('should refuse to deallocate what was already disposed', () => {
@@ -247,9 +227,7 @@ describe('createPoolAllocator', () => {
 
 		message[Symbol.dispose]();
 
-		expect(() => pool.deallocate(message)).toThrow(
-			expect.objectContaining({ code: 'FULCRO7009' }),
-		);
+		expect(() => pool.deallocate(message)).toThrow(expect.objectContaining({ code: 'FULCRO7009' }));
 	});
 
 	it('should be an allocator with a deallocate, and not a domain', () => {
@@ -258,9 +236,7 @@ describe('createPoolAllocator', () => {
 	});
 
 	it('should hand out allocations that are disposable', () => {
-		expectTypeOf(createPoolAllocator(8, 1).allocate(8, 8)).toEqualTypeOf<
-			Allocation & Disposable
-		>();
+		expectTypeOf(createPoolAllocator(8, 1).allocate(8, 8)).toEqualTypeOf<Allocation & Disposable>();
 		expectTypeOf<PoolAllocator>().toExtend<Allocator>();
 	});
 });

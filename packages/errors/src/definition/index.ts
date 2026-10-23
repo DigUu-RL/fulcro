@@ -77,8 +77,7 @@ type Digit = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9';
  *
  * @template TRange The range's leading digit, `1` for `FULCRO1xxx`.
  */
-export type CodeRange<TRange extends Digit> =
-	`FULCRO${TRange}${Digit}${Digit}${Digit}`;
+export type CodeRange<TRange extends Digit> = `FULCRO${TRange}${Digit}${Digit}${Digit}`;
 
 /**
  * The shape every catalog file satisfies.

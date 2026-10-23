@@ -39,9 +39,7 @@ const COMPILER_OPTIONS: ts.CompilerOptions = {
  * @param fileName Fixture beside this suite.
  * @returns The emitted JavaScript and the errors of the program.
  */
-const compile = (
-	fileName: string,
-): { emitted: string; errors: readonly ts.Diagnostic[] } => {
+const compile = (fileName: string): { emitted: string; errors: readonly ts.Diagnostic[] } => {
 	const fixture: string = path.resolve(__dirname, fileName);
 	const program: ts.Program = ts.createProgram([fixture], COMPILER_OPTIONS);
 
@@ -59,9 +57,7 @@ const compile = (
 
 	const errors: readonly ts.Diagnostic[] = ts
 		.getPreEmitDiagnostics(program)
-		.filter(
-			(diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error,
-		);
+		.filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error);
 
 	return { emitted, errors };
 };
@@ -80,9 +76,7 @@ beforeAll(() => {
 describe('sizeOf at compile time', () => {
 	it('should compile the fixture without errors', () => {
 		expect(
-			accepted.errors.map((error) =>
-				ts.flattenDiagnosticMessageText(error.messageText, '\n'),
-			),
+			accepted.errors.map((error) => ts.flattenDiagnosticMessageText(error.messageText, '\n')),
 		).toEqual([]);
 	});
 
@@ -92,15 +86,11 @@ describe('sizeOf at compile time', () => {
 	});
 
 	it('should leave a union of different layouts as a call', () => {
-		expect(accepted.emitted).toMatch(
-			/export const mixedSize = \(\) => sizeOf\(\);/,
-		);
+		expect(accepted.emitted).toMatch(/export const mixedSize = \(\) => sizeOf\(\);/);
 	});
 
 	it('should leave a generic parameter as a call', () => {
-		expect(accepted.emitted).toMatch(
-			/export const genericSize = \(\) => sizeOf\(\);/,
-		);
+		expect(accepted.emitted).toMatch(/export const genericSize = \(\) => sizeOf\(\);/);
 	});
 
 	it('should leave a local function of the same name alone', () => {

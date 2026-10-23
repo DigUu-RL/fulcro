@@ -34,32 +34,29 @@ afterEach(() => {
 	globalThis.BigInt = nativeBigInt;
 });
 
-describe.each([8, 16, 32] as const)(
-	'UnsignedInteger<%i>, carried by a number',
-	(width) => {
-		it('should never convert to a bigint, however many operations run', () => {
-			const type = UnsignedInteger(width);
-			const values = [type.from(3), type.from(5), type.from(7)] as const;
+describe.each([8, 16, 32] as const)('UnsignedInteger<%i>, carried by a number', (width) => {
+	it('should never convert to a bigint, however many operations run', () => {
+		const type = UnsignedInteger(width);
+		const values = [type.from(3), type.from(5), type.from(7)] as const;
 
-			conversions = 0;
+		conversions = 0;
 
-			for (let index = 0; index < OPERATIONS; index++) {
-				const left = values[index % 3];
-				const right = values[(index + 1) % 3];
+		for (let index = 0; index < OPERATIONS; index++) {
+			const left = values[index % 3];
+			const right = values[(index + 1) % 3];
 
-				type.add(left, right);
-				type.multiply(left, right);
-				type.divide(left, right);
-				type.remainder(left, right);
-				type.wrap(-index * 1_000_003);
-				type.from(index % 100);
-				type.is(left);
-			}
+			type.add(left, right);
+			type.multiply(left, right);
+			type.divide(left, right);
+			type.remainder(left, right);
+			type.wrap(-index * 1_000_003);
+			type.from(index % 100);
+			type.is(left);
+		}
 
-			expect(conversions).toBe(0);
-		});
-	},
-);
+		expect(conversions).toBe(0);
+	});
+});
 
 describe('the descriptor', () => {
 	it('should be built once per width, not once per call', () => {

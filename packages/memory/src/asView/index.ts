@@ -32,11 +32,7 @@ import type { View } from '@/view';
  * @throws {TypeError} When the source is none of those, or has no `set`.
  * @throws {RangeError} When the region does not fit inside the source.
  */
-export function asView<T>(
-	source: Storage<T> | T[],
-	start?: number,
-	length?: number,
-): View<T>;
+export function asView<T>(source: Storage<T> | T[], start?: number, length?: number): View<T>;
 
 /**
  * Observes the region that starts where a pointer points, copying nothing.
@@ -77,11 +73,7 @@ export function asView<T>(
 	first?: number,
 	second?: number,
 ): View<T> {
-	const {
-		source: values,
-		start,
-		length,
-	} = cutRegion<T>('asView', source, 'write', first, second);
+	const { source: values, start, length } = cutRegion<T>('asView', source, 'write', first, second);
 
 	return createView(values, start, length);
 }

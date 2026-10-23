@@ -30,16 +30,10 @@ const origin: Point = Point.from({ x: 0, y: 0 });
 /** Each strategy, as a factory of a storage of points. */
 const STRATEGIES = [
 	['ManagedStorage', (length: number) => createManagedStorage(length, origin)],
-	[
-		'FixedBufferStorage',
-		(length: number) => createFixedBufferStorage(Point, length),
-	],
+	['FixedBufferStorage', (length: number) => createFixedBufferStorage(Point, length)],
 	// What `allocate` returns names its operations after the contract itself,
 	// since no storage strategy of its own stands behind it.
-	[
-		'Storage',
-		(length: number) => allocate(Point, length, createManagedAllocator()),
-	],
+	['Storage', (length: number) => allocate(Point, length, createManagedAllocator())],
 	// A view is accepted wherever a storage is; this one sits inside a larger
 	// buffer, so a position it got wrong would land on a neighbour.
 	[
@@ -114,9 +108,7 @@ describe.each(STRATEGIES)('%s, as a Storage<T>', (name, create) => {
 	])('should refuse to get index %s', (index, shown) => {
 		expect(() => create(3).get(index)).toThrowError(
 			coded(
-				new RangeError(
-					`FULCRO7002: ${name}.get: index ${shown} is outside a storage of length 3.`,
-				),
+				new RangeError(`FULCRO7002: ${name}.get: index ${shown} is outside a storage of length 3.`),
 				{ operation: `${name}.get`, index, length: 3 },
 			),
 		);
@@ -126,12 +118,11 @@ describe.each(STRATEGIES)('%s, as a Storage<T>', (name, create) => {
 		const points: Storage<Point> = create(2);
 
 		expect(() => points.set(2, Point.from({ x: 1, y: 1 }))).toThrowError(
-			coded(
-				new RangeError(
-					`FULCRO7002: ${name}.set: index 2 is outside a storage of length 2.`,
-				),
-				{ operation: `${name}.set`, index: 2, length: 2 },
-			),
+			coded(new RangeError(`FULCRO7002: ${name}.set: index 2 is outside a storage of length 2.`), {
+				operation: `${name}.set`,
+				index: 2,
+				length: 2,
+			}),
 		);
 		expect(sumOfX(points)).toBe(0);
 	});
@@ -148,36 +139,24 @@ describe.each(STRATEGIES)('%s, as a Storage<T>', (name, create) => {
 
 describe('Storage<T> lengths', () => {
 	it.each([
-		[
-			'createManagedStorage',
-			(length: number) => createManagedStorage(length, 0),
-		],
-		[
-			'createFixedBufferStorage',
-			(length: number) => createFixedBufferStorage(Point, length),
-		],
-		[
-			'allocate',
-			(length: number) => allocate(Point, length, createManagedAllocator()),
-		],
-	] as const)(
-		'%s should refuse a length that is not a count',
-		(name, create) => {
-			for (const [length, shown] of [
-				[-1, '-1'],
-				[1.5, '1.5'],
-				[Number.NaN, 'NaN'],
-				[2 ** 53, String(2 ** 53)],
-			] as const) {
-				expect(() => create(length)).toThrowError(
-					coded(
-						new RangeError(
-							`FULCRO7001: ${name}: expected a length that is a non-negative safe integer, received ${shown}.`,
-						),
-						{ operation: name, received: length },
+		['createManagedStorage', (length: number) => createManagedStorage(length, 0)],
+		['createFixedBufferStorage', (length: number) => createFixedBufferStorage(Point, length)],
+		['allocate', (length: number) => allocate(Point, length, createManagedAllocator())],
+	] as const)('%s should refuse a length that is not a count', (name, create) => {
+		for (const [length, shown] of [
+			[-1, '-1'],
+			[1.5, '1.5'],
+			[Number.NaN, 'NaN'],
+			[2 ** 53, String(2 ** 53)],
+		] as const) {
+			expect(() => create(length)).toThrowError(
+				coded(
+					new RangeError(
+						`FULCRO7001: ${name}: expected a length that is a non-negative safe integer, received ${shown}.`,
 					),
-				);
-			}
-		},
-	);
+					{ operation: name, received: length },
+				),
+			);
+		}
+	});
 });

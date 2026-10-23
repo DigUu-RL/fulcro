@@ -12,14 +12,7 @@ import { DoublePrecisionFloat } from '@/doublePrecisionFloat';
 
 describe('DoublePrecisionFloat', () => {
 	it('should convert every number to itself, the edge cases included', () => {
-		for (const value of [
-			0.1,
-			-0,
-			Number.MIN_VALUE,
-			Number.MAX_VALUE,
-			-Infinity,
-			2 ** 53 + 2,
-		]) {
+		for (const value of [0.1, -0, Number.MIN_VALUE, Number.MAX_VALUE, -Infinity, 2 ** 53 + 2]) {
 			expect(Object.is(DoublePrecisionFloat.from(value), value)).toBe(true);
 		}
 
@@ -46,9 +39,7 @@ describe('DoublePrecisionFloat', () => {
 	it('should compute the operations behind the operators as the operators do', () => {
 		const x = DoublePrecisionFloat.from(2);
 
-		expect(DoublePrecisionFloat.power(x, DoublePrecisionFloat.from(10))).toBe(
-			1024,
-		);
+		expect(DoublePrecisionFloat.power(x, DoublePrecisionFloat.from(10))).toBe(1024);
 		expect(DoublePrecisionFloat.negate(x)).toBe(-2);
 		expect(DoublePrecisionFloat.increment(x)).toBe(3);
 		expect(DoublePrecisionFloat.greaterThanOrEqual(x, x)).toBe(true);
@@ -68,9 +59,7 @@ describe('DoublePrecisionFloat', () => {
 	});
 
 	it('should need a conversion to be told apart from a plain number', () => {
-		expectTypeOf(
-			DoublePrecisionFloat.from(1),
-		).toEqualTypeOf<DoublePrecisionFloat>();
+		expectTypeOf(DoublePrecisionFloat.from(1)).toEqualTypeOf<DoublePrecisionFloat>();
 		expectTypeOf<DoublePrecisionFloat>().toMatchTypeOf<number>();
 		expectTypeOf<number>().not.toMatchTypeOf<DoublePrecisionFloat>();
 	});

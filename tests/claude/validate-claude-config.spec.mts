@@ -84,9 +84,7 @@ const hook = (
 
 	fixture.write(
 		`.claude/hooks/${name}.mjs`,
-		guard
-			? 'export const review = () => null;\n'
-			: 'export const runs = () => true;\n',
+		guard ? 'export const review = () => null;\n' : 'export const runs = () => true;\n',
 	);
 
 	if (!tested) return;
@@ -114,10 +112,7 @@ describe('the settings', () => {
 	it('reports a hook wired to a file that is not there', () => {
 		const fixture = configured();
 
-		fixture.write(
-			'.claude/settings.json',
-			settings(['.claude/hooks/protect-publish.mjs']),
-		);
+		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mjs']));
 
 		expect(rules(fixture.root)).toEqual(['hook-missing']);
 	});
@@ -127,10 +122,7 @@ describe('the settings', () => {
 
 		hook(fixture, 'protect-publish');
 		hook(fixture, 'block-destructive');
-		fixture.write(
-			'.claude/settings.json',
-			settings(['.claude/hooks/protect-publish.mjs']),
-		);
+		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mjs']));
 
 		expect(rules(fixture.root)).toEqual(['hook-unwired']);
 	});
@@ -139,10 +131,7 @@ describe('the settings', () => {
 		const fixture = configured();
 
 		hook(fixture, 'protect-publish', { tested: false });
-		fixture.write(
-			'.claude/settings.json',
-			settings(['.claude/hooks/protect-publish.mjs']),
-		);
+		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mjs']));
 
 		expect(rules(fixture.root)).toEqual(['hook-untested']);
 	});
@@ -152,10 +141,7 @@ describe('the settings', () => {
 
 		hook(fixture, 'protect-publish');
 		hook(fixture, 'helpers', { guard: false, tested: false });
-		fixture.write(
-			'.claude/settings.json',
-			settings(['.claude/hooks/protect-publish.mjs']),
-		);
+		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mjs']));
 
 		expect(rules(fixture.root, 'warning')).toEqual(['hook-unused']);
 	});
@@ -215,14 +201,8 @@ describe('the rules', () => {
 		const fixture = configured();
 
 		hook(fixture, 'protect-publish');
-		fixture.write(
-			'.claude/settings.json',
-			settings(['.claude/hooks/protect-publish.mjs']),
-		);
-		fixture.write(
-			'.claude/rules/build-output.md',
-			'# Build output\n\n**Scope:** `packages/*`\n',
-		);
+		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mjs']));
+		fixture.write('.claude/rules/build-output.md', '# Build output\n\n**Scope:** `packages/*`\n');
 
 		expect(rules(fixture.root)).toEqual(['rule-unlisted']);
 	});
@@ -231,18 +211,9 @@ describe('the rules', () => {
 		const fixture = configured();
 
 		hook(fixture, 'protect-publish');
-		fixture.write(
-			'.claude/settings.json',
-			settings(['.claude/hooks/protect-publish.mjs']),
-		);
-		fixture.write(
-			'.claude/rules/README.md',
-			'# Rules\n\n- `build-output.md`\n',
-		);
-		fixture.write(
-			'.claude/rules/build-output.md',
-			'# Build output\n\nSomewhere.\n',
-		);
+		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mjs']));
+		fixture.write('.claude/rules/README.md', '# Rules\n\n- `build-output.md`\n');
+		fixture.write('.claude/rules/build-output.md', '# Build output\n\nSomewhere.\n');
 
 		expect(rules(fixture.root, 'warning')).toEqual(['rule-scope']);
 	});
@@ -251,10 +222,7 @@ describe('the rules', () => {
 		const fixture = tree();
 
 		hook(fixture, 'protect-publish');
-		fixture.write(
-			'.claude/settings.json',
-			settings(['.claude/hooks/protect-publish.mjs']),
-		);
+		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mjs']));
 
 		expect(rules(fixture.root)).toContain('contract-missing');
 	});
@@ -265,14 +233,8 @@ describe('what the contract and the rules name', () => {
 		const fixture = configured();
 
 		hook(fixture, 'protect-publish');
-		fixture.write(
-			'.claude/settings.json',
-			settings(['.claude/hooks/protect-publish.mjs']),
-		);
-		fixture.write(
-			'.claude/CLAUDE.md',
-			'# Contract\n\nThe standard is `docs/testing.md`.\n',
-		);
+		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mjs']));
+		fixture.write('.claude/CLAUDE.md', '# Contract\n\nThe standard is `docs/testing.md`.\n');
 
 		expect(rules(fixture.root)).toEqual(['reference-missing']);
 	});
@@ -281,15 +243,9 @@ describe('what the contract and the rules name', () => {
 		const fixture = configured();
 
 		hook(fixture, 'protect-publish');
-		fixture.write(
-			'.claude/settings.json',
-			settings(['.claude/hooks/protect-publish.mjs']),
-		);
+		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mjs']));
 		fixture.write('.gitignore', '.notes/*\n');
-		fixture.write(
-			'.claude/CLAUDE.md',
-			'# Contract\n\nThe plan is `.notes/PLAN.md`.\n',
-		);
+		fixture.write('.claude/CLAUDE.md', '# Contract\n\nThe plan is `.notes/PLAN.md`.\n');
 
 		// Without a repository there are no ignore rules to read, and the
 		// reference is reported — which is the answer a checker gives when it
@@ -313,10 +269,7 @@ const ruled = (rules: string[] = []): Tree => {
 	const fixture = configured();
 
 	hook(fixture, 'protect-publish');
-	fixture.write(
-		'.claude/settings.json',
-		settings(['.claude/hooks/protect-publish.mjs']),
-	);
+	fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mjs']));
 	fixture.write(
 		'.claude/rules/README.md',
 		`# Rules\n\n${rules.map((file) => `- \`${file}\``).join('\n')}\n`,
@@ -343,11 +296,7 @@ describe('the frontmatter of a rule', () => {
 	it('accepts a scope whose fixture holds up', () => {
 		const fixture = ruled(['collections-performance.md']);
 
-		rule(
-			fixture,
-			'collections-performance.md',
-			'paths:\n  - packages/collections/src/**/*.ts',
-		);
+		rule(fixture, 'collections-performance.md', 'paths:\n  - packages/collections/src/**/*.ts');
 		fixture.write('packages/collections/src/index.ts', 'export {};\n');
 		fixture.write('packages/parallel/src/index.ts', 'export {};\n');
 		fixture.write(
@@ -376,10 +325,7 @@ describe('the frontmatter of a rule', () => {
 
 		rule(fixture, 'concurrency.md', 'paths:\n  - packages/concurrency/**/*.ts');
 
-		expect(rules(fixture.root)).toEqual([
-			'rule-paths-missing',
-			'rule-fixture-missing',
-		]);
+		expect(rules(fixture.root)).toEqual(['rule-paths-missing', 'rule-fixture-missing']);
 	});
 
 	it('leaves a rule with no block alone, because it loads always', () => {
@@ -399,10 +345,7 @@ describe('the frontmatter of a rule', () => {
 			'.claude/rules/general.md',
 			`# General\n\n**Scope:** everywhere\n\n${paragraph}\n`,
 		);
-		fixture.write(
-			'.claude/rules/git.md',
-			`# Git\n\n**Scope:** everywhere\n\n${paragraph}\n`,
-		);
+		fixture.write('.claude/rules/git.md', `# Git\n\n**Scope:** everywhere\n\n${paragraph}\n`);
 
 		expect(rules(fixture.root, 'warning')).toEqual(['rule-duplicate']);
 	});
@@ -417,11 +360,7 @@ describe('the fixtures behind a path-scoped rule', () => {
 	const scoped = (): Tree => {
 		const fixture = ruled(['transformers.md']);
 
-		rule(
-			fixture,
-			'transformers.md',
-			'paths:\n  - packages/*/src/transformer/**/*.ts',
-		);
+		rule(fixture, 'transformers.md', 'paths:\n  - packages/*/src/transformer/**/*.ts');
 		fixture.write('packages/reflect/src/transformer/index.ts', 'export {};\n');
 		fixture.write('packages/reflect/src/index.ts', 'export {};\n');
 
@@ -513,15 +452,9 @@ describe('the fixtures behind a path-scoped rule', () => {
 	it('reports one that is not JSON', () => {
 		const fixture = scoped();
 
-		fixture.write(
-			'tools/claude/rule-fixtures/transformers.fixture.json',
-			'{ "rule": }\n',
-		);
+		fixture.write('tools/claude/rule-fixtures/transformers.fixture.json', '{ "rule": }\n');
 
-		expect(rules(fixture.root)).toEqual([
-			'fixture-unreadable',
-			'rule-fixture-missing',
-		]);
+		expect(rules(fixture.root)).toEqual(['fixture-unreadable', 'rule-fixture-missing']);
 	});
 });
 
@@ -609,10 +542,7 @@ describe('the subagents', () => {
 			].join('\n'),
 		);
 
-		expect(rules(fixture.root)).toEqual([
-			'agent-tools-writing',
-			'agent-tools-writing',
-		]);
+		expect(rules(fixture.root)).toEqual(['agent-tools-writing', 'agent-tools-writing']);
 	});
 
 	it('reports a name that is not the file name, and a missing description', () => {
@@ -656,12 +586,7 @@ describe('the subagents', () => {
 	it('reports a file its prompt names that is not there', () => {
 		const fixture = ruled();
 
-		agent(
-			fixture,
-			'architecture-reviewer',
-			reviewer,
-			'Read `.claude/rules/general.md` first.\n',
-		);
+		agent(fixture, 'architecture-reviewer', reviewer, 'Read `.claude/rules/general.md` first.\n');
 
 		expect(rules(fixture.root)).toEqual(['reference-missing']);
 	});

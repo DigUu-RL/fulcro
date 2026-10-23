@@ -44,9 +44,7 @@ interface Compiled {
  * the compiler and the refusals of the transformer.
  */
 const compile = (...fileNames: string[]): Compiled[] => {
-	const fixtures: string[] = fileNames.map((fileName) =>
-		path.resolve(__dirname, fileName),
-	);
+	const fixtures: string[] = fileNames.map((fileName) => path.resolve(__dirname, fileName));
 	const program: ts.Program = ts.createProgram(fixtures, COMPILER_OPTIONS);
 
 	return fixtures.map((fixture) => {
@@ -72,9 +70,7 @@ const compile = (...fileNames: string[]): Compiled[] => {
 
 		const errors: readonly ts.Diagnostic[] = ts
 			.getPreEmitDiagnostics(program, source)
-			.filter(
-				(diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error,
-			);
+			.filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error);
 
 		return { source, emitted, errors, refused };
 	});
@@ -99,10 +95,7 @@ let accepted: Compiled;
 let rejected: Compiled;
 
 beforeAll(() => {
-	[accepted, rejected] = compile(
-		'ownership.sample.ts',
-		'ownership.rejected.fixture.ts',
-	);
+	[accepted, rejected] = compile('ownership.sample.ts', 'ownership.rejected.fixture.ts');
 });
 
 describe('ownership rules at compile time', () => {
@@ -124,13 +117,11 @@ describe('ownership rules at compile time', () => {
 	});
 
 	it('should refuse exactly the lines the fixture marks, with their codes', () => {
-		const marked: string[] = rejected.source.text
-			.split(/\r?\n/)
-			.flatMap((line, index) => {
-				const code: string | undefined = /\/\/ (FULCRO\d{4})$/.exec(line)?.[1];
+		const marked: string[] = rejected.source.text.split(/\r?\n/).flatMap((line, index) => {
+			const code: string | undefined = /\/\/ (FULCRO\d{4})$/.exec(line)?.[1];
 
-				return code === undefined ? [] : [`${index + 1}: ${code}`];
-			});
+			return code === undefined ? [] : [`${index + 1}: ${code}`];
+		});
 
 		expect(marked.length).toBeGreaterThan(10);
 		expect(rejected.refused.map(located)).toEqual(marked);
@@ -140,24 +131,20 @@ describe('ownership rules at compile time', () => {
 		const [first] = rejected.refused;
 		const start: number = first?.start ?? -1;
 
-		expect(rejected.source.text.slice(start, start + 'owner'.length)).toBe(
-			'owner',
-		);
+		expect(rejected.source.text.slice(start, start + 'owner'.length)).toBe('owner');
 		expect(first?.messageText).toBe(
-			"FULCRO7027: move: 'owner' is used after it was moved at line 24; use the owner move returned.",
+			"FULCRO7027: move: 'owner' is used after it was moved at line 17; use the owner move returned.",
 		);
 	});
 
 	it('should name the conflicting borrow and the owner of an ended one', () => {
-		const messages: string[] = rejected.refused.map((diagnostic) =>
-			String(diagnostic.messageText),
-		);
+		const messages: string[] = rejected.refused.map((diagnostic) => String(diagnostic.messageText));
 
 		expect(messages).toContain(
-			"FULCRO7028: borrow: the borrow 'reading' is used after borrowMutable(owner) at line 47 ended it.",
+			"FULCRO7028: borrow: the borrow 'reading' is used after borrowMutable(owner) at line 40 ended it.",
 		);
 		expect(messages).toContain(
-			"FULCRO7029: borrow: the borrow 'reading' is used after its owner 'owner' was moved at line 74.",
+			"FULCRO7029: borrow: the borrow 'reading' is used after its owner 'owner' was moved at line 67.",
 		);
 	});
 

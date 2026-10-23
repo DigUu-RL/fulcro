@@ -10,8 +10,7 @@ import type { BoundedNumericType } from '@/numericType';
  * Carried by a `number` holding a value the format can represent exactly.
  * Converting rounds to the nearest such value, ties to even.
  */
-export type HalfPrecisionFloat = Branded<number, 'HalfPrecisionFloat'> &
-	Layout<2, 2>;
+export type HalfPrecisionFloat = Branded<number, 'HalfPrecisionFloat'> & Layout<2, 2>;
 
 /**
  * The point from which a double rounds to infinity rather than to 65504, the
@@ -58,8 +57,7 @@ const roundToHalfPrecision = (value: number): number => {
 
 	// Below the normal range the spacing stops shrinking: that is what makes
 	// the subnormals evenly spaced at 2^-24.
-	const spacing: number =
-		2 ** (Math.max(exponent, MINIMUM_NORMAL_EXPONENT) - FRACTION_BITS);
+	const spacing: number = 2 ** (Math.max(exponent, MINIMUM_NORMAL_EXPONENT) - FRACTION_BITS);
 	const units: number = magnitude / spacing;
 
 	// `Math.round` breaks a tie upwards; a tie on an odd count goes back down,
@@ -79,7 +77,8 @@ const roundToHalfPrecision = (value: number): number => {
  * HalfPrecisionFloat.from(65520); // Infinity
  * ```
  */
-export const HalfPrecisionFloat: BoundedNumericType<
-	HalfPrecisionFloat,
-	number
-> = createFloatType('HalfPrecisionFloat', 65504, roundToHalfPrecision);
+export const HalfPrecisionFloat: BoundedNumericType<HalfPrecisionFloat, number> = createFloatType(
+	'HalfPrecisionFloat',
+	65504,
+	roundToHalfPrecision,
+);

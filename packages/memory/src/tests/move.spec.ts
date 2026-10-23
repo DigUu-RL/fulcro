@@ -54,9 +54,7 @@ describe('move', () => {
 	it('should refuse something that is not an owner', () => {
 		expect(() => move(undefined as never)).toThrow(
 			coded(
-				new TypeError(
-					'FULCRO7017: move: expected an owner from own or move, received undefined.',
-				),
+				new TypeError('FULCRO7017: move: expected an owner from own or move, received undefined.'),
 				{
 					operation: 'move',
 					expected: 'an owner from own or move',

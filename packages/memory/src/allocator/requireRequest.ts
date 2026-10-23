@@ -29,10 +29,7 @@ export const requireSize = (operation: string, size: number): void => {
  * @param alignment Alignment handed in.
  * @throws {RangeError} When it is not a positive power of two.
  */
-export const requireAlignment = (
-	operation: string,
-	alignment: number,
-): void => {
+export const requireAlignment = (operation: string, alignment: number): void => {
 	if (
 		!Number.isSafeInteger(alignment) ||
 		alignment <= 0 ||
@@ -40,8 +37,7 @@ export const requireAlignment = (
 	) {
 		throw createError('FULCRO7006', {
 			operation,
-			received:
-				typeof alignment === 'number' ? alignment : describeValue(alignment),
+			received: typeof alignment === 'number' ? alignment : describeValue(alignment),
 		});
 	}
 };
@@ -54,11 +50,7 @@ export const requireAlignment = (
  * @param alignment Alignment asked for.
  * @throws {RangeError} When either is invalid.
  */
-export const requireRequest = (
-	operation: string,
-	size: number,
-	alignment: number,
-): void => {
+export const requireRequest = (operation: string, size: number, alignment: number): void => {
 	requireSize(operation, size);
 	requireAlignment(operation, alignment);
 };

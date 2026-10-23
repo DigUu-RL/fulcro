@@ -55,9 +55,6 @@ export const review = (input) => {
 };
 
 // Run as a hook, imported by its tests.
-if (
-	process.argv[1] !== undefined &&
-	import.meta.url === pathToFileURL(process.argv[1]).href
-) {
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
 	void guard(review);
 }

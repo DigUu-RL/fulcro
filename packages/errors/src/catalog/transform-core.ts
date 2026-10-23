@@ -18,8 +18,7 @@ export const transformCoreCatalog = {
 		// The compiler's own diagnostic, flattened: it already names the file and
 		// what is wrong with it, and rewording it would lose what TypeScript
 		// knows and this package does not.
-		message: ({ diagnostic }: { operation: string; diagnostic: string }) =>
-			diagnostic,
+		message: ({ diagnostic }: { operation: string; diagnostic: string }) => diagnostic,
 	},
 	FULCRO5003: {
 		kind: Error,

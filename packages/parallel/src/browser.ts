@@ -52,6 +52,5 @@ const WORKER_URL = new URL('./worker/entry.js', import.meta.url);
  * @returns The pool.
  * @throws {Error} When `workers` is not a positive integer.
  */
-export const createWorkerPool = <T, R>(
-	options: PoolOptions,
-): WorkerPool<T, R> => createPool<T, R>(options, spawnWorker, WORKER_URL);
+export const createWorkerPool = <T, R>(options: PoolOptions): WorkerPool<T, R> =>
+	createPool<T, R>(options, spawnWorker, WORKER_URL);

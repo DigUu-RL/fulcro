@@ -28,9 +28,7 @@ import { SequenceCollection } from '@/collections/sequence';
  * @param values Elements to yield.
  * @returns The asynchronous iterable and a reader of how far it got.
  */
-const counted = <T>(
-	values: readonly T[],
-): { source: AsyncIterable<T>; pulled: () => number } => {
+const counted = <T>(values: readonly T[]): { source: AsyncIterable<T>; pulled: () => number } => {
 	let pulled = 0;
 
 	return {
@@ -91,9 +89,7 @@ describe('the numeric terminals', () => {
 
 		const expected = SequenceCollection.from(ORDERS)[name as Numeric](selector);
 
-		const actual = await AsyncSequenceCollection.from(streamOf(ORDERS))[
-			name as Numeric
-		](selector);
+		const actual = await AsyncSequenceCollection.from(streamOf(ORDERS))[name as Numeric](selector);
 
 		expect(actual).toBe(expected);
 	});
@@ -112,33 +108,25 @@ describe('the numeric terminals', () => {
 		expect(await AsyncSequenceCollection.from(streamOf([])).sum()).toBe(0);
 	});
 
-	it.each(['average', 'min', 'max'])(
-		'should refuse %s on an empty sequence',
-		async (name) => {
-			type Numeric = 'average' | 'min' | 'max';
+	it.each(['average', 'min', 'max'])('should refuse %s on an empty sequence', async (name) => {
+		type Numeric = 'average' | 'min' | 'max';
 
-			await expect(
-				AsyncSequenceCollection.from(streamOf<number>([]))[name as Numeric](),
-			).rejects.toThrow(/at least one element/);
-		},
-	);
+		await expect(
+			AsyncSequenceCollection.from(streamOf<number>([]))[name as Numeric](),
+		).rejects.toThrow(/at least one element/);
+	});
 
-	it.each(['minBy', 'maxBy'])(
-		'should agree with the synchronous %s',
-		async (name) => {
-			type Extreme = 'minBy' | 'maxBy';
+	it.each(['minBy', 'maxBy'])('should agree with the synchronous %s', async (name) => {
+		type Extreme = 'minBy' | 'maxBy';
 
-			const expected = SequenceCollection.from(ORDERS)[name as Extreme](
-				(order) => order.total,
-			);
+		const expected = SequenceCollection.from(ORDERS)[name as Extreme]((order) => order.total);
 
-			const actual = await AsyncSequenceCollection.from(streamOf(ORDERS))[
-				name as Extreme
-			]((order) => order.total);
+		const actual = await AsyncSequenceCollection.from(streamOf(ORDERS))[name as Extreme](
+			(order) => order.total,
+		);
 
-			expect(actual).toEqual(expected);
-		},
-	);
+		expect(actual).toEqual(expected);
+	});
 
 	it('should keep the first of several equal keys', async () => {
 		// The tie rule the synchronous operators keep: a candidate has to beat
@@ -148,20 +136,16 @@ describe('the numeric terminals', () => {
 			{ id: 2, score: 5 },
 		];
 
-		const best = await AsyncSequenceCollection.from(streamOf(tied)).maxBy(
-			(entry) => entry.score,
-		);
+		const best = await AsyncSequenceCollection.from(streamOf(tied)).maxBy((entry) => entry.score);
 
 		expect(best.id).toBe(1);
 	});
 
 	it('should await a selector that has to wait', async () => {
-		const total = await AsyncSequenceCollection.from(streamOf([1, 2, 3])).sum(
-			async (value) => {
-				await Promise.resolve();
-				return value * 10;
-			},
-		);
+		const total = await AsyncSequenceCollection.from(streamOf([1, 2, 3])).sum(async (value) => {
+			await Promise.resolve();
+			return value * 10;
+		});
 
 		expect(total).toBe(60);
 	});
@@ -173,13 +157,11 @@ describe('the spread terminals', () => {
 		async (name) => {
 			type Spread = 'standardDeviation' | 'sampleStandardDeviation';
 
-			const expected = SequenceCollection.from(ORDERS)[name as Spread](
+			const expected = SequenceCollection.from(ORDERS)[name as Spread]((order) => order.total);
+
+			const actual = await AsyncSequenceCollection.from(streamOf(ORDERS))[name as Spread](
 				(order) => order.total,
 			);
-
-			const actual = await AsyncSequenceCollection.from(streamOf(ORDERS))[
-				name as Spread
-			]((order) => order.total);
 
 			// Close rather than exact, and deliberately: this accumulates each
 			// value as it arrives instead of collecting them to find a mean and
@@ -194,9 +176,7 @@ describe('the spread terminals', () => {
 		// of these are enormous and nearly equal.
 		const values = [1e9 + 4, 1e9 + 7, 1e9 + 13, 1e9 + 16];
 
-		const actual = await AsyncSequenceCollection.from(
-			streamOf(values),
-		).standardDeviation();
+		const actual = await AsyncSequenceCollection.from(streamOf(values)).standardDeviation();
 
 		const expected = SequenceCollection.from(values).standardDeviation();
 
@@ -213,53 +193,39 @@ describe('the spread terminals', () => {
 
 describe('the single element terminals', () => {
 	it('should return the only element', async () => {
-		expect(await AsyncSequenceCollection.from(streamOf(['a'])).single()).toBe(
-			'a',
-		);
-		expect(
-			await AsyncSequenceCollection.from(streamOf(['a'])).singleOrNull(),
-		).toBe('a');
+		expect(await AsyncSequenceCollection.from(streamOf(['a'])).single()).toBe('a');
+		expect(await AsyncSequenceCollection.from(streamOf(['a'])).singleOrNull()).toBe('a');
 	});
 
 	it('should refuse more than one', async () => {
-		await expect(
-			AsyncSequenceCollection.from(streamOf(['a', 'b'])).single(),
-		).rejects.toThrow(/more than one/);
+		await expect(AsyncSequenceCollection.from(streamOf(['a', 'b'])).single()).rejects.toThrow(
+			/more than one/,
+		);
 	});
 
 	it('should stop at the second element rather than draining', async () => {
 		// The answer is settled there, and the source may not end.
 		const { source, pulled } = counted(['a', 'b', 'c', 'd', 'e']);
 
-		await expect(
-			AsyncSequenceCollection.from(source).single(),
-		).rejects.toThrow();
+		await expect(AsyncSequenceCollection.from(source).single()).rejects.toThrow();
 
 		expect(pulled()).toBe(2);
 	});
 
 	it('should tell an empty sequence apart', async () => {
-		await expect(
-			AsyncSequenceCollection.from(streamOf([])).single(),
-		).rejects.toThrow(/no element/);
+		await expect(AsyncSequenceCollection.from(streamOf([])).single()).rejects.toThrow(/no element/);
 
-		expect(
-			await AsyncSequenceCollection.from(streamOf([])).singleOrNull(),
-		).toBeNull();
+		expect(await AsyncSequenceCollection.from(streamOf([])).singleOrNull()).toBeNull();
 	});
 
 	it('should read the element at a position', async () => {
-		expect(
-			await AsyncSequenceCollection.from(streamOf(['a', 'b', 'c'])).elementAt(
-				1,
-			),
-		).toBe('b');
+		expect(await AsyncSequenceCollection.from(streamOf(['a', 'b', 'c'])).elementAt(1)).toBe('b');
 	});
 
 	it('should refuse an index out of range', async () => {
-		await expect(
-			AsyncSequenceCollection.from(streamOf(['a'])).elementAt(5),
-		).rejects.toThrow(/out of range/);
+		await expect(AsyncSequenceCollection.from(streamOf(['a'])).elementAt(5)).rejects.toThrow(
+			/out of range/,
+		);
 	});
 
 	it('should find a value and stop there', async () => {
@@ -270,19 +236,15 @@ describe('the single element terminals', () => {
 	});
 
 	it('should answer false having read everything', async () => {
-		expect(
-			await AsyncSequenceCollection.from(streamOf([1, 2, 3])).contains(9),
-		).toBe(false);
+		expect(await AsyncSequenceCollection.from(streamOf([1, 2, 3])).contains(9)).toBe(false);
 	});
 });
 
 describe('sequenceEqual', () => {
 	it('should agree when both hold the same elements', async () => {
-		expect(
-			await AsyncSequenceCollection.from(streamOf([1, 2, 3])).sequenceEqual([
-				1, 2, 3,
-			]),
-		).toBe(true);
+		expect(await AsyncSequenceCollection.from(streamOf([1, 2, 3])).sequenceEqual([1, 2, 3])).toBe(
+			true,
+		);
 	});
 
 	it.each([
@@ -290,27 +252,21 @@ describe('sequenceEqual', () => {
 		['a shorter second', [1, 2]],
 		['a longer second', [1, 2, 3, 4]],
 	])('should reject %s', async (_label, second) => {
-		expect(
-			await AsyncSequenceCollection.from(streamOf([1, 2, 3])).sequenceEqual(
-				second,
-			),
-		).toBe(false);
+		expect(await AsyncSequenceCollection.from(streamOf([1, 2, 3])).sequenceEqual(second)).toBe(
+			false,
+		);
 	});
 
 	it('should compare against another stream', async () => {
 		expect(
-			await AsyncSequenceCollection.from(streamOf([1, 2, 3])).sequenceEqual(
-				streamOf([1, 2, 3]),
-			),
+			await AsyncSequenceCollection.from(streamOf([1, 2, 3])).sequenceEqual(streamOf([1, 2, 3])),
 		).toBe(true);
 	});
 
 	it('should stop at the first difference', async () => {
 		const { source, pulled } = counted([1, 2, 3, 4, 5]);
 
-		expect(
-			await AsyncSequenceCollection.from(source).sequenceEqual([1, 9, 3, 4, 5]),
-		).toBe(false);
+		expect(await AsyncSequenceCollection.from(source).sequenceEqual([1, 9, 3, 4, 5])).toBe(false);
 
 		expect(pulled()).toBe(2);
 	});
@@ -329,9 +285,7 @@ describe('the ends of the sequence', () => {
 		// A header can be handed over without waiting for a stream to open.
 		const { source, pulled } = counted([2, 3]);
 
-		const iterator = AsyncSequenceCollection.from(source)
-			.prepend(1)
-			[Symbol.asyncIterator]();
+		const iterator = AsyncSequenceCollection.from(source).prepend(1)[Symbol.asyncIterator]();
 
 		expect((await iterator.next()).value).toBe(1);
 		expect(pulled()).toBe(0);
@@ -339,9 +293,7 @@ describe('the ends of the sequence', () => {
 
 	it('should fall back only when nothing arrived', async () => {
 		expect(
-			await AsyncSequenceCollection.from(streamOf<number>([]))
-				.defaultIfEmpty(0)
-				.toArray(),
+			await AsyncSequenceCollection.from(streamOf<number>([])).defaultIfEmpty(0).toArray(),
 		).toEqual([0]);
 
 		expect(
@@ -371,10 +323,7 @@ describe('the ends of the sequence', () => {
 		// `skipLast` releases an element once `count` more have arrived behind
 		// it, so it yields while the source is still going. `takeLast` cannot:
 		// nothing knows the last two of something still arriving.
-		const first = await AsyncSequenceCollection.from(endless())
-			.skipLast(2)
-			.take(3)
-			.toArray();
+		const first = await AsyncSequenceCollection.from(endless()).skipLast(2).take(3).toArray();
 
 		expect(first).toEqual([0, 1, 2]);
 	});
@@ -385,9 +334,7 @@ describe('the ends of the sequence', () => {
 	])('should agree with the synchronous %s', async (_label, name) => {
 		type Trailing = 'takeLast' | 'skipLast';
 
-		const expected = SequenceCollection.from(ORDERS)
-			[name as Trailing](7)
-			.toArray();
+		const expected = SequenceCollection.from(ORDERS)[name as Trailing](7).toArray();
 
 		const actual = await AsyncSequenceCollection.from(streamOf(ORDERS))
 			[name as Trailing](7)
@@ -423,9 +370,7 @@ describe('windows', () => {
 		// be silently dropped.
 		const values: (number | undefined)[] = [undefined, 1, undefined];
 
-		expect(
-			await AsyncSequenceCollection.from(streamOf(values)).pairwise().toArray(),
-		).toEqual([
+		expect(await AsyncSequenceCollection.from(streamOf(values)).pairwise().toArray()).toEqual([
 			[undefined, 1],
 			[1, undefined],
 		]);
@@ -453,10 +398,7 @@ describe('windows', () => {
 	});
 
 	it('should stream rather than wait for the end', async () => {
-		const first = await AsyncSequenceCollection.from(endless())
-			.windowed(3)
-			.take(2)
-			.toArray();
+		const first = await AsyncSequenceCollection.from(endless()).windowed(3).take(2).toArray();
 
 		expect(first).toEqual([
 			[0, 1, 2],
@@ -465,17 +407,15 @@ describe('windows', () => {
 	});
 
 	it.each([0, -1, 1.5])('should reject a size of %s', (size) => {
-		expect(() =>
-			AsyncSequenceCollection.from(streamOf([1])).windowed(size),
-		).toThrow(/positive integer/i);
+		expect(() => AsyncSequenceCollection.from(streamOf([1])).windowed(size)).toThrow(
+			/positive integer/i,
+		);
 	});
 });
 
 describe('groupAdjacent', () => {
 	it('should open a new group whenever the key changes', async () => {
-		const runs = await AsyncSequenceCollection.from(
-			streamOf(['a', 'a', 'b', 'a']),
-		)
+		const runs = await AsyncSequenceCollection.from(streamOf(['a', 'a', 'b', 'a']))
 			.groupAdjacent((letter) => letter)
 			.toArray();
 
@@ -565,9 +505,7 @@ describe('the set operations', () => {
 		const second = [1, 2, 3, 99];
 		const first = [3, 1, 4, 1, 5];
 
-		const expected = SequenceCollection.from(first)
-			[name as SetOp](second)
-			.toArray();
+		const expected = SequenceCollection.from(first)[name as SetOp](second).toArray();
 
 		const actual = await AsyncSequenceCollection.from(streamOf(first))
 			[name as SetOp](second)
@@ -614,9 +552,7 @@ describe('the set operations', () => {
 	});
 
 	it('should take the second side from another stream', async () => {
-		const kept = AsyncSequenceCollection.from(streamOf([1, 2, 3])).intersect(
-			streamOf([2, 3, 4]),
-		);
+		const kept = AsyncSequenceCollection.from(streamOf([1, 2, 3])).intersect(streamOf([2, 3, 4]));
 
 		expect(await kept.toArray()).toEqual([2, 3]);
 	});
@@ -627,9 +563,7 @@ describe('the set operations', () => {
 		// stream this is called on.
 		const { source, pulled } = counted([1, 2, 3]);
 
-		const iterator = AsyncSequenceCollection.from(source)
-			.except([9])
-			[Symbol.asyncIterator]();
+		const iterator = AsyncSequenceCollection.from(source).except([9])[Symbol.asyncIterator]();
 
 		expect((await iterator.next()).value).toBe(1);
 		expect(pulled()).toBe(1);
@@ -654,9 +588,7 @@ describe('the joins', () => {
 			)
 			.toArray();
 
-		const actual = await AsyncSequenceCollection.from(
-			streamOf(ORDERS.slice(0, 8)),
-		)
+		const actual = await AsyncSequenceCollection.from(streamOf(ORDERS.slice(0, 8)))
 			.join(
 				regions,
 				(order) => order.region,
@@ -678,9 +610,7 @@ describe('the joins', () => {
 			)
 			.toArray();
 
-		const actual = await AsyncSequenceCollection.from(
-			streamOf(ORDERS.slice(0, 8)),
-		)
+		const actual = await AsyncSequenceCollection.from(streamOf(ORDERS.slice(0, 8)))
 			.groupJoin(
 				regions,
 				(order) => order.region,
@@ -744,9 +674,7 @@ describe('the joins', () => {
 
 describe('the map terminals', () => {
 	it('should agree with the synchronous countBy', async () => {
-		const expected = SequenceCollection.from(ORDERS).countBy(
-			(order) => order.region,
-		);
+		const expected = SequenceCollection.from(ORDERS).countBy((order) => order.region);
 
 		const actual = await AsyncSequenceCollection.from(streamOf(ORDERS)).countBy(
 			(order) => order.region,
@@ -771,9 +699,7 @@ describe('the map terminals', () => {
 
 	it('should refuse two elements sharing a key', async () => {
 		await expect(
-			AsyncSequenceCollection.from(streamOf(ORDERS)).toMap(
-				(order) => order.region,
-			),
+			AsyncSequenceCollection.from(streamOf(ORDERS)).toMap((order) => order.region),
 		).rejects.toThrow(/two elements/);
 	});
 
@@ -783,9 +709,7 @@ describe('the map terminals', () => {
 			(order) => order.id,
 		);
 
-		const actual = await AsyncSequenceCollection.from(
-			streamOf(ORDERS),
-		).toLookup(
+		const actual = await AsyncSequenceCollection.from(streamOf(ORDERS)).toLookup(
 			(order) => order.region,
 			(order) => order.id,
 		);
@@ -794,9 +718,9 @@ describe('the map terminals', () => {
 	});
 
 	it('should keep the element itself without a selector', async () => {
-		const mapped = await AsyncSequenceCollection.from(
-			streamOf([{ id: 1 }, { id: 2 }]),
-		).toMap((entry) => entry.id);
+		const mapped = await AsyncSequenceCollection.from(streamOf([{ id: 1 }, { id: 2 }])).toMap(
+			(entry) => entry.id,
+		);
 
 		expect(mapped.get(1)).toEqual({ id: 1 });
 	});
@@ -806,28 +730,17 @@ describe('cancellation', () => {
 	it.each([
 		['sum', (sequence: ReturnType<typeof numbers>) => sequence.sum()],
 		['average', (sequence: ReturnType<typeof numbers>) => sequence.average()],
-		[
-			'countBy',
-			(sequence: ReturnType<typeof numbers>) =>
-				sequence.countBy((value) => value),
-		],
-		[
-			'toMap',
-			(sequence: ReturnType<typeof numbers>) =>
-				sequence.toMap((value) => value),
-		],
+		['countBy', (sequence: ReturnType<typeof numbers>) => sequence.countBy((value) => value)],
+		['toMap', (sequence: ReturnType<typeof numbers>) => sequence.toMap((value) => value)],
 		['single', (sequence: ReturnType<typeof numbers>) => sequence.single()],
-	])(
-		'should reject %s with the reason the signal carries',
-		async (_label, run) => {
-			const controller = new AbortController();
-			const reason = new Error('called off');
+	])('should reject %s with the reason the signal carries', async (_label, run) => {
+		const controller = new AbortController();
+		const reason = new Error('called off');
 
-			controller.abort(reason);
+		controller.abort(reason);
 
-			await expect(run(numbers(controller.signal))).rejects.toBe(reason);
-		},
-	);
+		await expect(run(numbers(controller.signal))).rejects.toBe(reason);
+	});
 
 	/**
 	 * Builds a sequence whose terminal is handed an aborted signal.
@@ -841,8 +754,7 @@ describe('cancellation', () => {
 		return {
 			sum: () => sequence.sum(undefined, { signal }),
 			average: () => sequence.average(undefined, { signal }),
-			countBy: <K>(keySelector: (value: number) => K) =>
-				sequence.countBy(keySelector, { signal }),
+			countBy: <K>(keySelector: (value: number) => K) => sequence.countBy(keySelector, { signal }),
 			toMap: <K>(keySelector: (value: number) => K) =>
 				sequence.toMap(keySelector, undefined, { signal }),
 			single: () => sequence.single({ signal }),

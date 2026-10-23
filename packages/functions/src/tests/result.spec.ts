@@ -158,9 +158,7 @@ const FIXTURE = 'result.fixture.ts';
 /** Lines of the fixture carrying the refusal marker, 1-based. */
 const REFUSED: number[] = readFileSync(path.resolve(__dirname, FIXTURE), 'utf8')
 	.split('\n')
-	.flatMap((line, index) =>
-		line.trimEnd().endsWith('// refused') ? [index + 1] : [],
-	);
+	.flatMap((line, index) => (line.trimEnd().endsWith('// refused') ? [index + 1] : []));
 
 describe.each(COMPILERS)('Result at compile time, on %s', (_label, name) => {
 	const report: string = compileFixture(FIXTURE, name);

@@ -41,6 +41,4 @@ export const quaternionSize = sizeOf<Quaternion<Decimal>>();
 
 export const holderLayout = layoutOf<Struct<typeof Holder>>();
 
-export const squares = constantOf(() =>
-	Array.from({ length: 4 }, (_, index) => index * index),
-);
+export const squares = constantOf(() => Array.from({ length: 4 }, (_, index) => index * index));

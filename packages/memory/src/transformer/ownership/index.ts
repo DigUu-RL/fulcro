@@ -120,8 +120,7 @@ const createRules = (
 				? call.expression.text
 				: null;
 			const found: Operation | undefined = OPERATIONS.find(
-				(operation) =>
-					operation === named && isOwnedCall(call, checker, TARGETS[operation]),
+				(operation) => operation === named && isOwnedCall(call, checker, TARGETS[operation]),
 			);
 
 			operations.set(call, found ?? null);
@@ -136,9 +135,7 @@ const createRules = (
 	 * @param identifier The identifier.
 	 * @returns Its symbol, if it has one.
 	 */
-	const symbolOf = (
-		identifier: typescript.Identifier,
-	): typescript.Symbol | undefined =>
+	const symbolOf = (identifier: typescript.Identifier): typescript.Symbol | undefined =>
 		typescript.isShorthandPropertyAssignment(identifier.parent)
 			? checker.getShorthandAssignmentValueSymbol(identifier.parent)
 			: checker.getSymbolAtLocation(identifier);
@@ -166,8 +163,7 @@ const createRules = (
 	};
 
 	const lineOf = (node: typescript.Node): number =>
-		sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line +
-		1;
+		sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
 
 	/**
 	 * Reports once per place and error, though a loop walks it twice.
@@ -280,8 +276,7 @@ const createRules = (
 		value: typescript.Expression | undefined,
 		facts: Facts,
 	): void => {
-		const symbol: typescript.Symbol | undefined =
-			checker.getSymbolAtLocation(name);
+		const symbol: typescript.Symbol | undefined = checker.getSymbolAtLocation(name);
 
 		if (symbol === undefined) return;
 
@@ -315,10 +310,7 @@ const createRules = (
 	 * @param created The function.
 	 * @param facts What is known where it is created.
 	 */
-	const capture = (
-		created: typescript.FunctionLikeDeclaration,
-		facts: Facts,
-	): void => {
+	const capture = (created: typescript.FunctionLikeDeclaration, facts: Facts): void => {
 		if (facts.moved.size === 0 && facts.loans.size === 0) return;
 
 		const visit = (node: typescript.Node): void => {

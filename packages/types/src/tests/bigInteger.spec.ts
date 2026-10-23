@@ -39,21 +39,17 @@ describe('BigInteger', () => {
 		expect(BigInteger.multiply(huge, huge)).toBe(2n ** 400n);
 		expect(BigInteger.add(huge, BigInteger.from(1))).toBe(2n ** 200n + 1n);
 		expect(BigInteger.subtract(BigInteger.from(1), huge)).toBe(1n - 2n ** 200n);
-		expect(BigInteger.divide(BigInteger.from(-7), BigInteger.from(2))).toBe(
-			-3n,
-		);
-		expect(BigInteger.remainder(BigInteger.from(-7), BigInteger.from(2))).toBe(
-			-1n,
-		);
+		expect(BigInteger.divide(BigInteger.from(-7), BigInteger.from(2))).toBe(-3n);
+		expect(BigInteger.remainder(BigInteger.from(-7), BigInteger.from(2))).toBe(-1n);
 	});
 
 	it('should refuse a zero divisor, naming the operation', () => {
-		expect(() =>
-			BigInteger.divide(BigInteger.from(1n), BigInteger.from(0n)),
-		).toThrow('BigInteger.divide: division by zero.');
-		expect(() =>
-			BigInteger.remainder(BigInteger.from(1n), BigInteger.from(0n)),
-		).toThrow('BigInteger.remainder: division by zero.');
+		expect(() => BigInteger.divide(BigInteger.from(1n), BigInteger.from(0n))).toThrow(
+			'BigInteger.divide: division by zero.',
+		);
+		expect(() => BigInteger.remainder(BigInteger.from(1n), BigInteger.from(0n))).toThrow(
+			'BigInteger.remainder: division by zero.',
+		);
 	});
 
 	it('should compute the operations behind the operators without bound', () => {

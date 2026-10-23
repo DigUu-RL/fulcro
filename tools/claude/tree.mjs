@@ -48,8 +48,7 @@ export const exists = (target) => fs.existsSync(target);
  * @param {string} target An absolute path inside it.
  * @returns {string} The path as a report spells it.
  */
-export const displayed = (root, target) =>
-	path.relative(root, target).split(path.sep).join('/');
+export const displayed = (root, target) => path.relative(root, target).split(path.sep).join('/');
 
 /**
  * Every file below a directory, as paths relative to it.
@@ -202,9 +201,7 @@ export const skillsOf = (root = repositoryRoot) => {
 		.map((entry) => {
 			const directory = path.join(base, entry.name);
 			const manifestPath = path.join(directory, 'SKILL.md');
-			const manifest = exists(manifestPath)
-				? fs.readFileSync(manifestPath, 'utf8')
-				: null;
+			const manifest = exists(manifestPath) ? fs.readFileSync(manifestPath, 'utf8') : null;
 
 			return {
 				directory: entry.name,
@@ -450,6 +447,4 @@ export const agentDefinitionsOf = (root = repositoryRoot) => {
  * @returns {Set<string>} The agent names, without the `.md`.
  */
 export const agentsOf = (root = repositoryRoot) =>
-	new Set(
-		agentDefinitionsOf(root).map((agent) => agent.file.replace(/\.md$/, '')),
-	);
+	new Set(agentDefinitionsOf(root).map((agent) => agent.file.replace(/\.md$/, '')));

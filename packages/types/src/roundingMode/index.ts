@@ -17,8 +17,7 @@ import { createError } from '@fulcro/errors';
  * default and the one that does not drift: rounding many ties the same way
  * biases a sum, and alternating them by parity does not.
  */
-export type RoundingMode =
-	'ceiling' | 'floor' | 'truncate' | 'halfEven' | 'halfAwayFromZero';
+export type RoundingMode = 'ceiling' | 'floor' | 'truncate' | 'halfEven' | 'halfAwayFromZero';
 
 /** Every mode, for validating one that arrived from outside the type system. */
 const ROUNDING_MODES: ReadonlySet<string> = new Set<RoundingMode>([
@@ -40,10 +39,7 @@ const ROUNDING_MODES: ReadonlySet<string> = new Set<RoundingMode>([
  * @returns The mode, typed.
  * @throws {RangeError} When the mode is not recognised.
  */
-export const requireRoundingMode = (
-	operation: string,
-	mode: unknown,
-): RoundingMode => {
+export const requireRoundingMode = (operation: string, mode: unknown): RoundingMode => {
 	if (typeof mode === 'string' && ROUNDING_MODES.has(mode)) {
 		return mode as RoundingMode;
 	}

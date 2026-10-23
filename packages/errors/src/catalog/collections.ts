@@ -11,8 +11,7 @@ import { RangeCatalog } from '@/definition';
 export const collectionsCatalog = {
 	FULCRO1001: {
 		kind: Error,
-		message: (_details: { operation: string }) =>
-			'Sequence contains no elements',
+		message: (_details: { operation: string }) => 'Sequence contains no elements',
 	},
 	FULCRO1002: {
 		kind: Error,
@@ -65,18 +64,15 @@ export const collectionsCatalog = {
 	},
 	FULCRO1012: {
 		kind: Error,
-		message: (_details: { operation: string }) =>
-			'range() cannot produce a negative count.',
+		message: (_details: { operation: string }) => 'range() cannot produce a negative count.',
 	},
 	FULCRO1013: {
 		kind: Error,
-		message: (_details: { operation: string }) =>
-			'repeat() takes an integer count.',
+		message: (_details: { operation: string }) => 'repeat() takes an integer count.',
 	},
 	FULCRO1014: {
 		kind: Error,
-		message: (_details: { operation: string }) =>
-			'repeat() cannot produce a negative count.',
+		message: (_details: { operation: string }) => 'repeat() cannot produce a negative count.',
 	},
 	FULCRO1015: {
 		kind: TypeError,
@@ -98,13 +94,7 @@ export const collectionsCatalog = {
 	},
 	FULCRO1017: {
 		kind: Error,
-		message: ({
-			operation,
-			concurrency,
-		}: {
-			operation: string;
-			concurrency: number;
-		}) =>
+		message: ({ operation, concurrency }: { operation: string; concurrency: number }) =>
 			`${operation}() needs a positive integer concurrency, and was given ${concurrency}.`,
 	},
 	FULCRO1018: {
@@ -116,8 +106,7 @@ export const collectionsCatalog = {
 	},
 	FULCRO1019: {
 		kind: Error,
-		message: ({ operation }: { operation: string }) =>
-			`${operation}() needs at least one element.`,
+		message: ({ operation }: { operation: string }) => `${operation}() needs at least one element.`,
 	},
 	FULCRO1020: {
 		kind: Error,
@@ -135,8 +124,7 @@ export const collectionsCatalog = {
 	},
 	FULCRO1023: {
 		kind: Error,
-		message: (_details: { operation: string }) =>
-			'windowed() takes a positive integer size.',
+		message: (_details: { operation: string }) => 'windowed() takes a positive integer size.',
 	},
 	FULCRO1024: {
 		kind: Error,

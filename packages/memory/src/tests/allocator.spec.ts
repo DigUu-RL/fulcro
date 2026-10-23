@@ -24,16 +24,8 @@ import { coded } from './coded';
 /** Each strategy: its name, the operation its errors name, and a factory. */
 const STRATEGIES = [
 	['ManagedAllocator', 'ManagedAllocator.allocate', createManagedAllocator],
-	[
-		'ArenaAllocator',
-		'ArenaAllocator.allocate',
-		(): Allocator => createArenaAllocator(256),
-	],
-	[
-		'StackAllocator',
-		'StackAllocator.allocate',
-		(): Allocator => createStackAllocator(4096),
-	],
+	['ArenaAllocator', 'ArenaAllocator.allocate', (): Allocator => createArenaAllocator(256)],
+	['StackAllocator', 'StackAllocator.allocate', (): Allocator => createStackAllocator(4096)],
 	[
 		'a frame of StackAllocator',
 		'StackAllocator.enter().allocate',
@@ -44,11 +36,7 @@ const STRATEGIES = [
 		'FixedBufferAllocator.allocate',
 		(): Allocator => createFixedBufferAllocator(new ArrayBuffer(4096)),
 	],
-	[
-		'PoolAllocator',
-		'PoolAllocator.allocate',
-		(): Allocator => createPoolAllocator(64, 32),
-	],
+	['PoolAllocator', 'PoolAllocator.allocate', (): Allocator => createPoolAllocator(64, 32)],
 ] as const;
 
 /**
@@ -107,11 +95,7 @@ describe.each(STRATEGIES)('%s, as an Allocator', (_name, operation, create) => {
 		const first: Allocation = allocator.allocate(32, 4);
 		const second: Allocation = allocator.allocate(32, 4);
 
-		new Uint8Array(
-			first.bytes.buffer,
-			first.bytes.byteOffset,
-			first.bytes.byteLength,
-		).fill(0xff);
+		new Uint8Array(first.bytes.buffer, first.bytes.byteOffset, first.bytes.byteLength).fill(0xff);
 
 		expect(bytesOf(second).every((byte) => byte === 0)).toBe(true);
 	});

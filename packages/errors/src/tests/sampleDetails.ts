@@ -16,8 +16,6 @@ export const sampleDetails = (): DetailsShape =>
 		{ operation: 'operation' },
 		{
 			get: (target, field) =>
-				typeof field === 'string' && !(field in target)
-					? 'value'
-					: Reflect.get(target, field),
+				typeof field === 'string' && !(field in target) ? 'value' : Reflect.get(target, field),
 		},
 	);

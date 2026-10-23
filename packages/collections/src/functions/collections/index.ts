@@ -14,9 +14,7 @@ const DIGIT_NINE_CODE = 57;
  * @param source Value being inspected.
  * @returns `true` when `source` exposes a numeric `length` property.
  */
-export const targetHasLength = (
-	source: unknown,
-): source is { readonly length: number } => {
+export const targetHasLength = (source: unknown): source is { readonly length: number } => {
 	return (
 		typeof source === 'object' &&
 		source !== null &&
@@ -33,9 +31,7 @@ export const targetHasLength = (
  * @param source Value being inspected.
  * @returns `true` when `source` exposes a numeric `size` property.
  */
-export const targetHasSize = (
-	source: unknown,
-): source is { readonly size: number } => {
+export const targetHasSize = (source: unknown): source is { readonly size: number } => {
 	return (
 		typeof source === 'object' &&
 		source !== null &&
@@ -84,10 +80,7 @@ export const isIndexKey = (property: string | symbol): property is string => {
 
 	const firstCharacterCode: number = property.charCodeAt(0);
 
-	if (
-		firstCharacterCode < DIGIT_ZERO_CODE ||
-		firstCharacterCode > DIGIT_NINE_CODE
-	) {
+	if (firstCharacterCode < DIGIT_ZERO_CODE || firstCharacterCode > DIGIT_NINE_CODE) {
 		return false;
 	}
 

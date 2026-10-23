@@ -19,9 +19,7 @@ import { Predicate, TypeNames, TypeTest, TypeToken } from '@/@types';
  * @returns `true` when the token carries its own test.
  */
 export const isTypeTest = <R>(type: TypeToken): type is TypeTest<R> =>
-	typeof type === 'object' &&
-	type !== null &&
-	typeof (type as TypeTest<R>).matches === 'function';
+	typeof type === 'object' && type !== null && typeof (type as TypeTest<R>).matches === 'function';
 
 /**
  * Turns a token into the test the operators run for each element.

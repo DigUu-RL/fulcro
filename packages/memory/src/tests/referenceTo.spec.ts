@@ -26,16 +26,15 @@ describe('referenceTo', () => {
 
 	it('should hold the very value it was given, not a copy', () => {
 		const settings = { verbose: true };
-		const reference: MemoryReference<{ verbose: boolean }> =
-			referenceTo(settings);
+		const reference: MemoryReference<{ verbose: boolean }> = referenceTo(settings);
 
 		expect(reference.get()).toBe(settings);
 	});
 
 	it('should keep NaN, -0 and undefined exactly', () => {
-		const reference: MemoryReference<number | undefined> = referenceTo<
-			number | undefined
-		>(Number.NaN);
+		const reference: MemoryReference<number | undefined> = referenceTo<number | undefined>(
+			Number.NaN,
+		);
 
 		expect(reference.get()).toBeNaN();
 
@@ -71,8 +70,6 @@ describe('referenceTo', () => {
 	it('should infer its type from the value given', () => {
 		expectTypeOf(referenceTo(0)).toEqualTypeOf<MemoryReference<number>>();
 		expectTypeOf(referenceTo('a')).toEqualTypeOf<MemoryReference<string>>();
-		expectTypeOf(referenceTo<string | null>(null)).toEqualTypeOf<
-			MemoryReference<string | null>
-		>();
+		expectTypeOf(referenceTo<string | null>(null)).toEqualTypeOf<MemoryReference<string | null>>();
 	});
 });

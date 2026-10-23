@@ -10,9 +10,7 @@
  * @param methods The methods of the variant.
  * @returns A frozen prototype carrying them.
  */
-export const variantPrototype = <TMethods extends object>(
-	methods: TMethods,
-): TMethods => {
+export const variantPrototype = <TMethods extends object>(methods: TMethods): TMethods => {
 	const prototype: object = {};
 
 	for (const key of Reflect.ownKeys(methods)) {
@@ -34,10 +32,5 @@ export const variantPrototype = <TMethods extends object>(
  * @param fields The value's own data.
  * @returns The value, frozen, inheriting the variant's methods.
  */
-export const createVariant = <TValue>(
-	prototype: object,
-	fields: object,
-): TValue =>
-	Object.freeze(
-		Object.assign(Object.create(prototype) as object, fields),
-	) as TValue;
+export const createVariant = <TValue>(prototype: object, fields: object): TValue =>
+	Object.freeze(Object.assign(Object.create(prototype) as object, fields)) as TValue;

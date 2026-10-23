@@ -43,14 +43,10 @@ export const narrowedByData = (): number | Error =>
 export const fromSuccess: Result<number, Error> = success(1);
 export const fromFailure: Result<number, Error> = failure(new Error('x'));
 export const fromStringFailure: Result<number> = failure('x');
-export const variants: [Success<number>, Failure<number, string>] = [
-	success(1),
-	failure('x'),
-];
+export const variants: [Success<number>, Failure<number, string>] = [success(1), failure('x')];
 
 /** Keeps the produced type through tryCatch. Must compile. */
-export const caught = async (): Promise<Result<number>> =>
-	tryCatch(async () => 1);
+export const caught = async (): Promise<Result<number>> => tryCatch(async () => 1);
 
 /** Short names, so each refused call fits on the line its marker is on. */
 declare const f: () => number;

@@ -155,9 +155,7 @@ describe('allocate', () => {
 					{ operation: 'Storage.get' },
 				),
 			);
-			expect(() =>
-				particles.set(0, Particle.from({ x: 1, y: 1 })),
-			).toThrowError(
+			expect(() => particles.set(0, Particle.from({ x: 1, y: 1 }))).toThrowError(
 				coded(
 					new Error(
 						'FULCRO7009: Storage.set: the memory was released by its allocator, and may already hold other values.',
@@ -193,28 +191,21 @@ describe('allocate', () => {
 	it('should refuse a value its element type does not recognise', () => {
 		const particles = allocate(Particle, 1, createManagedAllocator());
 
-		expect(() =>
-			particles.set(0, { x: 1, y: 1 } as unknown as Particle),
-		).toThrowError(
-			coded(
-				new TypeError(
-					'FULCRO7004: Storage.set: the value is not a value of Particle.',
-				),
-				{ operation: 'Storage.set', element: 'Particle' },
-			),
+		expect(() => particles.set(0, { x: 1, y: 1 } as unknown as Particle)).toThrowError(
+			coded(new TypeError('FULCRO7004: Storage.set: the value is not a value of Particle.'), {
+				operation: 'Storage.set',
+				element: 'Particle',
+			}),
 		);
 	});
 
 	it('should refuse an index outside it', () => {
-		expect(() =>
-			allocate(Particle, 2, createManagedAllocator()).get(2),
-		).toThrowError(
-			coded(
-				new RangeError(
-					'FULCRO7002: Storage.get: index 2 is outside a storage of length 2.',
-				),
-				{ operation: 'Storage.get', index: 2, length: 2 },
-			),
+		expect(() => allocate(Particle, 2, createManagedAllocator()).get(2)).toThrowError(
+			coded(new RangeError('FULCRO7002: Storage.get: index 2 is outside a storage of length 2.'), {
+				operation: 'Storage.get',
+				index: 2,
+				length: 2,
+			}),
 		);
 	});
 
@@ -307,8 +298,6 @@ describe('allocate', () => {
 		expectTypeOf(allocate(Particle, 1, createManagedAllocator()).set)
 			.parameter(1)
 			.toEqualTypeOf<Particle>();
-		expectTypeOf(createStackAllocator(8).enter()).toMatchTypeOf<
-			Parameters<typeof allocate>[2]
-		>();
+		expectTypeOf(createStackAllocator(8).enter()).toMatchTypeOf<Parameters<typeof allocate>[2]>();
 	});
 });

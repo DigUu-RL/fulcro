@@ -1,8 +1,4 @@
-import {
-	type FieldOf,
-	unresolvedLayout,
-	type WithFieldLayout,
-} from '@/functions/utils/layout';
+import { type FieldOf, unresolvedLayout, type WithFieldLayout } from '@/functions/utils/layout';
 
 /**
  * Where a field of a struct sits, in bytes from the start of the struct.
@@ -34,8 +30,6 @@ import {
  * @throws {Error} Always, when the transformer is not enabled, the type
  * argument is a generic parameter, or the field is not a string literal.
  */
-export const offsetOf = <T extends WithFieldLayout>(
-	field: FieldOf<T>,
-): number => {
+export const offsetOf = <T extends WithFieldLayout>(field: FieldOf<T>): number => {
 	throw unresolvedLayout(`offsetOf<T>(${JSON.stringify(field)})`);
 };

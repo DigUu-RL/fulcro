@@ -31,9 +31,7 @@ const runtime: (accessor: PathAccessor) => string | null = pathOf;
 
 describe('resolved at compile time', () => {
 	it('should report every segment, where nameOf reports one', () => {
-		expect(pathOf(() => order.customer.address.city)).toBe(
-			'customer.address.city',
-		);
+		expect(pathOf(() => order.customer.address.city)).toBe('customer.address.city');
 	});
 
 	it('should drop the root', () => {
@@ -48,9 +46,7 @@ describe('resolved at compile time', () => {
 	});
 
 	it('should read a quoted key as an ordinary segment', () => {
-		expect(pathOf(() => order['customer'].address.city)).toBe(
-			'customer.address.city',
-		);
+		expect(pathOf(() => order['customer'].address.city)).toBe('customer.address.city');
 	});
 
 	it('should never evaluate the accessor', () => {
@@ -71,26 +67,15 @@ describe('resolved at compile time', () => {
 
 describe('parsed at runtime, without the transformer', () => {
 	it.each([
-		[
-			'a nested path',
-			() => order.customer.address.city,
-			'customer.address.city',
-		],
+		['a nested path', () => order.customer.address.city, 'customer.address.city'],
 		['a single segment', () => order.id, 'id'],
 		['an indexed element', () => order.items[0].sku, 'items[0].sku'],
-		[
-			'a quoted key',
-			() => order['customer'].address.city,
-			'customer.address.city',
-		],
-	])(
-		'should agree with the compiled form on %s',
-		(_label, accessor, expected) => {
-			// The two implementations answering differently would be worse than
-			// either being wrong, since which one runs depends on the build.
-			expect(runtime(accessor)).toBe(expected);
-		},
-	);
+		['a quoted key', () => order['customer'].address.city, 'customer.address.city'],
+	])('should agree with the compiled form on %s', (_label, accessor, expected) => {
+		// The two implementations answering differently would be worse than
+		// either being wrong, since which one runs depends on the build.
+		expect(runtime(accessor)).toBe(expected);
+	});
 
 	it('should refuse something that is not a path', () => {
 		expect(runtime(() => 42)).toBeNull();

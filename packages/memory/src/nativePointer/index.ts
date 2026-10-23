@@ -81,8 +81,5 @@ export interface NativePointer<T> extends MemoryReference<T> {
 	 * @throws {RangeError} When that address is outside where the pointer may
 	 * point, or is not aligned for the type.
 	 */
-	at<TOther>(
-		byteOffset: number,
-		element: AlignedElement<TOther>,
-	): NativePointer<TOther>;
+	at<TOther>(byteOffset: number, element: AlignedElement<TOther>): NativePointer<TOther>;
 }

@@ -50,29 +50,22 @@ export const createFloatType = <T>(
 	},
 
 	is: (value: unknown): value is T =>
-		typeof value === 'number' &&
-		(Number.isNaN(value) || Object.is(round(value), value)),
+		typeof value === 'number' && (Number.isNaN(value) || Object.is(round(value), value)),
 
-	add: (left: T, right: T): T =>
-		round((left as number) + (right as number)) as T,
+	add: (left: T, right: T): T => round((left as number) + (right as number)) as T,
 
-	subtract: (left: T, right: T): T =>
-		round((left as number) - (right as number)) as T,
+	subtract: (left: T, right: T): T => round((left as number) - (right as number)) as T,
 
-	multiply: (left: T, right: T): T =>
-		round((left as number) * (right as number)) as T,
+	multiply: (left: T, right: T): T => round((left as number) * (right as number)) as T,
 
-	divide: (left: T, right: T): T =>
-		round((left as number) / (right as number)) as T,
+	divide: (left: T, right: T): T => round((left as number) / (right as number)) as T,
 
-	remainder: (left: T, right: T): T =>
-		round((left as number) % (right as number)) as T,
+	remainder: (left: T, right: T): T => round((left as number) % (right as number)) as T,
 
 	// Unlike the four above, `Math.pow` is not correctly rounded even in double
 	// precision, so the result is the platform's double power rounded once into
 	// the format: faithful, and not promised to be the nearest.
-	power: (base: T, exponent: T): T =>
-		round((base as number) ** (exponent as number)) as T,
+	power: (base: T, exponent: T): T => round((base as number) ** (exponent as number)) as T,
 
 	// Exact in every format: only the sign bit changes.
 	negate: (value: T): T => -(value as number) as T,

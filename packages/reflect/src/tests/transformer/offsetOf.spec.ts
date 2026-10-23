@@ -49,9 +49,7 @@ interface Compiled {
  * @returns For each fixture, its emitted JavaScript and its errors.
  */
 const compile = (...fileNames: string[]): Compiled[] => {
-	const fixtures: string[] = fileNames.map((fileName) =>
-		path.resolve(__dirname, fileName),
-	);
+	const fixtures: string[] = fileNames.map((fileName) => path.resolve(__dirname, fileName));
 	const program: ts.Program = ts.createProgram(fixtures, COMPILER_OPTIONS);
 	const transform = transformer(program, { projectRoot: PROJECT_ROOT });
 
@@ -71,9 +69,7 @@ const compile = (...fileNames: string[]): Compiled[] => {
 
 		const errors: readonly ts.Diagnostic[] = ts
 			.getPreEmitDiagnostics(program, source)
-			.filter(
-				(diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error,
-			);
+			.filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error);
 
 		return { emitted, errors };
 	});
@@ -86,18 +82,13 @@ let accepted: Compiled;
 let rejected: Compiled;
 
 beforeAll(() => {
-	[accepted, rejected] = compile(
-		'fieldLayout.sample.ts',
-		'fieldLayout.rejected.fixture.ts',
-	);
+	[accepted, rejected] = compile('fieldLayout.sample.ts', 'fieldLayout.rejected.fixture.ts');
 });
 
 describe('offsetOf at compile time', () => {
 	it('should compile the fixture without errors', () => {
 		expect(
-			accepted.errors.map((error) =>
-				ts.flattenDiagnosticMessageText(error.messageText, '\n'),
-			),
+			accepted.errors.map((error) => ts.flattenDiagnosticMessageText(error.messageText, '\n')),
 		).toEqual([]);
 	});
 
@@ -114,21 +105,15 @@ describe('offsetOf at compile time', () => {
 	});
 
 	it('should leave a field held in a variable as a call', () => {
-		expect(accepted.emitted).toMatch(
-			/export const heldInVariable = \(\) => offsetOf\(held\);/,
-		);
+		expect(accepted.emitted).toMatch(/export const heldInVariable = \(\) => offsetOf\(held\);/);
 	});
 
 	it('should leave a generic parameter as a call', () => {
-		expect(accepted.emitted).toMatch(
-			/export const genericOffset = \(\) => offsetOf\('flag'\);/,
-		);
+		expect(accepted.emitted).toMatch(/export const genericOffset = \(\) => offsetOf\('flag'\);/);
 	});
 
 	it('should leave a union of structs placing the field differently as a call', () => {
-		expect(accepted.emitted).toMatch(
-			/export const unionOffset = \(\) => offsetOf\('x'\);/,
-		);
+		expect(accepted.emitted).toMatch(/export const unionOffset = \(\) => offsetOf\('x'\);/);
 	});
 
 	it('should leave a local function of the same name alone', () => {

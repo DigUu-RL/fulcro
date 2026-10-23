@@ -162,9 +162,7 @@ export class ProgramHost implements typescript.LanguageServiceHost {
 
 		if (!fs.existsSync(fileName)) return undefined;
 
-		return typescript.ScriptSnapshot.fromString(
-			fs.readFileSync(fileName, 'utf8'),
-		);
+		return typescript.ScriptSnapshot.fromString(fs.readFileSync(fileName, 'utf8'));
 	}
 
 	getCurrentDirectory(): string {
@@ -180,9 +178,7 @@ export class ProgramHost implements typescript.LanguageServiceHost {
 	}
 
 	readFile(fileName: string, encoding?: string): string | undefined {
-		return (
-			this.overlays.get(fileName) ?? typescript.sys.readFile(fileName, encoding)
-		);
+		return this.overlays.get(fileName) ?? typescript.sys.readFile(fileName, encoding);
 	}
 
 	fileExists(fileName: string): boolean {
@@ -221,10 +217,7 @@ export const parseTsconfig = (
 	if (read.error !== undefined) {
 		throw createError('FULCRO5002', {
 			operation: 'parseTsconfig',
-			diagnostic: typescript.flattenDiagnosticMessageText(
-				read.error.messageText,
-				'\n',
-			),
+			diagnostic: typescript.flattenDiagnosticMessageText(read.error.messageText, '\n'),
 		});
 	}
 
@@ -314,17 +307,13 @@ export const createFileTransformer = (
 
 		if (host === undefined || service === undefined) {
 			host = new ProgramHost(parseTsconfig(root, options.tsconfig), root);
-			service = typescript.createLanguageService(
-				host,
-				typescript.createDocumentRegistry(),
-			);
+			service = typescript.createLanguageService(host, typescript.createDocumentRegistry());
 		}
 
 		host.update(fileName, code);
 
 		const program: typescript.Program | undefined = service.getProgram();
-		const sourceFile: typescript.SourceFile | undefined =
-			program?.getSourceFile(fileName);
+		const sourceFile: typescript.SourceFile | undefined = program?.getSourceFile(fileName);
 
 		if (program === undefined || sourceFile === undefined) return null;
 

@@ -30,14 +30,11 @@ describe('what a parent keeps', () => {
 	it('should hold one listener per live child, and none once they are disposed', () => {
 		const parent = createCancellationSource();
 
-		const children: CancellationSource[] = Array.from(
-			{ length: CHILDREN },
-			() => createCancellationSource(parent.token),
+		const children: CancellationSource[] = Array.from({ length: CHILDREN }, () =>
+			createCancellationSource(parent.token),
 		);
 
-		expect(getEventListeners(parent.token.signal, 'abort')).toHaveLength(
-			CHILDREN,
-		);
+		expect(getEventListeners(parent.token.signal, 'abort')).toHaveLength(CHILDREN);
 
 		for (const child of children) child[Symbol.dispose]();
 

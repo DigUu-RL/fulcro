@@ -10,8 +10,7 @@ import type { BoundedNumericType } from '@/numericType';
  * reads, compares and prints like any other number. Converting rounds to the
  * nearest such value, ties to even, as `Math.fround` does.
  */
-export type SinglePrecisionFloat = Branded<number, 'SinglePrecisionFloat'> &
-	Layout<4, 4>;
+export type SinglePrecisionFloat = Branded<number, 'SinglePrecisionFloat'> & Layout<4, 4>;
 
 /**
  * The descriptor of {@link SinglePrecisionFloat}.
@@ -21,12 +20,10 @@ export type SinglePrecisionFloat = Branded<number, 'SinglePrecisionFloat'> &
  * SinglePrecisionFloat.from(1e39); // Infinity
  * ```
  */
-export const SinglePrecisionFloat: BoundedNumericType<
-	SinglePrecisionFloat,
-	number
-> = createFloatType(
-	'SinglePrecisionFloat',
-	// (2 - 2^-23) × 2^127
-	3.4028234663852886e38,
-	Math.fround,
-);
+export const SinglePrecisionFloat: BoundedNumericType<SinglePrecisionFloat, number> =
+	createFloatType(
+		'SinglePrecisionFloat',
+		// (2 - 2^-23) × 2^127
+		3.4028234663852886e38,
+		Math.fround,
+	);

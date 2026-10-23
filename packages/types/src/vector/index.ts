@@ -1,12 +1,7 @@
 import { createError } from '@fulcro/errors';
 
 import { sumOfProducts } from '@/componentwise';
-import {
-	describeKind,
-	type ElementDescriptor,
-	type SourceOf,
-	type ValueOf,
-} from '@/element';
+import { describeKind, type ElementDescriptor, type SourceOf, type ValueOf } from '@/element';
 import {
 	convertElements,
 	createMatrixOperations,
@@ -110,11 +105,7 @@ export interface VectorType<
  * @throws {RangeError} When a dimension is not a positive integer, or neither
  * is 1.
  */
-export const Vector = <
-	TElement extends ElementDescriptor,
-	R extends number,
-	C extends number,
->(
+export const Vector = <TElement extends ElementDescriptor, R extends number, C extends number>(
 	element: TElement,
 	rows: R,
 	columns: C & VectorShapeCheck<R, C>,

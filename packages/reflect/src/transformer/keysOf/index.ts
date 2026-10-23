@@ -1,10 +1,6 @@
 import typescript from 'typescript';
 
-import {
-	CallRewriter,
-	RewriteContext,
-	utilityModuleSegment,
-} from '@fulcro/transform-core';
+import { CallRewriter, RewriteContext, utilityModuleSegment } from '@fulcro/transform-core';
 
 import { keysOfType } from '@/transformer/describe';
 
@@ -34,9 +30,7 @@ export const keysOfRewriter: CallRewriter = {
 		// call with nothing to read is left for the runtime to refuse.
 		if (typeArgument === undefined || call.arguments.length > 0) return null;
 
-		const keys: readonly string[] | null = keysOfType(
-			checker.getTypeFromTypeNode(typeArgument),
-		);
+		const keys: readonly string[] | null = keysOfType(checker.getTypeFromTypeNode(typeArgument));
 
 		// A primitive, a union, a class: nothing to list, and an empty array
 		// would look like an answer rather than a refusal.

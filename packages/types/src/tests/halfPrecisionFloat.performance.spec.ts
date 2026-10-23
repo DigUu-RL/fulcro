@@ -24,10 +24,7 @@ const CONVERSIONS = 200_000;
  * @param convert Conversion under measurement.
  * @returns Milliseconds taken, never less than one.
  */
-const timed = (
-	inputs: readonly number[],
-	convert: (value: number) => number,
-): number => {
+const timed = (inputs: readonly number[], convert: (value: number) => number): number => {
 	let sink = 0;
 	const started: number = performance.now();
 
@@ -56,10 +53,7 @@ describe('HalfPrecisionFloat', () => {
 			{ length: 1_000 },
 			(_, index) => (index + 1) * 2 ** -24,
 		);
-		const large: readonly number[] = Array.from(
-			{ length: 1_000 },
-			(_, index) => 60_000 + index,
-		);
+		const large: readonly number[] = Array.from({ length: 1_000 }, (_, index) => 60_000 + index);
 
 		const smallCost: number = timed(small, HalfPrecisionFloat.from);
 		const largeCost: number = timed(large, HalfPrecisionFloat.from);

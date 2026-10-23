@@ -57,9 +57,7 @@ export const tryCatch = async <T, E = unknown>(
 	operation: Promise<T> | (() => T | PromiseLike<T>),
 ): Promise<Result<Awaited<T>, E>> => {
 	try {
-		const value: Awaited<T> = await (typeof operation === 'function'
-			? operation()
-			: operation);
+		const value: Awaited<T> = await (typeof operation === 'function' ? operation() : operation);
 
 		return success(value);
 	} catch (error) {

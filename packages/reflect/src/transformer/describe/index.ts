@@ -80,8 +80,7 @@ export interface Path {
  * @param type Type being classified.
  * @returns `true` when the type is a leaf.
  */
-const isLeaf = (type: typescript.Type): boolean =>
-	(type.flags & LEAF_FLAGS) !== 0;
+const isLeaf = (type: typescript.Type): boolean => (type.flags & LEAF_FLAGS) !== 0;
 
 /**
  * Tells whether a type is a class this reports by name.
@@ -98,8 +97,7 @@ const isOpaqueClass = (type: typescript.Type): boolean => {
 	if (symbol === undefined) return false;
 
 	return (
-		(symbol.flags & typescript.SymbolFlags.Class) !== 0 ||
-		GLOBAL_CLASSES.has(symbol.getName())
+		(symbol.flags & typescript.SymbolFlags.Class) !== 0 || GLOBAL_CLASSES.has(symbol.getName())
 	);
 };
 
@@ -172,10 +170,7 @@ export const membersOfType = (
 		.getProperties()
 		.filter((property) => isReportable(property.getName()))
 		.map((property) => {
-			const declared: typescript.Type = checker.getTypeOfSymbolAtLocation(
-				property,
-				at,
-			);
+			const declared: typescript.Type = checker.getTypeOfSymbolAtLocation(property, at);
 
 			return {
 				name: property.getName(),
@@ -240,9 +235,7 @@ export const pathsOfType = (
 		}
 
 		if (checker.isArrayType(single)) {
-			const [element] = checker.getTypeArguments(
-				single as typescript.TypeReference,
-			);
+			const [element] = checker.getTypeArguments(single as typescript.TypeReference);
 
 			if (element === undefined) {
 				found.push({ path: prefix, type: 'unknown[]', optional: soFar });
@@ -281,10 +274,7 @@ export const pathsOfType = (
 		next.add(single);
 
 		for (const property of properties) {
-			const declared: typescript.Type = checker.getTypeOfSymbolAtLocation(
-				property,
-				at,
-			);
+			const declared: typescript.Type = checker.getTypeOfSymbolAtLocation(property, at);
 
 			const name: string = property.getName();
 

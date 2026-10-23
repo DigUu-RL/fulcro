@@ -69,9 +69,7 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * for each element.
 	 * @returns A deferred sequence with all the inner elements concatenated.
 	 */
-	selectMany<R>(
-		selector: AsyncSelector<T, Iterable<R> | AsyncIterable<R>>,
-	): AsyncSequence<R>;
+	selectMany<R>(selector: AsyncSelector<T, Iterable<R> | AsyncIterable<R>>): AsyncSequence<R>;
 
 	/**
 	 * Takes the leading elements of the sequence.
@@ -179,10 +177,7 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * @returns A deferred sequence with the projected elements.
 	 * @throws {Error} When `concurrency` is not a positive integer.
 	 */
-	selectAwait<R>(
-		selector: AsyncSelector<T, R>,
-		options: ConcurrencyOptions,
-	): AsyncSequence<R>;
+	selectAwait<R>(selector: AsyncSelector<T, R>, options: ConcurrencyOptions): AsyncSequence<R>;
 
 	/**
 	 * Filters the sequence, evaluating several conditions at a time.
@@ -195,10 +190,7 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * @returns A deferred sequence with the matching elements.
 	 * @throws {Error} When `concurrency` is not a positive integer.
 	 */
-	whereAwait(
-		predicate: AsyncPredicate<T>,
-		options: ConcurrencyOptions,
-	): AsyncSequence<T>;
+	whereAwait(predicate: AsyncPredicate<T>, options: ConcurrencyOptions): AsyncSequence<T>;
 
 	/**
 	 * Runs an action for every element, several at a time.
@@ -264,10 +256,7 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * @param options Cancellation for this consumption.
 	 * @returns A promise of whether no element failed.
 	 */
-	all(
-		predicate: AsyncPredicate<T>,
-		options?: TerminalOptions,
-	): Promise<boolean>;
+	all(predicate: AsyncPredicate<T>, options?: TerminalOptions): Promise<boolean>;
 
 	/**
 	 * Returns the first element of the sequence.
@@ -357,9 +346,7 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * @param selector Projection returning a value, or nothing.
 	 * @returns A deferred sequence with the values the projection produced.
 	 */
-	choose<R>(
-		selector: AsyncOptionalSelector<T, R>,
-	): AsyncSequence<NonNullable<R>>;
+	choose<R>(selector: AsyncOptionalSelector<T, R>): AsyncSequence<NonNullable<R>>;
 
 	/**
 	 * Projects and filters with several projections in flight at once.
@@ -386,9 +373,7 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * @param type Name of the type to keep.
 	 * @returns A deferred sequence narrowed to that type.
 	 */
-	ofType<K extends keyof TypeNames>(
-		type: K,
-	): AsyncSequence<Narrowed<T, TypeNames[K]>>;
+	ofType<K extends keyof TypeNames>(type: K): AsyncSequence<Narrowed<T, TypeNames[K]>>;
 
 	/**
 	 * Keeps only the elements built from a given class.
@@ -603,9 +588,7 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * @param keySelector Projection returning the key of each element.
 	 * @returns A deferred sequence of groups, in the order the runs arrived.
 	 */
-	groupAdjacent<K>(
-		keySelector: AsyncSelector<T, K>,
-	): AsyncSequence<Group<K, T>>;
+	groupAdjacent<K>(keySelector: AsyncSelector<T, K>): AsyncSequence<Group<K, T>>;
 
 	/**
 	 * Merges this sequence with another, pairwise.
@@ -745,10 +728,7 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * @param options Cancellation for this consumption.
 	 * @returns A promise of the total, or `0` when nothing arrived.
 	 */
-	sum(
-		selector?: AsyncSelector<T, number>,
-		options?: TerminalOptions,
-	): Promise<number>;
+	sum(selector?: AsyncSelector<T, number>, options?: TerminalOptions): Promise<number>;
 
 	/**
 	 * Averages the numeric values of the sequence.
@@ -758,10 +738,7 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * @returns A promise of the arithmetic mean.
 	 * @throws {Error} When the sequence is empty.
 	 */
-	average(
-		selector?: AsyncSelector<T, number>,
-		options?: TerminalOptions,
-	): Promise<number>;
+	average(selector?: AsyncSelector<T, number>, options?: TerminalOptions): Promise<number>;
 
 	/**
 	 * Finds the smallest numeric value of the sequence.
@@ -771,10 +748,7 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * @returns A promise of the smallest value.
 	 * @throws {Error} When the sequence is empty.
 	 */
-	min(
-		selector?: AsyncSelector<T, number>,
-		options?: TerminalOptions,
-	): Promise<number>;
+	min(selector?: AsyncSelector<T, number>, options?: TerminalOptions): Promise<number>;
 
 	/**
 	 * Finds the largest numeric value of the sequence.
@@ -784,10 +758,7 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * @returns A promise of the largest value.
 	 * @throws {Error} When the sequence is empty.
 	 */
-	max(
-		selector?: AsyncSelector<T, number>,
-		options?: TerminalOptions,
-	): Promise<number>;
+	max(selector?: AsyncSelector<T, number>, options?: TerminalOptions): Promise<number>;
 
 	/**
 	 * Finds the element with the smallest key.
@@ -798,10 +769,7 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * @returns A promise of the element whose key is smallest.
 	 * @throws {Error} When the sequence is empty.
 	 */
-	minBy<K>(
-		keySelector: AsyncSelector<T, K>,
-		options?: TerminalOptions,
-	): Promise<T>;
+	minBy<K>(keySelector: AsyncSelector<T, K>, options?: TerminalOptions): Promise<T>;
 
 	/**
 	 * Finds the element with the largest key.
@@ -812,10 +780,7 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * @returns A promise of the element whose key is largest.
 	 * @throws {Error} When the sequence is empty.
 	 */
-	maxBy<K>(
-		keySelector: AsyncSelector<T, K>,
-		options?: TerminalOptions,
-	): Promise<T>;
+	maxBy<K>(keySelector: AsyncSelector<T, K>, options?: TerminalOptions): Promise<T>;
 
 	/**
 	 * Determines whether the sequence contains a value.
@@ -886,10 +851,7 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * @param options Cancellation for this consumption.
 	 * @returns A promise of the counts per key.
 	 */
-	countBy<K>(
-		keySelector: AsyncSelector<T, K>,
-		options?: TerminalOptions,
-	): Promise<Map<K, number>>;
+	countBy<K>(keySelector: AsyncSelector<T, K>, options?: TerminalOptions): Promise<Map<K, number>>;
 
 	/**
 	 * Materializes the sequence into a map, one element per key.

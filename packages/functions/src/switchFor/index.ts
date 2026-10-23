@@ -165,10 +165,7 @@ export function switchFor<T, R>(
  * @param cases Branches, tested in order; the first match wins.
  * @returns The result of the matching branch, or `undefined` when none matched.
  */
-export function switchFor<T, R>(
-	value: T,
-	cases: readonly SwitchCase<T, R>[],
-): R | undefined;
+export function switchFor<T, R>(value: T, cases: readonly SwitchCase<T, R>[]): R | undefined;
 
 /**
  * Chooses between one branch per member of a closed set, checked exhaustively.
@@ -183,10 +180,7 @@ export function switchFor<T, R>(
  * @param cases One branch per member of `T`.
  * @returns The result of the branch handling the value.
  */
-export function switchFor<T extends PropertyKey, R>(
-	value: T,
-	cases: ExhaustiveCases<T, R>,
-): R;
+export function switchFor<T extends PropertyKey, R>(value: T, cases: ExhaustiveCases<T, R>): R;
 
 export function switchFor<T, R>(
 	value: T,
@@ -194,14 +188,12 @@ export function switchFor<T, R>(
 	otherwise?: (value: T) => R,
 ): R | undefined {
 	if (!Array.isArray(cases)) {
-		return (cases as Record<PropertyKey, (value: T) => R>)[
-			value as unknown as PropertyKey
-		](value);
+		return (cases as Record<PropertyKey, (value: T) => R>)[value as unknown as PropertyKey](value);
 	}
 
-	const matched: SwitchCase<T, R> | undefined = (
-		cases as readonly SwitchCase<T, R>[]
-	).find(({ when }) => when(value));
+	const matched: SwitchCase<T, R> | undefined = (cases as readonly SwitchCase<T, R>[]).find(
+		({ when }) => when(value),
+	);
 
 	if (matched !== undefined) return matched.then(value);
 

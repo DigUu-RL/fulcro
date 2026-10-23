@@ -1,11 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import {
-	DoublePrecisionFloat,
-	type Struct,
-	struct,
-	UnsignedInteger,
-} from '@fulcro/types';
+import { DoublePrecisionFloat, type Struct, struct, UnsignedInteger } from '@fulcro/types';
 
 import { createFixedBufferStorage } from '@/fixedBufferStorage';
 import type { Storage } from '@/storage';
@@ -120,8 +115,6 @@ describe('createFixedBufferStorage, counted', () => {
 
 		expect(size).toBe(16);
 		expect(offsets).toHaveLength(VOLUME);
-		expect(offsets.every((offset, index) => offset === index * size)).toBe(
-			true,
-		);
+		expect(offsets.every((offset, index) => offset === index * size)).toBe(true);
 	});
 });

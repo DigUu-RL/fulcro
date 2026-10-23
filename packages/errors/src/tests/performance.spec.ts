@@ -25,9 +25,7 @@ const ERRORS = 1_000;
  * @returns Counts the calls made to all of them together.
  */
 const spyOnEveryTemplate = (): (() => number) => {
-	const spies = Object.values(catalog).map((definition) =>
-		vi.spyOn(definition, 'message'),
-	);
+	const spies = Object.values(catalog).map((definition) => vi.spyOn(definition, 'message'));
 
 	return () => spies.reduce((sum, spy) => sum + spy.mock.calls.length, 0);
 };
@@ -93,9 +91,9 @@ describe('createError', () => {
 			created.push(createError('FULCRO1005', details).details);
 		}
 
-		expect(
-			created.filter((details, index) => details === passed[index]?.details),
-		).toHaveLength(ERRORS);
+		expect(created.filter((details, index) => details === passed[index]?.details)).toHaveLength(
+			ERRORS,
+		);
 	});
 
 	it('should read only the fields its template uses, once each', () => {

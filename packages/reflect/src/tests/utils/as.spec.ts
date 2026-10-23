@@ -56,17 +56,11 @@ describe('what it lets through', () => {
 describe('what it refuses, and what it says', () => {
 	it('should throw a TypeError naming the type', () => {
 		expect(() => as<Order>({ ...valid(), id: 'wrong' })).toThrow(TypeError);
-		expect(() => as<Order>({ ...valid(), id: 'wrong' })).toThrow(
-			/as<Order>\(\)/,
-		);
+		expect(() => as<Order>({ ...valid(), id: 'wrong' })).toThrow(/as<Order>\(\)/);
 	});
 
 	it.each([
-		[
-			'a top level property',
-			() => ({ ...valid(), id: 'x' }),
-			/id: expected number, got string/,
-		],
+		['a top level property', () => ({ ...valid(), id: 'x' }), /id: expected number, got string/],
 		[
 			'a nested property',
 			() => ({ ...valid(), customer: { email: 7 } }),
@@ -123,9 +117,9 @@ describe('the escape hatch', () => {
 	it('should fall back to describing the value with no explainer', () => {
 		// A hand written test carries no walker, so there is no path to name —
 		// the message says what arrived instead of inventing where.
-		expect(() =>
-			as<{ id: number }>(42, { name: 'Identified', matches: () => false }),
-		).toThrow(/refused a value of type number/);
+		expect(() => as<{ id: number }>(42, { name: 'Identified', matches: () => false })).toThrow(
+			/refused a value of type number/,
+		);
 	});
 
 	it('should refuse a call nothing resolved', () => {

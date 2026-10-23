@@ -63,8 +63,7 @@ const primitiveNameOf = (type: typescript.Type): string | null => {
  * @returns The symbol of the class, or `null`.
  */
 const classSymbolOf = (type: typescript.Type): typescript.Symbol | null => {
-	const symbol: typescript.Symbol | undefined =
-		type.getSymbol() ?? type.aliasSymbol;
+	const symbol: typescript.Symbol | undefined = type.getSymbol() ?? type.aliasSymbol;
 
 	if (symbol === undefined) return null;
 
@@ -101,16 +100,13 @@ const isValueInScope = (
 
 	if (resolved === undefined) return false;
 
-	const declarations: readonly typescript.Declaration[] =
-		resolved.declarations ?? [];
+	const declarations: readonly typescript.Declaration[] = resolved.declarations ?? [];
 
 	// A type-only import resolves as a value here but is elided on emit, so the
 	// declaration itself has to be checked.
 	return !declarations.some((declaration) => {
 		if (typescript.isImportSpecifier(declaration)) {
-			return (
-				declaration.isTypeOnly || declaration.parent.parent.isTypeOnly === true
-			);
+			return declaration.isTypeOnly || declaration.parent.parent.isTypeOnly === true;
 		}
 
 		if (typescript.isImportClause(declaration)) return declaration.isTypeOnly;

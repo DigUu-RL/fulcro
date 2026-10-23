@@ -37,8 +37,7 @@ describe('pathsOf', () => {
 	 * @param path Path being looked up.
 	 * @returns The entry, when there is one.
 	 */
-	const at = (path: string) =>
-		pathsOf<Order>().find((entry) => entry.path === path);
+	const at = (path: string) => pathsOf<Order>().find((entry) => entry.path === path);
 
 	it('should walk to a nested leaf', () => {
 		expect(at('customer.email')?.type).toBe('string');
@@ -62,9 +61,7 @@ describe('pathsOf', () => {
 
 	it('should report a known class rather than its methods', () => {
 		expect(at('placedAt')?.type).toBe('Date');
-		expect(
-			pathsOf<Order>().some((entry) => entry.path.startsWith('placedAt.')),
-		).toBe(false);
+		expect(pathsOf<Order>().some((entry) => entry.path.startsWith('placedAt.'))).toBe(false);
 	});
 
 	it('should report a union of literals as one leaf', () => {
@@ -75,9 +72,7 @@ describe('pathsOf', () => {
 		// Infinitely many paths otherwise. The honest answer is where the repeat
 		// begins, with the type named at the end of it.
 		expect(at('parent')?.type).toBe('Order');
-		expect(
-			pathsOf<Order>().some((entry) => entry.path.startsWith('parent.')),
-		).toBe(false);
+		expect(pathsOf<Order>().some((entry) => entry.path.startsWith('parent.'))).toBe(false);
 	});
 
 	it('should carry optionality down the path', () => {
@@ -91,9 +86,7 @@ describe('pathsOf', () => {
 			readonly inner?: { readonly deep: string };
 		}
 
-		const found = pathsOf<Wrapper>().find(
-			(entry) => entry.path === 'inner.deep',
-		);
+		const found = pathsOf<Wrapper>().find((entry) => entry.path === 'inner.deep');
 
 		expect(found?.optional).toBe(true);
 	});

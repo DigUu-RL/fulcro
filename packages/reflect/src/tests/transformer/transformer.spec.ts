@@ -116,9 +116,7 @@ describe('typeOf at compile time', () => {
 	});
 
 	it('should inject the declaration site as a project relative path', () => {
-		expect(emitted).toMatch(
-			/path: "src\/tests\/transformer\/fixture\.sample\.ts"/,
-		);
+		expect(emitted).toMatch(/path: "src\/tests\/transformer\/fixture\.sample\.ts"/);
 		expect(emitted).toMatch(/line: \d+/);
 		expect(emitted).toMatch(/column: \d+/);
 	});

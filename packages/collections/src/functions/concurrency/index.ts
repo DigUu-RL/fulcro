@@ -23,10 +23,7 @@ import { AsyncSelector, ConcurrencyOptions } from '@/@types';
  * @param concurrency Limit the caller asked for.
  * @throws {Error} When the limit is not a positive integer.
  */
-export const assertConcurrency = (
-	operation: string,
-	concurrency: number,
-): void => {
+export const assertConcurrency = (operation: string, concurrency: number): void => {
 	if (!Number.isInteger(concurrency) || concurrency < 1) {
 		throw createError('FULCRO1017', { operation, concurrency });
 	}
@@ -138,11 +135,7 @@ export const mapConcurrent = <T, R>(
 		 * itself — while the work started on them overlaps, which is the point.
 		 */
 		const fill = async (): Promise<void> => {
-			while (
-				!exhausted &&
-				failed() === null &&
-				started - delivered < concurrency
-			) {
+			while (!exhausted && failed() === null && started - delivered < concurrency) {
 				const next: IteratorResult<T> = await iterator.next();
 
 				if (next.done === true) {

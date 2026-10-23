@@ -40,12 +40,8 @@ describe('distinctBy', () => {
 describe('minBy and maxBy', () => {
 	it('should return the element rather than the key', () => {
 		// The difference from min and max, and the usual reason to want them.
-		expect(SequenceCollection.from(users).minBy((user) => user.id).name).toBe(
-			'ana',
-		);
-		expect(SequenceCollection.from(users).maxBy((user) => user.id).name).toBe(
-			'cy',
-		);
+		expect(SequenceCollection.from(users).minBy((user) => user.id).name).toBe('ana');
+		expect(SequenceCollection.from(users).maxBy((user) => user.id).name).toBe('cy');
 	});
 
 	it('should keep the first of several equal keys', () => {
@@ -57,9 +53,7 @@ describe('minBy and maxBy', () => {
 	});
 
 	it('should compare string keys', () => {
-		expect(
-			SequenceCollection.from(['pear', 'apple', 'fig']).minBy((word) => word),
-		).toBe('apple');
+		expect(SequenceCollection.from(['pear', 'apple', 'fig']).minBy((word) => word)).toBe('apple');
 	});
 
 	it('should compare date keys', () => {
@@ -68,14 +62,11 @@ describe('minBy and maxBy', () => {
 		expect(SequenceCollection.from(dates).minBy((date) => date)).toBe(dates[1]);
 	});
 
-	it.each(['minBy', 'maxBy'] as const)(
-		'should throw on empty for %s',
-		(name) => {
-			expect(() =>
-				SequenceCollection.empty<User>()[name]((user) => user.id),
-			).toThrow(/empty sequence/i);
-		},
-	);
+	it.each(['minBy', 'maxBy'] as const)('should throw on empty for %s', (name) => {
+		expect(() => SequenceCollection.empty<User>()[name]((user) => user.id)).toThrow(
+			/empty sequence/i,
+		);
+	});
 });
 
 describe('exceptBy', () => {
@@ -126,18 +117,14 @@ describe('intersectBy', () => {
 
 describe('countBy', () => {
 	it('should count the elements sharing each key', () => {
-		expect([
-			...SequenceCollection.from(users).countBy((user) => user.team),
-		]).toEqual([
+		expect([...SequenceCollection.from(users).countBy((user) => user.team)]).toEqual([
 			['blue', 2],
 			['red', 2],
 		]);
 	});
 
 	it('should keep the keys in first-seen order', () => {
-		expect([
-			...SequenceCollection.from(['b', 'a', 'b']).countBy((letter) => letter),
-		]).toEqual([
+		expect([...SequenceCollection.from(['b', 'a', 'b']).countBy((letter) => letter)]).toEqual([
 			['b', 2],
 			['a', 1],
 		]);
@@ -209,10 +196,7 @@ describe('toLookup', () => {
 	it('should collect every element sharing a key', () => {
 		const lookup = SequenceCollection.from(users).toLookup((user) => user.team);
 
-		expect(lookup.get('blue')?.map((user) => user.name)).toEqual([
-			'ana',
-			'ana again',
-		]);
+		expect(lookup.get('blue')?.map((user) => user.name)).toEqual(['ana', 'ana again']);
 		expect(lookup.get('red')).toHaveLength(2);
 	});
 
@@ -237,9 +221,7 @@ describe('toLookup', () => {
 
 describe('toSet', () => {
 	it('should discard duplicates', () => {
-		expect([...SequenceCollection.from([1, 2, 2, 3]).toSet()]).toEqual([
-			1, 2, 3,
-		]);
+		expect([...SequenceCollection.from([1, 2, 2, 3]).toSet()]).toEqual([1, 2, 3]);
 	});
 
 	it('should return an independent set', () => {
@@ -281,11 +263,7 @@ describe('range', () => {
 
 describe('repeat', () => {
 	it('should yield the value the given number of times', () => {
-		expect(SequenceCollection.repeat('x', 3).toArray()).toEqual([
-			'x',
-			'x',
-			'x',
-		]);
+		expect(SequenceCollection.repeat('x', 3).toArray()).toEqual(['x', 'x', 'x']);
 	});
 
 	it('should produce nothing for a count of zero', () => {

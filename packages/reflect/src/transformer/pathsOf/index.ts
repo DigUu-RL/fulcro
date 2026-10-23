@@ -1,10 +1,6 @@
 import typescript from 'typescript';
 
-import {
-	CallRewriter,
-	RewriteContext,
-	utilityModuleSegment,
-} from '@fulcro/transform-core';
+import { CallRewriter, RewriteContext, utilityModuleSegment } from '@fulcro/transform-core';
 
 import { Path, pathsOfType } from '@/transformer/describe';
 
@@ -50,14 +46,8 @@ export const pathsOfRewriter: CallRewriter = {
 				paths.map((entry) =>
 					factory.createObjectLiteralExpression(
 						[
-							factory.createPropertyAssignment(
-								'path',
-								factory.createStringLiteral(entry.path),
-							),
-							factory.createPropertyAssignment(
-								'type',
-								factory.createStringLiteral(entry.type),
-							),
+							factory.createPropertyAssignment('path', factory.createStringLiteral(entry.path)),
+							factory.createPropertyAssignment('type', factory.createStringLiteral(entry.type)),
 							factory.createPropertyAssignment(
 								'optional',
 								entry.optional ? factory.createTrue() : factory.createFalse(),

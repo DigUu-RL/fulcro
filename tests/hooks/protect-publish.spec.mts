@@ -20,9 +20,7 @@ describe('pushing', () => {
 		expect(review({ command: 'git push origin dev' })).not.toBeNull();
 		expect(review({ command: 'git push --force-with-lease' })).not.toBeNull();
 		expect(review({ command: 'npm run build && git push' })).not.toBeNull();
-		expect(
-			review({ command: 'git push 2>&1 | Select-Object -Last 3' }),
-		).not.toBeNull();
+		expect(review({ command: 'git push 2>&1 | Select-Object -Last 3' })).not.toBeNull();
 	});
 
 	it('leaves every other use of git alone', () => {
@@ -37,9 +35,7 @@ describe('pushing', () => {
 describe('publishing', () => {
 	it('refuses every route to the registry', () => {
 		expect(review({ command: 'npm publish' })).not.toBeNull();
-		expect(
-			review({ command: 'npm publish --workspaces --access public' }),
-		).not.toBeNull();
+		expect(review({ command: 'npm publish --workspaces --access public' })).not.toBeNull();
 		expect(review({ command: 'changeset publish' })).not.toBeNull();
 		expect(review({ command: 'npx changeset publish' })).not.toBeNull();
 		expect(review({ command: 'npm run release' })).not.toBeNull();
@@ -50,9 +46,7 @@ describe('publishing', () => {
 		expect(review({ command: 'npm run changeset' })).toBeNull();
 		expect(review({ command: 'npm run build' })).toBeNull();
 		expect(review({ command: 'npm test' })).toBeNull();
-		expect(
-			review({ command: 'npm view @fulcro/collections version' }),
-		).toBeNull();
+		expect(review({ command: 'npm view @fulcro/collections version' })).toBeNull();
 	});
 
 	it('refuses a dry run too, because the guard reads the verb and not the flags', () => {
@@ -83,9 +77,7 @@ describe('merging', () => {
 describe('what is not a command', () => {
 	it('lets through a protected word that only appears inside a string', () => {
 		expect(review({ command: 'echo "git push"' })).toBeNull();
-		expect(
-			review({ command: 'git commit -m "prepare to publish"' }),
-		).toBeNull();
+		expect(review({ command: 'git commit -m "prepare to publish"' })).toBeNull();
 		expect(review({ command: 'grep -r "npm publish" docs' })).toBeNull();
 	});
 

@@ -21,13 +21,7 @@
  *
  * Usage, from a package directory: `node ../../tools/build/rewrite-aliases.mjs`.
  */
-import {
-	existsSync,
-	readdirSync,
-	readFileSync,
-	statSync,
-	writeFileSync,
-} from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -49,8 +43,7 @@ const BUILT_FILE = /\.(?:js|mjs|cjs|d\.ts|d\.mts|d\.cts)$/;
  * or as a bare `import '…'`. Comments mentioning a path in backticks are not
  * matched, so the prose in a doc comment survives as written.
  */
-const SPECIFIER =
-	/(\bfrom\s*|\brequire\(\s*|\bimport\(\s*|\bimport\s+)(['"])@\/([^'"]+)\2/g;
+const SPECIFIER = /(\bfrom\s*|\brequire\(\s*|\bimport\(\s*|\bimport\s+)(['"])@\/([^'"]+)\2/g;
 
 /** Extensions a specifier may already carry, which are kept as they are. */
 const EXPLICIT_EXTENSION = /\.(?:js|mjs|cjs)$/;
@@ -142,10 +135,7 @@ export const relativeSpecifier = (outDir, file, target) => {
 		);
 	}
 
-	const relative = path
-		.relative(path.dirname(file), resolved)
-		.split(path.sep)
-		.join('/');
+	const relative = path.relative(path.dirname(file), resolved).split(path.sep).join('/');
 
 	return relative.startsWith('.') ? relative : `./${relative}`;
 };

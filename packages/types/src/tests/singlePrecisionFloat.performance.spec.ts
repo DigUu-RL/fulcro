@@ -38,10 +38,7 @@ describe('SinglePrecisionFloat', () => {
 	it('should cost a small multiple of rounding the double operation inline', () => {
 		const baseline: number = timed((left, right) => Math.fround(left + right));
 		const described: number = timed((left, right) =>
-			SinglePrecisionFloat.add(
-				left as SinglePrecisionFloat,
-				right as SinglePrecisionFloat,
-			),
+			SinglePrecisionFloat.add(left as SinglePrecisionFloat, right as SinglePrecisionFloat),
 		);
 
 		expect(described).toBeLessThan(baseline * 25);

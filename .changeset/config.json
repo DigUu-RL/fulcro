@@ -5,9 +5,7 @@
 	"access": "public",
 	"baseBranch": "main",
 	"updateInternalDependencies": "patch",
-	"fixed": [
-		["@fulcro/collections", "@fulcro/reflect", "@fulcro/transform-core"]
-	],
+	"fixed": [["@fulcro/collections", "@fulcro/reflect", "@fulcro/transform-core"]],
 	"linked": [],
 	"ignore": []
 }

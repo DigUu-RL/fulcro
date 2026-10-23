@@ -27,10 +27,7 @@ describe('SequenceCollection Unit Tests', () => {
 	});
 
 	it('should flatten collections with selectMany()', () => {
-		const orders = SequenceCollection.from([
-			{ items: ['apple', 'banana'] },
-			{ items: ['orange'] },
-		]);
+		const orders = SequenceCollection.from([{ items: ['apple', 'banana'] }, { items: ['orange'] }]);
 
 		const allItems = orders.selectMany((o) => o.items);
 		expect(allItems.toArray()).toEqual(['apple', 'banana', 'orange']);
@@ -41,9 +38,7 @@ describe('SequenceCollection Unit Tests', () => {
 
 		expect(numbers.first()).toBe(10);
 		expect(numbers.first((n) => n > 15)).toBe(20);
-		expect(() => SequenceCollection.empty().first()).toThrow(
-			'Sequence contains no elements',
-		);
+		expect(() => SequenceCollection.empty().first()).toThrow('Sequence contains no elements');
 	});
 
 	it('should find the first element or return null', () => {
@@ -58,12 +53,8 @@ describe('SequenceCollection Unit Tests', () => {
 
 		expect(numbers.last()).toBe(30);
 		expect(numbers.last((n) => n < 25)).toBe(20);
-		expect(() => SequenceCollection.empty().last()).toThrow(
-			'Sequence contains no elements',
-		);
-		expect(() => numbers.last((n) => n > 50)).toThrow(
-			'Sequence contains no elements',
-		);
+		expect(() => SequenceCollection.empty().last()).toThrow('Sequence contains no elements');
+		expect(() => numbers.last((n) => n > 50)).toThrow('Sequence contains no elements');
 	});
 
 	it('should find the last element or return null', () => {
@@ -285,10 +276,7 @@ describe('SequenceCollection Unit Tests', () => {
 
 	it('should reduce items via aggregate() with custom seed types', () => {
 		const words = SequenceCollection.from(['A', 'B', 'C']);
-		const concatenated = words.aggregate(
-			'Start:',
-			(acc, item) => `${acc} ${item}`,
-		);
+		const concatenated = words.aggregate('Start:', (acc, item) => `${acc} ${item}`);
 
 		expect(concatenated).toBe('Start: A B C');
 	});

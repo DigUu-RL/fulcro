@@ -67,11 +67,8 @@ widths, `8 | 16 | 32 | 64 | 128`.
 ```ts
 import type { NumericType } from '@fulcro/types';
 
-const sum = <T>(
-	type: NumericType<T, unknown>,
-	values: readonly T[],
-	zero: T,
-): T => values.reduce((total, value) => type.add(total, value), zero);
+const sum = <T>(type: NumericType<T, unknown>, values: readonly T[], zero: T): T =>
+	values.reduce((total, value) => type.add(total, value), zero);
 ```
 
 Every type with a range reports it as `minimum` and `maximum`: the smallest and
@@ -543,13 +540,7 @@ one still does.
 ## Mathematics
 
 ```ts
-import {
-	ComplexNumber,
-	Fraction,
-	Matrix,
-	Quaternion,
-	Vector,
-} from '@fulcro/types';
+import { ComplexNumber, Fraction, Matrix, Quaternion, Vector } from '@fulcro/types';
 ```
 
 Five types built over the numeric ones, each declared the same way — a function

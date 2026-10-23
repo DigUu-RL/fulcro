@@ -48,8 +48,6 @@ describe('keysOf', () => {
 	});
 
 	it('should refuse a call nothing resolved', () => {
-		expect(() => (keysOf as () => readonly string[])()).toThrow(
-			/was not resolved at compile time/,
-		);
+		expect(() => (keysOf as () => readonly string[])()).toThrow(/was not resolved at compile time/);
 	});
 });

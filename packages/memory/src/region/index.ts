@@ -49,11 +49,7 @@ export const createReadOnlyView = <T>(
  * @param length How many values it observes, already checked.
  * @returns The view, frozen.
  */
-export const createView = <T>(
-	source: Source<T>,
-	start: number,
-	length: number,
-): View<T> =>
+export const createView = <T>(source: Source<T>, start: number, length: number): View<T> =>
 	Object.freeze({
 		length,
 
@@ -69,11 +65,7 @@ export const createView = <T>(
 		},
 
 		subview: (from: number, count?: number): View<T> =>
-			createView(
-				source,
-				start + from,
-				requirePart('View.subview', from, count, length),
-			),
+			createView(source, start + from, requirePart('View.subview', from, count, length)),
 
 		readOnly: (): ReadOnlyView<T> => createReadOnlyView(source, start, length),
 	});

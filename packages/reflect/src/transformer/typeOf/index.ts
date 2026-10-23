@@ -96,9 +96,7 @@ const buildSiteLiteral = (
 	if (declaration === undefined) return factory.createNull();
 
 	const sourceFile: typescript.SourceFile = declaration.getSourceFile();
-	const position = sourceFile.getLineAndCharacterOfPosition(
-		declaration.getStart(sourceFile),
-	);
+	const position = sourceFile.getLineAndCharacterOfPosition(declaration.getStart(sourceFile));
 
 	// Relative and slash separated, so the emitted literal does not leak the
 	// machine it was compiled on and reads the same on every platform.
@@ -109,14 +107,8 @@ const buildSiteLiteral = (
 
 	return factory.createObjectLiteralExpression(
 		[
-			factory.createPropertyAssignment(
-				'path',
-				factory.createStringLiteral(relative),
-			),
-			factory.createPropertyAssignment(
-				'line',
-				factory.createNumericLiteral(position.line + 1),
-			),
+			factory.createPropertyAssignment('path', factory.createStringLiteral(relative)),
+			factory.createPropertyAssignment('line', factory.createNumericLiteral(position.line + 1)),
 			factory.createPropertyAssignment(
 				'column',
 				factory.createNumericLiteral(position.character + 1),
@@ -137,10 +129,8 @@ const buildDeclaredLiteral = (
 	type: typescript.Type,
 	{ checker, factory, projectRoot }: RewriteContext,
 ): typescript.ObjectLiteralExpression => {
-	const symbol: typescript.Symbol | undefined =
-		type.aliasSymbol ?? type.getSymbol();
-	const declaration: typescript.Declaration | undefined =
-		symbol?.declarations?.[0];
+	const symbol: typescript.Symbol | undefined = type.aliasSymbol ?? type.getSymbol();
+	const declaration: typescript.Declaration | undefined = symbol?.declarations?.[0];
 
 	const text: string = checker.typeToString(
 		type,
@@ -151,29 +141,20 @@ const buildDeclaredLiteral = (
 	// An anonymous shape has a synthetic symbol name such as `__type`, which
 	// would be noise rather than a name.
 	const rawName: string | undefined = symbol?.getName();
-	const name: string | null =
-		rawName !== undefined && !rawName.startsWith('__') ? rawName : null;
+	const name: string | null = rawName !== undefined && !rawName.startsWith('__') ? rawName : null;
 
 	return factory.createObjectLiteralExpression(
 		[
-			factory.createPropertyAssignment(
-				'text',
-				factory.createStringLiteral(text),
-			),
+			factory.createPropertyAssignment('text', factory.createStringLiteral(text)),
 			factory.createPropertyAssignment(
 				'name',
-				name === null
-					? factory.createNull()
-					: factory.createStringLiteral(name),
+				name === null ? factory.createNull() : factory.createStringLiteral(name),
 			),
 			factory.createPropertyAssignment(
 				'kind',
 				factory.createStringLiteral(resolveKind(type, declaration)),
 			),
-			factory.createPropertyAssignment(
-				'site',
-				buildSiteLiteral(declaration, factory, projectRoot),
-			),
+			factory.createPropertyAssignment('site', buildSiteLiteral(declaration, factory, projectRoot)),
 		],
 		true,
 	);
@@ -197,10 +178,7 @@ const buildMetadataLiteral = (
 ): typescript.ObjectLiteralExpression => {
 	const { checker, factory } = context;
 
-	const declared: typescript.ObjectLiteralExpression = buildDeclaredLiteral(
-		type,
-		context,
-	);
+	const declared: typescript.ObjectLiteralExpression = buildDeclaredLiteral(type, context);
 
 	const members: readonly Member[] = membersOfType(type, checker, at);
 
@@ -209,9 +187,7 @@ const buildMetadataLiteral = (
 		: null;
 
 	const element: string | null = checker.isArrayType(type)
-		? checker.typeToString(
-				checker.getTypeArguments(type as typescript.TypeReference)[0],
-			)
+		? checker.typeToString(checker.getTypeArguments(type as typescript.TypeReference)[0])
 		: null;
 
 	return factory.createObjectLiteralExpression(
@@ -223,25 +199,15 @@ const buildMetadataLiteral = (
 					members.map((member) =>
 						factory.createObjectLiteralExpression(
 							[
-								factory.createPropertyAssignment(
-									'name',
-									factory.createStringLiteral(member.name),
-								),
-								factory.createPropertyAssignment(
-									'type',
-									factory.createStringLiteral(member.type),
-								),
+								factory.createPropertyAssignment('name', factory.createStringLiteral(member.name)),
+								factory.createPropertyAssignment('type', factory.createStringLiteral(member.type)),
 								factory.createPropertyAssignment(
 									'optional',
-									member.optional
-										? factory.createTrue()
-										: factory.createFalse(),
+									member.optional ? factory.createTrue() : factory.createFalse(),
 								),
 								factory.createPropertyAssignment(
 									'readonly',
-									member.readonly
-										? factory.createTrue()
-										: factory.createFalse(),
+									member.readonly ? factory.createTrue() : factory.createFalse(),
 								),
 							],
 							false,
@@ -261,9 +227,7 @@ const buildMetadataLiteral = (
 			),
 			factory.createPropertyAssignment(
 				'element',
-				element === null
-					? factory.createNull()
-					: factory.createStringLiteral(element),
+				element === null ? factory.createNull() : factory.createStringLiteral(element),
 			),
 		],
 		true,
@@ -275,10 +239,7 @@ export const typeOfRewriter: CallRewriter = {
 	functionName: 'typeOf',
 	moduleSegment: utilityModuleSegment('typeOf'),
 
-	rewrite: (
-		call: typescript.CallExpression,
-		context: RewriteContext,
-	): typescript.Node | null => {
+	rewrite: (call: typescript.CallExpression, context: RewriteContext): typescript.Node | null => {
 		const [typeArgument] = call.typeArguments ?? [];
 
 		// `typeOf<T>()`: no value to inspect, so the whole call is replaced by
@@ -286,11 +247,7 @@ export const typeOfRewriter: CallRewriter = {
 		// argument rather than by the argument being `undefined`, because
 		// `typeOf(undefined)` is an ordinary call about the undefined value.
 		if (call.arguments.length === 0 && typeArgument !== undefined) {
-			return buildMetadataLiteral(
-				context.checker.getTypeFromTypeNode(typeArgument),
-				call,
-				context,
-			);
+			return buildMetadataLiteral(context.checker.getTypeFromTypeNode(typeArgument), call, context);
 		}
 
 		// Already carries its injected description, from a nested pass.

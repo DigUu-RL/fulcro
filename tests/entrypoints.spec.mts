@@ -73,10 +73,7 @@ interface PackReport {
 }
 
 /** Root of the workspace, which this file sits one level below. */
-const WORKSPACE_ROOT = path.resolve(
-	path.dirname(fileURLToPath(import.meta.url)),
-	'..',
-);
+const WORKSPACE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 /** Tarball contents per package name, filled once before the suite runs. */
 const packed = new Map<string, readonly string[]>();
@@ -139,9 +136,7 @@ const packedFiles = (name: string): readonly string[] => {
 	const files: readonly string[] | undefined = packed.get(name);
 
 	if (files === undefined) {
-		throw new Error(
-			`npm pack reported nothing for ${name}. Is it still a workspace?`,
-		);
+		throw new Error(`npm pack reported nothing for ${name}. Is it still a workspace?`);
 	}
 
 	return files;
@@ -188,10 +183,11 @@ describe('the repository as someone else clones it', () => {
 		//
 		// This asks git directly: what is on disk under a package's sources, and
 		// not in the repository? The answer has to be nothing.
-		const everything: string = execSync(
-			'git ls-files --others --ignored --exclude-standard',
-			{ cwd: WORKSPACE_ROOT, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 },
-		);
+		const everything: string = execSync('git ls-files --others --ignored --exclude-standard', {
+			cwd: WORKSPACE_ROOT,
+			encoding: 'utf8',
+			maxBuffer: 32 * 1024 * 1024,
+		});
 
 		// Filtered here rather than through a pathspec: `packages/*/src` does not
 		// match as a git pathspec, and passing one that silently matches nothing
@@ -224,10 +220,9 @@ describe.each(PACKAGE_NAMES)('%s, as a consumer sees it', (name) => {
 		const shipped: readonly string[] = packedFiles(name);
 
 		for (const exported of paths) {
-			expect(
-				shipped,
-				`${name} exports ${exported}, which its tarball does not contain`,
-			).toContain(asPackedPath(exported));
+			expect(shipped, `${name} exports ${exported}, which its tarball does not contain`).toContain(
+				asPackedPath(exported),
+			);
 		}
 	});
 
@@ -236,10 +231,9 @@ describe.each(PACKAGE_NAMES)('%s, as a consumer sees it', (name) => {
 
 		for (const field of [manifest.main, manifest.types]) {
 			expect(field).toBeDefined();
-			expect(
-				shipped,
-				`${name} declares ${field}, which its tarball does not contain`,
-			).toContain(asPackedPath(field as string));
+			expect(shipped, `${name} declares ${field}, which its tarball does not contain`).toContain(
+				asPackedPath(field as string),
+			);
 		}
 	});
 
@@ -299,10 +293,7 @@ describe('@fulcro/collections', () => {
 		// The factory registry is wiring, not API. It carries no runtime value
 		// to assert on, so the declarations are what gets checked.
 		const { root } = manifestOf('@fulcro/collections');
-		const declarations: string = readFileSync(
-			path.join(root, 'dist/index.d.ts'),
-			'utf8',
-		);
+		const declarations: string = readFileSync(path.join(root, 'dist/index.d.ts'), 'utf8');
 
 		expect(declarations).not.toContain('factories');
 	});
@@ -362,8 +353,7 @@ describe('@fulcro/reflect', () => {
 	});
 
 	it('should refuse to guess a layout without the transformer', async () => {
-		const { alignOf, layoutOf, offsetOf, sizeOf } =
-			await import('@fulcro/reflect');
+		const { alignOf, layoutOf, offsetOf, sizeOf } = await import('@fulcro/reflect');
 
 		// A layout is declared on a type and never on a value, so there is
 		// nothing at runtime to read it from.
@@ -385,11 +375,7 @@ describe('@fulcro/types', () => {
 
 		// The package is CommonJS, and Node's interop adds these to the
 		// namespace of an `import`; they are not names the package exports.
-		const interop: readonly string[] = [
-			'__esModule',
-			'default',
-			'module.exports',
-		];
+		const interop: readonly string[] = ['__esModule', 'default', 'module.exports'];
 
 		expect(
 			Object.keys(entry)
@@ -478,8 +464,7 @@ describe('@fulcro/types', () => {
 	});
 
 	it('should declare, store and read back a struct through the published entry point', async () => {
-		const { SinglePrecisionFloat, UnsignedInteger, struct } =
-			await import('@fulcro/types');
+		const { SinglePrecisionFloat, UnsignedInteger, struct } = await import('@fulcro/types');
 
 		const Particle = struct('Particle', {
 			mass: SinglePrecisionFloat,
@@ -502,8 +487,7 @@ describe('@fulcro/types', () => {
 	});
 
 	it('should work end to end through the published entry point', async () => {
-		const { Decimal, HalfPrecisionFloat, SignedInteger } =
-			await import('@fulcro/types');
+		const { Decimal, HalfPrecisionFloat, SignedInteger } = await import('@fulcro/types');
 
 		const Int32 = SignedInteger(32);
 
@@ -577,8 +561,7 @@ describe('@fulcro/collections/async', () => {
 	});
 
 	it('should work end to end through the published subpath', async () => {
-		const { AsyncSequenceCollection } =
-			await import('@fulcro/collections/async');
+		const { AsyncSequenceCollection } = await import('@fulcro/collections/async');
 
 		const result = await AsyncSequenceCollection.from([1, 2, 3, 4])
 			.where(async (value) => value % 2 === 0)
@@ -602,11 +585,7 @@ describe('@fulcro/errors', () => {
 		const entry = await import('@fulcro/errors');
 
 		// The package is CommonJS; see `@fulcro/types` above for these.
-		const interop: readonly string[] = [
-			'__esModule',
-			'default',
-			'module.exports',
-		];
+		const interop: readonly string[] = ['__esModule', 'default', 'module.exports'];
 
 		expect(
 			Object.keys(entry)
@@ -616,8 +595,7 @@ describe('@fulcro/errors', () => {
 	});
 
 	it('should create a coded error through the published entry point', async () => {
-		const { createError, FulcroError, isFulcroError } =
-			await import('@fulcro/errors');
+		const { createError, FulcroError, isFulcroError } = await import('@fulcro/errors');
 		const error = createError('FULCRO6021', {
 			operation: 'Vector3.from',
 			field: 'x',
@@ -738,9 +716,7 @@ describe('@fulcro/functions', () => {
 
 		const loaded = await tryCatch(async () => 21);
 
-		expect(
-			loaded.handle({ success: (value) => value * 2, failure: () => 0 }),
-		).toBe(42);
+		expect(loaded.handle({ success: (value) => value * 2, failure: () => 0 })).toBe(42);
 		expect(loaded.value).toBe(21);
 	});
 
@@ -765,9 +741,7 @@ describe('@fulcro/functions', () => {
 	it('should still take the predicate form', async () => {
 		const { switchFor } = await import('@fulcro/functions');
 
-		expect(
-			switchFor(10, [{ when: (n) => n > 5, then: () => 'big' }], () => 'small'),
-		).toBe('big');
+		expect(switchFor(10, [{ when: (n) => n > 5, then: () => 'big' }], () => 'small')).toBe('big');
 	});
 
 	it('should capture a synchronous throw', async () => {
@@ -845,13 +819,8 @@ describe('@fulcro/memory', () => {
 	});
 
 	it('should end what a using scope declared: an owner, a pooled block, a fixed buffer', async () => {
-		const {
-			borrow,
-			createFixedBufferAllocator,
-			createManagedStorage,
-			createPoolAllocator,
-			own,
-		} = await import('@fulcro/memory');
+		const { borrow, createFixedBufferAllocator, createManagedStorage, createPoolAllocator, own } =
+			await import('@fulcro/memory');
 
 		const pool = createPoolAllocator(16, 1);
 		const fixed = createFixedBufferAllocator(new ArrayBuffer(16));
@@ -871,9 +840,7 @@ describe('@fulcro/memory', () => {
 			fixedBlock = scope.allocate(16, 8);
 		}
 
-		expect(() => reading?.get(0)).toThrow(
-			expect.objectContaining({ code: 'FULCRO7024' }),
-		);
+		expect(() => reading?.get(0)).toThrow(expect.objectContaining({ code: 'FULCRO7024' }));
 		expect(() => borrow(owner as NonNullable<typeof owner>)).toThrow(
 			expect.objectContaining({
 				code: 'FULCRO7030',
@@ -899,21 +866,13 @@ describe('@fulcro/memory', () => {
 		// particle, and the pointer writes exactly those.
 		const buffer = new ArrayBuffer(32);
 		const raw = new DataView(buffer);
-		const velocity = nativePointerTo(
-			createLinearMemory(buffer),
-			8,
-			Particle,
-		).at(8, Point);
+		const velocity = nativePointerTo(createLinearMemory(buffer), 8, Particle).at(8, Point);
 
 		velocity.set(Point.from({ x: 3, y: -4 }));
 
-		expect([raw.getFloat32(16, true), raw.getFloat32(20, true)]).toEqual([
-			3, -4,
-		]);
+		expect([raw.getFloat32(16, true), raw.getFloat32(20, true)]).toEqual([3, -4]);
 		expect(
-			Array.from(new Uint8Array(buffer)).flatMap((byte, address) =>
-				byte === 0 ? [] : [address],
-			),
+			Array.from(new Uint8Array(buffer)).flatMap((byte, address) => (byte === 0 ? [] : [address])),
 		).toEqual([18, 19, 22, 23]);
 
 		const arena = createArenaAllocator(64);
@@ -956,8 +915,7 @@ describe('@fulcro/memory', () => {
 	});
 
 	it('should store a struct from the published types package', async () => {
-		const { createFixedBufferStorage, createManagedStorage } =
-			await import('@fulcro/memory');
+		const { createFixedBufferStorage, createManagedStorage } = await import('@fulcro/memory');
 		const { SinglePrecisionFloat, struct } = await import('@fulcro/types');
 
 		const Point = struct('Point', {
@@ -975,13 +933,8 @@ describe('@fulcro/memory', () => {
 	});
 
 	it('should view, point into and reference values, copying nothing', async () => {
-		const {
-			asReadOnlyView,
-			asView,
-			createManagedStorage,
-			pointerTo,
-			referenceTo,
-		} = await import('@fulcro/memory');
+		const { asReadOnlyView, asView, createManagedStorage, pointerTo, referenceTo } =
+			await import('@fulcro/memory');
 
 		const scores = createManagedStorage(4, 0);
 		const middle = asView(scores, 1, 2);
@@ -1019,14 +972,7 @@ describe('@fulcro/memory', () => {
 });
 
 /** Bundlers every `/unplugin` entry point claims to serve. */
-const BUNDLERS = [
-	'vite',
-	'rollup',
-	'webpack',
-	'rspack',
-	'esbuild',
-	'farm',
-] as const;
+const BUNDLERS = ['vite', 'rollup', 'webpack', 'rspack', 'esbuild', 'farm'] as const;
 
 describe('@fulcro/collections/transformer', () => {
 	it('should expose the compiler plugin as its default export', async () => {
@@ -1044,9 +990,7 @@ describe('@fulcro/collections/transformer', () => {
 		const adapters = await import('@fulcro/collections/unplugin');
 
 		for (const bundler of BUNDLERS) {
-			expect(typeof adapters[bundler as keyof typeof adapters]).toBe(
-				'function',
-			);
+			expect(typeof adapters[bundler as keyof typeof adapters]).toBe('function');
 		}
 	});
 
@@ -1059,10 +1003,7 @@ describe('@fulcro/collections/transformer', () => {
 
 		const values: unknown[] = ['a', 1, 'b'];
 
-		expect(SequenceCollection.from(values).ofType('string').toArray()).toEqual([
-			'a',
-			'b',
-		]);
+		expect(SequenceCollection.from(values).ofType('string').toArray()).toEqual(['a', 'b']);
 	});
 
 	it('should refuse the type argument form when nothing resolved it', async () => {
@@ -1096,9 +1037,7 @@ describe('@fulcro/memory/transformer', () => {
 		const adapters = await import('@fulcro/memory/unplugin');
 
 		for (const bundler of BUNDLERS) {
-			expect(typeof adapters[bundler as keyof typeof adapters]).toBe(
-				'function',
-			);
+			expect(typeof adapters[bundler as keyof typeof adapters]).toBe('function');
 		}
 	});
 
@@ -1137,18 +1076,14 @@ describe('@fulcro/reflect/transformer', () => {
 		// with no way to resolve them. There is nothing left to miss.
 		const { manifest } = manifestOf('@fulcro/reflect');
 
-		expect(manifest.peerDependencies ?? {}).not.toHaveProperty(
-			'@fulcro/transformer',
-		);
+		expect(manifest.peerDependencies ?? {}).not.toHaveProperty('@fulcro/transformer');
 	});
 
 	it('should expose an adapter for every bundler it claims to serve', async () => {
 		const adapters = await import('@fulcro/reflect/unplugin');
 
 		for (const bundler of BUNDLERS) {
-			expect(typeof adapters[bundler as keyof typeof adapters]).toBe(
-				'function',
-			);
+			expect(typeof adapters[bundler as keyof typeof adapters]).toBe('function');
 		}
 	});
 });

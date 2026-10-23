@@ -85,9 +85,7 @@ describe('typeOf', () => {
 
 		expect(typeOf(() => 1).typeId).toBe('function');
 		expect(typeOf(async () => 1).typeId).toBe('async-function');
-		expect(typeOf(function* (): Generator<number> {}).typeId).toBe(
-			'generator-function',
-		);
+		expect(typeOf(function* (): Generator<number> {}).typeId).toBe('generator-function');
 		expect(typeOf(async function* (): AsyncGenerator<number> {}).typeId).toBe(
 			'async-generator-function',
 		);
@@ -210,8 +208,7 @@ describe('typeOf<T>()', () => {
 		// tell you a property it happens to carry was declared optional.
 		const members = typeOf<Order>().members;
 
-		const byName = (name: string) =>
-			members.find((member) => member.name === name);
+		const byName = (name: string) => members.find((member) => member.name === name);
 
 		expect(byName('note')?.optional).toBe(true);
 		expect(byName('id')?.optional).toBe(false);
@@ -244,8 +241,6 @@ describe('typeOf<T>()', () => {
 	});
 
 	it('should refuse the generic form when nothing resolved it', () => {
-		expect(() => (typeOf as () => unknown)()).toThrow(
-			/was not resolved at compile time/,
-		);
+		expect(() => (typeOf as () => unknown)()).toThrow(/was not resolved at compile time/);
 	});
 });

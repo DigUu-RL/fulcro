@@ -102,9 +102,7 @@ between finishing and hanging on an endless source:
 
 ```ts
 // `liveEvents()` never ends. This still returns.
-const firstTen = await AsyncSequenceCollection.from(liveEvents())
-	.take(10)
-	.toArray();
+const firstTen = await AsyncSequenceCollection.from(liveEvents()).take(10).toArray();
 ```
 
 ## Real scenarios
@@ -249,9 +247,7 @@ production.
 When you want them, say so out loud:
 
 ```ts
-const sorted = SequenceCollection.from(await stream.toArray()).orderBy(
-	(row) => row.name,
-);
+const sorted = SequenceCollection.from(await stream.toArray()).orderBy((row) => row.name);
 ```
 
 `toArray()` is where holding everything becomes visible, which is exactly where

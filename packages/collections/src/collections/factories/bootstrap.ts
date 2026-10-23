@@ -1,7 +1,4 @@
-import {
-	hasCollectionFactories,
-	registerCollectionFactories,
-} from '@/collections/factories';
+import { hasCollectionFactories, registerCollectionFactories } from '@/collections/factories';
 import { GroupCollection } from '@/collections/group/group.collection';
 import { OrderedSequenceCollection } from '@/collections/ordered/ordered.collection';
 

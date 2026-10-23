@@ -59,10 +59,7 @@ const narrowingRewriter = (functionName: string): CallRewriter => ({
 	moduleSegment: SEQUENCE_MODULE_SEGMENT,
 	callForm: 'method',
 
-	rewrite: (
-		call: typescript.CallExpression,
-		context: RewriteContext,
-	): typescript.Node | null => {
+	rewrite: (call: typescript.CallExpression, context: RewriteContext): typescript.Node | null => {
 		const [typeArgument] = call.typeArguments ?? [];
 
 		// Only the no-argument form is ours to fill in. Written with a token

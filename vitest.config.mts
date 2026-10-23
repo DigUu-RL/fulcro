@@ -39,11 +39,7 @@ const project = (name: string): ViteUserConfig => ({
 	// All three are applied to every project, and they do not interfere: each
 	// claims only the calls whose declarations it can trace back to its own
 	// package, so a project using none is left untouched by all.
-	plugins: [
-		reflectTransformer(),
-		collectionsTransformer(),
-		memoryTransformer(),
-	],
+	plugins: [reflectTransformer(), collectionsTransformer(), memoryTransformer()],
 
 	// The `@/*` alias is declared once, in the tsconfig of each package, and
 	// read back from there rather than repeated as a Vite alias — so a path the

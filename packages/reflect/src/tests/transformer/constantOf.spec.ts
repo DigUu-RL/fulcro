@@ -127,9 +127,7 @@ const refusalOf = (binding: string): string => {
 	const declaration: number =
 		rejected.refused.length === 0
 			? -1
-			: (rejected.refused[0].file as ts.SourceFile).text.indexOf(
-					`export const ${binding} =`,
-				);
+			: (rejected.refused[0].file as ts.SourceFile).text.indexOf(`export const ${binding} =`);
 	const found: ts.Diagnostic | undefined = rejected.refused.find(
 		(diagnostic) =>
 			declaration >= 0 &&
@@ -137,9 +135,7 @@ const refusalOf = (binding: string): string => {
 			// The first refusal after the declaration is its own: every binding
 			// of the fixture declares exactly one call.
 			!rejected.refused.some(
-				(other) =>
-					(other.start ?? 0) > declaration &&
-					(other.start ?? 0) < (diagnostic.start ?? 0),
+				(other) => (other.start ?? 0) > declaration && (other.start ?? 0) < (diagnostic.start ?? 0),
 			),
 	);
 
@@ -186,25 +182,13 @@ describe('constantOf at compile time', () => {
 			expect(special[0]).toBeNaN();
 			expect(special.slice(1, 3)).toEqual([Infinity, -Infinity]);
 			expect(Object.is(special[3], -0)).toBe(true);
-			expect(special.slice(4)).toEqual([
-				2n ** 70n,
-				-5n,
-				undefined,
-				null,
-				true,
-				'text',
-			]);
+			expect(special.slice(4)).toEqual([2n ** 70n, -5n, undefined, null, true, 'text']);
 		});
 
 		it('should keep keys that cannot be written bare, __proto__ included, as fields', () => {
 			const record = evaluate('record') as Record<string, unknown>;
 
-			expect(Object.keys(record)).toEqual([
-				'name',
-				'two words',
-				'__proto__',
-				'nested',
-			]);
+			expect(Object.keys(record)).toEqual(['name', 'two words', '__proto__', 'nested']);
 			expect(Object.getPrototypeOf(record)).toBe(Object.prototype);
 			expect(record.nested).toEqual({ list: [1, { deep: true }] });
 		});
@@ -239,8 +223,7 @@ describe('constantOf at compile time', () => {
 			expect(
 				rejected.refused.every(
 					(diagnostic) =>
-						diagnostic.category === ts.DiagnosticCategory.Error &&
-						diagnostic.source === 'fulcro',
+						diagnostic.category === ts.DiagnosticCategory.Error && diagnostic.source === 'fulcro',
 				),
 			).toBe(true);
 			expect(rejected.emitted.match(/constantOf\(/g)).toHaveLength(10);
@@ -311,23 +294,16 @@ describe('constantOf at compile time', () => {
 		});
 
 		it('should throw every refusal of a file at once without a place to report them', () => {
-			const fixture: string = path.resolve(
-				__dirname,
-				'constantOf.rejected.fixture.ts',
-			);
+			const fixture: string = path.resolve(__dirname, 'constantOf.rejected.fixture.ts');
 			const program: ts.Program = ts.createProgram([fixture], COMPILER_OPTIONS);
 			const transform = transformer(program, { projectRoot: PROJECT_ROOT });
 
 			let thrown: unknown;
 
 			try {
-				program.emit(
-					program.getSourceFile(fixture),
-					() => undefined,
-					undefined,
-					false,
-					{ before: [transform] },
-				);
+				program.emit(program.getSourceFile(fixture), () => undefined, undefined, false, {
+					before: [transform],
+				});
 			} catch (error) {
 				thrown = error;
 			}
@@ -346,9 +322,7 @@ describe('constantOf at compile time', () => {
 		it('should stop a function that never returns, and refuse it', () => {
 			const { refused } = compile('constantOf.timeout.fixture.ts');
 
-			expect(
-				refused.map((diagnostic) => String(diagnostic.messageText)),
-			).toEqual([
+			expect(refused.map((diagnostic) => String(diagnostic.messageText))).toEqual([
 				'FULCRO4013: constantOf(…) did not finish within 5000 ms at compile time.',
 			]);
 		}, 60_000);

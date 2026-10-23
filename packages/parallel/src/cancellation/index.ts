@@ -54,10 +54,7 @@ const propagate = (step: () => void): void => {
  * @param handler The handler.
  * @param reason The reason the work was called off.
  */
-const callLate = (
-	handler: (reason: unknown) => void,
-	reason: unknown,
-): void => {
+const callLate = (handler: (reason: unknown) => void, reason: unknown): void => {
 	try {
 		handler(reason);
 	} catch (error) {
@@ -92,9 +89,7 @@ const callLate = (
  * before `cancel` returns.
  * @returns The source. Dispose it to stop following `parent`.
  */
-export const createCancellationSource = (
-	parent?: CancellationToken,
-): CancellationSource => {
+export const createCancellationSource = (parent?: CancellationToken): CancellationSource => {
 	const controller = new AbortController();
 	const signal: AbortSignal = controller.signal;
 

@@ -57,9 +57,7 @@ describe('UnsignedInteger', () => {
 			const modulus: bigint = 2n ** BigInt(width);
 
 			for (const value of [-modulus * 7n + 3n, modulus * 11n + 5n]) {
-				expect(type.wrap(value)).toBe(
-					carried(width, BigInt.asUintN(width, value)),
-				);
+				expect(type.wrap(value)).toBe(carried(width, BigInt.asUintN(width, value)));
 			}
 		});
 
@@ -75,19 +73,15 @@ describe('UnsignedInteger', () => {
 
 		it('should divide, and refuse a zero divisor', () => {
 			expect(type.divide(type.from(9), type.from(4))).toBe(carried(width, 2n));
-			expect(type.remainder(type.from(9), type.from(4))).toBe(
-				carried(width, 1n),
-			);
+			expect(type.remainder(type.from(9), type.from(4))).toBe(carried(width, 1n));
 			expect(() => type.divide(type.from(9), type.from(0))).toThrow(RangeError);
 		});
 
 		it('should multiply up to the maximum and refuse past it', () => {
-			expect(
-				type.multiply(type.from(carried(width, maximum / 3n)), type.from(3)),
-			).toBe(carried(width, maximum));
-			expect(() => type.multiply(type.maximum, type.from(2))).toThrow(
-				RangeError,
+			expect(type.multiply(type.from(carried(width, maximum / 3n)), type.from(3))).toBe(
+				carried(width, maximum),
 			);
+			expect(() => type.multiply(type.maximum, type.from(2))).toThrow(RangeError);
 		});
 
 		it('should recognise its own values and nothing else', () => {
@@ -104,9 +98,7 @@ describe('UnsignedInteger', () => {
 
 			it('should negate only zero', () => {
 				expect(type.negate(of(0n))).toBe(carried(width, 0n));
-				expect(() => type.negate(of(1n))).toThrow(
-					`UnsignedInteger<${width}>.negate`,
-				);
+				expect(() => type.negate(of(1n))).toThrow(`UnsignedInteger<${width}>.negate`);
 			});
 
 			it('should refuse to step below zero', () => {
@@ -116,12 +108,8 @@ describe('UnsignedInteger', () => {
 
 			it('should complement and shift over the unsigned bits', () => {
 				expect(type.bitwiseNot(of(0n))).toBe(carried(width, maximum));
-				expect(type.shiftLeft(type.maximum, of(1n))).toBe(
-					carried(width, maximum - 1n),
-				);
-				expect(type.shiftRight(type.maximum, of(BigInt(width - 1)))).toBe(
-					carried(width, 1n),
-				);
+				expect(type.shiftLeft(type.maximum, of(1n))).toBe(carried(width, maximum - 1n));
+				expect(type.shiftRight(type.maximum, of(BigInt(width - 1)))).toBe(carried(width, 1n));
 				expect(type.shiftRightLogical(type.maximum, of(1n))).toBe(
 					type.shiftRight(type.maximum, of(1n)),
 				);
@@ -147,9 +135,7 @@ describe('UnsignedInteger', () => {
 	});
 
 	it('should be told apart from the signed type of the same width', () => {
-		expectTypeOf(UnsignedInteger(16).from(1)).toEqualTypeOf<
-			UnsignedInteger<16>
-		>();
+		expectTypeOf(UnsignedInteger(16).from(1)).toEqualTypeOf<UnsignedInteger<16>>();
 		expectTypeOf<UnsignedInteger<16>>().not.toMatchTypeOf<
 			import('@/signedInteger').SignedInteger<16>
 		>();

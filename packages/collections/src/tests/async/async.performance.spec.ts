@@ -109,9 +109,7 @@ describe('laziness', () => {
 	it('should stream chunks rather than collect the source first', async () => {
 		let pulledAtFirstChunk = 0;
 
-		for await (const chunk of AsyncSequenceCollection.from(
-			instrumentedSource(VOLUME),
-		).chunk(10)) {
+		for await (const chunk of AsyncSequenceCollection.from(instrumentedSource(VOLUME)).chunk(10)) {
 			pulledAtFirstChunk = pulled;
 			expect(chunk).toHaveLength(10);
 			break;
@@ -193,9 +191,10 @@ describe('concurrency actually overlaps', () => {
 		// A limit of 4 over ten thousand elements must not pull ten thousand.
 		let pulledAtFirstResult = 0;
 
-		const results = AsyncSequenceCollection.from(
-			instrumentedSource(VOLUME),
-		).selectAwait(async (value) => value, { concurrency: 4 });
+		const results = AsyncSequenceCollection.from(instrumentedSource(VOLUME)).selectAwait(
+			async (value) => value,
+			{ concurrency: 4 },
+		);
 
 		for await (const _ of results) {
 			pulledAtFirstResult = pulled;
@@ -329,9 +328,7 @@ describe('wall clock ceilings', () => {
 	it('should traverse ten thousand elements within budget', async () => {
 		const started: number = performance.now();
 
-		const collected = await AsyncSequenceCollection.from(
-			instrumentedSource(VOLUME),
-		)
+		const collected = await AsyncSequenceCollection.from(instrumentedSource(VOLUME))
 			.where((value) => value % 2 === 0)
 			.select((value) => value * 2)
 			.toArray();

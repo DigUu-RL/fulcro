@@ -28,10 +28,7 @@ const SIZE = 24;
  */
 const scattered = (rows: number, columns: number): number[][] =>
 	Array.from({ length: rows }, (_row, row) =>
-		Array.from(
-			{ length: columns },
-			(_column, column) => ((row * 31 + column * 17) % 97) - 48,
-		),
+		Array.from({ length: columns }, (_column, column) => ((row * 31 + column * 17) % 97) - 48),
 	);
 
 const Large = Matrix(DoublePrecisionFloat, SIZE, SIZE);
@@ -80,9 +77,9 @@ describe('Matrix', () => {
 	});
 
 	it('should transpose without asking the element type for anything', () => {
-		const spies = (
-			['add', 'subtract', 'multiply', 'negate', 'from', 'is'] as const
-		).map((name) => vi.spyOn(DoublePrecisionFloat, name));
+		const spies = (['add', 'subtract', 'multiply', 'negate', 'from', 'is'] as const).map((name) =>
+			vi.spyOn(DoublePrecisionFloat, name),
+		);
 
 		Large.transpose(large);
 
@@ -136,9 +133,7 @@ describe('Matrix', () => {
 		let accesses = 0;
 
 		for (const accessor of ['getFloat64', 'setFloat64'] as const) {
-			const original = DataView.prototype[accessor] as (
-				...parameters: unknown[]
-			) => unknown;
+			const original = DataView.prototype[accessor] as (...parameters: unknown[]) => unknown;
 
 			Object.defineProperty(view, accessor, {
 				value: (...parameters: unknown[]): unknown => {

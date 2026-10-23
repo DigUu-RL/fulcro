@@ -33,12 +33,9 @@ describe('Owned[Symbol.dispose], unchecked', () => {
 		second[Symbol.dispose]();
 
 		expect(() => borrow(first)).toThrow(
-			coded(
-				new Error(
-					'FULCRO7023: borrow: the owner was moved; use the owner move returned.',
-				),
-				{ operation: 'borrow' },
-			),
+			coded(new Error('FULCRO7023: borrow: the owner was moved; use the owner move returned.'), {
+				operation: 'borrow',
+			}),
 		);
 	});
 });

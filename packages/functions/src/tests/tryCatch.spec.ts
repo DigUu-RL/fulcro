@@ -27,9 +27,7 @@ describe('tryCatch', () => {
 		});
 
 		expect(result.value).toBeNull();
-		expect((result.error as Error).message).toBe(
-			'thrown before any promise existed',
-		);
+		expect((result.error as Error).message).toBe('thrown before any promise existed');
 	});
 
 	it('should run a callback that resolves asynchronously', async () => {
@@ -40,32 +38,25 @@ describe('tryCatch', () => {
 	});
 
 	it('should keep a thrown non-error exactly as it was thrown', async () => {
-		const result: Result<number> = await tryCatch<number>(
-			Promise.reject('a bare string'),
-		);
+		const result: Result<number> = await tryCatch<number>(Promise.reject('a bare string'));
 
 		expect(result.value).toBeNull();
 		expect(result.error).toBe('a bare string');
 	});
 
-	it.each([null, undefined])(
-		'should keep %s from defeating the discriminant',
-		async (thrown) => {
-			// Storing a nullish throw as it came would make the failure read as
-			// a success, since `error === null` is what tells the two apart.
-			const result: Result<number> = await tryCatch<number>(
-				Promise.reject(thrown),
-			);
+	it.each([null, undefined])('should keep %s from defeating the discriminant', async (thrown) => {
+		// Storing a nullish throw as it came would make the failure read as
+		// a success, since `error === null` is what tells the two apart.
+		const result: Result<number> = await tryCatch<number>(Promise.reject(thrown));
 
-			expect(result.error).not.toBeNull();
-			expect(result.error).toBeInstanceOf(Error);
-			expect((result.error as Error).cause).toBe(thrown);
-			expect(result.error).toMatchObject({
-				code: 'FULCRO2001',
-				message: `FULCRO2001: Operation rejected with ${String(thrown)}`,
-			});
-		},
-	);
+		expect(result.error).not.toBeNull();
+		expect(result.error).toBeInstanceOf(Error);
+		expect((result.error as Error).cause).toBe(thrown);
+		expect(result.error).toMatchObject({
+			code: 'FULCRO2001',
+			message: `FULCRO2001: Operation rejected with ${String(thrown)}`,
+		});
+	});
 
 	it('should discriminate a falsy success from a failure', async () => {
 		// `if (result.value)` reports every one of these as a failure, which is
@@ -86,9 +77,7 @@ describe('tryCatch', () => {
 
 		expect(succeeded.isSuccess()).toBe(true);
 		expect(failed.isFailure()).toBe(true);
-		expect(
-			failed.handle({ success: () => 'success', failure: () => 'failure' }),
-		).toBe('failure');
+		expect(failed.handle({ success: () => 'success', failure: () => 'failure' })).toBe('failure');
 	});
 
 	it('should narrow to the produced value once the error is ruled out', async () => {

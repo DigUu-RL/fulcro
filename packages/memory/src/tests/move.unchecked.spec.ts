@@ -21,12 +21,9 @@ import { coded } from './coded';
 
 /** The error a spent owner throws, for an operation. */
 const spent = (operation: string): Error =>
-	coded(
-		new Error(
-			`FULCRO7023: ${operation}: the owner was moved; use the owner move returned.`,
-		),
-		{ operation },
-	);
+	coded(new Error(`FULCRO7023: ${operation}: the owner was moved; use the owner move returned.`), {
+		operation,
+	});
 
 /** The error an ended borrow throws, for an operation. */
 const ended = (operation: string): Error =>
@@ -69,9 +66,7 @@ describe('move, unchecked', () => {
 
 		expect(() => reading.get(0)).toThrow(ended('ReadOnlyView.get'));
 		expect(() => subview.get(0)).toThrow(ended('ReadOnlyView.get'));
-		expect(() => viewed.get(0)).toThrow(
-			expect.objectContaining({ code: 'FULCRO7024' }),
-		);
+		expect(() => viewed.get(0)).toThrow(expect.objectContaining({ code: 'FULCRO7024' }));
 	});
 
 	it('should end a borrow for writing, its read-only view and a pointer into it', () => {
@@ -84,8 +79,6 @@ describe('move, unchecked', () => {
 
 		expect(() => writing.set(0, 1)).toThrow(ended('View.set'));
 		expect(() => reading.get(0)).toThrow(ended('ReadOnlyView.get'));
-		expect(() => pointer.set(1)).toThrow(
-			expect.objectContaining({ code: 'FULCRO7024' }),
-		);
+		expect(() => pointer.set(1)).toThrow(expect.objectContaining({ code: 'FULCRO7024' }));
 	});
 });

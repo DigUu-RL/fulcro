@@ -115,9 +115,7 @@ describe('createFixedBufferStorage', () => {
 
 		expect(() => points.set(0, impostor)).toThrowError(
 			coded(
-				new TypeError(
-					'FULCRO7004: FixedBufferStorage.set: the value is not a value of Point.',
-				),
+				new TypeError('FULCRO7004: FixedBufferStorage.set: the value is not a value of Point.'),
 				{ operation: 'FixedBufferStorage.set', element: 'Point' },
 			),
 		);
@@ -142,9 +140,7 @@ describe('createFixedBufferStorage', () => {
 			},
 		],
 	])('should refuse an element type missing %s', (missing, element) => {
-		expect(() =>
-			createFixedBufferStorage(element as unknown as typeof Point, 1),
-		).toThrowError(
+		expect(() => createFixedBufferStorage(element as unknown as typeof Point, 1)).toThrowError(
 			coded(
 				new TypeError(
 					`FULCRO7003: createFixedBufferStorage: expected an element type with a name, layout.size, read, write and is; ${missing} is missing.`,
@@ -156,20 +152,13 @@ describe('createFixedBufferStorage', () => {
 
 	it('should refuse a numeric type, which carries no byte encoding of its own', () => {
 		expect(() =>
-			createFixedBufferStorage(
-				SinglePrecisionFloat as unknown as typeof Point,
-				1,
-			),
+			createFixedBufferStorage(SinglePrecisionFloat as unknown as typeof Point, 1),
 		).toThrowError(TypeError);
 	});
 
 	it('should infer the struct it stores', () => {
-		expectTypeOf(createFixedBufferStorage(Point, 1)).toEqualTypeOf<
-			Storage<Point>
-		>();
-		expectTypeOf(createFixedBufferStorage(Point, 1).set)
-			.parameter(1)
-			.toEqualTypeOf<Point>();
+		expectTypeOf(createFixedBufferStorage(Point, 1)).toEqualTypeOf<Storage<Point>>();
+		expectTypeOf(createFixedBufferStorage(Point, 1).set).parameter(1).toEqualTypeOf<Point>();
 		expectTypeOf<{ x: number; y: number }>().not.toMatchTypeOf<Point>();
 		expectTypeOf<typeof SinglePrecisionFloat>().not.toMatchTypeOf<
 			Parameters<typeof createFixedBufferStorage>[0]

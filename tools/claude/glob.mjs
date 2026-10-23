@@ -91,5 +91,4 @@ export const matches = (glob, target) => expressionOf(glob).test(target);
  * @param {string} target The path.
  * @returns {boolean} Whether one of them matches.
  */
-export const matchedBy = (globs, target) =>
-	globs.some((glob) => matches(glob, target));
+export const matchedBy = (globs, target) => globs.some((glob) => matches(glob, target));

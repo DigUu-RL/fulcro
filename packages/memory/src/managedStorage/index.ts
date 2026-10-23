@@ -23,10 +23,7 @@ import { requireLength } from '@/storage/requireLength';
  * @returns The storage, frozen.
  * @throws {RangeError} When the length is not a non-negative safe integer.
  */
-export const createManagedStorage = <T>(
-	length: number,
-	initial: T,
-): Storage<T> => {
+export const createManagedStorage = <T>(length: number, initial: T): Storage<T> => {
 	requireLength('createManagedStorage', length);
 
 	const values: T[] = new Array<T>(length).fill(initial);

@@ -21,10 +21,7 @@ const LENGTH = 10_000;
  * @returns The elements.
  */
 const scattered = (): number[] =>
-	Array.from(
-		{ length: LENGTH },
-		(_item, index) => ((index * 7919) % 1009) - 504,
-	);
+	Array.from({ length: LENGTH }, (_item, index) => ((index * 7919) % 1009) - 504);
 
 const Long = Vector(DoublePrecisionFloat, LENGTH, 1);
 const long = Long.from(scattered());

@@ -72,10 +72,7 @@ interface Lease {
  * @throws {RangeError} When the block size or the block count is not a
  * non-negative safe integer.
  */
-export const createPoolAllocator = (
-	blockSize: number,
-	blockCount: number,
-): PoolAllocator => {
+export const createPoolAllocator = (blockSize: number, blockCount: number): PoolAllocator => {
 	requireSize('createPoolAllocator', blockSize);
 	requireLength('createPoolAllocator', blockCount);
 
@@ -84,10 +81,7 @@ export const createPoolAllocator = (
 
 	// The free blocks, the next one to hand out last, so the pool fills from
 	// the front of the buffer.
-	const free: number[] = Array.from(
-		{ length: blockCount },
-		(_, index) => blockCount - 1 - index,
-	);
+	const free: number[] = Array.from({ length: blockCount }, (_, index) => blockCount - 1 - index);
 
 	// A block's generation moves on every time it comes back, which is what
 	// tells an allocation still holding it from one that held it before.

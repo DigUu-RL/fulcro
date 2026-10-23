@@ -24,16 +24,10 @@ import { beforeAll, describe, expect, it } from 'vitest';
 const require = createRequire(import.meta.url);
 
 /** Root of the repository, which this file sits two levels below. */
-const ROOT = path.resolve(
-	path.dirname(fileURLToPath(import.meta.url)),
-	'../..',
-);
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 /** Fixture fed to the compiler. */
-const FIXTURE = path.resolve(
-	path.dirname(fileURLToPath(import.meta.url)),
-	'coexistence.sample.ts',
-);
+const FIXTURE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'coexistence.sample.ts');
 
 /** JavaScript emitted for the fixture, shared by every assertion. */
 let emitted = '';
@@ -49,11 +43,9 @@ const compileFixture = (): string => {
 		? never
 		: (program: ts.Program) => ts.TransformerFactory<ts.SourceFile>;
 
-	const collections = require('@fulcro/collections/transformer')
-		.default as typeof reflect;
+	const collections = require('@fulcro/collections/transformer').default as typeof reflect;
 
-	const memory = require('@fulcro/memory/transformer')
-		.default as typeof reflect;
+	const memory = require('@fulcro/memory/transformer').default as typeof reflect;
 
 	const program: ts.Program = ts.createProgram([FIXTURE], {
 		target: ts.ScriptTarget.ES2022,
@@ -69,9 +61,7 @@ const compileFixture = (): string => {
 
 	const errors: readonly ts.Diagnostic[] = ts
 		.getPreEmitDiagnostics(program, program.getSourceFile(FIXTURE))
-		.filter(
-			(diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error,
-		);
+		.filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error);
 
 	if (errors.length > 0) {
 		throw new Error(
@@ -159,8 +149,7 @@ describe('the plugins on one file', () => {
 		const reflect = require('@fulcro/reflect/transformer').default as (
 			program: ts.Program,
 		) => ts.TransformerFactory<ts.SourceFile>;
-		const memory = require('@fulcro/memory/transformer')
-			.default as typeof reflect;
+		const memory = require('@fulcro/memory/transformer').default as typeof reflect;
 		const program: ts.Program = ts.createProgram([rejected], {
 			target: ts.ScriptTarget.ES2022,
 			module: ts.ModuleKind.ESNext,
@@ -170,13 +159,9 @@ describe('the plugins on one file', () => {
 		});
 
 		expect(() =>
-			program.emit(
-				program.getSourceFile(rejected),
-				() => undefined,
-				undefined,
-				false,
-				{ before: [reflect(program), memory(program)] },
-			),
+			program.emit(program.getSourceFile(rejected), () => undefined, undefined, false, {
+				before: [reflect(program), memory(program)],
+			}),
 		).toThrow(
 			/coexistence\.rejected\.sample\.ts\(19,26\): FULCRO7027: move: 'orders' is used after it was moved at line 17/,
 		);

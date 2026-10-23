@@ -237,10 +237,8 @@ O código que precisa de memória recebe um `Allocator` e deixa a escolha para
 quem o chama:
 
 ```ts
-const createParticles = (
-	count: number,
-	allocator: Allocator,
-): Storage<Particle> => allocate(Particle, count, allocator);
+const createParticles = (count: number, allocator: Allocator): Storage<Particle> =>
+	allocate(Particle, count, allocator);
 ```
 
 ### Escolhendo um alocador
@@ -455,11 +453,7 @@ original como estava. Um ponteiro pode ficar uma posição depois do último
 valor, para que um laço chegue ao fim e pare ali:
 
 ```ts
-for (
-	let cursor = pointerTo(queue, 0);
-	cursor.index < queue.length;
-	cursor = cursor.offset(1)
-) {
+for (let cursor = pointerTo(queue, 0); cursor.index < queue.length; cursor = cursor.offset(1)) {
 	cursor.get();
 }
 ```
@@ -526,10 +520,7 @@ interface NativePointer<T> extends MemoryReference<T> {
 	get(): T;
 	set(value: T): void;
 	at(byteOffset: number): NativePointer<T>;
-	at<TOther>(
-		byteOffset: number,
-		element: AlignedElement<TOther>,
-	): NativePointer<TOther>;
+	at<TOther>(byteOffset: number, element: AlignedElement<TOther>): NativePointer<TOther>;
 }
 ```
 
@@ -568,11 +559,7 @@ Aponta para um endereço em bytes de uma memória, para um valor do tipo do
 elemento — um struct, como em `allocate`:
 
 ```ts
-const latest: NativePointer<Reading> = nativePointerTo(
-	memory,
-	moduleExports.latest(),
-	Reading,
-);
+const latest: NativePointer<Reading> = nativePointerTo(memory, moduleExports.latest(), Reading);
 
 latest.get(); // a leitura que o módulo escreveu, lida onde ele a escreveu
 latest.set(Reading.from({ value: 0 })); // e o módulo enxerga isto
@@ -584,10 +571,7 @@ esse tipo. É assim que um ponteiro alcança um campo de um struct, no lugar:
 
 ```ts
 const particle: NativePointer<Particle> = nativePointerTo(memory, 64, Particle);
-const velocity: NativePointer<Point> = particle.at(
-	Particle.layout.fields.velocity.offset,
-	Point,
-);
+const velocity: NativePointer<Point> = particle.at(Particle.layout.fields.velocity.offset, Point);
 
 velocity.set(Point.from({ x: 0, y: -9.8 })); // escreve a velocidade da partícula
 ```

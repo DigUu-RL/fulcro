@@ -40,9 +40,7 @@ describe('borrow', () => {
 		const values: Borrowed<number> = borrow(owner);
 
 		expect(values.length).toBe(4);
-		expect([0, 1, 2, 3].map((index) => values.get(index))).toEqual([
-			0, 1, 2, 3,
-		]);
+		expect([0, 1, 2, 3].map((index) => values.get(index))).toEqual([0, 1, 2, 3]);
 	});
 
 	it('should let shared borrows of one owner read at once', () => {
@@ -81,9 +79,7 @@ describe('borrow', () => {
 	it('should refuse something that is not an owner', () => {
 		expect(() => borrow({ length: 1 } as never)).toThrow(
 			coded(
-				new TypeError(
-					'FULCRO7017: borrow: expected an owner from own or move, received object.',
-				),
+				new TypeError('FULCRO7017: borrow: expected an owner from own or move, received object.'),
 				{
 					operation: 'borrow',
 					expected: 'an owner from own or move',

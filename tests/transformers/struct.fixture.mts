@@ -19,10 +19,7 @@ import ts from 'typescript';
 const require = createRequire(import.meta.url);
 
 /** Fixture fed to the compiler. */
-const FIXTURE = path.resolve(
-	path.dirname(fileURLToPath(import.meta.url)),
-	'struct.sample.ts',
-);
+const FIXTURE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'struct.sample.ts');
 
 /** What compiling and running the fixture produced. */
 export interface CompiledStructs {
@@ -42,8 +39,7 @@ export const compileStructs = (): CompiledStructs => {
 	const reflect = require('@fulcro/reflect/transformer').default as (
 		program: ts.Program,
 	) => ts.TransformerFactory<ts.SourceFile>;
-	const collections = require('@fulcro/collections/transformer')
-		.default as typeof reflect;
+	const collections = require('@fulcro/collections/transformer').default as typeof reflect;
 
 	const program: ts.Program = ts.createProgram([FIXTURE], {
 		target: ts.ScriptTarget.ES2022,
@@ -58,17 +54,11 @@ export const compileStructs = (): CompiledStructs => {
 
 	const errors: readonly ts.Diagnostic[] = ts
 		.getPreEmitDiagnostics(program, program.getSourceFile(FIXTURE))
-		.filter(
-			(diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error,
-		);
+		.filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error);
 
 	if (errors.length > 0) {
 		throw new Error(
-			errors
-				.map((error) =>
-					ts.flattenDiagnosticMessageText(error.messageText, '\n'),
-				)
-				.join('\n'),
+			errors.map((error) => ts.flattenDiagnosticMessageText(error.messageText, '\n')).join('\n'),
 		);
 	}
 
@@ -93,11 +83,7 @@ export const compileStructs = (): CompiledStructs => {
 	}).outputText;
 	const module = { exports: {} as Record<string, unknown> };
 
-	new Function('require', 'module', 'exports', runnable)(
-		require,
-		module,
-		module.exports,
-	);
+	new Function('require', 'module', 'exports', runnable)(require, module, module.exports);
 
 	return { emitted, exports: module.exports };
 };

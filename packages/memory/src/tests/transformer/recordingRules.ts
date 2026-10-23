@@ -29,8 +29,7 @@ export const recordingRules = (): {
 			copy: (facts) => new Set(facts),
 			join: (first, second) => new Set([...first, ...second]),
 			same: (first, second) =>
-				first.size === second.size &&
-				[...first].every((name) => second.has(name)),
+				first.size === second.size && [...first].every((name) => second.has(name)),
 			read: (identifier, facts) => {
 				recording.events.push(
 					facts.has(identifier.text)
@@ -44,11 +43,7 @@ export const recordingRules = (): {
 
 				recording.events.push(`call ${callee}`);
 
-				if (
-					callee === 'spend' &&
-					argument !== undefined &&
-					ts.isIdentifier(argument)
-				) {
+				if (callee === 'spend' && argument !== undefined && ts.isIdentifier(argument)) {
 					facts.add(argument.text);
 				}
 			},

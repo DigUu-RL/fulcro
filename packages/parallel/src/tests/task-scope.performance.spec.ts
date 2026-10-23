@@ -181,9 +181,7 @@ describe('what the scope keeps', () => {
 			scope.spawn(meter.work(delayOf(index)));
 		}
 
-		expect(
-			getEventListeners(scope.token.signal, 'abort').length,
-		).toBeGreaterThanOrEqual(TASKS);
+		expect(getEventListeners(scope.token.signal, 'abort').length).toBeGreaterThanOrEqual(TASKS);
 
 		await scope.join();
 
@@ -224,9 +222,7 @@ describe('what the scope keeps', () => {
 		const meter = createMeter();
 		const scope = createTaskScope();
 
-		const tasks = Array.from({ length: TASKS }, () =>
-			scope.spawn(meter.untilCancelled),
-		);
+		const tasks = Array.from({ length: TASKS }, () => scope.spawn(meter.untilCancelled));
 
 		await flush();
 

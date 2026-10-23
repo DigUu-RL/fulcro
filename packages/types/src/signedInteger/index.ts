@@ -52,9 +52,7 @@ const descriptors = new Map<IntegerWidth, IntegerType<unknown>>();
  * @returns The descriptor of that width.
  * @throws {RangeError} When the width is not 8, 16, 32, 64 or 128.
  */
-export const SignedInteger = <N extends IntegerWidth>(
-	width: N,
-): IntegerType<SignedInteger<N>> => {
+export const SignedInteger = <N extends IntegerWidth>(width: N): IntegerType<SignedInteger<N>> => {
 	let descriptor: IntegerType<unknown> | undefined = descriptors.get(width);
 
 	if (descriptor === undefined) {

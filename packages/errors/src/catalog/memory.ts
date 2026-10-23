@@ -13,13 +13,7 @@ import { RangeCatalog } from '@/definition';
 export const memoryCatalog = {
 	FULCRO7001: {
 		kind: RangeError,
-		message: ({
-			operation,
-			received,
-		}: {
-			operation: string;
-			received: number | string;
-		}) =>
+		message: ({ operation, received }: { operation: string; received: number | string }) =>
 			`${operation}: expected a length that is a non-negative safe integer, received ${received}.`,
 	},
 	FULCRO7002: {
@@ -32,8 +26,7 @@ export const memoryCatalog = {
 			operation: string;
 			index: number | string;
 			length: number;
-		}) =>
-			`${operation}: index ${index} is outside a storage of length ${length}.`,
+		}) => `${operation}: index ${index} is outside a storage of length ${length}.`,
 	},
 	FULCRO7003: {
 		kind: TypeError,
@@ -47,24 +40,12 @@ export const memoryCatalog = {
 	},
 	FULCRO7005: {
 		kind: RangeError,
-		message: ({
-			operation,
-			received,
-		}: {
-			operation: string;
-			received: number | string;
-		}) =>
+		message: ({ operation, received }: { operation: string; received: number | string }) =>
 			`${operation}: expected a size in bytes that is a non-negative safe integer, received ${received}.`,
 	},
 	FULCRO7006: {
 		kind: RangeError,
-		message: ({
-			operation,
-			received,
-		}: {
-			operation: string;
-			received: number | string;
-		}) =>
+		message: ({ operation, received }: { operation: string; received: number | string }) =>
 			`${operation}: expected an alignment that is a positive power of two, received ${received}.`,
 	},
 	FULCRO7007: {
@@ -129,13 +110,8 @@ export const memoryCatalog = {
 	},
 	FULCRO7013: {
 		kind: TypeError,
-		message: ({
-			operation,
-			received,
-		}: {
-			operation: string;
-			received: string;
-		}) => `${operation}: expected an ArrayBuffer, received ${received}.`,
+		message: ({ operation, received }: { operation: string; received: string }) =>
+			`${operation}: expected an ArrayBuffer, received ${received}.`,
 	},
 	FULCRO7014: {
 		kind: RangeError,
@@ -154,15 +130,7 @@ export const memoryCatalog = {
 	},
 	FULCRO7015: {
 		kind: RangeError,
-		message: ({
-			operation,
-			index,
-			length,
-		}: {
-			operation: string;
-			index: number;
-			length: number;
-		}) =>
+		message: ({ operation, index, length }: { operation: string; index: number; length: number }) =>
 			`${operation}: position ${index} is past the end of the array, which now holds ${length} values; it shrank after it was viewed.`,
 	},
 	FULCRO7016: {
@@ -192,13 +160,7 @@ export const memoryCatalog = {
 	},
 	FULCRO7018: {
 		kind: TypeError,
-		message: ({
-			operation,
-			received,
-		}: {
-			operation: string;
-			received: string;
-		}) =>
+		message: ({ operation, received }: { operation: string; received: string }) =>
 			`${operation}: expected an ArrayBuffer or a WebAssembly.Memory that is not shared, received ${received}.`,
 	},
 	FULCRO7019: {
@@ -250,13 +212,7 @@ export const memoryCatalog = {
 	},
 	FULCRO7022: {
 		kind: TypeError,
-		message: ({
-			operation,
-			received,
-		}: {
-			operation: string;
-			received: string;
-		}) =>
+		message: ({ operation, received }: { operation: string; received: string }) =>
 			`${operation}: expected a linear memory or an allocation, received ${received}.`,
 	},
 	FULCRO7023: {
@@ -281,15 +237,7 @@ export const memoryCatalog = {
 	},
 	FULCRO7027: {
 		kind: Error,
-		message: ({
-			operation,
-			name,
-			line,
-		}: {
-			operation: string;
-			name: string;
-			line: number;
-		}) =>
+		message: ({ operation, name, line }: { operation: string; name: string; line: number }) =>
 			`${operation}: '${name}' is used after it was moved at line ${line}; use the owner move returned.`,
 	},
 	FULCRO7028: {

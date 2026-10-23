@@ -35,10 +35,7 @@ const offsetsOf = (descriptor: {
 	};
 }): Record<string, number> =>
 	Object.fromEntries(
-		Object.entries(descriptor.layout.fields).map(([name, field]) => [
-			name,
-			field.offset,
-		]),
+		Object.entries(descriptor.layout.fields).map(([name, field]) => [name, field.offset]),
 	);
 
 describe('offsetOf over the structs of @fulcro/types', () => {
@@ -54,12 +51,8 @@ describe('offsetOf over the structs of @fulcro/types', () => {
 	);
 
 	it('should place a struct shipped as a declaration only by its declared order', () => {
-		const {
-			DoublePrecisionFloat,
-			SinglePrecisionFloat,
-			UnsignedInteger,
-			struct,
-		} = require('@fulcro/types') as typeof import('@fulcro/types');
+		const { DoublePrecisionFloat, SinglePrecisionFloat, UnsignedInteger, struct } =
+			require('@fulcro/types') as typeof import('@fulcro/types');
 
 		const Shipped = struct('Shipped', {
 			small: SinglePrecisionFloat,

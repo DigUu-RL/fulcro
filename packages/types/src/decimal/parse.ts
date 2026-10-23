@@ -1,12 +1,6 @@
 import { createError } from '@fulcro/errors';
 
-import {
-	type DecimalParts,
-	infinity,
-	NOT_A_NUMBER,
-	PRECISION,
-	zero,
-} from './parts';
+import { type DecimalParts, infinity, NOT_A_NUMBER, PRECISION, zero } from './parts';
 import { finish } from './round';
 
 /**
@@ -82,10 +76,7 @@ export const parseDecimal = (text: string): DecimalParts => {
 	let exponent: number =
 		exponentText === undefined
 			? 0
-			: Math.max(
-					-EXPONENT_LIMIT,
-					Math.min(EXPONENT_LIMIT, Number(exponentText)),
-				);
+			: Math.max(-EXPONENT_LIMIT, Math.min(EXPONENT_LIMIT, Number(exponentText)));
 
 	exponent -= fraction.length;
 
@@ -99,9 +90,7 @@ export const parseDecimal = (text: string): DecimalParts => {
 		return finish(negative, BigInt(significant), exponent, 'halfEven');
 	}
 
-	const sticky: string = /[1-9]/.test(significant.slice(KEPT_DIGITS))
-		? '1'
-		: '0';
+	const sticky: string = /[1-9]/.test(significant.slice(KEPT_DIGITS)) ? '1' : '0';
 
 	return finish(
 		negative,

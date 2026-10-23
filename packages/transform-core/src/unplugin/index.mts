@@ -1,8 +1,4 @@
-import {
-	createUnplugin,
-	type UnpluginFactory,
-	type UnpluginInstance,
-} from 'unplugin';
+import { createUnplugin, type UnpluginFactory, type UnpluginInstance } from 'unplugin';
 
 import {
 	createFileTransformer,
@@ -80,10 +76,7 @@ export const createTransformerUnplugin = (
 	name: string,
 	analyzers: readonly FileAnalyzer[] = [],
 ): TransformerUnplugin =>
-	createAdapters(
-		(options) => createFileTransformer(rewriters, options, analyzers),
-		name,
-	);
+	createAdapters((options) => createFileTransformer(rewriters, options, analyzers), name);
 
 /**
  * Builds the adapters around the core of a package.
@@ -96,9 +89,7 @@ const createAdapters = (
 	build: (options: PluginOptions) => FileTransformer,
 	name: string,
 ): TransformerUnplugin => {
-	const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (
-		options = {},
-	) => {
+	const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (options = {}) => {
 		let transformer: FileTransformer | undefined;
 
 		/**

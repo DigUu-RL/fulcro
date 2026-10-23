@@ -1,10 +1,7 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import type { Allocation, AllocationDomain } from '@/allocator';
-import {
-	createFixedBufferAllocator,
-	type FixedBufferAllocator,
-} from '@/fixedBufferAllocator';
+import { createFixedBufferAllocator, type FixedBufferAllocator } from '@/fixedBufferAllocator';
 
 import { coded } from './coded';
 
@@ -38,9 +35,7 @@ describe('createFixedBufferAllocator', () => {
 	});
 
 	it('should refuse a request past the end of the buffer', () => {
-		const allocator: FixedBufferAllocator = createFixedBufferAllocator(
-			new ArrayBuffer(16),
-		);
+		const allocator: FixedBufferAllocator = createFixedBufferAllocator(new ArrayBuffer(16));
 
 		allocator.allocate(12, 4);
 
@@ -61,9 +56,7 @@ describe('createFixedBufferAllocator', () => {
 	});
 
 	it('should count the alignment padding against the room left', () => {
-		const allocator: FixedBufferAllocator = createFixedBufferAllocator(
-			new ArrayBuffer(16),
-		);
+		const allocator: FixedBufferAllocator = createFixedBufferAllocator(new ArrayBuffer(16));
 
 		allocator.allocate(1, 1);
 
@@ -72,9 +65,7 @@ describe('createFixedBufferAllocator', () => {
 	});
 
 	it('should release everything on reset and start again from the front', () => {
-		const allocator: FixedBufferAllocator = createFixedBufferAllocator(
-			new ArrayBuffer(16),
-		);
+		const allocator: FixedBufferAllocator = createFixedBufferAllocator(new ArrayBuffer(16));
 		const before: Allocation = allocator.allocate(16, 8);
 
 		allocator.reset();
@@ -93,9 +84,7 @@ describe('createFixedBufferAllocator', () => {
 		['SharedArrayBuffer', new SharedArrayBuffer(16)],
 		['Uint8Array', new Uint8Array(16)],
 	])('should refuse %s where a buffer is expected', (received, buffer) => {
-		expect(() =>
-			createFixedBufferAllocator(buffer as unknown as ArrayBuffer),
-		).toThrowError(
+		expect(() => createFixedBufferAllocator(buffer as unknown as ArrayBuffer)).toThrowError(
 			coded(
 				new TypeError(
 					`FULCRO7013: createFixedBufferAllocator: expected an ArrayBuffer, received ${received}.`,
@@ -120,9 +109,7 @@ describe('createFixedBufferAllocator', () => {
 	});
 
 	it('should start again from the front of the buffer after a dispose', () => {
-		const allocator: FixedBufferAllocator = createFixedBufferAllocator(
-			new ArrayBuffer(16),
-		);
+		const allocator: FixedBufferAllocator = createFixedBufferAllocator(new ArrayBuffer(16));
 
 		allocator.allocate(16, 8);
 		allocator[Symbol.dispose]();

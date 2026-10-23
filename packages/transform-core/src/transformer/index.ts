@@ -2,13 +2,7 @@ import typescript from 'typescript';
 
 import { createError } from '@fulcro/errors';
 
-import {
-	AnalysisContext,
-	CallRewriter,
-	FileAnalyzer,
-	isOwnedCall,
-	RewriteContext,
-} from '@/shared';
+import { AnalysisContext, CallRewriter, FileAnalyzer, isOwnedCall, RewriteContext } from '@/shared';
 
 /**
  * Composition root shared by every Fulcro transformer.
@@ -71,10 +65,7 @@ const CODE = /^FULCRO(\d{4})/;
  * @param message What went wrong, starting with its `FULCRO` code.
  * @returns The diagnostic.
  */
-const diagnosticAt = (
-	node: typescript.Node,
-	message: string,
-): typescript.Diagnostic => ({
+const diagnosticAt = (node: typescript.Node, message: string): typescript.Diagnostic => ({
 	category: typescript.DiagnosticCategory.Error,
 	code: Number(CODE.exec(message)?.[1] ?? 0),
 	file: node.getSourceFile(),
@@ -92,9 +83,7 @@ const diagnosticAt = (
  */
 const describeDiagnostic = (diagnostic: typescript.Diagnostic): string => {
 	const file = diagnostic.file as typescript.SourceFile;
-	const { line, character } = file.getLineAndCharacterOfPosition(
-		diagnostic.start ?? 0,
-	);
+	const { line, character } = file.getLineAndCharacterOfPosition(diagnostic.start ?? 0);
 
 	return `${file.fileName}(${line + 1},${character + 1}): ${String(diagnostic.messageText)}`;
 };
@@ -127,8 +116,7 @@ export const createTransformer =
 		extras: TransformerExtras = {},
 	): typescript.TransformerFactory<typescript.SourceFile> => {
 		const checker: typescript.TypeChecker = program.getTypeChecker();
-		const projectRoot: string =
-			options.projectRoot ?? program.getCurrentDirectory();
+		const projectRoot: string = options.projectRoot ?? program.getCurrentDirectory();
 
 		return (context: typescript.TransformationContext) => {
 			const refused: typescript.Diagnostic[] = [];
@@ -157,9 +145,7 @@ export const createTransformer =
 				report,
 			};
 
-			const rewriteCall = (
-				call: typescript.CallExpression,
-			): typescript.Node | null => {
+			const rewriteCall = (call: typescript.CallExpression): typescript.Node | null => {
 				const owner: CallRewriter | undefined = rewriters.find((rewriter) =>
 					isOwnedCall(call, checker, rewriter),
 				);
@@ -183,10 +169,7 @@ export const createTransformer =
 					analyzer.analyze(written, analysisContext);
 				}
 
-				const transformed = typescript.visitNode(
-					sourceFile,
-					visit,
-				) as typescript.SourceFile;
+				const transformed = typescript.visitNode(sourceFile, visit) as typescript.SourceFile;
 
 				// Thrown only after the whole file is walked, so one run reports
 				// every refusal in it rather than the first.

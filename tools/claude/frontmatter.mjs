@@ -215,9 +215,7 @@ export const frontmatterOf = (content) => {
 		const pair = /^([A-Za-z][\w-]*)\s*:\s*([\s\S]*)$/.exec(line);
 
 		if (pair === null) {
-			problems.push(
-				`A line that is neither a key nor a list entry: \`${line}\`.`,
-			);
+			problems.push(`A line that is neither a key nor a list entry: \`${line}\`.`);
 			continue;
 		}
 

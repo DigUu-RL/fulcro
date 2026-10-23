@@ -81,14 +81,11 @@ export const BigInteger: NumericType<BigInteger, number | bigint | string> = {
 
 	is: (value: unknown): value is BigInteger => typeof value === 'bigint',
 
-	add: (left: BigInteger, right: BigInteger): BigInteger =>
-		(left + right) as BigInteger,
+	add: (left: BigInteger, right: BigInteger): BigInteger => (left + right) as BigInteger,
 
-	subtract: (left: BigInteger, right: BigInteger): BigInteger =>
-		(left - right) as BigInteger,
+	subtract: (left: BigInteger, right: BigInteger): BigInteger => (left - right) as BigInteger,
 
-	multiply: (left: BigInteger, right: BigInteger): BigInteger =>
-		(left * right) as BigInteger,
+	multiply: (left: BigInteger, right: BigInteger): BigInteger => (left * right) as BigInteger,
 
 	divide: (left: BigInteger, right: BigInteger): BigInteger => {
 		requireDivisor('divide', right);
@@ -121,9 +118,7 @@ export const BigInteger: NumericType<BigInteger, number | bigint | string> = {
 
 	equals: (left: BigInteger, right: BigInteger): boolean => left === right,
 	lessThan: (left: BigInteger, right: BigInteger): boolean => left < right,
-	lessThanOrEqual: (left: BigInteger, right: BigInteger): boolean =>
-		left <= right,
+	lessThanOrEqual: (left: BigInteger, right: BigInteger): boolean => left <= right,
 	greaterThan: (left: BigInteger, right: BigInteger): boolean => left > right,
-	greaterThanOrEqual: (left: BigInteger, right: BigInteger): boolean =>
-		left >= right,
+	greaterThanOrEqual: (left: BigInteger, right: BigInteger): boolean => left >= right,
 };

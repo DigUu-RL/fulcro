@@ -139,9 +139,7 @@ export type SourceOf<TDescriptor> = TDescriptor extends {
  * @template TSize Size of `N` components, computed by the caller from the size
  * of one.
  */
-export type RepeatedLayout<T, TSize extends number> = [T] extends [
-	Layout<number, infer TAlignment>,
-]
+export type RepeatedLayout<T, TSize extends number> = [T] extends [Layout<number, infer TAlignment>]
 	? Layout<TSize, TAlignment>
 	: unknown;
 
@@ -151,9 +149,7 @@ export type RepeatedLayout<T, TSize extends number> = [T] extends [
  *
  * @template T Type of the components.
  */
-export type ElementSize<T> = [T] extends [Layout<infer TSize, number>]
-	? TSize
-	: 0;
+export type ElementSize<T> = [T] extends [Layout<infer TSize, number>] ? TSize : 0;
 
 /**
  * `Decimal`, seen through {@link ElementType}: its operations are methods of
@@ -189,8 +185,7 @@ const OPERATIONS: readonly (keyof ElementType<unknown>)[] = [
  * @param value Value being reported.
  * @returns Its kind.
  */
-export const describeKind = (value: unknown): string =>
-	value === null ? 'null' : typeof value;
+export const describeKind = (value: unknown): string => (value === null ? 'null' : typeof value);
 
 /**
  * How a type built over an element type reads in an error message:
@@ -215,20 +210,14 @@ export const describeType = (
  * @returns The descriptor itself, or `Decimal` seen through the contract.
  * @throws {TypeError} When the descriptor lacks one of the operations.
  */
-export const elementOf = <T>(
-	descriptor: unknown,
-	operation: string,
-): ElementType<T> => {
+export const elementOf = <T>(descriptor: unknown, operation: string): ElementType<T> => {
 	if (descriptor === Decimal) return decimalElement as ElementType<T>;
 
 	if (
 		(typeof descriptor !== 'object' && typeof descriptor !== 'function') ||
 		descriptor === null ||
 		typeof (descriptor as { name?: unknown }).name !== 'string' ||
-		OPERATIONS.some(
-			(name) =>
-				typeof (descriptor as Record<string, unknown>)[name] !== 'function',
-		)
+		OPERATIONS.some((name) => typeof (descriptor as Record<string, unknown>)[name] !== 'function')
 	) {
 		throw createError('FULCRO6033', {
 			operation,

@@ -105,14 +105,9 @@ const complain = (
 
 	const prefix: typescript.Expression = atRoot
 		? factory.createStringLiteral(`expected ${expected}, got `)
-		: factory.createAdd(
-				path,
-				factory.createStringLiteral(`: expected ${expected}, got `),
-			);
+		: factory.createAdd(path, factory.createStringLiteral(`: expected ${expected}, got `));
 
-	return factory.createReturnStatement(
-		factory.createAdd(prefix, describe(factory, value)),
-	);
+	return factory.createReturnStatement(factory.createAdd(prefix, describe(factory, value)));
 };
 
 /**
@@ -130,10 +125,7 @@ const propertyOf = (
 ): typescript.Expression =>
 	/^[A-Za-z_$][\w$]*$/.test(name)
 		? factory.createPropertyAccessExpression(value, name)
-		: factory.createElementAccessExpression(
-				value,
-				factory.createStringLiteral(name),
-			);
+		: factory.createElementAccessExpression(value, factory.createStringLiteral(name));
 
 /**
  * Extends a path expression with a property name.
@@ -209,10 +201,7 @@ const explainFor = (
 
 		const symbol: typescript.Symbol | undefined = type.getSymbol();
 
-		if (
-			symbol !== undefined &&
-			(symbol.flags & typescript.SymbolFlags.Class) !== 0
-		) {
+		if (symbol !== undefined && (symbol.flags & typescript.SymbolFlags.Class) !== 0) {
 			return vague(type, value, path, written, walk);
 		}
 
@@ -291,10 +280,7 @@ const vague = (
 				typescript.SyntaxKind.ExclamationToken,
 				walk.factory.createParenthesizedExpression(check),
 			),
-			walk.factory.createBlock(
-				[complain(walk.factory, path, written, value)],
-				true,
-			),
+			walk.factory.createBlock([complain(walk.factory, path, written, value)], true),
 		),
 	];
 };
@@ -328,10 +314,7 @@ const explainArray = (
 		factory.createPrefixUnaryExpression(
 			typescript.SyntaxKind.ExclamationToken,
 			factory.createCallExpression(
-				factory.createPropertyAccessExpression(
-					factory.createIdentifier('Array'),
-					'isArray',
-				),
+				factory.createPropertyAccessExpression(factory.createIdentifier('Array'), 'isArray'),
 				undefined,
 				[value],
 			),
@@ -343,18 +326,12 @@ const explainArray = (
 
 	const elementPath: typescript.Expression = factory.createAdd(
 		factory.createAdd(path, factory.createStringLiteral('[')),
-		factory.createAdd(
-			factory.createIdentifier(index),
-			factory.createStringLiteral(']'),
-		),
+		factory.createAdd(factory.createIdentifier(index), factory.createStringLiteral(']')),
 	);
 
 	const inner: typescript.Statement[] | null = explainFor(
 		element,
-		factory.createElementAccessExpression(
-			value,
-			factory.createIdentifier(index),
-		),
+		factory.createElementAccessExpression(value, factory.createIdentifier(index)),
 		elementPath,
 		checker.typeToString(element),
 		walk,
@@ -434,10 +411,7 @@ const explainObject = (
 
 		if (name.startsWith('__@')) continue;
 
-		const propertyType: typescript.Type = checker.getTypeOfSymbolAtLocation(
-			property,
-			walk.at,
-		);
+		const propertyType: typescript.Type = checker.getTypeOfSymbolAtLocation(property, walk.at);
 
 		const access: typescript.Expression = propertyOf(factory, value, name);
 
@@ -452,18 +426,14 @@ const explainObject = (
 
 		if (inner === null || inner.length === 0) continue;
 
-		const optional: boolean =
-			(property.flags & typescript.SymbolFlags.Optional) !== 0;
+		const optional: boolean = (property.flags & typescript.SymbolFlags.Optional) !== 0;
 
 		// An absent optional property is not a failure, so the whole check for it
 		// is skipped rather than being made to pass.
 		statements.push(
 			optional
 				? factory.createIfStatement(
-						factory.createStrictInequality(
-							access,
-							factory.createIdentifier('undefined'),
-						),
+						factory.createStrictInequality(access, factory.createIdentifier('undefined')),
 						factory.createBlock(inner, true),
 					)
 				: factory.createBlock(inner, true),
@@ -491,10 +461,7 @@ export const buildExplainer = (
 	at: typescript.Node,
 	checker: typescript.TypeChecker,
 	factory: typescript.NodeFactory,
-	fallback: (
-		type: typescript.Type,
-		value: typescript.Expression,
-	) => typescript.Expression | null,
+	fallback: (type: typescript.Type, value: typescript.Expression) => typescript.Expression | null,
 ): typescript.Expression | null => {
 	const walk: Walk = { checker, factory, at, fallback, counter: { value: 0 } };
 
@@ -517,9 +484,6 @@ export const buildExplainer = (
 		[factory.createParameterDeclaration(undefined, undefined, parameter)],
 		undefined,
 		factory.createToken(typescript.SyntaxKind.EqualsGreaterThanToken),
-		factory.createBlock(
-			[...body, factory.createReturnStatement(factory.createNull())],
-			true,
-		),
+		factory.createBlock([...body, factory.createReturnStatement(factory.createNull())], true),
 	);
 };

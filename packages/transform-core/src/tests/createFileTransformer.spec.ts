@@ -35,11 +35,9 @@ beforeAll(() => {
 			'export const value = 1;',
 			'',
 		].join('\n'),
-		'src/untouched.ts': [
-			'// mentions flag in a comment only',
-			'export const value = 1;',
-			'',
-		].join('\n'),
+		'src/untouched.ts': ['// mentions flag in a comment only', 'export const value = 1;', ''].join(
+			'\n',
+		),
 	});
 });
 
@@ -75,17 +73,13 @@ const unused: CallRewriter = {
  * @param analyzers Analyzers of the core.
  * @returns What the core handed back.
  */
-const transform = (
-	name: string,
-	analyzers: readonly FileAnalyzer[],
-): string | null => {
+const transform = (name: string, analyzers: readonly FileAnalyzer[]): string | null => {
 	const fileName: string = path.join(workspace.root, 'src', name);
 
-	return createFileTransformer(
-		[unused],
-		{ root: workspace.root },
-		analyzers,
-	).transform(fileName, fs.readFileSync(fileName, 'utf8'));
+	return createFileTransformer([unused], { root: workspace.root }, analyzers).transform(
+		fileName,
+		fs.readFileSync(fileName, 'utf8'),
+	);
 };
 
 /** What each transformation handed back, or the error it threw. */
@@ -112,9 +106,7 @@ beforeAll(() => {
 describe('createFileTransformer with analyzers', () => {
 	it('should fail the build over a refusal an analyzer reports', () => {
 		expect(checked).toBeInstanceOf(Error);
-		expect((checked as Error).message).toMatch(
-			/FULCRO5003[\s\S]*checked\.ts\(2,1\): FULCRO5999/,
-		);
+		expect((checked as Error).message).toMatch(/FULCRO5003[\s\S]*checked\.ts\(2,1\): FULCRO5999/);
 	});
 
 	it('should hand back null for a file nothing rewrote', () => {

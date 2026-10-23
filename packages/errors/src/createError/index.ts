@@ -26,9 +26,7 @@ export type ErrorCode = keyof Catalog;
  *
  * @template TCode The code.
  */
-export type DetailsOf<TCode extends ErrorCode> = Readonly<
-	Parameters<Catalog[TCode]['message']>[0]
->;
+export type DetailsOf<TCode extends ErrorCode> = Readonly<Parameters<Catalog[TCode]['message']>[0]>;
 
 /**
  * An error thrown by a `@fulcro` package, as it was named before it carried
@@ -49,17 +47,13 @@ type KindOf<TCode extends ErrorCode> = InstanceType<Catalog[TCode]['kind']>;
  * catalog's constraint, and would give its code no `operation` to report.
  */
 type WithoutDetails = {
-	[TCode in ErrorCode]: Parameters<Catalog[TCode]['message']> extends [
-		DetailsShape,
-	]
+	[TCode in ErrorCode]: Parameters<Catalog[TCode]['message']> extends [DetailsShape]
 		? never
 		: TCode;
 }[ErrorCode];
 
 // Fails to compile, naming the code, when a template takes no details.
-const everyTemplateTakesDetails: [WithoutDetails] extends [never]
-	? true
-	: WithoutDetails = true;
+const everyTemplateTakesDetails: [WithoutDetails] extends [never] ? true : WithoutDetails = true;
 
 void everyTemplateTakesDetails;
 
@@ -97,9 +91,7 @@ export const createError = <TCode extends ErrorCode>(
 
 	const error: Error = new definition.kind(
 		`${code}: ${text}`,
-		definition.cause === undefined
-			? undefined
-			: { cause: definition.cause(fields) },
+		definition.cause === undefined ? undefined : { cause: definition.cause(fields) },
 	);
 
 	// Without this the first frame of every stack would be this function, and

@@ -105,9 +105,7 @@ const proseParagraphs = (body) =>
 	claimingProse(body)
 		.split(/\n\s*\n/)
 		.map((paragraph) => paragraph.replace(/\s+/g, ' ').trim())
-		.filter(
-			(paragraph) => paragraph.length >= 80 && !/^[|\-*>#]/.test(paragraph),
-		);
+		.filter((paragraph) => paragraph.length >= 80 && !/^[|\-*>#]/.test(paragraph));
 
 /**
  * Every hook event of a settings document, flattened.
@@ -176,11 +174,7 @@ const checkSettings = (root) => {
 	if (!settings.present) {
 		return [
 			...findings,
-			error(
-				'settings-missing',
-				'.claude/settings.json',
-				'There is no settings file.',
-			),
+			error('settings-missing', '.claude/settings.json', 'There is no settings file.'),
 		];
 	}
 
@@ -222,32 +216,19 @@ const checkSettings = (root) => {
 
 		if (guard && !wired.has(module)) {
 			findings.push(
-				error(
-					'hook-unwired',
-					at,
-					'Exports a guard that no hook in `.claude/settings.json` runs.',
-				),
+				error('hook-unwired', at, 'Exports a guard that no hook in `.claude/settings.json` runs.'),
 			);
 		}
 
 		if (!guard && !LIBRARIES.has(module) && !wired.has(module)) {
 			findings.push(
-				warning(
-					'hook-unused',
-					at,
-					'Neither wired into the settings nor a known library module.',
-				),
+				warning('hook-unused', at, 'Neither wired into the settings nor a known library module.'),
 			);
 		}
 
 		if (!guard) continue;
 
-		const spec = path.join(
-			root,
-			'tests',
-			'hooks',
-			module.replace(/\.mjs$/, '.spec.mts'),
-		);
+		const spec = path.join(root, 'tests', 'hooks', module.replace(/\.mjs$/, '.spec.mts'));
 
 		if (exists(spec)) continue;
 
@@ -267,8 +248,7 @@ const checkSettings = (root) => {
 	);
 
 	const denied = /** @type {unknown} */ (
-		/** @type {Record<string, unknown>} */ (settings.document.permissions ?? {})
-			.deny
+		/** @type {Record<string, unknown>} */ (settings.document.permissions ?? {}).deny
 	);
 
 	/** @type {Map<string, Set<string>>} */
@@ -334,13 +314,7 @@ const checkRules = (root) => {
 	const contract = path.join(root, '.claude', 'CLAUDE.md');
 
 	if (!exists(contract)) {
-		findings.push(
-			error(
-				'contract-missing',
-				'.claude/CLAUDE.md',
-				'There is no project contract.',
-			),
-		);
+		findings.push(error('contract-missing', '.claude/CLAUDE.md', 'There is no project contract.'));
 	}
 
 	if (!exists(directory)) return findings;
@@ -350,11 +324,7 @@ const checkRules = (root) => {
 
 	if (listing === null) {
 		findings.push(
-			error(
-				'rules-index-missing',
-				'.claude/rules/README.md',
-				'The rules have no index.',
-			),
+			error('rules-index-missing', '.claude/rules/README.md', 'The rules have no index.'),
 		);
 	}
 
@@ -375,13 +345,7 @@ const checkRules = (root) => {
 		}
 
 		if (!/\*\*Scope:\*\*/.test(rule.source)) {
-			findings.push(
-				warning(
-					'rule-scope',
-					at,
-					'States no scope; a rule says where it applies.',
-				),
-			);
+			findings.push(warning('rule-scope', at, 'States no scope; a rule says where it applies.'));
 		}
 
 		findings.push(...checkRuleFrontmatter(rule, at, root));
@@ -500,11 +464,7 @@ const checkRuleFixtures = (root) => {
 
 		if (fixture.problem !== null || fixture.document === null) {
 			findings.push(
-				error(
-					'fixture-unreadable',
-					where,
-					`Not readable as JSON: ${fixture.problem}.`,
-				),
+				error('fixture-unreadable', where, `Not readable as JSON: ${fixture.problem}.`),
 			);
 
 			continue;
@@ -709,9 +669,7 @@ const checkAgents = (root) => {
 			);
 		}
 
-		for (const tool of (tools ?? []).filter((name) =>
-			WRITING_TOOLS.has(name),
-		)) {
+		for (const tool of (tools ?? []).filter((name) => WRITING_TOOLS.has(name))) {
 			findings.push(
 				error(
 					'agent-tools-writing',
@@ -751,9 +709,7 @@ const checkReferences = (root) => {
 	const rules = path.join(root, '.claude', 'rules');
 
 	if (exists(rules)) {
-		for (const file of fs
-			.readdirSync(rules)
-			.filter((name) => name.endsWith('.md'))) {
+		for (const file of fs.readdirSync(rules).filter((name) => name.endsWith('.md'))) {
 			files.push(path.join(rules, file));
 		}
 	}
@@ -789,10 +745,7 @@ export const validateConfig = (root = repositoryRoot) => [
 ];
 
 // Run from the command line, imported by its tests.
-if (
-	process.argv[1] !== undefined &&
-	import.meta.url === pathToFileURL(process.argv[1]).href
-) {
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
 	const strict = process.argv.includes('--strict');
 
 	process.exitCode = report('Configuration', validateConfig(), { strict });

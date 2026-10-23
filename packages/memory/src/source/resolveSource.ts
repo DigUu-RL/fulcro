@@ -1,12 +1,7 @@
 import { createError } from '@fulcro/errors';
 
 import type { MemoryReference } from '@/memoryReference';
-import {
-	arraySource,
-	referenceSource,
-	type Source,
-	storageSource,
-} from '@/source';
+import { arraySource, referenceSource, type Source, storageSource } from '@/source';
 import { pointerPositions } from '@/source/pointerPositions';
 import type { Storage } from '@/storage';
 
@@ -89,8 +84,7 @@ export const resolveSource = <T>(
 
 		const candidate = value as Partial<Record<string, unknown>>;
 		const readable = typeof candidate.get === 'function';
-		const writableIfNeeded =
-			access === 'read' || typeof candidate.set === 'function';
+		const writableIfNeeded = access === 'read' || typeof candidate.set === 'function';
 
 		if (readable && writableIfNeeded) {
 			return typeof candidate.length === 'number'

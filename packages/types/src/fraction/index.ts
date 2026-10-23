@@ -128,8 +128,7 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 	 * @param value An integer.
 	 * @returns Its magnitude.
 	 */
-	const absolute = (value: T): T =>
-		integer.lessThan(value, zero) ? integer.negate(value) : value;
+	const absolute = (value: T): T => (integer.lessThan(value, zero) ? integer.negate(value) : value);
 
 	/**
 	 * The greatest common divisor, by Euclid's algorithm: a number of steps
@@ -215,10 +214,7 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 		return reduce(
 			operation,
 			integer.multiply(over(left, first), over(right, second)),
-			integer.multiply(
-				over(leftDenominator, second),
-				over(rightDenominator, first),
-			),
+			integer.multiply(over(leftDenominator, second), over(rightDenominator, first)),
 		);
 	};
 
@@ -237,10 +233,7 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 		right: Value,
 		combine: (left: T, right: T) => T,
 	): Value => {
-		const divisor: T = greatestCommonDivisor(
-			left.denominator,
-			right.denominator,
-		);
+		const divisor: T = greatestCommonDivisor(left.denominator, right.denominator);
 		const leftScale: T = integer.divide(right.denominator, divisor);
 		const rightScale: T = integer.divide(left.denominator, divisor);
 
@@ -281,13 +274,9 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 		is: (value): value is Value =>
 			isRecord(value) &&
 			integer.lessThan(zero, value.denominator) &&
-			integer.equals(
-				greatestCommonDivisor(value.numerator, value.denominator),
-				one,
-			),
+			integer.equals(greatestCommonDivisor(value.numerator, value.denominator), one),
 
-		add: (left, right) =>
-			sum(`${name}.add`, left, right, (a, b) => integer.add(a, b)),
+		add: (left, right) => sum(`${name}.add`, left, right, (a, b) => integer.add(a, b)),
 
 		subtract: (left, right) =>
 			sum(`${name}.subtract`, left, right, (a, b) => integer.subtract(a, b)),
@@ -360,25 +349,19 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 		// factor, and neither does adding or taking away the denominator.
 		negate: (value) => make(integer.negate(value.numerator), value.denominator),
 
-		increment: (value) =>
-			make(integer.add(value.numerator, value.denominator), value.denominator),
+		increment: (value) => make(integer.add(value.numerator, value.denominator), value.denominator),
 
 		decrement: (value) =>
-			make(
-				integer.subtract(value.numerator, value.denominator),
-				value.denominator,
-			),
+			make(integer.subtract(value.numerator, value.denominator), value.denominator),
 
 		equals: (left, right) =>
 			integer.equals(left.numerator, right.numerator) &&
 			integer.equals(left.denominator, right.denominator),
 
 		lessThan: (left, right) => integer.lessThan(...cross(left, right)),
-		lessThanOrEqual: (left, right) =>
-			integer.lessThanOrEqual(...cross(left, right)),
+		lessThanOrEqual: (left, right) => integer.lessThanOrEqual(...cross(left, right)),
 		greaterThan: (left, right) => integer.greaterThan(...cross(left, right)),
-		greaterThanOrEqual: (left, right) =>
-			integer.greaterThanOrEqual(...cross(left, right)),
+		greaterThanOrEqual: (left, right) => integer.greaterThanOrEqual(...cross(left, right)),
 	};
 
 	register(descriptor, descriptor.equals);

@@ -29,9 +29,7 @@ let registeredFactories: CollectionFactories | undefined;
  *
  * @param factories Concrete implementations used by the base sequence.
  */
-export const registerCollectionFactories = (
-	factories: CollectionFactories,
-): void => {
+export const registerCollectionFactories = (factories: CollectionFactories): void => {
 	registeredFactories = factories;
 };
 
@@ -40,8 +38,7 @@ export const registerCollectionFactories = (
  *
  * @returns `true` once {@link registerCollectionFactories} has been called.
  */
-export const hasCollectionFactories = (): boolean =>
-	registeredFactories !== undefined;
+export const hasCollectionFactories = (): boolean => registeredFactories !== undefined;
 
 /**
  * Resolves the registered factories.

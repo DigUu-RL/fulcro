@@ -46,9 +46,7 @@ const watchedSettings = (touches: { count: number }): object =>
 describe('referenceTo, counted', () => {
 	it('should not look inside the value it holds, however often it is used', () => {
 		const touches = { count: 0 };
-		const reference: MemoryReference<object> = referenceTo(
-			watchedSettings(touches),
-		);
+		const reference: MemoryReference<object> = referenceTo(watchedSettings(touches));
 
 		for (let round = 0; round < VOLUME; round++) {
 			reference.set(reference.get());

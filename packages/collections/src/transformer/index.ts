@@ -43,10 +43,7 @@ export type { TransformerOptions } from '@fulcro/transform-core';
  *
  * Exported so that the bundler entry point builds on the same list.
  */
-export const REWRITERS: readonly CallRewriter[] = [
-	ofTypeRewriter,
-	castRewriter,
-];
+export const REWRITERS: readonly CallRewriter[] = [ofTypeRewriter, castRewriter];
 
 /**
  * The transformer, as `ts-patch` expects to find it.

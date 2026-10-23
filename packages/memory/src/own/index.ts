@@ -1,12 +1,7 @@
 import { createError } from '@fulcro/errors';
 
 import type { Owned } from '@/owned';
-import {
-	claimStorage,
-	createOwned,
-	createOwnership,
-	isBorrow,
-} from '@/ownership';
+import { claimStorage, createOwned, createOwnership, isBorrow } from '@/ownership';
 import type { Storage } from '@/storage';
 
 /**

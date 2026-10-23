@@ -315,8 +315,7 @@ const NULL_PROTOTYPE_NAME = '(null prototype)';
  * @param value Value being inspected.
  * @returns The tag, without its `[object ...]` wrapper.
  */
-const tagOf = (value: unknown): string =>
-	Object.prototype.toString.call(value).slice(8, -1);
+const tagOf = (value: unknown): string => Object.prototype.toString.call(value).slice(8, -1);
 
 /**
  * Resolves the identifier of a callable.
@@ -426,9 +425,8 @@ const resolveName = (value: unknown, typeId: TypeId): string => {
 		return value.name.length > 0 ? value.name : ANONYMOUS_NAME;
 	}
 
-	const constructorName: unknown = (
-		value as { constructor?: { name?: unknown } }
-	)?.constructor?.name;
+	const constructorName: unknown = (value as { constructor?: { name?: unknown } })?.constructor
+		?.name;
 
 	if (typeof constructorName === 'string' && constructorName.length > 0) {
 		return constructorName;
@@ -453,9 +451,8 @@ const resolveLineage = (value: unknown): readonly string[] => {
 	let prototype: object | null = Object.getPrototypeOf(Object(value));
 
 	while (prototype !== null) {
-		const constructorName: unknown = (
-			prototype as { constructor?: { name?: unknown } }
-		).constructor?.name;
+		const constructorName: unknown = (prototype as { constructor?: { name?: unknown } }).constructor
+			?.name;
 
 		lineage.push(
 			typeof constructorName === 'string' && constructorName.length > 0
@@ -478,10 +475,7 @@ const resolveLineage = (value: unknown): readonly string[] => {
 const isIterable = (value: unknown): boolean => {
 	if (value === null || value === undefined) return false;
 
-	return (
-		typeof (value as { [Symbol.iterator]?: unknown })[Symbol.iterator] ===
-		'function'
-	);
+	return typeof (value as { [Symbol.iterator]?: unknown })[Symbol.iterator] === 'function';
 };
 
 /**
@@ -516,9 +510,7 @@ const isIterable = (value: unknown): boolean => {
  * by hand: the transformer appends it, and it stays `undefined` otherwise.
  * @returns The description of the value.
  */
-export const typeOf: TypeOfSignature = ((
-	...args: readonly unknown[]
-): TypeOf => {
+export const typeOf: TypeOfSignature = ((...args: readonly unknown[]): TypeOf => {
 	// Zero arguments is the generic form, `typeOf<T>()`, arriving unresolved.
 	// It is told apart by arity rather than by the value being `undefined`,
 	// because `typeOf(undefined)` is a perfectly ordinary call that has to keep

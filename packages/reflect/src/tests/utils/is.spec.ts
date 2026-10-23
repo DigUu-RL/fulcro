@@ -73,10 +73,7 @@ describe('what it refuses', () => {
 		['an array with a wrong element', () => ({ ...valid(), tags: ['a', 2] })],
 		['a nested object missing its field', () => ({ ...valid(), customer: {} })],
 		['a value outside the union', () => ({ ...valid(), status: 'shipped' })],
-		[
-			'a class field that is not an instance',
-			() => ({ ...valid(), placedAt: '2020-01-01' }),
-		],
+		['a class field that is not an instance', () => ({ ...valid(), placedAt: '2020-01-01' })],
 		['null', () => null],
 		['a primitive', () => 'an order'],
 	])('should reject %s', (_label, build) => {

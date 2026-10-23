@@ -11,7 +11,6 @@ export const functionsCatalog = {
 		kind: Error,
 		message: ({ thrown }: { operation: string; thrown: null | undefined }) =>
 			`Operation rejected with ${String(thrown)}`,
-		cause: ({ thrown }: { operation: string; thrown: null | undefined }) =>
-			thrown,
+		cause: ({ thrown }: { operation: string; thrown: null | undefined }) => thrown,
 	},
 } as const satisfies RangeCatalog<'2'>;

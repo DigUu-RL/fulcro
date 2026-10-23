@@ -22,10 +22,7 @@ const evaluateAtRuntime: typeof constantOf = constantOf;
  * @param details The details the error is expected to carry.
  * @returns The same error, carrying that code and those details.
  */
-const coded = <T extends Error>(
-	error: T,
-	details: Readonly<Record<string, unknown>>,
-): T =>
+const coded = <T extends Error>(error: T, details: Readonly<Record<string, unknown>>): T =>
 	Object.assign(error, {
 		code: error.message.slice(0, 'FULCRO0000'.length),
 		details,
@@ -64,9 +61,7 @@ const refusalFor = (value: unknown): TypeError =>
 describe('constantOf', () => {
 	describe('values', () => {
 		it('should return what the function returns', () => {
-			expect(
-				evaluateAtRuntime(() => [1, 2, 3].map((value) => value * value)),
-			).toEqual([1, 4, 9]);
+			expect(evaluateAtRuntime(() => [1, 2, 3].map((value) => value * value))).toEqual([1, 4, 9]);
 			expect(evaluateAtRuntime(() => 42)).toBe(42);
 		});
 
@@ -92,9 +87,7 @@ describe('constantOf', () => {
 		});
 
 		it('should accept an object with no prototype', () => {
-			expect(
-				evaluateAtRuntime(() => Object.assign(Object.create(null), { a: 1 })),
-			).toEqual({
+			expect(evaluateAtRuntime(() => Object.assign(Object.create(null), { a: 1 }))).toEqual({
 				a: 1,
 			});
 		});
@@ -110,12 +103,10 @@ describe('constantOf', () => {
 	describe('refusals', () => {
 		it('should refuse what is not a function', () => {
 			expect(() => evaluateAtRuntime(3 as never)).toThrow(
-				coded(
-					new TypeError(
-						'FULCRO4014: constantOf: expected a function, received number.',
-					),
-					{ operation: 'constantOf', received: 'number' },
-				),
+				coded(new TypeError('FULCRO4014: constantOf: expected a function, received number.'), {
+					operation: 'constantOf',
+					received: 'number',
+				}),
 			);
 		});
 
@@ -125,10 +116,7 @@ describe('constantOf', () => {
 			['an instance of Map', () => new Map()],
 			['an instance of Date', () => new Date(0)],
 			['an array with holes', () => [1, , 3]],
-			[
-				'an array with properties besides its elements',
-				() => Object.assign([1], { extra: 2 }),
-			],
+			['an array with properties besides its elements', () => Object.assign([1], { extra: 2 })],
 			['an object with symbol keys', () => ({ [Symbol('key')]: 1 })],
 			[
 				"an object whose 'value' is a getter",
@@ -139,15 +127,13 @@ describe('constantOf', () => {
 				}),
 			],
 		])('should refuse %s', (description, compute) => {
-			expect(() => evaluateAtRuntime(compute as never)).toThrow(
-				refusalFor(description),
-			);
+			expect(() => evaluateAtRuntime(compute as never)).toThrow(refusalFor(description));
 		});
 
 		it('should refuse a value nested deep inside', () => {
-			expect(() =>
-				evaluateAtRuntime(() => ({ list: [1, [new Set()]] }) as never),
-			).toThrow(refusalFor('an instance of Set'));
+			expect(() => evaluateAtRuntime(() => ({ list: [1, [new Set()]] }) as never)).toThrow(
+				refusalFor('an instance of Set'),
+			);
 		});
 
 		it('should refuse an object reached twice, which a literal would copy', () => {

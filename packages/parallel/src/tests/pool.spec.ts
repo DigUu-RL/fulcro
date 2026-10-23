@@ -7,12 +7,7 @@ import { createWorkerPool, type WorkerPool } from '@fulcro/parallel';
 
 import { createPool } from '@/pool/index.js';
 
-import {
-	createFakeWorkers,
-	type FakeWorkers,
-	NOWHERE,
-	until,
-} from './fake-worker.js';
+import { createFakeWorkers, type FakeWorkers, NOWHERE, until } from './fake-worker.js';
 
 /**
  * Worker pool suite.
@@ -73,15 +68,8 @@ afterEach(async () => {
  * @param workers How many to run.
  * @returns The pool.
  */
-const drivenPool = <T, R>(
-	fake: FakeWorkers,
-	workers: number,
-): WorkerPool<T, R> =>
-	createPool<T, R>(
-		{ module: NOWHERE, export: 'echo', workers },
-		fake.spawn,
-		NOWHERE,
-	);
+const drivenPool = <T, R>(fake: FakeWorkers, workers: number): WorkerPool<T, R> =>
+	createPool<T, R>({ module: NOWHERE, export: 'echo', workers }, fake.spawn, NOWHERE);
 
 /** How a piece of work ended, read without waiting for it. */
 interface Outcome<V> {
@@ -138,9 +126,7 @@ describe('running work on workers', () => {
 	it('should return results in input order, whatever order they finished', async () => {
 		// The first element is by far the slowest, so a pool handing results back
 		// as they land would put it last.
-		const results = await poolFor<number, number>('burn', 4).map([
-			5_000_000, 1, 1, 1,
-		]);
+		const results = await poolFor<number, number>('burn', 4).map([5_000_000, 1, 1, 1]);
 
 		expect(results).toHaveLength(4);
 		expect(results[0]).toBeGreaterThan(results[1]);
@@ -153,10 +139,9 @@ describe('running work on workers', () => {
 			{ id: 2, amounts: [5] },
 		];
 
-		const totals = await poolFor<
-			(typeof records)[number],
-			{ id: number; total: number }
-		>('totalOf').map(records);
+		const totals = await poolFor<(typeof records)[number], { id: number; total: number }>(
+			'totalOf',
+		).map(records);
 
 		expect(totals).toEqual([
 			{ id: 1, total: 60 },
@@ -171,9 +156,7 @@ describe('running work on workers', () => {
 	it('should stream results as they finish', async () => {
 		const collected: number[] = [];
 
-		for await (const value of poolFor<number, number>('double').stream([
-			1, 2, 3,
-		])) {
+		for await (const value of poolFor<number, number>('double').stream([1, 2, 3])) {
 			collected.push(value);
 		}
 
@@ -183,8 +166,7 @@ describe('running work on workers', () => {
 	it('should feed an async sequence without depending on one', async () => {
 		// `stream` is a plain AsyncIterable, which is what lets the sequences
 		// consume it while this package declares no dependency on them.
-		const { AsyncSequenceCollection } =
-			await import('@fulcro/collections/async');
+		const { AsyncSequenceCollection } = await import('@fulcro/collections/async');
 
 		const total = await AsyncSequenceCollection.from(
 			poolFor<number, number>('double').stream([1, 2, 3]),
@@ -203,9 +185,7 @@ describe('spreading across workers', () => {
 		// Each worker is its own realm and imports the fixture separately, so
 		// each carries a different identity. Four elements over four workers must
 		// come back with four of them.
-		const identities = await poolFor<number, string>('whoRanThis', 4).map([
-			1, 2, 3, 4,
-		]);
+		const identities = await poolFor<number, string>('whoRanThis', 4).map([1, 2, 3, 4]);
 
 		expect(new Set(identities).size).toBe(4);
 	});
@@ -228,10 +208,7 @@ describe('spreading across workers', () => {
 		// first, and deliberately: starting threads is expensive enough to
 		// swallow the saving on a small job, and this test is about whether the
 		// work spreads. That cost is measured on its own, below.
-		const items: readonly number[] = Array.from(
-			{ length: workers },
-			() => 40_000_000,
-		);
+		const items: readonly number[] = Array.from({ length: workers }, () => 40_000_000);
 
 		const one = poolFor<number, number>('burn', 1);
 		const many = poolFor<number, number>('burn', workers);
@@ -283,23 +260,21 @@ describe('spreading across workers', () => {
 	});
 
 	it.each([0, -1, 1.5])('should reject a worker count of %s', (workers) => {
-		expect(() =>
-			createWorkerPool({ module: WORK, export: 'double', workers }),
-		).toThrow(/positive integer worker count/i);
+		expect(() => createWorkerPool({ module: WORK, export: 'double', workers })).toThrow(
+			/positive integer worker count/i,
+		);
 	});
 });
 
 describe('when things go wrong', () => {
 	it('should reject with the message the task threw', async () => {
-		await expect(poolFor<number, number>('explode').map([1])).rejects.toThrow(
-			'the task refused',
-		);
+		await expect(poolFor<number, number>('explode').map([1])).rejects.toThrow('the task refused');
 	});
 
 	it('should reject when the export does not exist', async () => {
-		await expect(
-			poolFor<number, number>('notAFunction').map([1]),
-		).rejects.toThrow(/callable export/i);
+		await expect(poolFor<number, number>('notAFunction').map([1])).rejects.toThrow(
+			/callable export/i,
+		);
 	});
 
 	it('should survive a worker that fails after its run has finished', async () => {
@@ -349,15 +324,13 @@ describe('the codes a failure carries', () => {
 	};
 
 	it('should code a bad worker count FULCRO3003', () => {
-		expect(() =>
-			createWorkerPool({ module: WORK, export: 'double', workers: 0 }),
-		).toThrow(expect.objectContaining({ code: 'FULCRO3003' }));
+		expect(() => createWorkerPool({ module: WORK, export: 'double', workers: 0 })).toThrow(
+			expect.objectContaining({ code: 'FULCRO3003' }),
+		);
 	});
 
 	it("should code the task's own failure FULCRO3005, keeping its text", async () => {
-		const failure = await failureOf(
-			poolFor<number, number>('explode').map([1]),
-		);
+		const failure = await failureOf(poolFor<number, number>('explode').map([1]));
 
 		expect(failure).toMatchObject({
 			code: 'FULCRO3005',
@@ -366,9 +339,7 @@ describe('the codes a failure carries', () => {
 	});
 
 	it('should recreate a missing export as FULCRO3001, with its values', async () => {
-		const failure = await failureOf(
-			poolFor<number, number>('notAFunction').map([1]),
-		);
+		const failure = await failureOf(poolFor<number, number>('notAFunction').map([1]));
 
 		expect(failure).toMatchObject({ code: 'FULCRO3001' });
 		expect(failure.message).toMatch(
@@ -377,9 +348,7 @@ describe('the codes a failure carries', () => {
 	});
 
 	it('should carry the details of FULCRO3001 across the worker boundary', async () => {
-		const failure = await failureOf(
-			poolFor<number, number>('notAFunction').map([1]),
-		);
+		const failure = await failureOf(poolFor<number, number>('notAFunction').map([1]));
 
 		expect(isFulcroError(failure, 'FULCRO3001')).toBe(true);
 		expect(failure).toMatchObject({
@@ -392,9 +361,7 @@ describe('the codes a failure carries', () => {
 	});
 
 	it("should give the task's own failure details naming its text", async () => {
-		const failure = await failureOf(
-			poolFor<number, number>('explode').map([1]),
-		);
+		const failure = await failureOf(poolFor<number, number>('explode').map([1]));
 
 		expect(failure).toMatchObject({
 			details: { operation: 'run', reason: 'the task refused' },
@@ -568,10 +535,7 @@ describe('running several batches through one pool', () => {
 		// element is marked free. Runs are serialised so that cannot arise.
 		const pool = poolFor<number, number>('double', 2);
 
-		const [first, second] = await Promise.all([
-			pool.map([1, 2, 3]),
-			pool.map([10, 20, 30]),
-		]);
+		const [first, second] = await Promise.all([pool.map([1, 2, 3]), pool.map([10, 20, 30])]);
 
 		expect(first).toEqual([2, 4, 6]);
 		expect(second).toEqual([20, 40, 60]);
@@ -615,19 +579,13 @@ describe('interleaving', () => {
 		const first = pool.map([1, 2, 3]);
 		const second = pool.map([10, 20, 30]);
 
-		await until(
-			() => fake.inFlight() === 2,
-			'the first two elements to go out',
-		);
+		await until(() => fake.inFlight() === 2, 'the first two elements to go out');
 
 		expect(fake.posted()).toEqual([1, 2]);
 
 		fake.completeAll();
 
-		await until(
-			() => fake.posted().length === 3,
-			'the third element to go out',
-		);
+		await until(() => fake.posted().length === 3, 'the third element to go out');
 
 		expect(fake.posted()).toEqual([1, 2, 3]);
 
@@ -675,9 +633,7 @@ describe('cancelling, in order', () => {
 
 		controller.abort(reason);
 
-		await expect(
-			pool.map([1, 2, 3], { signal: controller.signal }),
-		).rejects.toBe(reason);
+		await expect(pool.map([1, 2, 3], { signal: controller.signal })).rejects.toBe(reason);
 
 		expect(fake.posted()).toEqual([]);
 		expect(fake.spawned()).toBe(0);
@@ -860,10 +816,7 @@ describe('closing', () => {
 
 		await pool.close();
 
-		await until(
-			() => first.settled && second.settled,
-			'both runs to be settled',
-		);
+		await until(() => first.settled && second.settled, 'both runs to be settled');
 
 		expect(first.error).toMatchObject({
 			message: expect.stringMatching(/exited/i),
@@ -967,10 +920,7 @@ describe('starting', () => {
 
 		const second = pool.map([7]);
 
-		await until(
-			() => fake.inFlight() === 1,
-			'the retry to hand out its element',
-		);
+		await until(() => fake.inFlight() === 1, 'the retry to hand out its element');
 
 		fake.completeAll();
 

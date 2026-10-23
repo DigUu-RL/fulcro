@@ -95,9 +95,7 @@ export const openLinearMemory = (
 	// of it: taking the whole buffer would put address 0 somewhere other than
 	// where the caller's view starts.
 	const first: unknown =
-		typeof backing === 'object' &&
-		backing !== null &&
-		!ArrayBuffer.isView(backing)
+		typeof backing === 'object' && backing !== null && !ArrayBuffer.isView(backing)
 			? (backing as Partial<GrowableMemory>).buffer
 			: undefined;
 
@@ -105,8 +103,7 @@ export const openLinearMemory = (
 		throw createError('FULCRO7018', {
 			operation,
 			received:
-				typeof SharedArrayBuffer === 'function' &&
-				first instanceof SharedArrayBuffer
+				typeof SharedArrayBuffer === 'function' && first instanceof SharedArrayBuffer
 					? `${describeBuffer(backing)} over a SharedArrayBuffer`
 					: describeBuffer(backing),
 		});
@@ -167,6 +164,5 @@ export const openLinearMemory = (
  * @throws {TypeError} When the backing is neither an `ArrayBuffer` nor an
  * object with one as its `buffer`, or when it is shared.
  */
-export const createLinearMemory = (
-	backing: ArrayBuffer | GrowableMemory,
-): LinearMemory => openLinearMemory('createLinearMemory', backing);
+export const createLinearMemory = (backing: ArrayBuffer | GrowableMemory): LinearMemory =>
+	openLinearMemory('createLinearMemory', backing);

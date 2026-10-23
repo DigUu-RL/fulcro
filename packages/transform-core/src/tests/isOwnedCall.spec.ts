@@ -26,20 +26,16 @@ beforeAll(() => {
 			name: 'library',
 			types: 'dist/index.d.ts',
 		}),
-		'node_modules/library/dist/index.d.ts':
-			"export { move } from './move/index';\n",
+		'node_modules/library/dist/index.d.ts': "export { move } from './move/index';\n",
 		'node_modules/library/dist/move/index.d.ts':
 			'export declare const move: (value: unknown) => unknown;\n',
-		'src/move/index.ts':
-			'export const move = (value: unknown): unknown => value;\n',
+		'src/move/index.ts': 'export const move = (value: unknown): unknown => value;\n',
 		'src/fromLibrary.ts': "import { move } from 'library';\nmove(1);\n",
 		'src/fromConsumer.ts': "import { move } from './move/index';\nmove(2);\n",
 	});
 
 	program = typescript.createProgram(
-		['fromLibrary.ts', 'fromConsumer.ts'].map((name) =>
-			path.join(workspace.root, 'src', name),
-		),
+		['fromLibrary.ts', 'fromConsumer.ts'].map((name) => path.join(workspace.root, 'src', name)),
 		{
 			module: typescript.ModuleKind.ESNext,
 			moduleResolution: typescript.ModuleResolutionKind.Bundler,
@@ -80,32 +76,16 @@ const BY_PACKAGE: CallTarget = { ...BY_SEGMENT, packageName: 'library' };
 describe('isOwnedCall with a package name', () => {
 	it("should claim the consumer's own move on the segment alone", () => {
 		// The false claim the package name exists to prevent.
-		expect(
-			isOwnedCall(
-				callIn('fromConsumer.ts'),
-				program.getTypeChecker(),
-				BY_SEGMENT,
-			),
-		).toBe(true);
+		expect(isOwnedCall(callIn('fromConsumer.ts'), program.getTypeChecker(), BY_SEGMENT)).toBe(true);
 	});
 
 	it('should claim the library call when the package matches', () => {
-		expect(
-			isOwnedCall(
-				callIn('fromLibrary.ts'),
-				program.getTypeChecker(),
-				BY_PACKAGE,
-			),
-		).toBe(true);
+		expect(isOwnedCall(callIn('fromLibrary.ts'), program.getTypeChecker(), BY_PACKAGE)).toBe(true);
 	});
 
 	it("should leave the consumer's own move alone when the package differs", () => {
-		expect(
-			isOwnedCall(
-				callIn('fromConsumer.ts'),
-				program.getTypeChecker(),
-				BY_PACKAGE,
-			),
-		).toBe(false);
+		expect(isOwnedCall(callIn('fromConsumer.ts'), program.getTypeChecker(), BY_PACKAGE)).toBe(
+			false,
+		);
 	});
 });

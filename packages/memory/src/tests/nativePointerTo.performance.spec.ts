@@ -94,21 +94,12 @@ describe('nativePointerTo, counted', () => {
 		for (let index = 0; index < VOLUME; index++) pointer.set(sample);
 		for (let index = 0; index < VOLUME; index++) pointer.get();
 
-		expect([counts.reads, views.made, reads, writes]).toEqual([
-			2 * VOLUME,
-			0,
-			VOLUME,
-			VOLUME,
-		]);
+		expect([counts.reads, views.made, reads, writes]).toEqual([2 * VOLUME, 0, VOLUME, VOLUME]);
 	});
 
 	it('should make one new view per growth, however many accesses follow', () => {
 		const { backing, grow } = countedMemory(64);
-		const pointer: NativePointer<Sample> = nativePointerTo(
-			createLinearMemory(backing),
-			8,
-			counted,
-		);
+		const pointer: NativePointer<Sample> = nativePointerTo(createLinearMemory(backing), 8, counted);
 		const views = watchViews();
 
 		for (let growth = 0; growth < 3; growth++) {
@@ -121,9 +112,7 @@ describe('nativePointerTo, counted', () => {
 	});
 
 	it('should make no buffer and copy no byte, however many values it reaches', () => {
-		const memory: LinearMemory = createLinearMemory(
-			new ArrayBuffer(VOLUME * 8),
-		);
+		const memory: LinearMemory = createLinearMemory(new ArrayBuffer(VOLUME * 8));
 		const buffers = watchBuffers();
 		const views = watchViews();
 		let cursor: NativePointer<Sample> = nativePointerTo(memory, 0, counted);
@@ -164,10 +153,6 @@ describe('nativePointerTo, counted', () => {
 		for (let index = 0; index < VOLUME; index++) pointer.set(sample);
 		for (let index = 0; index < VOLUME; index++) pointer.get();
 
-		expect([livenessChecks, reads, writes]).toEqual([
-			2 * VOLUME,
-			VOLUME,
-			VOLUME,
-		]);
+		expect([livenessChecks, reads, writes]).toEqual([2 * VOLUME, VOLUME, VOLUME]);
 	});
 });

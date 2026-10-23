@@ -19,19 +19,12 @@ describe('createManagedStorage', () => {
 	it('should hold the initial value at every position', () => {
 		const flags: Storage<boolean> = createManagedStorage(3, true);
 
-		expect([flags.get(0), flags.get(1), flags.get(2)]).toEqual([
-			true,
-			true,
-			true,
-		]);
+		expect([flags.get(0), flags.get(1), flags.get(2)]).toEqual([true, true, true]);
 	});
 
 	it('should return the very value it was given, not a copy', () => {
 		const ada: User = { id: 1, name: 'Ada' };
-		const users: Storage<User | null> = createManagedStorage<User | null>(
-			2,
-			null,
-		);
+		const users: Storage<User | null> = createManagedStorage<User | null>(2, null);
 
 		users.set(0, ada);
 
@@ -71,8 +64,6 @@ describe('createManagedStorage', () => {
 	it('should infer its type from the initial value', () => {
 		expectTypeOf(createManagedStorage(1, 0)).toEqualTypeOf<Storage<number>>();
 		expectTypeOf(createManagedStorage(1, 'a')).toEqualTypeOf<Storage<string>>();
-		expectTypeOf(createManagedStorage<User | null>(1, null)).toEqualTypeOf<
-			Storage<User | null>
-		>();
+		expectTypeOf(createManagedStorage<User | null>(1, null)).toEqualTypeOf<Storage<User | null>>();
 	});
 });

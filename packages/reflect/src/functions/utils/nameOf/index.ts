@@ -1,10 +1,6 @@
 import { createError } from '@fulcro/errors';
 
-import {
-	ANONYMOUS_NAME,
-	resolveCallableId,
-	typeOf,
-} from '@/functions/utils/typeOf';
+import { ANONYMOUS_NAME, resolveCallableId, typeOf } from '@/functions/utils/typeOf';
 
 /** Accessor returning the member whose name is being read. */
 export type NameAccessor = () => unknown;

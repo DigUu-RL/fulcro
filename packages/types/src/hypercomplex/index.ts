@@ -146,10 +146,11 @@ export const createHypercomplexType = <T, TValue, TSource, TComponents>(
 ): HypercomplexType<T, TValue, TSource, TComponents> => {
 	const element: ElementType<T> = elementOf<T>(elementDescriptor, family);
 	const name: string = describeType(family, element.name);
-	const { make, convert, isRecord, register } = createComponentRecord<
-		T,
-		TValue
-	>(components, element, elementDescriptor);
+	const { make, convert, isRecord, register } = createComponentRecord<T, TValue>(
+		components,
+		element,
+		elementDescriptor,
+	);
 	const count: number = components.length;
 
 	let zero: T | undefined;
@@ -183,43 +184,25 @@ export const createHypercomplexType = <T, TValue, TSource, TComponents>(
 
 			zero ??= element.from(0);
 
-			return make(
-				element.from(value as number),
-				...new Array<T>(count - 1).fill(zero),
-			);
+			return make(element.from(value as number), ...new Array<T>(count - 1).fill(zero));
 		},
 
 		is: isRecord,
 		equals,
 
-		add: (left, right) =>
-			make(...addEach(element, componentsOf(left), componentsOf(right))),
+		add: (left, right) => make(...addEach(element, componentsOf(left), componentsOf(right))),
 
 		subtract: (left, right) =>
 			make(...subtractEach(element, componentsOf(left), componentsOf(right))),
 
-		multiply: (left, right) =>
-			make(...product(element, componentsOf(left), componentsOf(right))),
+		multiply: (left, right) => make(...product(element, componentsOf(left), componentsOf(right))),
 
 		divide: (left, right) => {
 			const divisor: T[] = componentsOf(right);
-			const norm: T = sumOfProducts(
-				element,
-				count,
-				divisor,
-				0,
-				1,
-				divisor,
-				0,
-				1,
-			);
+			const norm: T = sumOfProducts(element, count, divisor, 0, 1, divisor, 0, 1);
 
 			return make(
-				...divideEach(
-					element,
-					product(element, componentsOf(left), conjugateOf(divisor)),
-					norm,
-				),
+				...divideEach(element, product(element, componentsOf(left), conjugateOf(divisor)), norm),
 			);
 		},
 
@@ -227,8 +210,7 @@ export const createHypercomplexType = <T, TValue, TSource, TComponents>(
 
 		conjugate: (value) => make(...conjugateOf(componentsOf(value))),
 
-		scale: (value, factor) =>
-			make(...scaleEach(element, componentsOf(value), factor)),
+		scale: (value, factor) => make(...scaleEach(element, componentsOf(value), factor)),
 	};
 
 	register(descriptor, equals);

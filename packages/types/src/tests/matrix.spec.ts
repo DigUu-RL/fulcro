@@ -34,10 +34,7 @@ import { Vector } from '@/vector';
  * @param details The details the error is expected to carry.
  * @returns The same error, carrying that code and those details.
  */
-const coded = <T extends Error>(
-	error: T,
-	details: Readonly<Record<string, unknown>>,
-): T =>
+const coded = <T extends Error>(error: T, details: Readonly<Record<string, unknown>>): T =>
 	Object.assign(error, {
 		code: error.message.slice(0, 'FULCRO0000'.length),
 		details,
@@ -81,20 +78,13 @@ describe('Matrix', () => {
 		it('should convert every element with the element type', () => {
 			const Floats = MatrixOf(SinglePrecisionFloat, 1, 2);
 
-			expect([...Floats.from([[0.1, 1e39]])]).toEqual([
-				Math.fround(0.1),
-				Infinity,
-			]);
+			expect([...Floats.from([[0.1, 1e39]])]).toEqual([Math.fround(0.1), Infinity]);
 		});
 
 		it('should infer the element type and the shape', () => {
 			expectTypeOf(pair).toEqualTypeOf<Matrix<DoublePrecisionFloat, 2, 3>>();
-			expectTypeOf(Pair.multiply(pair, tall)).toEqualTypeOf<
-				Matrix<DoublePrecisionFloat, 2, 2>
-			>();
-			expectTypeOf(Pair.transpose(pair)).toEqualTypeOf<
-				Matrix<DoublePrecisionFloat, 3, 2>
-			>();
+			expectTypeOf(Pair.multiply(pair, tall)).toEqualTypeOf<Matrix<DoublePrecisionFloat, 2, 2>>();
+			expectTypeOf(Pair.transpose(pair)).toEqualTypeOf<Matrix<DoublePrecisionFloat, 3, 2>>();
 		});
 	});
 
@@ -147,9 +137,7 @@ describe('Matrix', () => {
 		});
 
 		it('should scale every element', () => {
-			expect([...Pair.scale(pair, DoublePrecisionFloat.from(2))]).toEqual([
-				2, 4, 6, 8, 10, 12,
-			]);
+			expect([...Pair.scale(pair, DoublePrecisionFloat.from(2))]).toEqual([2, 4, 6, 8, 10, 12]);
 		});
 
 		it('should multiply a row of the left by a column of the right', () => {
@@ -251,9 +239,10 @@ describe('Matrix', () => {
 
 	describe('layout', () => {
 		it('should declare its elements end to end', () => {
-			expectTypeOf<
-				Matrix<SinglePrecisionFloat, 3, 4>['~layout']
-			>().toEqualTypeOf<{ readonly size: 48; readonly alignment: 4 }>();
+			expectTypeOf<Matrix<SinglePrecisionFloat, 3, 4>['~layout']>().toEqualTypeOf<{
+				readonly size: 48;
+				readonly alignment: 4;
+			}>();
 			expectTypeOf<Matrix<Decimal, 4, 4>['~layout']>().toEqualTypeOf<{
 				readonly size: 256;
 				readonly alignment: 16;
@@ -261,9 +250,7 @@ describe('Matrix', () => {
 		});
 
 		it('should declare no layout over a type that has none', () => {
-			expectTypeOf<Matrix<BigInteger, 2, 2>>().not.toMatchTypeOf<
-				Layout<number, number>
-			>();
+			expectTypeOf<Matrix<BigInteger, 2, 2>>().not.toMatchTypeOf<Layout<number, number>>();
 		});
 
 		it('should be a field of a struct, laid out as its type declares', () => {
@@ -487,39 +474,34 @@ const compileRejected = (packageName: string): string => {
 	}
 };
 
-describe.each(COMPILERS)(
-	'Matrix shapes at compile time, on %s',
-	(_label, name) => {
-		const report: string = compileRejected(name);
-		const lines: number[] = [
-			...new Set(
-				[...report.matchAll(/rejected\.fixture\.ts[:(](\d+)/g)].map((match) =>
-					Number(match[1]),
-				),
-			),
-		];
+describe.each(COMPILERS)('Matrix shapes at compile time, on %s', (_label, name) => {
+	const report: string = compileRejected(name);
+	const lines: number[] = [
+		...new Set(
+			[...report.matchAll(/rejected\.fixture\.ts[:(](\d+)/g)].map((match) => Number(match[1])),
+		),
+	];
 
-		it('should refuse a product whose shapes do not meet, quoting why', () => {
-			expect(lines).toContain(22);
-			expect(report).toContain(
-				'Cannot multiply Matrix<T, 3, 4> by Vector<T, 2, 1>. Expected a vector with 4 rows.',
-			);
-			expect(lines).toContain(25);
-			expect(report).toContain(
-				'Cannot multiply Matrix<T, 3, 4> by Matrix<T, 3, 4>. Expected a matrix with 4 rows.',
-			);
-		});
+	it('should refuse a product whose shapes do not meet, quoting why', () => {
+		expect(lines).toContain(22);
+		expect(report).toContain(
+			'Cannot multiply Matrix<T, 3, 4> by Vector<T, 2, 1>. Expected a vector with 4 rows.',
+		);
+		expect(lines).toContain(25);
+		expect(report).toContain(
+			'Cannot multiply Matrix<T, 3, 4> by Matrix<T, 3, 4>. Expected a matrix with 4 rows.',
+		);
+	});
 
-		it('should refuse an identity to a matrix that is not square', () => {
-			expect(lines).toContain(29);
-		});
+	it('should refuse an identity to a matrix that is not square', () => {
+		expect(lines).toContain(29);
+	});
 
-		it('should refuse to add matrices of different shapes', () => {
-			expect(lines).toContain(33);
-		});
+	it('should refuse to add matrices of different shapes', () => {
+		expect(lines).toContain(33);
+	});
 
-		it('should report nothing else', () => {
-			expect(lines).toEqual([22, 25, 29, 33]);
-		});
-	},
-);
+	it('should report nothing else', () => {
+		expect(lines).toEqual([22, 25, 29, 33]);
+	});
+});

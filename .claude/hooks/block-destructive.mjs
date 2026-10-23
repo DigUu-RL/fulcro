@@ -51,8 +51,7 @@ const refusal = (operation, instead) =>
 const RULES = [
 	{
 		id: 'reset-hard',
-		refuses: (invocation) =>
-			runs(invocation, ['git', 'reset']) && hasFlag(invocation, '--hard'),
+		refuses: (invocation) => runs(invocation, ['git', 'reset']) && hasFlag(invocation, '--hard'),
 		reason: refusal(
 			'`git reset --hard` discards uncommitted work with no way back',
 			'Name what should be undone and undo that: `git restore` a path, `git stash`, or a plain `git reset` that keeps the files.',
@@ -100,9 +99,6 @@ export const review = (input) => {
 // Run as a hook, imported by its tests. The comparison is on the resolved URL
 // rather than on the file name, so a test importing this module never spawns
 // the guard and never calls `process.exit`.
-if (
-	process.argv[1] !== undefined &&
-	import.meta.url === pathToFileURL(process.argv[1]).href
-) {
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
 	void guard(review);
 }

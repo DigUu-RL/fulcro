@@ -31,10 +31,7 @@ const nativeBigInt: BigIntConstructor = globalThis.BigInt;
 beforeEach(() => {
 	largest = 0;
 
-	BigInt.prototype.toString = function (
-		this: bigint,
-		...radix: [number?]
-	): string {
+	BigInt.prototype.toString = function (this: bigint, ...radix: [number?]): string {
 		const text: string = nativeToString.apply(this, radix);
 
 		largest = Math.max(largest, text.length);
@@ -72,28 +69,20 @@ describe('Decimal intermediates', () => {
 		['1e6000', '1e-6000'],
 		['9.999999999999999999999999999999999e6144', '1e-6176'],
 		['-1e-6176', '1e6144'],
-	])(
-		'should add %s and %s without writing out the gap between them',
-		(left, right) => {
-			const a = D(left);
-			const b = D(right);
+	])('should add %s and %s without writing out the gap between them', (left, right) => {
+		const a = D(left);
+		const b = D(right);
 
-			largest = 0;
+		largest = 0;
 
-			for (const mode of [
-				'halfEven',
-				'ceiling',
-				'floor',
-				'truncate',
-			] as const) {
-				a.add(b, mode);
-				a.subtract(b, mode);
-				b.subtract(a, mode);
-			}
+		for (const mode of ['halfEven', 'ceiling', 'floor', 'truncate'] as const) {
+			a.add(b, mode);
+			a.subtract(b, mode);
+			b.subtract(a, mode);
+		}
 
-			expect(largest).toBeLessThanOrEqual(INTERMEDIATE_CEILING);
-		},
-	);
+		expect(largest).toBeLessThanOrEqual(INTERMEDIATE_CEILING);
+	});
 
 	it('should multiply and divide across the whole exponent range in bounded digits', () => {
 		const huge = D('9.999999999999999999999999999999999e6144');
@@ -124,12 +113,9 @@ describe('Decimal intermediates', () => {
 	});
 
 	it('should compare values of any exponent in bounded digits', () => {
-		const values = [
-			'1e6144',
-			'1e-6176',
-			'-5e3000',
-			'5.000000000000000000000000000000001e3000',
-		].map((text) => D(text));
+		const values = ['1e6144', '1e-6176', '-5e3000', '5.000000000000000000000000000000001e3000'].map(
+			(text) => D(text),
+		);
 
 		largest = 0;
 

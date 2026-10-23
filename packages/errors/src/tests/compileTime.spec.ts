@@ -40,24 +40,14 @@ const COMPILERS = [
  * @returns Everything the compiler printed.
  */
 const errorsFrom = (packageName: string): string => {
-	const tsc: string = path.join(
-		WORKSPACE_ROOT,
-		'node_modules',
-		packageName,
-		'bin',
-		'tsc',
-	);
+	const tsc: string = path.join(WORKSPACE_ROOT, 'node_modules', packageName, 'bin', 'tsc');
 
 	try {
-		execFileSync(
-			process.execPath,
-			[tsc, '--pretty', 'false', '-p', PROJECT_PATH],
-			{
-				cwd: WORKSPACE_ROOT,
-				encoding: 'utf8',
-				stdio: ['ignore', 'pipe', 'pipe'],
-			},
-		);
+		execFileSync(process.execPath, [tsc, '--pretty', 'false', '-p', PROJECT_PATH], {
+			cwd: WORKSPACE_ROOT,
+			encoding: 'utf8',
+			stdio: ['ignore', 'pipe', 'pipe'],
+		});
 
 		return '';
 	} catch (failure) {
@@ -75,44 +65,39 @@ const errorsFrom = (packageName: string): string => {
  */
 const reportedLines = (report: string): number[] => [
 	...new Set(
-		[...report.matchAll(/rejected\.fixture\.ts[:(](\d+)/g)].map((match) =>
-			Number(match[1]),
-		),
+		[...report.matchAll(/rejected\.fixture\.ts[:(](\d+)/g)].map((match) => Number(match[1])),
 	),
 ];
 
-describe.each(COMPILERS)(
-	'createError at compile time, on %s',
-	(_label, name) => {
-		const report: string = errorsFrom(name);
-		const lines: number[] = reportedLines(report);
+describe.each(COMPILERS)('createError at compile time, on %s', (_label, name) => {
+	const report: string = errorsFrom(name);
+	const lines: number[] = reportedLines(report);
 
-		it('should refuse an unregistered code', () => {
-			expect(lines).toContain(13);
-		});
+	it('should refuse an unregistered code', () => {
+		expect(lines).toContain(13);
+	});
 
-		it('should refuse a detail of the wrong type', () => {
-			expect(lines).toContain(18);
-		});
+	it('should refuse a detail of the wrong type', () => {
+		expect(lines).toContain(18);
+	});
 
-		it('should refuse a template given too few details', () => {
-			expect(lines).toContain(22);
-		});
+	it('should refuse a template given too few details', () => {
+		expect(lines).toContain(22);
+	});
 
-		it('should refuse a code declared outside its range', () => {
-			expect(lines).toContain(28);
-		});
+	it('should refuse a code declared outside its range', () => {
+		expect(lines).toContain(28);
+	});
 
-		it('should refuse a template whose details have no operation', () => {
-			expect(lines).toContain(38);
-		});
+	it('should refuse a template whose details have no operation', () => {
+		expect(lines).toContain(38);
+	});
 
-		it('should refuse a template whose details hold an object', () => {
-			expect(lines).toContain(46);
-		});
+	it('should refuse a template whose details hold an object', () => {
+		expect(lines).toContain(46);
+	});
 
-		it('should report nothing else', () => {
-			expect(lines).toEqual([13, 18, 22, 28, 38, 46]);
-		});
-	},
-);
+	it('should report nothing else', () => {
+		expect(lines).toEqual([13, 18, 22, 28, 38, 46]);
+	});
+});

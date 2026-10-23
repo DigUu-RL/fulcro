@@ -68,9 +68,7 @@ describe('asReadOnlyView', () => {
 	it('should observe a read-only view, a view, a pointer and a reference', () => {
 		const numbers: Storage<number> = counting(8);
 
-		expect(valuesOf(asReadOnlyView(asReadOnlyView(numbers, 2), 1, 2))).toEqual([
-			3, 4,
-		]);
+		expect(valuesOf(asReadOnlyView(asReadOnlyView(numbers, 2), 1, 2))).toEqual([3, 4]);
 		expect(valuesOf(asReadOnlyView(asView(numbers, 5)))).toEqual([5, 6, 7]);
 		expect(valuesOf(asReadOnlyView(pointerTo(numbers, 6), 2))).toEqual([6, 7]);
 		expect(valuesOf(asReadOnlyView(referenceTo('only')))).toEqual(['only']);
@@ -87,9 +85,7 @@ describe('asReadOnlyView', () => {
 	it('should refuse an index outside it, under its own name', () => {
 		expect(() => asReadOnlyView(counting(5), 1, 2).get(2)).toThrowError(
 			coded(
-				new RangeError(
-					'FULCRO7002: ReadOnlyView.get: index 2 is outside a storage of length 2.',
-				),
+				new RangeError('FULCRO7002: ReadOnlyView.get: index 2 is outside a storage of length 2.'),
 				{ operation: 'ReadOnlyView.get', index: 2, length: 2 },
 			),
 		);
@@ -123,9 +119,7 @@ describe('asReadOnlyView', () => {
 	});
 
 	it('should refuse what is not a source', () => {
-		expect(() =>
-			asReadOnlyView(7 as unknown as readonly number[]),
-		).toThrowError(
+		expect(() => asReadOnlyView(7 as unknown as readonly number[])).toThrowError(
 			coded(
 				new TypeError(
 					'FULCRO7017: asReadOnlyView: expected a storage, a view, a read-only view, an array, a pointer or a memory reference, received number.',
@@ -160,18 +154,13 @@ describe('asReadOnlyView', () => {
 
 		arena.reset();
 
-		expect(() => view.get(0)).toThrowError(
-			expect.objectContaining({ code: 'FULCRO7009' }),
-		);
+		expect(() => view.get(0)).toThrowError(expect.objectContaining({ code: 'FULCRO7009' }));
 	});
 });
 
 describe('ReadOnlyView.subview', () => {
 	it('should observe part of it, read-only too', () => {
-		const part: ReadOnlyView<number> = asReadOnlyView(counting(10), 2).subview(
-			3,
-			2,
-		);
+		const part: ReadOnlyView<number> = asReadOnlyView(counting(10), 2).subview(3, 2);
 
 		expect(valuesOf(part)).toEqual([5, 6]);
 	});
@@ -198,15 +187,11 @@ describe('asReadOnlyView types', () => {
 		const levels: readonly string[] = ['a'];
 
 		expectTypeOf(asReadOnlyView(levels)).toEqualTypeOf<ReadOnlyView<string>>();
-		expectTypeOf(asReadOnlyView(counting(1))).toEqualTypeOf<
-			ReadOnlyView<number>
-		>();
+		expectTypeOf(asReadOnlyView(counting(1))).toEqualTypeOf<ReadOnlyView<number>>();
 		expectTypeOf(asReadOnlyView(asView(counting(1)).readOnly())).toEqualTypeOf<
 			ReadOnlyView<number>
 		>();
-		expectTypeOf(asReadOnlyView(referenceTo(true))).toEqualTypeOf<
-			ReadOnlyView<boolean>
-		>();
+		expectTypeOf(asReadOnlyView(referenceTo(true))).toEqualTypeOf<ReadOnlyView<boolean>>();
 	});
 
 	it('should not be a view', () => {

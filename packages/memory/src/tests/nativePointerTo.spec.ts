@@ -60,9 +60,7 @@ const PAGE = 65_536;
  * @param bytes Its size.
  * @returns The memory and the buffer, to look at the bytes directly.
  */
-const memoryOf = (
-	bytes: number,
-): { memory: LinearMemory; buffer: ArrayBuffer } => {
+const memoryOf = (bytes: number): { memory: LinearMemory; buffer: ArrayBuffer } => {
 	const buffer = new ArrayBuffer(bytes);
 
 	return { memory: createLinearMemory(buffer), buffer };
@@ -81,9 +79,7 @@ const UNTOUCHED = 0xaa;
  * @param bytes Its size.
  * @returns The memory and the buffer.
  */
-const patternedMemoryOf = (
-	bytes: number,
-): { memory: LinearMemory; buffer: ArrayBuffer } => {
+const patternedMemoryOf = (bytes: number): { memory: LinearMemory; buffer: ArrayBuffer } => {
 	const made = memoryOf(bytes);
 
 	new Uint8Array(made.buffer).fill(UNTOUCHED);
@@ -112,9 +108,7 @@ const bytesOf = (buffer: ArrayBuffer, start: number, end: number): number[] =>
  * @returns The addresses that were written.
  */
 const touchedIn = (buffer: ArrayBuffer, start: number, end: number): number[] =>
-	bytesOf(buffer, start, end).flatMap((byte, index) =>
-		byte === UNTOUCHED ? [] : [start + index],
-	);
+	bytesOf(buffer, start, end).flatMap((byte, index) => (byte === UNTOUCHED ? [] : [start + index]));
 
 /** `1.5` as a little-endian 64-bit float, written out by hand. */
 const ONE_AND_A_HALF = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf8, 0x3f];
@@ -141,11 +135,7 @@ describe('nativePointerTo a memory', () => {
 		// so a wrong offset in it cannot agree with itself.
 		const { memory, buffer } = memoryOf(64);
 		const raw = new DataView(buffer);
-		const particle: NativePointer<Particle> = nativePointerTo(
-			memory,
-			16,
-			Particle,
-		);
+		const particle: NativePointer<Particle> = nativePointerTo(memory, 16, Particle);
 		const velocity: NativePointer<Point> = particle.at(8, Point);
 
 		particle.set(
@@ -155,17 +145,13 @@ describe('nativePointerTo a memory', () => {
 			}),
 		);
 
-		expect([16, 20, 24, 28].map((at) => raw.getFloat32(at, true))).toEqual([
-			1, 2, 3, 4,
-		]);
+		expect([16, 20, 24, 28].map((at) => raw.getFloat32(at, true))).toEqual([1, 2, 3, 4]);
 
 		velocity.set(Point.from({ x: 0, y: -10 }));
 
 		expect(Particle.layout.fields.velocity.offset).toBe(8);
 		expect(velocity.address).toBe(24);
-		expect([16, 20, 24, 28].map((at) => raw.getFloat32(at, true))).toEqual([
-			1, 2, 0, -10,
-		]);
+		expect([16, 20, 24, 28].map((at) => raw.getFloat32(at, true))).toEqual([1, 2, 0, -10]);
 
 		raw.setFloat32(28, 6.5, true);
 
@@ -273,9 +259,7 @@ describe('nativePointerTo a memory', () => {
 	])('should refuse address %s in 16 bytes', (address, shown) => {
 		const { memory } = memoryOf(16);
 
-		expect(() =>
-			nativePointerTo(memory, address as number, Sample),
-		).toThrowError(
+		expect(() => nativePointerTo(memory, address as number, Sample)).toThrowError(
 			coded(
 				new RangeError(
 					`FULCRO7019: nativePointerTo: address ${shown} is outside 0 to 16, where this pointer may point.`,
@@ -327,16 +311,12 @@ describe('nativePointerTo a memory', () => {
 		const { memory } = memoryOf(16);
 
 		expect(() =>
-			nativePointerTo(memory, 0, Sample).set(
-				Point.from({ x: 1, y: 1 }) as unknown as Sample,
-			),
+			nativePointerTo(memory, 0, Sample).set(Point.from({ x: 1, y: 1 }) as unknown as Sample),
 		).toThrowError(
-			coded(
-				new TypeError(
-					'FULCRO7004: NativePointer.set: the value is not a value of Sample.',
-				),
-				{ operation: 'NativePointer.set', element: 'Sample' },
-			),
+			coded(new TypeError('FULCRO7004: NativePointer.set: the value is not a value of Sample.'), {
+				operation: 'NativePointer.set',
+				element: 'Sample',
+			}),
 		);
 	});
 
@@ -350,9 +330,7 @@ describe('nativePointerTo a memory', () => {
 			is: (value: unknown): value is number => typeof value === 'number',
 		};
 
-		expect(() =>
-			nativePointerTo(memory, 0, unaligned as unknown as typeof Sample),
-		).toThrowError(
+		expect(() => nativePointerTo(memory, 0, unaligned as unknown as typeof Sample)).toThrowError(
 			coded(
 				new RangeError(
 					'FULCRO7006: nativePointerTo: expected an alignment that is a positive power of two, received undefined.',
@@ -360,18 +338,14 @@ describe('nativePointerTo a memory', () => {
 				{ operation: 'nativePointerTo', received: 'undefined' },
 			),
 		);
-		expect(() =>
-			nativePointerTo(memory, 0, {} as unknown as typeof Sample),
-		).toThrowError(expect.objectContaining({ code: 'FULCRO7003' }));
+		expect(() => nativePointerTo(memory, 0, {} as unknown as typeof Sample)).toThrowError(
+			expect.objectContaining({ code: 'FULCRO7003' }),
+		);
 	});
 
 	it('should refuse to read past the end of a buffer that shrank', () => {
 		const buffer = new ArrayBuffer(16, { maxByteLength: 16 });
-		const pointer: NativePointer<Sample> = nativePointerTo(
-			createLinearMemory(buffer),
-			8,
-			Sample,
-		);
+		const pointer: NativePointer<Sample> = nativePointerTo(createLinearMemory(buffer), 8, Sample);
 
 		buffer.resize(8);
 
@@ -456,11 +430,7 @@ describe('nativePointerTo a WebAssembly memory', () => {
 		expect(before.byteLength).toBe(0);
 		expect(early.get().value).toBe(1.25);
 
-		const late: NativePointer<Sample> = nativePointerTo(
-			memory,
-			PAGE + 8,
-			Sample,
-		);
+		const late: NativePointer<Sample> = nativePointerTo(memory, PAGE + 8, Sample);
 
 		module.store(PAGE + 8, 9.5);
 
@@ -478,12 +448,7 @@ describe('nativePointerTo an allocation', () => {
 		['managed', () => createManagedAllocator(), 0, 16],
 		['arena', () => createArenaAllocator(256), 8, 256],
 		['stack', () => createStackAllocator(256), 8, 256],
-		[
-			'fixed buffer',
-			() => createFixedBufferAllocator(new ArrayBuffer(256)),
-			8,
-			256,
-		],
+		['fixed buffer', () => createFixedBufferAllocator(new ArrayBuffer(256)), 8, 256],
 		['pool', () => createPoolAllocator(64, 4), 64, 256],
 	])(
 		'should point at the first byte of a %s allocation, and write the bytes the allocator lent',
@@ -493,18 +458,23 @@ describe('nativePointerTo an allocation', () => {
 			allocator.allocate(8, 8);
 
 			const allocation: Allocation = allocator.allocate(16, 8);
-			const pointer: NativePointer<Sample> = nativePointerTo(
-				allocation,
-				Sample,
-			);
+			const pointer: NativePointer<Sample> = nativePointerTo(allocation, Sample);
 
 			pointer.at(8).set(Sample.from({ value: 1.5 }));
 
 			expect(pointer.address).toBe(address);
 			expect(pointer.memory.byteLength).toBe(memoryLength);
-			expect(
-				bytesOf(allocation.bytes.buffer as ArrayBuffer, address, address + 16),
-			).toEqual([0, 0, 0, 0, 0, 0, 0, 0, ...ONE_AND_A_HALF]);
+			expect(bytesOf(allocation.bytes.buffer as ArrayBuffer, address, address + 16)).toEqual([
+				0,
+				0,
+				0,
+				0,
+				0,
+				0,
+				0,
+				0,
+				...ONE_AND_A_HALF,
+			]);
 
 			allocation.bytes.setFloat64(0, -3, true);
 
@@ -518,10 +488,7 @@ describe('nativePointerTo an allocation', () => {
 
 		allocator.allocate(8, 8);
 
-		const pointer: NativePointer<Sample> = nativePointerTo(
-			allocator.allocate(16, 8),
-			Sample,
-		);
+		const pointer: NativePointer<Sample> = nativePointerTo(allocator.allocate(16, 8), Sample);
 
 		allocator.allocate(8, 8);
 		new Uint8Array(buffer).fill(UNTOUCHED);
@@ -532,10 +499,7 @@ describe('nativePointerTo an allocation', () => {
 		expect(touchedIn(buffer, 0, 64)).toEqual([
 			8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
 		]);
-		expect(bytesOf(buffer, 8, 24)).toEqual([
-			...ONE_AND_A_HALF,
-			...ONE_AND_A_HALF,
-		]);
+		expect(bytesOf(buffer, 8, 24)).toEqual([...ONE_AND_A_HALF, ...ONE_AND_A_HALF]);
 	});
 
 	it('should reach only the allocation, its end included', () => {
@@ -543,10 +507,7 @@ describe('nativePointerTo an allocation', () => {
 
 		allocator.allocate(8, 8);
 
-		const pointer: NativePointer<Sample> = nativePointerTo(
-			allocator.allocate(16, 8),
-			Sample,
-		);
+		const pointer: NativePointer<Sample> = nativePointerTo(allocator.allocate(16, 8), Sample);
 
 		expect(pointer.at(16).address).toBe(24);
 		expect(() => pointer.at(24)).toThrowError(
@@ -570,10 +531,7 @@ describe('nativePointerTo an allocation', () => {
 
 	it('should refuse every access once the allocator released the memory, through every pointer moved from it', () => {
 		const arena = createArenaAllocator(64);
-		const pointer: NativePointer<Sample> = nativePointerTo(
-			arena.allocate(16, 8),
-			Sample,
-		);
+		const pointer: NativePointer<Sample> = nativePointerTo(arena.allocate(16, 8), Sample);
 		const second: NativePointer<Sample> = pointer.at(8);
 
 		arena.reset();
@@ -588,9 +546,7 @@ describe('nativePointerTo an allocation', () => {
 			);
 
 		expect(() => pointer.get()).toThrowError(released('NativePointer.get'));
-		expect(() => second.set(Sample.from({ value: 1 }))).toThrowError(
-			released('NativePointer.set'),
-		);
+		expect(() => second.set(Sample.from({ value: 1 }))).toThrowError(released('NativePointer.set'));
 	});
 
 	it('should refuse an allocation that does not start where the type may', () => {
@@ -598,9 +554,7 @@ describe('nativePointerTo an allocation', () => {
 
 		allocator.allocate(1, 1);
 
-		expect(() =>
-			nativePointerTo(allocator.allocate(8, 1), Sample),
-		).toThrowError(
+		expect(() => nativePointerTo(allocator.allocate(8, 1), Sample)).toThrowError(
 			coded(
 				new RangeError(
 					'FULCRO7020: nativePointerTo: address 1 is not a multiple of 8, where a value of Sample may start.',
@@ -639,9 +593,7 @@ describe('nativePointerTo something else', () => {
 		['null', null, 'null'],
 		['a number', 0, 'number'],
 	])('should refuse %s', (_, target, received) => {
-		expect(() =>
-			nativePointerTo(target as unknown as Allocation, Sample),
-		).toThrowError(
+		expect(() => nativePointerTo(target as unknown as Allocation, Sample)).toThrowError(
 			coded(
 				new TypeError(
 					`FULCRO7022: nativePointerTo: expected a linear memory or an allocation, received ${received}.`,
@@ -658,9 +610,9 @@ describe('nativePointerTo types', () => {
 		const pointer = nativePointerTo(memory, 0, Sample);
 
 		expectTypeOf(pointer).toEqualTypeOf<NativePointer<Sample>>();
-		expectTypeOf(
-			nativePointerTo(createManagedAllocator().allocate(8, 8), Sample),
-		).toEqualTypeOf<NativePointer<Sample>>();
+		expectTypeOf(nativePointerTo(createManagedAllocator().allocate(8, 8), Sample)).toEqualTypeOf<
+			NativePointer<Sample>
+		>();
 		expectTypeOf(pointer.at(8)).toEqualTypeOf<NativePointer<Sample>>();
 		expectTypeOf(pointer.at(0, Point)).toEqualTypeOf<NativePointer<Point>>();
 		expectTypeOf<NativePointer<Sample>>().toExtend<MemoryReference<Sample>>();

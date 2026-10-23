@@ -18,11 +18,7 @@
  * other.
  */
 
-export {
-	createFileTransformer,
-	type FileTransformer,
-	type TransformCoreOptions,
-} from '@/program';
+export { createFileTransformer, type FileTransformer, type TransformCoreOptions } from '@/program';
 export {
 	type AnalysisContext,
 	type CallForm,
@@ -35,11 +31,7 @@ export {
 	type RewriteContext,
 	utilityModuleSegment,
 } from '@/shared';
-export {
-	buildStructuralTest,
-	type StructuralOptions,
-	type TypeTest,
-} from '@/structural';
+export { buildStructuralTest, type StructuralOptions, type TypeTest } from '@/structural';
 export {
 	createTransformer,
 	type TransformerExtras,

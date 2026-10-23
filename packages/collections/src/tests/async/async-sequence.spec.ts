@@ -12,9 +12,7 @@ import { AsyncSequenceCollection } from '@/collections/async';
  * @param values Elements to yield.
  * @returns The asynchronous iterable and a reader of how far it has been pulled.
  */
-const counted = <T>(
-	values: readonly T[],
-): { source: AsyncIterable<T>; pulled: () => number } => {
+const counted = <T>(values: readonly T[]): { source: AsyncIterable<T>; pulled: () => number } => {
 	let pulled = 0;
 
 	return {
@@ -53,25 +51,18 @@ describe('creating an asynchronous sequence', () => {
 	it('should wrap an asynchronous iterable', async () => {
 		const { source } = counted([1, 2, 3]);
 
-		expect(await AsyncSequenceCollection.from(source).toArray()).toEqual([
-			1, 2, 3,
-		]);
+		expect(await AsyncSequenceCollection.from(source).toArray()).toEqual([1, 2, 3]);
 	});
 
 	it('should accept a plain iterable', async () => {
-		expect(await AsyncSequenceCollection.from([1, 2, 3]).toArray()).toEqual([
-			1, 2, 3,
-		]);
+		expect(await AsyncSequenceCollection.from([1, 2, 3]).toArray()).toEqual([1, 2, 3]);
 	});
 
 	it('should await the elements of an iterable of promises', async () => {
 		// The `ids.map(load)` shape, which is how most of this starts.
 		const pending = [Promise.resolve('a'), Promise.resolve('b')];
 
-		expect(await AsyncSequenceCollection.from(pending).toArray()).toEqual([
-			'a',
-			'b',
-		]);
+		expect(await AsyncSequenceCollection.from(pending).toArray()).toEqual(['a', 'b']);
 	});
 
 	it('should adapt a synchronous source without draining it', async () => {
@@ -80,9 +71,7 @@ describe('creating an asynchronous sequence', () => {
 			for (let value = 0; ; value++) yield value;
 		};
 
-		expect(
-			await AsyncSequenceCollection.from(naturals()).take(3).toArray(),
-		).toEqual([0, 1, 2]);
+		expect(await AsyncSequenceCollection.from(naturals()).take(3).toArray()).toEqual([0, 1, 2]);
 	});
 
 	it('should produce an empty sequence', async () => {
@@ -118,9 +107,7 @@ describe('laziness and back pressure', () => {
 	it('should stop pulling an endless source once take is satisfied', async () => {
 		const { source, pulled } = endless();
 
-		expect(
-			await AsyncSequenceCollection.from(source).take(3).toArray(),
-		).toEqual([0, 1, 2]);
+		expect(await AsyncSequenceCollection.from(source).take(3).toArray()).toEqual([0, 1, 2]);
 		expect(pulled()).toBe(3);
 	});
 
@@ -190,9 +177,7 @@ describe('operators', () => {
 	});
 
 	it('should skip, skipWhile and distinct', async () => {
-		expect(
-			await AsyncSequenceCollection.from([1, 2, 3, 4]).skip(2).toArray(),
-		).toEqual([3, 4]);
+		expect(await AsyncSequenceCollection.from([1, 2, 3, 4]).skip(2).toArray()).toEqual([3, 4]);
 
 		expect(
 			await AsyncSequenceCollection.from([1, 2, 9, 1])
@@ -200,9 +185,7 @@ describe('operators', () => {
 				.toArray(),
 		).toEqual([9, 1]);
 
-		expect(
-			await AsyncSequenceCollection.from([1, 1, 2, 1]).distinct().toArray(),
-		).toEqual([1, 2]);
+		expect(await AsyncSequenceCollection.from([1, 1, 2, 1]).distinct().toArray()).toEqual([1, 2]);
 	});
 
 	it('should keep one element per distinct key', async () => {
@@ -219,9 +202,7 @@ describe('operators', () => {
 	});
 
 	it('should concatenate a synchronous or asynchronous sequence', async () => {
-		expect(
-			await AsyncSequenceCollection.from([1, 2]).concat([3]).toArray(),
-		).toEqual([1, 2, 3]);
+		expect(await AsyncSequenceCollection.from([1, 2]).concat([3]).toArray()).toEqual([1, 2, 3]);
 
 		expect(
 			await AsyncSequenceCollection.from([1])
@@ -231,15 +212,11 @@ describe('operators', () => {
 	});
 
 	it('should batch an arriving stream into chunks', async () => {
-		expect(
-			await AsyncSequenceCollection.from([1, 2, 3]).chunk(2).toArray(),
-		).toEqual([[1, 2], [3]]);
+		expect(await AsyncSequenceCollection.from([1, 2, 3]).chunk(2).toArray()).toEqual([[1, 2], [3]]);
 	});
 
 	it.each([0, -1, 1.5])('should reject a chunk size of %s', (size) => {
-		expect(() => AsyncSequenceCollection.from([1]).chunk(size)).toThrow(
-			/positive integer/i,
-		);
+		expect(() => AsyncSequenceCollection.from([1]).chunk(size)).toThrow(/positive integer/i);
 	});
 
 	it('should yield the running accumulation', async () => {
@@ -266,9 +243,8 @@ describe('terminals', () => {
 	});
 
 	it('should report absence rather than throwing, where asked to', async () => {
-		const empty = (): ReturnType<
-			typeof AsyncSequenceCollection.empty<number>
-		> => AsyncSequenceCollection.empty<number>();
+		const empty = (): ReturnType<typeof AsyncSequenceCollection.empty<number>> =>
+			AsyncSequenceCollection.empty<number>();
 
 		expect(await empty().firstOrNull()).toBeNull();
 		expect(await empty().lastOrNull()).toBeNull();
@@ -278,19 +254,13 @@ describe('terminals', () => {
 	});
 
 	it('should not mistake a null last element for an empty sequence', async () => {
-		expect(
-			await AsyncSequenceCollection.from([1, null]).lastOrNull(),
-		).toBeNull();
+		expect(await AsyncSequenceCollection.from([1, null]).lastOrNull()).toBeNull();
 		expect(await AsyncSequenceCollection.from([1, null]).last()).toBeNull();
 	});
 
 	it('should read an element positionally', async () => {
-		expect(
-			await AsyncSequenceCollection.from(['a', 'b']).elementAtOrNull(1),
-		).toBe('b');
-		expect(
-			await AsyncSequenceCollection.from(['a']).elementAtOrNull(5),
-		).toBeNull();
+		expect(await AsyncSequenceCollection.from(['a', 'b']).elementAtOrNull(1)).toBe('b');
+		expect(await AsyncSequenceCollection.from(['a']).elementAtOrNull(5)).toBeNull();
 	});
 
 	it('should hand forEach the index alongside the element', async () => {
@@ -307,9 +277,7 @@ describe('terminals', () => {
 	});
 
 	it('should materialize into a set', async () => {
-		expect([
-			...(await AsyncSequenceCollection.from([1, 1, 2]).toSet()),
-		]).toEqual([1, 2]);
+		expect([...(await AsyncSequenceCollection.from([1, 1, 2]).toSet())]).toEqual([1, 2]);
 	});
 });
 
@@ -358,9 +326,7 @@ describe('cancellation', () => {
 	});
 
 	it('should leave a consumption without a signal alone', async () => {
-		expect(await AsyncSequenceCollection.from([1, 2]).toArray({})).toEqual([
-			1, 2,
-		]);
+		expect(await AsyncSequenceCollection.from([1, 2]).toArray({})).toEqual([1, 2]);
 	});
 
 	it('should let the same sequence be consumed twice under different signals', async () => {
@@ -372,8 +338,6 @@ describe('cancellation', () => {
 
 		controller.abort();
 
-		await expect(
-			sequence.toArray({ signal: controller.signal }),
-		).rejects.toThrow();
+		await expect(sequence.toArray({ signal: controller.signal })).rejects.toThrow();
 	});
 });

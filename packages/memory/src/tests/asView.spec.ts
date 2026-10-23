@@ -203,9 +203,7 @@ describe('asView over a pointer or a reference', () => {
 	it('should refuse a region running past the end of the pointer', () => {
 		expect(() => asView(pointerTo(counting(5), 3), 3)).toThrowError(
 			coded(
-				new RangeError(
-					'FULCRO7014: asView: 3 values from position 3 do not fit in a source of 5.',
-				),
+				new RangeError('FULCRO7014: asView: 3 values from position 3 do not fit in a source of 5.'),
 				{ operation: 'asView', start: 3, length: 3, available: 5 },
 			),
 		);
@@ -266,8 +264,7 @@ describe('asView refusals', () => {
 				),
 				{
 					operation: 'asView',
-					expected:
-						'a storage, a view, an array, a pointer or a memory reference',
+					expected: 'a storage, a view, an array, a pointer or a memory reference',
 					received,
 				},
 			),
@@ -284,8 +281,7 @@ describe('asView refusals', () => {
 				),
 				{
 					operation: 'asView',
-					expected:
-						'a storage, a view, an array, a pointer or a memory reference',
+					expected: 'a storage, a view, an array, a pointer or a memory reference',
 					received: 'an object with get but no set',
 				},
 			),
@@ -299,41 +295,28 @@ describe('View<T>', () => {
 		[2, '2'],
 		[0.5, '0.5'],
 		[Number.NaN, 'NaN'],
-	])(
-		'should refuse index %s, inside the source but outside the view',
-		(index, shown) => {
-			const view: View<number> = asView(counting(10), 4, 2);
+	])('should refuse index %s, inside the source but outside the view', (index, shown) => {
+		const view: View<number> = asView(counting(10), 4, 2);
 
-			expect(() => view.get(index)).toThrowError(
-				coded(
-					new RangeError(
-						`FULCRO7002: View.get: index ${shown} is outside a storage of length 2.`,
-					),
-					{ operation: 'View.get', index, length: 2 },
-				),
-			);
-			expect(() => view.set(index, 0)).toThrowError(
-				coded(
-					new RangeError(
-						`FULCRO7002: View.set: index ${shown} is outside a storage of length 2.`,
-					),
-					{ operation: 'View.set', index, length: 2 },
-				),
-			);
-		},
-	);
+		expect(() => view.get(index)).toThrowError(
+			coded(
+				new RangeError(`FULCRO7002: View.get: index ${shown} is outside a storage of length 2.`),
+				{ operation: 'View.get', index, length: 2 },
+			),
+		);
+		expect(() => view.set(index, 0)).toThrowError(
+			coded(
+				new RangeError(`FULCRO7002: View.set: index ${shown} is outside a storage of length 2.`),
+				{ operation: 'View.set', index, length: 2 },
+			),
+		);
+	});
 
 	it('should be frozen, with nothing to release and no source to reach', () => {
 		const view: View<number> = asView(counting(2));
 
 		expect(Object.isFrozen(view)).toBe(true);
-		expect(Object.keys(view).sort()).toEqual([
-			'get',
-			'length',
-			'readOnly',
-			'set',
-			'subview',
-		]);
+		expect(Object.keys(view).sort()).toEqual(['get', 'length', 'readOnly', 'set', 'subview']);
 	});
 
 	it('should work with its methods taken off the object', () => {
@@ -434,12 +417,8 @@ describe('asView types', () => {
 	it('should infer the type of the values from its source', () => {
 		expectTypeOf(asView(counting(1))).toEqualTypeOf<View<number>>();
 		expectTypeOf(asView(['a'])).toEqualTypeOf<View<string>>();
-		expectTypeOf(asView(createFixedBufferStorage(Point, 1))).toEqualTypeOf<
-			View<Point>
-		>();
-		expectTypeOf(asView(pointerTo([true], 0), 1)).toEqualTypeOf<
-			View<boolean>
-		>();
+		expectTypeOf(asView(createFixedBufferStorage(Point, 1))).toEqualTypeOf<View<Point>>();
+		expectTypeOf(asView(pointerTo([true], 0), 1)).toEqualTypeOf<View<boolean>>();
 		expectTypeOf(asView(referenceTo(1n))).toEqualTypeOf<View<bigint>>();
 	});
 
@@ -455,11 +434,7 @@ describe('asView types', () => {
 		expectTypeOf(asView).toBeCallableWith(counting(2), 0, 1);
 		expectTypeOf(asView).toBeCallableWith(pointerTo(counting(2), 0), 2);
 		expectTypeOf(asView).toBeCallableWith(referenceTo(0));
-		expectTypeOf<readonly number[]>().not.toExtend<
-			Storage<number> | number[]
-		>();
-		expectTypeOf<ReadOnlyView<number>>().not.toExtend<
-			Storage<number> | number[]
-		>();
+		expectTypeOf<readonly number[]>().not.toExtend<Storage<number> | number[]>();
+		expectTypeOf<ReadOnlyView<number>>().not.toExtend<Storage<number> | number[]>();
 	});
 });

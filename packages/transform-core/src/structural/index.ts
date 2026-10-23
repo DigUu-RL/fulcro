@@ -201,10 +201,7 @@ const propertyOf = (
 ): typescript.Expression =>
 	/^[A-Za-z_$][\w$]*$/.test(name)
 		? factory.createPropertyAccessExpression(value, name)
-		: factory.createElementAccessExpression(
-				value,
-				factory.createStringLiteral(name),
-			);
+		: factory.createElementAccessExpression(value, factory.createStringLiteral(name));
 
 /**
  * Names a global constructor that is safe to test with `instanceof`.
@@ -247,8 +244,7 @@ const GLOBAL_CLASSES = new Set([
  */
 const admitsUndefined = (type: typescript.Type): boolean =>
 	has(type, typescript.TypeFlags.Undefined) ||
-	(type.isUnion() &&
-		type.types.some((member) => has(member, typescript.TypeFlags.Undefined)));
+	(type.isUnion() && type.types.some((member) => has(member, typescript.TypeFlags.Undefined)));
 
 /**
  * Lists the types a type is built out of, for the cycle search.
@@ -279,22 +275,16 @@ const partsOf = (
 
 	if (
 		symbol !== undefined &&
-		((symbol.flags & typescript.SymbolFlags.Class) !== 0 ||
-			GLOBAL_CLASSES.has(symbol.getName()))
+		((symbol.flags & typescript.SymbolFlags.Class) !== 0 || GLOBAL_CLASSES.has(symbol.getName()))
 	) {
 		return [];
 	}
 
-	if (
-		type.getCallSignatures().length > 0 ||
-		type.getConstructSignatures().length > 0
-	) {
+	if (type.getCallSignatures().length > 0 || type.getConstructSignatures().length > 0) {
 		return [];
 	}
 
-	return type
-		.getProperties()
-		.map((property) => checker.getTypeOfSymbolAtLocation(property, at));
+	return type.getProperties().map((property) => checker.getTypeOfSymbolAtLocation(property, at));
 };
 
 /**
@@ -354,21 +344,18 @@ const findRecursive = (
 const isValueInScope = (name: string, generation: Generation): boolean => {
 	if (GLOBAL_CLASSES.has(name)) return true;
 
-	const resolved: typescript.Symbol | undefined =
-		generation.context.checker.resolveName(
-			name,
-			generation.at,
-			typescript.SymbolFlags.Value,
-			false,
-		);
+	const resolved: typescript.Symbol | undefined = generation.context.checker.resolveName(
+		name,
+		generation.at,
+		typescript.SymbolFlags.Value,
+		false,
+	);
 
 	if (resolved === undefined) return false;
 
 	return !(resolved.declarations ?? []).some((declaration) => {
 		if (typescript.isImportSpecifier(declaration)) {
-			return (
-				declaration.isTypeOnly || declaration.parent.parent.isTypeOnly === true
-			);
+			return declaration.isTypeOnly || declaration.parent.parent.isTypeOnly === true;
 		}
 
 		if (typescript.isImportClause(declaration)) return declaration.isTypeOnly;
@@ -409,26 +396,17 @@ const checkFor = (
 	}
 
 	if (has(type, typescript.TypeFlags.Undefined | typescript.TypeFlags.Void)) {
-		return factory.createStrictEquality(
-			value,
-			factory.createIdentifier('undefined'),
-		);
+		return factory.createStrictEquality(value, factory.createIdentifier('undefined'));
 	}
 
 	// Literals before the primitive groups they belong to, or `'dark'` would be
 	// checked as any old string.
 	if (type.isStringLiteral()) {
-		return factory.createStrictEquality(
-			value,
-			factory.createStringLiteral(type.value),
-		);
+		return factory.createStrictEquality(value, factory.createStringLiteral(type.value));
 	}
 
 	if (type.isNumberLiteral()) {
-		return factory.createStrictEquality(
-			value,
-			factory.createNumericLiteral(type.value),
-		);
+		return factory.createStrictEquality(value, factory.createNumericLiteral(type.value));
 	}
 
 	if (has(type, typescript.TypeFlags.BooleanLiteral)) {
@@ -448,9 +426,7 @@ const checkFor = (
 
 		if (members.some((member) => member === null)) return null;
 
-		return factory.createParenthesizedExpression(
-			any(factory, members as typescript.Expression[]),
-		);
+		return factory.createParenthesizedExpression(any(factory, members as typescript.Expression[]));
 	}
 
 	if (type.isIntersection()) {
@@ -460,9 +436,7 @@ const checkFor = (
 
 		if (members.some((member) => member === null)) return null;
 
-		return factory.createParenthesizedExpression(
-			all(factory, members as typescript.Expression[]),
-		);
+		return factory.createParenthesizedExpression(all(factory, members as typescript.Expression[]));
 	}
 
 	if (has(type, typescript.TypeFlags.StringLike)) {
@@ -526,11 +500,9 @@ const checkThroughFunction = (
 	const existing: RecursiveCheck | undefined = generation.declared.get(type);
 
 	if (existing !== undefined) {
-		return factory.createCallExpression(
-			factory.createIdentifier(existing.name),
-			undefined,
-			[value],
-		);
+		return factory.createCallExpression(factory.createIdentifier(existing.name), undefined, [
+			value,
+		]);
 	}
 
 	const declaration: RecursiveCheck = {
@@ -568,11 +540,9 @@ const checkThroughFunction = (
 		body,
 	);
 
-	return factory.createCallExpression(
-		factory.createIdentifier(declaration.name),
-		undefined,
-		[value],
-	);
+	return factory.createCallExpression(factory.createIdentifier(declaration.name), undefined, [
+		value,
+	]);
 };
 
 /**
@@ -596,9 +566,7 @@ const checkForObject = (
 
 	try {
 		if (checker.isArrayType(type)) {
-			const [element] = checker.getTypeArguments(
-				type as typescript.TypeReference,
-			);
+			const [element] = checker.getTypeArguments(type as typescript.TypeReference);
 
 			if (element === undefined) return null;
 
@@ -618,10 +586,7 @@ const checkForObject = (
 			// produce. What that costs is the caller's to know, and documented.
 			return factory.createLogicalAnd(
 				factory.createCallExpression(
-					factory.createPropertyAccessExpression(
-						factory.createIdentifier('Array'),
-						'isArray',
-					),
+					factory.createPropertyAccessExpression(factory.createIdentifier('Array'), 'isArray'),
 					undefined,
 					[value],
 				),
@@ -632,13 +597,7 @@ const checkForObject = (
 						factory.createArrowFunction(
 							undefined,
 							undefined,
-							[
-								factory.createParameterDeclaration(
-									undefined,
-									undefined,
-									parameter,
-								),
-							],
+							[factory.createParameterDeclaration(undefined, undefined, parameter)],
 							undefined,
 							factory.createToken(typescript.SyntaxKind.EqualsGreaterThanToken),
 							inner,
@@ -658,15 +617,11 @@ const checkForObject = (
 				return null;
 			}
 
-			const elements: readonly typescript.Type[] =
-				checker.getTypeArguments(reference);
+			const elements: readonly typescript.Type[] = checker.getTypeArguments(reference);
 
 			const checks: typescript.Expression[] = [
 				factory.createCallExpression(
-					factory.createPropertyAccessExpression(
-						factory.createIdentifier('Array'),
-						'isArray',
-					),
+					factory.createPropertyAccessExpression(factory.createIdentifier('Array'), 'isArray'),
 					undefined,
 					[value],
 				),
@@ -679,10 +634,7 @@ const checkForObject = (
 			for (const [index, element] of elements.entries()) {
 				const inner: typescript.Expression | null = checkFor(
 					element,
-					factory.createElementAccessExpression(
-						value,
-						factory.createNumericLiteral(index),
-					),
+					factory.createElementAccessExpression(value, factory.createNumericLiteral(index)),
 					generation,
 					depth + 1,
 				);
@@ -707,8 +659,7 @@ const checkForObject = (
 		// known names first is what keeps that from being emitted.
 		const isClassLike: boolean =
 			symbol !== undefined &&
-			((symbol.flags & typescript.SymbolFlags.Class) !== 0 ||
-				GLOBAL_CLASSES.has(symbol.getName()));
+			((symbol.flags & typescript.SymbolFlags.Class) !== 0 || GLOBAL_CLASSES.has(symbol.getName()));
 
 		if (isClassLike && symbol !== undefined) {
 			const name: string = symbol.getName();
@@ -724,10 +675,7 @@ const checkForObject = (
 
 		// A function type. Only that it is callable can be checked — no runtime
 		// sees a signature — and the shape below would be wrong for one.
-		if (
-			type.getCallSignatures().length > 0 ||
-			type.getConstructSignatures().length > 0
-		) {
+		if (type.getCallSignatures().length > 0 || type.getConstructSignatures().length > 0) {
 			return typeofIs(factory, value, 'function');
 		}
 
@@ -758,8 +706,7 @@ const checkForObject = (
 				generation.at,
 			);
 
-			const optional: boolean =
-				(property.flags & typescript.SymbolFlags.Optional) !== 0;
+			const optional: boolean = (property.flags & typescript.SymbolFlags.Optional) !== 0;
 
 			const access: typescript.Expression = propertyOf(factory, value, name);
 
@@ -786,10 +733,7 @@ const checkForObject = (
 				needsWrapping
 					? factory.createParenthesizedExpression(
 							factory.createLogicalOr(
-								factory.createStrictEquality(
-									access,
-									factory.createIdentifier('undefined'),
-								),
+								factory.createStrictEquality(access, factory.createIdentifier('undefined')),
 								inner,
 							),
 						)
@@ -876,13 +820,8 @@ export const buildStructuralTest = (
 
 	const test: typescript.Expression = factory.createObjectLiteralExpression(
 		[
-			factory.createPropertyAssignment(
-				'name',
-				factory.createStringLiteral(written),
-			),
-			...(explainer === null
-				? []
-				: [factory.createPropertyAssignment('explain', explainer)]),
+			factory.createPropertyAssignment('name', factory.createStringLiteral(written)),
+			...(explainer === null ? [] : [factory.createPropertyAssignment('explain', explainer)]),
 			factory.createPropertyAssignment(
 				'matches',
 				factory.createArrowFunction(

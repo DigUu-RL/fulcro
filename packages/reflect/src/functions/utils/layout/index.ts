@@ -45,8 +45,7 @@ export interface WithFieldLayout {
  *
  * @template T Type whose layout lists fields.
  */
-export type FieldOf<T extends WithFieldLayout> = keyof T['~layout']['fields'] &
-	string;
+export type FieldOf<T extends WithFieldLayout> = keyof T['~layout']['fields'] & string;
 
 /**
  * The layout of a type, as `layoutOf<T>()` reports it: its size and alignment

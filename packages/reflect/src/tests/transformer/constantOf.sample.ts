@@ -34,12 +34,9 @@ const double = (value: number): number => value * 2;
  *
  * @returns The first powers of two.
  */
-const powersOfTwo = (): number[] =>
-	Array.from({ length: 8 }, (_, exponent) => 2 ** exponent);
+const powersOfTwo = (): number[] => Array.from({ length: 8 }, (_, exponent) => 2 ** exponent);
 
-export const squares = constantOf(() =>
-	[1, 2, 3].map((value) => value * value),
-);
+export const squares = constantOf(() => [1, 2, 3].map((value) => value * value));
 
 export const crcTable = constantOf(() =>
 	Array.from({ length: 256 }, (_, byte) => {

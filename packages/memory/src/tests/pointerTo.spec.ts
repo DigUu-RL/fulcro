@@ -85,20 +85,18 @@ describe('pointerTo', () => {
 
 		expect(end.index).toBe(3);
 		expect(() => end.get()).toThrowError(
-			coded(
-				new RangeError(
-					'FULCRO7002: Pointer.get: index 3 is outside a storage of length 3.',
-				),
-				{ operation: 'Pointer.get', index: 3, length: 3 },
-			),
+			coded(new RangeError('FULCRO7002: Pointer.get: index 3 is outside a storage of length 3.'), {
+				operation: 'Pointer.get',
+				index: 3,
+				length: 3,
+			}),
 		);
 		expect(() => end.set(0)).toThrowError(
-			coded(
-				new RangeError(
-					'FULCRO7002: Pointer.set: index 3 is outside a storage of length 3.',
-				),
-				{ operation: 'Pointer.set', index: 3, length: 3 },
-			),
+			coded(new RangeError('FULCRO7002: Pointer.set: index 3 is outside a storage of length 3.'), {
+				operation: 'Pointer.set',
+				index: 3,
+				length: 3,
+			}),
 		);
 	});
 
@@ -134,9 +132,7 @@ describe('pointerTo', () => {
 		expect(() =>
 			pointerTo(pointerTo(counting(2), 0) as unknown as Storage<number>, 0),
 		).toThrowError(expected);
-		expect(() =>
-			pointerTo(referenceTo(0) as unknown as Storage<number>, 0),
-		).toThrowError(expected);
+		expect(() => pointerTo(referenceTo(0) as unknown as Storage<number>, 0)).toThrowError(expected);
 	});
 
 	it('should refuse to read once the allocator released its memory', () => {
@@ -197,24 +193,19 @@ describe('Pointer.offset', () => {
 		[-3, -1],
 		[2, 4],
 		[0.5, 2.5],
-	])(
-		'should refuse a move of %s from position 2 in 3 values',
-		(delta, shown) => {
-			expect(() => pointerTo(counting(3), 2).offset(delta)).toThrowError(
-				coded(
-					new RangeError(
-						`FULCRO7016: Pointer.offset: position ${shown} is outside 0 to 3, where a pointer into 3 values may point.`,
-					),
-					{ operation: 'Pointer.offset', index: shown, length: 3 },
+	])('should refuse a move of %s from position 2 in 3 values', (delta, shown) => {
+		expect(() => pointerTo(counting(3), 2).offset(delta)).toThrowError(
+			coded(
+				new RangeError(
+					`FULCRO7016: Pointer.offset: position ${shown} is outside 0 to 3, where a pointer into 3 values may point.`,
 				),
-			);
-		},
-	);
+				{ operation: 'Pointer.offset', index: shown, length: 3 },
+			),
+		);
+	});
 
 	it('should describe a move that is not a number', () => {
-		expect(() =>
-			pointerTo(counting(3), 0).offset(null as unknown as number),
-		).toThrowError(
+		expect(() => pointerTo(counting(3), 0).offset(null as unknown as number)).toThrowError(
 			expect.objectContaining({
 				code: 'FULCRO7016',
 				details: { operation: 'Pointer.offset', index: 'null', length: 3 },
@@ -227,9 +218,7 @@ describe('pointerTo types', () => {
 	it('should infer the type of the values, and be a memory reference', () => {
 		expectTypeOf(pointerTo(counting(1), 0)).toEqualTypeOf<Pointer<number>>();
 		expectTypeOf(pointerTo(['a'], 0)).toEqualTypeOf<Pointer<string>>();
-		expectTypeOf(pointerTo(counting(1), 0).offset(0)).toEqualTypeOf<
-			Pointer<number>
-		>();
+		expectTypeOf(pointerTo(counting(1), 0).offset(0)).toEqualTypeOf<Pointer<number>>();
 		expectTypeOf<Pointer<number>>().toExtend<MemoryReference<number>>();
 	});
 });

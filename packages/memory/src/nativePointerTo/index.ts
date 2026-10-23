@@ -3,12 +3,7 @@ import { createError } from '@fulcro/errors';
 import type { Allocation } from '@/allocator';
 import { requireAlignment } from '@/allocator/requireRequest';
 import { type AlignedElement, requireElement } from '@/element';
-import {
-	bytesOf,
-	isLinearMemory,
-	type LinearMemory,
-	openLinearMemory,
-} from '@/linearMemory';
+import { bytesOf, isLinearMemory, type LinearMemory, openLinearMemory } from '@/linearMemory';
 import type { NativePointer } from '@/nativePointer';
 import { describeBuffer } from '@/storage/describeBuffer';
 import { describeValue } from '@/storage/describeValue';
@@ -59,10 +54,7 @@ const isAllocation = (value: unknown): value is Allocation =>
  */
 const requirePointerElement = (operation: string, element: unknown): void => {
 	requireElement(operation, element);
-	requireAlignment(
-		operation,
-		(element as AlignedElement<unknown>).layout.alignment,
-	);
+	requireAlignment(operation, (element as AlignedElement<unknown>).layout.alignment);
 };
 
 /**
@@ -163,13 +155,11 @@ const createNativePointer = <T>(
 		byteOffset: number,
 		other?: AlignedElement<TOther>,
 	): NativePointer<TOther> => {
-		const next: AlignedElement<TOther> =
-			other ?? (element as unknown as AlignedElement<TOther>);
+		const next: AlignedElement<TOther> = other ?? (element as unknown as AlignedElement<TOther>);
 
 		if (other !== undefined) requirePointerElement('NativePointer.at', other);
 
-		const target: unknown =
-			typeof byteOffset === 'number' ? address + byteOffset : byteOffset;
+		const target: unknown = typeof byteOffset === 'number' ? address + byteOffset : byteOffset;
 
 		requireAddress('NativePointer.at', region, target, next);
 
@@ -298,10 +288,7 @@ export function nativePointerTo<T>(
 
 	const element = second as AlignedElement<T>;
 	const { buffer, byteOffset, byteLength } = target.bytes;
-	const memory: LinearMemory = openLinearMemory(
-		'nativePointerTo',
-		buffer as ArrayBuffer,
-	);
+	const memory: LinearMemory = openLinearMemory('nativePointerTo', buffer as ArrayBuffer);
 	const region: Region = {
 		memory,
 		bytes: () => bytesOf(memory),
@@ -309,8 +296,7 @@ export function nativePointerTo<T>(
 		// The buffer may have shrunk or been transferred since: then the end is
 		// where its bytes stop, and an access past it is refused with a code
 		// rather than with the engine's own error.
-		end: (bytes: DataView): number =>
-			Math.min(byteOffset + byteLength, bytes.byteLength),
+		end: (bytes: DataView): number => Math.min(byteOffset + byteLength, bytes.byteLength),
 		allocation: target,
 	};
 

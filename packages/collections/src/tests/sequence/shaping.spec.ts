@@ -32,10 +32,7 @@ interface Player {
  * @param distinctScores How many different scores to spread them across.
  * @returns The players, in a fixed order.
  */
-const playersWithTies = (
-	count: number,
-	distinctScores: number,
-): readonly Player[] =>
+const playersWithTies = (count: number, distinctScores: number): readonly Player[] =>
 	Array.from({ length: count }, (_, index) => ({
 		name: `player-${index}`,
 		score: index % distinctScores,
@@ -94,13 +91,8 @@ describe('ofType', () => {
 	it('should keep only the elements of a primitive type', () => {
 		const mixed: (string | number | null)[] = ['a', 1, null, 'b', 2];
 
-		expect(SequenceCollection.from(mixed).ofType('string').toArray()).toEqual([
-			'a',
-			'b',
-		]);
-		expect(SequenceCollection.from(mixed).ofType('number').toArray()).toEqual([
-			1, 2,
-		]);
+		expect(SequenceCollection.from(mixed).ofType('string').toArray()).toEqual(['a', 'b']);
+		expect(SequenceCollection.from(mixed).ofType('number').toArray()).toEqual([1, 2]);
 	});
 
 	it('should not accept null as an object', () => {
@@ -131,9 +123,7 @@ describe('ofType', () => {
 
 		const values: unknown[] = [new Derived(), new Base(), 'neither'];
 
-		expect(SequenceCollection.from(values).ofType(Base).toArray()).toHaveLength(
-			2,
-		);
+		expect(SequenceCollection.from(values).ofType(Base).toArray()).toHaveLength(2);
 	});
 
 	it('should narrow the element type it hands back', () => {
@@ -179,9 +169,7 @@ describe('cast', () => {
 	it('should throw on the first element of another type', () => {
 		const values: unknown[] = ['a', 'b', 7, 'c'];
 
-		expect(() =>
-			SequenceCollection.from(values).cast('string').toArray(),
-		).toThrow(TypeError);
+		expect(() => SequenceCollection.from(values).cast('string').toArray()).toThrow(TypeError);
 	});
 
 	it('should say what it found and where', () => {
@@ -189,9 +177,9 @@ describe('cast', () => {
 		// with one bad element is only actionable if the error points at it.
 		const values: unknown[] = ['a', 'b', 7];
 
-		expect(() =>
-			SequenceCollection.from(values).cast('string').toArray(),
-		).toThrow(/cast\('string'\) found a number at index 2\./);
+		expect(() => SequenceCollection.from(values).cast('string').toArray()).toThrow(
+			/cast\('string'\) found a number at index 2\./,
+		);
 	});
 
 	it('should name the class of what it found', () => {
@@ -205,9 +193,9 @@ describe('cast', () => {
 	it('should describe null rather than calling it an object', () => {
 		const values: unknown[] = [{ a: 1 }, null];
 
-		expect(() =>
-			SequenceCollection.from(values).cast('object').toArray(),
-		).toThrow(/found a null at index 1/);
+		expect(() => SequenceCollection.from(values).cast('object').toArray()).toThrow(
+			/found a null at index 1/,
+		);
 	});
 
 	it('should accept instances of a class', () => {
@@ -229,13 +217,8 @@ describe('cast', () => {
 		// the only difference is what happens to the element that does not fit.
 		const values: unknown[] = ['a', 7, 'b'];
 
-		expect(SequenceCollection.from(values).ofType('string').toArray()).toEqual([
-			'a',
-			'b',
-		]);
-		expect(() =>
-			SequenceCollection.from(values).cast('string').toArray(),
-		).toThrow(TypeError);
+		expect(SequenceCollection.from(values).ofType('string').toArray()).toEqual(['a', 'b']);
+		expect(() => SequenceCollection.from(values).cast('string').toArray()).toThrow(TypeError);
 	});
 
 	it('should not throw before the bad element is reached', () => {
@@ -302,10 +285,7 @@ describe('ofType and cast, written as a type', () => {
 		const strings: unknown[] = ['a', 'b'];
 		const admins: unknown[] = [new Admin('root')];
 
-		expect(SequenceCollection.from(strings).cast<string>().toArray()).toEqual([
-			'a',
-			'b',
-		]);
+		expect(SequenceCollection.from(strings).cast<string>().toArray()).toEqual(['a', 'b']);
 		expect(
 			SequenceCollection.from(admins)
 				.cast<Admin>()
@@ -413,18 +393,13 @@ describe('a type that contains itself', () => {
 	// after the first level would pass every test above while being worthless,
 	// so each of these is wrong only at a depth the check has to reach.
 	it.each([
-		[
-			'one level down',
-			{ id: 1, text: 'a', replies: [{ id: 'wrong', text: 'b', replies: [] }] },
-		],
+		['one level down', { id: 1, text: 'a', replies: [{ id: 'wrong', text: 'b', replies: [] }] }],
 		[
 			'two levels down',
 			{
 				id: 1,
 				text: 'a',
-				replies: [
-					{ id: 2, text: 'b', replies: [{ id: 3, text: 4, replies: [] }] },
-				],
+				replies: [{ id: 2, text: 'b', replies: [{ id: 3, text: 4, replies: [] }] }],
 			},
 		],
 		[
@@ -564,10 +539,7 @@ describe('the shape check the transformer writes', () => {
 		['an array that is not one', () => ({ ...valid(), tags: 'a' })],
 		['an array with a wrong element', () => ({ ...valid(), tags: ['a', 2] })],
 		['a nested object missing its field', () => ({ ...valid(), customer: {} })],
-		[
-			'a nested object of the wrong type',
-			() => ({ ...valid(), customer: 'a@b.c' }),
-		],
+		['a nested object of the wrong type', () => ({ ...valid(), customer: 'a@b.c' })],
 		['a value outside the union', () => ({ ...valid(), status: 'shipped' })],
 		[
 			'a class field that is not an instance',
@@ -592,9 +564,7 @@ describe('the shape check the transformer writes', () => {
 
 	it('should name the type in the error cast throws', () => {
 		expect(() =>
-			SequenceCollection.from([valid(), 'not an order'])
-				.cast<Order>()
-				.toArray(),
+			SequenceCollection.from([valid(), 'not an order']).cast<Order>().toArray(),
 		).toThrow(/cast\('Order'\)/);
 	});
 
@@ -612,10 +582,7 @@ describe('topBy', () => {
 			{ name: 'd', score: 40 },
 		];
 
-		const best = SequenceCollection.from(players).topBy(
-			(player) => player.score,
-			2,
-		);
+		const best = SequenceCollection.from(players).topBy((player) => player.score, 2);
 
 		expect(best.toArray().map((player) => player.name)).toEqual(['b', 'd']);
 	});
@@ -649,11 +616,7 @@ describe('topBy', () => {
 			.topBy((player) => player.score, 3)
 			.toArray();
 
-		expect(ranked.map((player) => player.name)).toEqual([
-			'player-0',
-			'player-1',
-			'player-2',
-		]);
+		expect(ranked.map((player) => player.name)).toEqual(['player-0', 'player-1', 'player-2']);
 	});
 
 	it('should extract each key exactly once', () => {
@@ -682,10 +645,7 @@ describe('topBy', () => {
 	});
 
 	it('should handle an empty sequence', () => {
-		const ranked = SequenceCollection.empty<Player>().topBy(
-			(player) => player.score,
-			5,
-		);
+		const ranked = SequenceCollection.empty<Player>().topBy((player) => player.score, 5);
 
 		expect(ranked.toArray()).toEqual([]);
 	});

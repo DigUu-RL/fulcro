@@ -107,9 +107,7 @@ describe('offsetOf', () => {
 	});
 
 	it('should leave a union of structs placing the field differently to throw', () => {
-		expect(() => offsetOf<Vector | Reversed>('x')).toThrow(
-			'a union of layouts has no single one',
-		);
+		expect(() => offsetOf<Vector | Reversed>('x')).toThrow('a union of layouts has no single one');
 	});
 
 	it('should leave a generic parameter to throw, having nothing substituted yet', () => {

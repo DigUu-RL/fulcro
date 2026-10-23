@@ -156,11 +156,7 @@ export class Decimal {
 	 */
 	add(other: Decimal, mode: RoundingMode = DEFAULT_MODE): Decimal {
 		return new Decimal(
-			addParts(
-				this.#parts,
-				other.#parts,
-				requireRoundingMode('Decimal.add', mode),
-			),
+			addParts(this.#parts, other.#parts, requireRoundingMode('Decimal.add', mode)),
 		);
 	}
 
@@ -173,11 +169,7 @@ export class Decimal {
 	 */
 	subtract(other: Decimal, mode: RoundingMode = DEFAULT_MODE): Decimal {
 		return new Decimal(
-			addParts(
-				this.#parts,
-				other.negate().#parts,
-				requireRoundingMode('Decimal.subtract', mode),
-			),
+			addParts(this.#parts, other.negate().#parts, requireRoundingMode('Decimal.subtract', mode)),
 		);
 	}
 
@@ -190,11 +182,7 @@ export class Decimal {
 	 */
 	multiply(other: Decimal, mode: RoundingMode = DEFAULT_MODE): Decimal {
 		return new Decimal(
-			multiplyParts(
-				this.#parts,
-				other.#parts,
-				requireRoundingMode('Decimal.multiply', mode),
-			),
+			multiplyParts(this.#parts, other.#parts, requireRoundingMode('Decimal.multiply', mode)),
 		);
 	}
 
@@ -208,11 +196,7 @@ export class Decimal {
 	 */
 	divide(other: Decimal, mode: RoundingMode = DEFAULT_MODE): Decimal {
 		return new Decimal(
-			divideParts(
-				this.#parts,
-				other.#parts,
-				requireRoundingMode('Decimal.divide', mode),
-			),
+			divideParts(this.#parts, other.#parts, requireRoundingMode('Decimal.divide', mode)),
 		);
 	}
 
@@ -256,16 +240,9 @@ export class Decimal {
 			});
 		}
 
-		const power: bigint =
-			(negative ? -coefficient : coefficient) * powerOfTen(scale);
+		const power: bigint = (negative ? -coefficient : coefficient) * powerOfTen(scale);
 
-		return new Decimal(
-			powerParts(
-				this.#parts,
-				power,
-				requireRoundingMode('Decimal.power', mode),
-			),
-		);
+		return new Decimal(powerParts(this.#parts, power, requireRoundingMode('Decimal.power', mode)));
 	}
 
 	/**
@@ -313,13 +290,7 @@ export class Decimal {
 			});
 		}
 
-		return new Decimal(
-			roundParts(
-				this.#parts,
-				places,
-				requireRoundingMode('Decimal.round', mode),
-			),
-		);
+		return new Decimal(roundParts(this.#parts, places, requireRoundingMode('Decimal.round', mode)));
 	}
 
 	/**
@@ -426,10 +397,7 @@ export class Decimal {
 	 * @returns The text.
 	 * @throws {RangeError} When `fractionDigits` is out of range.
 	 */
-	toFixed(
-		fractionDigits: number = 0,
-		mode: RoundingMode = DEFAULT_MODE,
-	): string {
+	toFixed(fractionDigits: number = 0, mode: RoundingMode = DEFAULT_MODE): string {
 		return formatFixed(
 			this.#parts,
 			requireDigits('toFixed', fractionDigits, 0),
@@ -463,15 +431,10 @@ export class Decimal {
 	 * @returns The text.
 	 * @throws {RangeError} When `fractionDigits` is out of range.
 	 */
-	toExponential(
-		fractionDigits?: number,
-		mode: RoundingMode = DEFAULT_MODE,
-	): string {
+	toExponential(fractionDigits?: number, mode: RoundingMode = DEFAULT_MODE): string {
 		return formatExponential(
 			this.#parts,
-			fractionDigits === undefined
-				? undefined
-				: requireDigits('toExponential', fractionDigits, 0),
+			fractionDigits === undefined ? undefined : requireDigits('toExponential', fractionDigits, 0),
 			requireRoundingMode('Decimal.toExponential', mode),
 		);
 	}
@@ -485,10 +448,7 @@ export class Decimal {
 	 * @param options Formatting options, as `Intl.NumberFormat` takes them.
 	 * @returns The formatted text.
 	 */
-	toLocaleString(
-		locales?: Intl.LocalesArgument,
-		options?: Intl.NumberFormatOptions,
-	): string {
+	toLocaleString(locales?: Intl.LocalesArgument, options?: Intl.NumberFormatOptions): string {
 		return new Intl.NumberFormat(locales, options).format(
 			this.toString() as Intl.StringNumericLiteral,
 		);

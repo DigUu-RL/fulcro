@@ -81,9 +81,7 @@ const missingPart = (element: unknown): string | undefined => {
 		return 'layout.size';
 	}
 
-	return ['read', 'write', 'is'].find(
-		(method) => typeof candidate[method] !== 'function',
-	);
+	return ['read', 'write', 'is'].find((method) => typeof candidate[method] !== 'function');
 };
 
 /**

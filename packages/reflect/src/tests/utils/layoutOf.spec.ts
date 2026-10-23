@@ -66,11 +66,7 @@ describe('layoutOf', () => {
 	});
 
 	it('should list the fields in the order they were declared', () => {
-		expect(Object.keys(layoutOf<Mixed>().fields)).toEqual([
-			'flag',
-			'weight',
-			'count',
-		]);
+		expect(Object.keys(layoutOf<Mixed>().fields)).toEqual(['flag', 'weight', 'count']);
 	});
 
 	it('should report a type without fields with its size, its alignment and none', () => {
@@ -113,9 +109,7 @@ describe('layoutOf', () => {
 				};
 			};
 		}>();
-		expectTypeOf<TypeLayout<Half>['fields']>().toEqualTypeOf<
-			Record<never, never>
-		>();
+		expectTypeOf<TypeLayout<Half>['fields']>().toEqualTypeOf<Record<never, never>>();
 	});
 
 	it('should leave a union of different layouts to throw, having no single answer', () => {
@@ -125,8 +119,6 @@ describe('layoutOf', () => {
 	it('should leave a generic parameter to throw, having nothing substituted yet', () => {
 		const measure = <T extends WithLayout>(): unknown => layoutOf<T>();
 
-		expect(() => measure<Half>()).toThrow(
-			expect.objectContaining({ code: 'FULCRO4009' }),
-		);
+		expect(() => measure<Half>()).toThrow(expect.objectContaining({ code: 'FULCRO4009' }));
 	});
 });

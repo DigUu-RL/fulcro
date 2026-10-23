@@ -9,28 +9,16 @@ import { RangeCatalog } from '@/definition';
 export const parallelCatalog = {
 	FULCRO3001: {
 		kind: Error,
-		message: ({
-			module,
-			name,
-		}: {
-			operation: string;
-			module: string;
-			name: string;
-		}) => `${module} has no callable export named "${name}".`,
+		message: ({ module, name }: { operation: string; module: string; name: string }) =>
+			`${module} has no callable export named "${name}".`,
 	},
 	FULCRO3002: {
 		kind: Error,
-		message: (_details: { operation: string }) =>
-			'This module is only meaningful inside a worker.',
+		message: (_details: { operation: string }) => 'This module is only meaningful inside a worker.',
 	},
 	FULCRO3003: {
 		kind: Error,
-		message: ({
-			workers,
-		}: {
-			operation: string;
-			workers: number | undefined;
-		}) =>
+		message: ({ workers }: { operation: string; workers: number | undefined }) =>
 			`A pool needs a positive integer worker count, and was given ${workers}.`,
 	},
 
@@ -83,7 +71,6 @@ export const parallelCatalog = {
 		kind: Error,
 		message: ({ thrown }: { operation: string; thrown: null | undefined }) =>
 			`The task rejected with ${String(thrown)}, which cannot be told apart from no failure.`,
-		cause: ({ thrown }: { operation: string; thrown: null | undefined }) =>
-			thrown,
+		cause: ({ thrown }: { operation: string; thrown: null | undefined }) => thrown,
 	},
 } as const satisfies RangeCatalog<'3'>;

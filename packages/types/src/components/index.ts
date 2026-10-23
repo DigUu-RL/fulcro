@@ -50,10 +50,7 @@ export interface ComponentRecord<T, TValue> {
 	 * @param descriptor The descriptor.
 	 * @param equals How the type compares two values.
 	 */
-	readonly register: (
-		descriptor: object,
-		equals: (left: TValue, right: TValue) => boolean,
-	) => void;
+	readonly register: (descriptor: object, equals: (left: TValue, right: TValue) => boolean) => void;
 }
 
 /**
@@ -127,10 +124,7 @@ export const createComponentRecord = <T, TValue>(
 		Object.keys(value).length === keys.length &&
 		keys.every((key) => Object.hasOwn(value, key) && element.is(value[key]));
 
-	const register = (
-		descriptor: object,
-		equals: (left: TValue, right: TValue) => boolean,
-	): void =>
+	const register = (descriptor: object, equals: (left: TValue, right: TValue) => boolean): void =>
 		registerRepeatedCodec(
 			descriptor,
 			elementDescriptor,

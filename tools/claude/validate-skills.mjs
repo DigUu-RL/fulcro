@@ -123,16 +123,7 @@ const BUNDLED = new Set([
  * describe rather than instruct, and reading those as instructions is how a
  * checker earns the reputation that gets it switched off.
  */
-const SHELLS = new Set([
-	'',
-	'sh',
-	'bash',
-	'shell',
-	'console',
-	'pwsh',
-	'powershell',
-	'zsh',
-]);
+const SHELLS = new Set(['', 'sh', 'bash', 'shell', 'console', 'pwsh', 'powershell', 'zsh']);
 
 /**
  * Extensions a reference has to carry to be checked as a path.
@@ -296,11 +287,7 @@ export const missingReferences = (prose, directory, root, where) => {
 	return unresolved
 		.filter((reference) => !ignored.has(reference))
 		.map((reference) =>
-			error(
-				'reference-missing',
-				where,
-				`Names \`${reference}\`, which is not in the repository.`,
-			),
+			error('reference-missing', where, `Names \`${reference}\`, which is not in the repository.`),
 		);
 };
 
@@ -317,9 +304,7 @@ const checkFrontmatter = (skill, where, names) => {
 	const block = skill.frontmatter;
 
 	if (block === null || !block.present) {
-		return [
-			error('frontmatter-missing', where, 'There is no frontmatter block.'),
-		];
+		return [error('frontmatter-missing', where, 'There is no frontmatter block.')];
 	}
 
 	for (const problem of block.problems) {
@@ -344,13 +329,7 @@ const checkFrontmatter = (skill, where, names) => {
 		findings.push(error('name-missing', where, '`name` is not set.'));
 	} else {
 		if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(name)) {
-			findings.push(
-				error(
-					'name-shape',
-					`${where} (name)`,
-					`\`${name}\` is not kebab case.`,
-				),
-			);
+			findings.push(error('name-shape', `${where} (name)`, `\`${name}\` is not kebab case.`));
 		}
 
 		if (name !== skill.directory) {
@@ -399,9 +378,7 @@ const checkFrontmatter = (skill, where, names) => {
 	const description = block.values.description;
 
 	if (typeof description !== 'string' || description.trim() === '') {
-		findings.push(
-			error('description-missing', where, '`description` is not set.'),
-		);
+		findings.push(error('description-missing', where, '`description` is not set.'));
 	} else if (!/\b(use|when|usar|quando)\b/i.test(description)) {
 		findings.push(
 			warning(
@@ -414,23 +391,13 @@ const checkFrontmatter = (skill, where, names) => {
 
 	for (const key of ['disable-model-invocation', 'user-invocable']) {
 		if (key in block.values && typeof block.values[key] !== 'boolean') {
-			findings.push(
-				error(
-					'frontmatter-type',
-					`${where} (${key})`,
-					'Takes `true` or `false`.',
-				),
-			);
+			findings.push(error('frontmatter-type', `${where} (${key})`, 'Takes `true` or `false`.'));
 		}
 	}
 
 	if ('context' in block.values && block.values.context !== 'fork') {
 		findings.push(
-			error(
-				'frontmatter-type',
-				`${where} (context)`,
-				'`fork` is the only value this key takes.',
-			),
+			error('frontmatter-type', `${where} (context)`, '`fork` is the only value this key takes.'),
 		);
 	}
 
@@ -519,13 +486,11 @@ const checkBody = (skill, where, root, available) => {
 		);
 	}
 
-	const optedOut =
-		skill.frontmatter?.values['disable-model-invocation'] === true;
+	const optedOut = skill.frontmatter?.values['disable-model-invocation'] === true;
 
 	if (!optedOut) {
 		for (const line of commandLines(body)) {
-			const refused =
-				protectedOperation({ command: line }) ?? destructive({ command: line });
+			const refused = protectedOperation({ command: line }) ?? destructive({ command: line });
 
 			if (refused === null) continue;
 
@@ -564,13 +529,7 @@ const checkEvals = (suite, known, covered) => {
 	const where = `tools/claude/skill-evals/${suite.file}`;
 
 	if (suite.problem !== null || suite.document === null) {
-		return [
-			error(
-				'eval-unreadable',
-				where,
-				`Not readable as JSON: ${suite.problem}.`,
-			),
-		];
+		return [error('eval-unreadable', where, `Not readable as JSON: ${suite.problem}.`)];
 	}
 
 	const findings = [];
@@ -618,8 +577,7 @@ const checkEvals = (suite, known, covered) => {
 			continue;
 		}
 
-		const { id, kind, prompt, expect } =
-			/** @type {Record<string, unknown>} */ (entry);
+		const { id, kind, prompt, expect } = /** @type {Record<string, unknown>} */ (entry);
 
 		if (typeof id !== 'string' || id === '') {
 			findings.push(error('eval-case-id', at, '`id` is missing.'));
@@ -631,11 +589,7 @@ const checkEvals = (suite, known, covered) => {
 
 		if (kind !== 'positive' && kind !== 'negative' && kind !== 'edge') {
 			findings.push(
-				error(
-					'eval-case-kind',
-					at,
-					'`kind` is one of `positive`, `negative` or `edge`.',
-				),
+				error('eval-case-kind', at, '`kind` is one of `positive`, `negative` or `edge`.'),
 			);
 		} else {
 			kinds.add(kind);
@@ -653,31 +607,18 @@ const checkEvals = (suite, known, covered) => {
 		const expectation = /** @type {Record<string, unknown>} */ (expect);
 
 		if (typeof expectation.invokes !== 'boolean') {
-			findings.push(
-				error('eval-case-expect', at, '`expect.invokes` is `true` or `false`.'),
-			);
+			findings.push(error('eval-case-expect', at, '`expect.invokes` is `true` or `false`.'));
 		} else if (kind === 'positive' && !expectation.invokes) {
 			findings.push(
-				error(
-					'eval-case-expect',
-					at,
-					'A positive case is one that invokes the skill.',
-				),
+				error('eval-case-expect', at, 'A positive case is one that invokes the skill.'),
 			);
 		} else if (kind === 'negative' && expectation.invokes) {
 			findings.push(
-				error(
-					'eval-case-expect',
-					at,
-					'A negative case is one that does not invoke the skill.',
-				),
+				error('eval-case-expect', at, 'A negative case is one that does not invoke the skill.'),
 			);
 		}
 
-		if (
-			expectation.invokes === true &&
-			typeof expectation.output !== 'string'
-		) {
+		if (expectation.invokes === true && typeof expectation.output !== 'string') {
 			findings.push(
 				error(
 					'eval-case-expect',
@@ -688,9 +629,7 @@ const checkEvals = (suite, known, covered) => {
 		}
 
 		if ('refuses' in expectation && typeof expectation.refuses !== 'string') {
-			findings.push(
-				error('eval-case-expect', at, '`expect.refuses` is a sentence.'),
-			);
+			findings.push(error('eval-case-expect', at, '`expect.refuses` is a sentence.'));
 		}
 	}
 
@@ -771,10 +710,7 @@ export const validateSkills = (root = repositoryRoot) => {
 };
 
 // Run from the command line, imported by its tests.
-if (
-	process.argv[1] !== undefined &&
-	import.meta.url === pathToFileURL(process.argv[1]).href
-) {
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
 	const strict = process.argv.includes('--strict');
 
 	process.exitCode = report('Skills', validateSkills(), { strict });

@@ -18,11 +18,8 @@ import type { ElementType } from '@/element';
  * @param right Second operand, as long as the first.
  * @returns The sums, component by component.
  */
-export const addEach = <T>(
-	element: ElementType<T>,
-	left: readonly T[],
-	right: readonly T[],
-): T[] => left.map((item, index) => element.add(item, right[index]));
+export const addEach = <T>(element: ElementType<T>, left: readonly T[], right: readonly T[]): T[] =>
+	left.map((item, index) => element.add(item, right[index]));
 
 /**
  * @param element Element type of every component.
@@ -41,10 +38,8 @@ export const subtractEach = <T>(
  * @param value Components negated.
  * @returns Every component negated.
  */
-export const negateEach = <T>(
-	element: ElementType<T>,
-	value: readonly T[],
-): T[] => value.map((item) => element.negate(item));
+export const negateEach = <T>(element: ElementType<T>, value: readonly T[]): T[] =>
+	value.map((item) => element.negate(item));
 
 /**
  * @param element Element type of every component.
@@ -52,11 +47,8 @@ export const negateEach = <T>(
  * @param factor Value each is multiplied by, on the right.
  * @returns Every component times the factor.
  */
-export const scaleEach = <T>(
-	element: ElementType<T>,
-	value: readonly T[],
-	factor: T,
-): T[] => value.map((item) => element.multiply(item, factor));
+export const scaleEach = <T>(element: ElementType<T>, value: readonly T[], factor: T): T[] =>
+	value.map((item) => element.multiply(item, factor));
 
 /**
  * @param element Element type of every component.
@@ -64,11 +56,8 @@ export const scaleEach = <T>(
  * @param divisor Value each is divided by.
  * @returns Every component over the divisor.
  */
-export const divideEach = <T>(
-	element: ElementType<T>,
-	value: readonly T[],
-	divisor: T,
-): T[] => value.map((item) => element.divide(item, divisor));
+export const divideEach = <T>(element: ElementType<T>, value: readonly T[], divisor: T): T[] =>
+	value.map((item) => element.divide(item, divisor));
 
 /**
  * Compares two lists component by component, stopping at the first that
@@ -84,8 +73,7 @@ export const equalsEach = <T>(
 	left: readonly T[],
 	right: readonly T[],
 ): boolean =>
-	left.length === right.length &&
-	left.every((item, index) => element.equals(item, right[index]));
+	left.length === right.length && left.every((item, index) => element.equals(item, right[index]));
 
 /**
  * A sum of products — a row of one matrix times a column of another, a dot

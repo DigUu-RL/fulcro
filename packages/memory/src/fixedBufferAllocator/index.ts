@@ -42,9 +42,7 @@ export interface FixedBufferAllocator extends AllocationDomain {
  * @returns The allocator, frozen.
  * @throws {TypeError} When `buffer` is not an `ArrayBuffer`.
  */
-export const createFixedBufferAllocator = (
-	buffer: ArrayBuffer,
-): FixedBufferAllocator => {
+export const createFixedBufferAllocator = (buffer: ArrayBuffer): FixedBufferAllocator => {
 	if (!(buffer instanceof ArrayBuffer)) {
 		throw createError('FULCRO7013', {
 			operation: 'createFixedBufferAllocator',

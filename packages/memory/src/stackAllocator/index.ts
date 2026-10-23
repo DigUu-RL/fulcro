@@ -124,12 +124,7 @@ export const createStackAllocator = (capacity: number): StackAllocator => {
 
 	return Object.freeze({
 		allocate: (size: number, alignment: number): Allocation =>
-			allocateIn(
-				'StackAllocator.allocate',
-				frames[0] as Frame,
-				size,
-				alignment,
-			),
+			allocateIn('StackAllocator.allocate', frames[0] as Frame, size, alignment),
 
 		enter: (): AllocationDomain => {
 			const frame: Frame = {

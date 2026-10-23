@@ -10,11 +10,7 @@ import {
 	TaskWork,
 } from '@/@types/index.js';
 import { createCancellationSource } from '@/cancellation/index.js';
-import {
-	createWaitingQueue,
-	type Waiting,
-	type WaitingQueue,
-} from '@/task/queue.js';
+import { createWaitingQueue, type Waiting, type WaitingQueue } from '@/task/queue.js';
 
 /**
  * What a task rejects with, made safe to hold as a failure.
@@ -59,10 +55,7 @@ const asFailure = (thrown: unknown): NonNullable<unknown> =>
 export const createTaskScope = (options: TaskScopeOptions = {}): TaskScope => {
 	const limit: number = options.concurrency ?? Number.POSITIVE_INFINITY;
 
-	if (
-		limit !== Number.POSITIVE_INFINITY &&
-		!(Number.isInteger(limit) && limit >= 1)
-	) {
+	if (limit !== Number.POSITIVE_INFINITY && !(Number.isInteger(limit) && limit >= 1)) {
 		throw createError('FULCRO3012', {
 			operation: 'createTaskScope',
 			concurrency: limit,
@@ -241,10 +234,8 @@ export const createTaskScope = (options: TaskScopeOptions = {}): TaskScope => {
 		return Object.freeze({
 			then: <TResult1 = T, TResult2 = never>(
 				onFulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | null,
-				onRejected?:
-					((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
-			): PromiseLike<TResult1 | TResult2> =>
-				outcome.then(onFulfilled, onRejected),
+				onRejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
+			): PromiseLike<TResult1 | TResult2> => outcome.then(onFulfilled, onRejected),
 			settled: outcomeAsResult,
 			token,
 			cancel: own.cancel,
@@ -266,9 +257,7 @@ export const createTaskScope = (options: TaskScopeOptions = {}): TaskScope => {
 
 		await end();
 
-		const unreported: { readonly error: unknown } | null = reported
-			? null
-			: failure;
+		const unreported: { readonly error: unknown } | null = reported ? null : failure;
 
 		reported = true;
 

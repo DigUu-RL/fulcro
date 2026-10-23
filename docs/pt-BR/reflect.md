@@ -562,9 +562,7 @@ npm install --save-dev ts-patch
 // tsconfig.json
 {
 	"compilerOptions": {
-		"plugins": [
-			{ "transform": "@fulcro/reflect/transformer", "type": "program" },
-		],
+		"plugins": [{ "transform": "@fulcro/reflect/transformer", "type": "program" }],
 	},
 }
 ```

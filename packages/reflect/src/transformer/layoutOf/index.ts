@@ -1,7 +1,4 @@
-import {
-	type CallRewriter,
-	utilityModuleSegment,
-} from '@fulcro/transform-core';
+import { type CallRewriter, utilityModuleSegment } from '@fulcro/transform-core';
 
 import { type ReadLayout, readLayout } from '@/transformer/layout';
 import { frozenObject } from '@/transformer/literal';
@@ -33,9 +30,8 @@ export const layoutOfRewriter: CallRewriter = {
 		if (layout === null) return null;
 
 		const { factory } = context;
-		const frozen = (
-			members: Parameters<typeof frozenObject>[1],
-		): ReturnType<typeof frozenObject> => frozenObject(factory, members);
+		const frozen = (members: Parameters<typeof frozenObject>[1]): ReturnType<typeof frozenObject> =>
+			frozenObject(factory, members);
 
 		return frozen([
 			['size', factory.createNumericLiteral(layout.size)],

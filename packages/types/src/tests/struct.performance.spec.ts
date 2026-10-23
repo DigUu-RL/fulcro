@@ -63,16 +63,12 @@ const ACCESSORS = [
  * @param size Bytes of the view.
  * @returns The view, and a function reading the count.
  */
-const countingView = (
-	size: number,
-): { view: DataView; accesses: () => number } => {
+const countingView = (size: number): { view: DataView; accesses: () => number } => {
 	const view = new DataView(new ArrayBuffer(size));
 	let accesses = 0;
 
 	for (const accessor of ACCESSORS) {
-		const original = DataView.prototype[accessor] as (
-			...parameters: unknown[]
-		) => unknown;
+		const original = DataView.prototype[accessor] as (...parameters: unknown[]) => unknown;
 
 		Object.defineProperty(view, accessor, {
 			value: (...parameters: unknown[]): unknown => {
@@ -181,16 +177,12 @@ describe('struct', () => {
 		Point.write(view, 0, Point.from({ x: 3, y: 4 }));
 
 		for (let index = 0; index < VOLUME; index++) {
-			const value =
-				index % 2 === 0 ? Point.from({ x: 3, y: 4 }) : Point.read(view, 0);
+			const value = index % 2 === 0 ? Point.from({ x: 3, y: 4 }) : Point.read(view, 0);
 
 			prototypes.add(Object.getPrototypeOf(value));
 
 			for (const key of Reflect.ownKeys(value)) {
-				if (
-					typeof Object.getOwnPropertyDescriptor(value, key)?.value ===
-					'function'
-				) {
+				if (typeof Object.getOwnPropertyDescriptor(value, key)?.value === 'function') {
 					ownFunctions++;
 				}
 			}
@@ -241,9 +233,7 @@ describe('struct', () => {
 			view.setFloat32(offset + 4, value.y, true);
 			view.setFloat32(offset + 8, value.z, true);
 		});
-		const described: number = timed((offset) =>
-			Vector3.write(view, offset, value),
-		);
+		const described: number = timed((offset) => Vector3.write(view, offset, value));
 
 		expect(described).toBeLessThan(baseline * 25);
 	});

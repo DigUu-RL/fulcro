@@ -31,17 +31,8 @@ export const COMPILERS = [
  * @param packageName Package the compiler is installed under.
  * @returns Everything the compiler printed, which is empty on success.
  */
-export const compileFixture = (
-	fixture: string,
-	packageName: string,
-): string => {
-	const tsc: string = path.join(
-		WORKSPACE_ROOT,
-		'node_modules',
-		packageName,
-		'bin',
-		'tsc',
-	);
+export const compileFixture = (fixture: string, packageName: string): string => {
+	const tsc: string = path.join(WORKSPACE_ROOT, 'node_modules', packageName, 'bin', 'tsc');
 
 	try {
 		execFileSync(
@@ -86,10 +77,8 @@ export const compileFixture = (
  */
 export const reportedLines = (report: string, fixture: string): number[] => [
 	...new Set(
-		[
-			...report.matchAll(
-				new RegExp(`${fixture.replaceAll('.', '\\.')}[:(](\\d+)`, 'g'),
-			),
-		].map((match) => Number(match[1])),
+		[...report.matchAll(new RegExp(`${fixture.replaceAll('.', '\\.')}[:(](\\d+)`, 'g'))].map(
+			(match) => Number(match[1]),
+		),
 	),
 ];

@@ -37,18 +37,10 @@ describe('packageNameOf, counted', () => {
 	it('should look at each directory once, however many files ask', () => {
 		const exists = vi.spyOn(typescript.sys, 'fileExists');
 		const read = vi.spyOn(typescript.sys, 'readFile');
-		const directory: string = path.join(
-			workspace.root,
-			'dist',
-			'deep',
-			'er',
-			'still',
-		);
+		const directory: string = path.join(workspace.root, 'dist', 'deep', 'er', 'still');
 
 		for (let index = 0; index < FILES; index++) {
-			expect(packageNameOf(path.join(directory, `file${index}.d.ts`))).toBe(
-				'library',
-			);
+			expect(packageNameOf(path.join(directory, `file${index}.d.ts`))).toBe('library');
 		}
 
 		// Five directories from `still` up to the root, each looked at once;

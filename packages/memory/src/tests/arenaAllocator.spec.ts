@@ -42,9 +42,7 @@ describe('createArenaAllocator', () => {
 
 	it('should release every allocation at once on reset', () => {
 		const arena: ArenaAllocator = createArenaAllocator(16);
-		const allocations: Allocation[] = [1, 2, 3, 4].map(() =>
-			arena.allocate(12, 4),
-		);
+		const allocations: Allocation[] = [1, 2, 3, 4].map(() => arena.allocate(12, 4));
 
 		arena.reset();
 

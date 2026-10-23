@@ -5,15 +5,7 @@ failure and absence into values. No dependencies, no compiler involvement,
 nothing to configure.
 
 ```ts
-import {
-	failure,
-	none,
-	optionOf,
-	some,
-	success,
-	switchFor,
-	tryCatch,
-} from '@fulcro/functions';
+import { failure, none, optionOf, some, success, switchFor, tryCatch } from '@fulcro/functions';
 ```
 
 ## `switchFor`

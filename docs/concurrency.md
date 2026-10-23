@@ -15,9 +15,7 @@ This loads a hundred users one after another. If each request takes 100 ms, it
 takes ten seconds:
 
 ```ts
-const users = await AsyncSequenceCollection.from(ids)
-	.select(loadUser)
-	.toArray();
+const users = await AsyncSequenceCollection.from(ids).select(loadUser).toArray();
 ```
 
 This loads eight at a time, and takes a little over one second:
@@ -198,10 +196,9 @@ ahead.
 
 ```ts
 const enriched = await AsyncSequenceCollection.from(orders)
-	.selectAwait(
-		async (order) => ({ ...order, customer: await loadCustomer(order.id) }),
-		{ concurrency: 10 },
-	)
+	.selectAwait(async (order) => ({ ...order, customer: await loadCustomer(order.id) }), {
+		concurrency: 10,
+	})
 	.toArray();
 ```
 

@@ -38,17 +38,11 @@ import {
  * message nobody asks for.
  * @returns The rewriter.
  */
-export const checkRewriter = (
-	functionName: string,
-	explain: boolean,
-): CallRewriter => ({
+export const checkRewriter = (functionName: string, explain: boolean): CallRewriter => ({
 	functionName,
 	moduleSegment: utilityModuleSegment(functionName),
 
-	rewrite: (
-		call: typescript.CallExpression,
-		context: RewriteContext,
-	): typescript.Node | null => {
+	rewrite: (call: typescript.CallExpression, context: RewriteContext): typescript.Node | null => {
 		const [typeArgument] = call.typeArguments ?? [];
 		const [value] = call.arguments;
 
@@ -68,13 +62,9 @@ export const checkRewriter = (
 			typescript.TypeFormatFlags.NoTruncation,
 		);
 
-		const test: typescript.Expression | null = buildStructuralTest(
-			type,
-			written,
-			call,
-			context,
-			{ explain },
-		);
+		const test: typescript.Expression | null = buildStructuralTest(type, written, call, context, {
+			explain,
+		});
 
 		// Left exactly as written when the type cannot be checked honestly, so
 		// the runtime refuses out loud rather than a half-check being emitted.

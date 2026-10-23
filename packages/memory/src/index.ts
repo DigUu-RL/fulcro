@@ -23,10 +23,7 @@ export { asView } from '@/asView';
 export { borrow } from '@/borrow';
 export type { Borrowed } from '@/borrowed';
 export { borrowMutable } from '@/borrowMutable';
-export {
-	createFixedBufferAllocator,
-	type FixedBufferAllocator,
-} from '@/fixedBufferAllocator';
+export { createFixedBufferAllocator, type FixedBufferAllocator } from '@/fixedBufferAllocator';
 export { createFixedBufferStorage } from '@/fixedBufferStorage';
 export { createLinearMemory, type LinearMemory } from '@/linearMemory';
 export { createManagedAllocator } from '@/managedAllocator';

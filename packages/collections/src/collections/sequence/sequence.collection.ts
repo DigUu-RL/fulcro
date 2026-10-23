@@ -19,11 +19,7 @@ import { Sequence } from '@/@types/collections/sequence';
 import { createGroup, createOrderedSequence } from '@/collections/factories';
 import { isIndexKey, resolveDeclaredCount } from '@/functions/collections';
 import { TopWindow } from '@/functions/ranking';
-import {
-	describeExpected,
-	describeType,
-	resolveTypeTest,
-} from '@/functions/types';
+import { describeExpected, describeType, resolveTypeTest } from '@/functions/types';
 
 /**
  * Cardinality resolver of the operators whose result depends on the data, such
@@ -91,14 +87,10 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 * callers able to derive it from their own source. Omitted by callers that
 	 * cannot tell, in which case the source itself is asked.
 	 */
-	protected constructor(
-		source: Iterable<T>,
-		countResolver?: () => number | null,
-	) {
+	protected constructor(source: Iterable<T>, countResolver?: () => number | null) {
 		this.source = source;
 		this.countResolver =
-			countResolver ??
-			((): number | null => SequenceCollection.resolveKnownCount(source));
+			countResolver ?? ((): number | null => SequenceCollection.resolveKnownCount(source));
 	}
 
 	/**
@@ -156,9 +148,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 * @param instance Instance to wrap.
 	 * @returns The wrapped instance, indistinguishable from the original one.
 	 */
-	protected static createIndexedProxy<T, I extends SequenceCollection<T>>(
-		instance: I,
-	): I {
+	protected static createIndexedProxy<T, I extends SequenceCollection<T>>(instance: I): I {
 		const handler: ProxyHandler<I> = {
 			get(target: I, property: string | symbol, receiver: unknown) {
 				if (isIndexKey(property)) {
@@ -224,10 +214,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 * data.
 	 * @returns The deferred sequence.
 	 */
-	private static deferred<T>(
-		source: Iterable<T>,
-		countResolver: () => number | null,
-	): Sequence<T> {
+	private static deferred<T>(source: Iterable<T>, countResolver: () => number | null): Sequence<T> {
 		return SequenceCollection.createSequenceProxy(source, countResolver);
 	}
 
@@ -495,9 +482,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 
 					for (const item of source) {
 						const key = keySelector(item);
-						const element = elementSelector
-							? elementSelector(item)
-							: (item as unknown as R);
+						const element = elementSelector ? elementSelector(item) : (item as unknown as R);
 
 						// One hash lookup per element instead of the two a
 						// `has` followed by a `get` would cost.
@@ -798,17 +783,12 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 * @returns A new map holding every element of the sequence.
 	 * @throws {Error} When two elements produce the same key.
 	 */
-	toMap<K, R = T>(
-		keySelector: Selector<T, K>,
-		elementSelector?: Selector<T, R>,
-	): Map<K, R> {
+	toMap<K, R = T>(keySelector: Selector<T, K>, elementSelector?: Selector<T, R>): Map<K, R> {
 		const map = new Map<K, R>();
 
 		for (const item of this.source) {
 			const key = keySelector(item);
-			const element = elementSelector
-				? elementSelector(item)
-				: (item as unknown as R);
+			const element = elementSelector ? elementSelector(item) : (item as unknown as R);
 
 			// A `has` guarding the `set` would hash every key twice. Writing
 			// first and checking that the map actually grew detects the
@@ -1137,8 +1117,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 			},
 			() => {
 				const left: number | null = knownCount();
-				const right: number | null =
-					SequenceCollection.resolveKnownCount(second);
+				const right: number | null = SequenceCollection.resolveKnownCount(second);
 
 				return left === null || right === null ? null : left + right;
 			},
@@ -1346,10 +1325,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 * @param resultSelector Projection merging each pair.
 	 * @returns A deferred sequence with one result per pair.
 	 */
-	zip<S, R>(
-		second: Iterable<S>,
-		resultSelector: ResultSelector<T, S, R>,
-	): Sequence<R> {
+	zip<S, R>(second: Iterable<S>, resultSelector: ResultSelector<T, S, R>): Sequence<R> {
 		const source: Iterable<T> = this.source;
 		const knownCount: () => number | null = this.countResolver;
 
@@ -1373,8 +1349,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 			},
 			() => {
 				const left: number | null = knownCount();
-				const right: number | null =
-					SequenceCollection.resolveKnownCount(second);
+				const right: number | null = SequenceCollection.resolveKnownCount(second);
 
 				return left === null || right === null ? null : Math.min(left, right);
 			},
@@ -1591,10 +1566,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 * @param keySelector Projection returning the key of each element.
 	 * @returns A deferred sequence with one element per matching key.
 	 */
-	intersectBy<K>(
-		second: Iterable<K>,
-		keySelector: Selector<T, K>,
-	): Sequence<T> {
+	intersectBy<K>(second: Iterable<K>, keySelector: Selector<T, K>): Sequence<T> {
 		const source: Iterable<T> = this.source;
 
 		return SequenceCollection.deferred(
@@ -1700,18 +1672,13 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 * @param elementSelector Optional projection applied to each element.
 	 * @returns A map of key to the elements sharing it, in first-seen order.
 	 */
-	toLookup<K, R = T>(
-		keySelector: Selector<T, K>,
-		elementSelector?: Selector<T, R>,
-	): Map<K, R[]> {
+	toLookup<K, R = T>(keySelector: Selector<T, K>, elementSelector?: Selector<T, R>): Map<K, R[]> {
 		const lookup = new Map<K, R[]>();
 
 		for (const item of this.source) {
 			const key: K = keySelector(item);
 			const value: R =
-				elementSelector === undefined
-					? (item as unknown as R)
-					: elementSelector(item);
+				elementSelector === undefined ? (item as unknown as R) : elementSelector(item);
 
 			const bucket: R[] | undefined = lookup.get(key);
 
@@ -1799,10 +1766,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 			(predicate(item) ? matched : rest).push(item);
 		}
 
-		return [
-			SequenceCollection.from(matched),
-			SequenceCollection.from(rest),
-		] as const;
+		return [SequenceCollection.from(matched), SequenceCollection.from(rest)] as const;
 	}
 
 	/**
@@ -1951,16 +1915,11 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 * @returns The values, sorted ascending.
 	 * @throws {Error} When the sequence is empty.
 	 */
-	private sortedValues(
-		operation: string,
-		selector?: Selector<T, number>,
-	): number[] {
+	private sortedValues(operation: string, selector?: Selector<T, number>): number[] {
 		const values: number[] = [];
 
 		for (const item of this.source) {
-			values.push(
-				selector === undefined ? (item as unknown as number) : selector(item),
-			);
+			values.push(selector === undefined ? (item as unknown as number) : selector(item));
 		}
 
 		if (values.length === 0) {
@@ -1983,9 +1942,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 		const values: number[] = this.sortedValues('median', selector);
 		const middle: number = Math.floor(values.length / 2);
 
-		return values.length % 2 === 1
-			? values[middle]
-			: (values[middle - 1] + values[middle]) / 2;
+		return values.length % 2 === 1 ? values[middle] : (values[middle - 1] + values[middle]) / 2;
 	}
 
 	/**
@@ -2032,24 +1989,18 @@ export class SequenceCollection<T> implements Sequence<T> {
 		const values: number[] = [];
 
 		for (const item of this.source) {
-			values.push(
-				selector === undefined ? (item as unknown as number) : selector(item),
-			);
+			values.push(selector === undefined ? (item as unknown as number) : selector(item));
 		}
 
 		if (values.length === 0) {
 			throw createError('FULCRO1007', { operation });
 		}
 
-		const mean: number =
-			values.reduce((sum, value) => sum + value, 0) / values.length;
+		const mean: number = values.reduce((sum, value) => sum + value, 0) / values.length;
 
 		return {
 			count: values.length,
-			total: values.reduce(
-				(sum, value) => sum + (value - mean) * (value - mean),
-				0,
-			),
+			total: values.reduce((sum, value) => sum + (value - mean) * (value - mean), 0),
 		};
 	}
 
@@ -2062,10 +2013,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 * @throws {Error} When the sequence is empty.
 	 */
 	standardDeviation(selector?: Selector<T, number>): number {
-		const { count, total } = this.squaredDeviations(
-			'standardDeviation',
-			selector,
-		);
+		const { count, total } = this.squaredDeviations('standardDeviation', selector);
 
 		return Math.sqrt(total / count);
 	}
@@ -2079,10 +2027,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 * @throws {Error} When the sequence holds fewer than two elements.
 	 */
 	sampleStandardDeviation(selector?: Selector<T, number>): number {
-		const { count, total } = this.squaredDeviations(
-			'sampleStandardDeviation',
-			selector,
-		);
+		const { count, total } = this.squaredDeviations('sampleStandardDeviation', selector);
 
 		// Dividing by n - 1 rather than n, which is undefined for a single
 		// observation: one measurement says nothing about the spread it came
@@ -2187,9 +2132,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 * @param type Name of the type, or constructor, to keep.
 	 * @returns A deferred sequence narrowed to that type.
 	 */
-	ofType<K extends keyof TypeNames>(
-		type: K,
-	): Sequence<Narrowed<T, TypeNames[K]>>;
+	ofType<K extends keyof TypeNames>(type: K): Sequence<Narrowed<T, TypeNames[K]>>;
 
 	/**
 	 * Keeps only the elements built from a given class.

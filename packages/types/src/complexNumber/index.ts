@@ -5,11 +5,7 @@ import {
 	type SourceOf,
 	type ValueOf,
 } from '@/element';
-import {
-	createHypercomplexType,
-	type HypercomplexType,
-	type ProductRule,
-} from '@/hypercomplex';
+import { createHypercomplexType, type HypercomplexType, type ProductRule } from '@/hypercomplex';
 import type { Multiply } from '@/struct/arithmetic';
 
 /**

@@ -66,9 +66,7 @@ const counted =
 
 describe('early termination', () => {
 	it('should stop all() at the first counterexample', () => {
-		SequenceCollection.from(instrumentedSource(VOLUME)).all(
-			(value) => value < 3,
-		);
+		SequenceCollection.from(instrumentedSource(VOLUME)).all((value) => value < 3);
 
 		expect(visits).toBe(4);
 	});
@@ -81,9 +79,7 @@ describe('early termination', () => {
 
 	it('should stop single() on the second match rather than draining', () => {
 		// The failure must not cost a full traversal of a huge source.
-		expect(() =>
-			SequenceCollection.from(instrumentedSource(VOLUME)).single(),
-		).toThrow();
+		expect(() => SequenceCollection.from(instrumentedSource(VOLUME)).single()).toThrow();
 
 		expect(visits).toBe(2);
 	});
@@ -139,12 +135,8 @@ describe('cardinality without traversal', () => {
 	});
 
 	it('should generate nothing to count a range or a repeat', () => {
-		expect(SequenceCollection.range(0, LARGE_VOLUME).count()).toBe(
-			LARGE_VOLUME,
-		);
-		expect(SequenceCollection.repeat('x', LARGE_VOLUME).count()).toBe(
-			LARGE_VOLUME,
-		);
+		expect(SequenceCollection.range(0, LARGE_VOLUME).count()).toBe(LARGE_VOLUME);
+		expect(SequenceCollection.repeat('x', LARGE_VOLUME).count()).toBe(LARGE_VOLUME);
 	});
 });
 
@@ -152,26 +144,16 @@ describe('memory', () => {
 	it('should hold only the window takeLast asks for', () => {
 		// The guarantee that makes it usable on a source larger than memory: a
 		// buffering implementation would pass every assertion about the values.
-		const tail = SequenceCollection.from(instrumentedSource(VOLUME))
-			.takeLast(5)
-			.toArray();
+		const tail = SequenceCollection.from(instrumentedSource(VOLUME)).takeLast(5).toArray();
 
-		expect(tail).toEqual([
-			VOLUME - 5,
-			VOLUME - 4,
-			VOLUME - 3,
-			VOLUME - 2,
-			VOLUME - 1,
-		]);
+		expect(tail).toEqual([VOLUME - 5, VOLUME - 4, VOLUME - 3, VOLUME - 2, VOLUME - 1]);
 		expect(visits).toBe(VOLUME);
 	});
 
 	it('should stream chunks rather than collect the sequence first', () => {
 		let pulledWhenFirstChunkArrived = 0;
 
-		const chunks = SequenceCollection.from(instrumentedSource(VOLUME)).chunk(
-			10,
-		);
+		const chunks = SequenceCollection.from(instrumentedSource(VOLUME)).chunk(10);
 
 		for (const chunk of chunks) {
 			pulledWhenFirstChunkArrived = visits;
@@ -292,9 +274,7 @@ describe('wall clock ceilings', () => {
 	it('should reverse a million elements within budget', () => {
 		const started: number = performance.now();
 
-		const reversed = SequenceCollection.range(0, LARGE_VOLUME)
-			.reverse()
-			.toArray();
+		const reversed = SequenceCollection.range(0, LARGE_VOLUME).reverse().toArray();
 
 		expect(reversed).toHaveLength(LARGE_VOLUME);
 		expect(performance.now() - started).toBeLessThan(2_000);
@@ -303,9 +283,7 @@ describe('wall clock ceilings', () => {
 	it('should chunk a million elements within budget', () => {
 		const started: number = performance.now();
 
-		const chunks = SequenceCollection.range(0, LARGE_VOLUME)
-			.chunk(1_000)
-			.count();
+		const chunks = SequenceCollection.range(0, LARGE_VOLUME).chunk(1_000).count();
 
 		expect(chunks).toBe(1_000);
 		expect(performance.now() - started).toBeLessThan(2_000);
@@ -314,9 +292,7 @@ describe('wall clock ceilings', () => {
 	it('should window a million elements within budget', () => {
 		const started: number = performance.now();
 
-		const windows = SequenceCollection.range(0, LARGE_VOLUME)
-			.windowed(3)
-			.count();
+		const windows = SequenceCollection.range(0, LARGE_VOLUME).windowed(3).count();
 
 		expect(windows).toBe(LARGE_VOLUME - 2);
 		expect(performance.now() - started).toBeLessThan(3_000);

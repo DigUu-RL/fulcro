@@ -6,11 +6,7 @@ import {
 	type SourceOf,
 	type ValueOf,
 } from '@/element';
-import {
-	createHypercomplexType,
-	type HypercomplexType,
-	type ProductRule,
-} from '@/hypercomplex';
+import { createHypercomplexType, type HypercomplexType, type ProductRule } from '@/hypercomplex';
 import type { Multiply } from '@/struct/arithmetic';
 
 /**
@@ -85,10 +81,7 @@ const hamiltonProduct: ProductRule = <T>(
 			times(leftZ, rightZ),
 		),
 		element.subtract(
-			element.add(
-				element.add(times(leftW, rightX), times(leftX, rightW)),
-				times(leftY, rightZ),
-			),
+			element.add(element.add(times(leftW, rightX), times(leftX, rightW)), times(leftY, rightZ)),
 			times(leftZ, rightY),
 		),
 		element.add(

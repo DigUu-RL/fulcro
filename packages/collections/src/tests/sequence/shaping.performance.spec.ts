@@ -89,10 +89,7 @@ const countingKey = (value: number): object => ({
  * @param counter Called for each element as it is pulled.
  * @returns The instrumented source.
  */
-const counted = <T>(
-	values: readonly T[],
-	counter: () => void,
-): Iterable<T> => ({
+const counted = <T>(values: readonly T[], counter: () => void): Iterable<T> => ({
 	*[Symbol.iterator](): Iterator<T> {
 		for (const value of values) {
 			counter();
@@ -211,9 +208,7 @@ describe('choose', () => {
 		let pulled = 0;
 		let projected = 0;
 
-		const references = SequenceCollection.from(
-			counted(orders, () => pulled++),
-		).choose((order) => {
+		const references = SequenceCollection.from(counted(orders, () => pulled++)).choose((order) => {
 			projected++;
 			return order.reference;
 		});
@@ -271,10 +266,7 @@ describe('choose', () => {
 
 describe('ofType and cast', () => {
 	it('should each read the source exactly once', () => {
-		const mixed: readonly unknown[] = orders.flatMap((order) => [
-			order,
-			order.id,
-		]);
+		const mixed: readonly unknown[] = orders.flatMap((order) => [order, order.id]);
 
 		let pulledByOfType = 0;
 		let pulledByCast = 0;
@@ -292,10 +284,7 @@ describe('ofType and cast', () => {
 	});
 
 	it('should stop where a bounded chain stops', () => {
-		const mixed: readonly unknown[] = orders.flatMap((order) => [
-			order,
-			order.id,
-		]);
+		const mixed: readonly unknown[] = orders.flatMap((order) => [order, order.id]);
 
 		let pulled = 0;
 
@@ -382,9 +371,7 @@ describe('the shape check the transformer writes', () => {
 				typeof order === 'object' &&
 				typeof order.id === 'number' &&
 				typeof order.region === 'string' &&
-				(order.status === 'pending' ||
-					order.status === 'paid' ||
-					order.status === 'shipped') &&
+				(order.status === 'pending' || order.status === 'paid' || order.status === 'shipped') &&
 				typeof order.total === 'number' &&
 				order.placedAt instanceof Date &&
 				Array.isArray(order.items) &&
@@ -404,9 +391,7 @@ describe('the shape check the transformer writes', () => {
 		const hand: number = Math.max(performance.now() - handStart, 1);
 
 		const generatedStart: number = performance.now();
-		const generatedKept: number = SequenceCollection.from(orders)
-			.ofType<Shaped>()
-			.count();
+		const generatedKept: number = SequenceCollection.from(orders).ofType<Shaped>().count();
 		const generated: number = performance.now() - generatedStart;
 
 		// Both have to agree on the answer before their costs mean anything.
@@ -418,9 +403,7 @@ describe('the shape check the transformer writes', () => {
 	it('should stay within a generous ceiling over a hundred thousand records', () => {
 		const started: number = performance.now();
 
-		const kept: number = SequenceCollection.from(orders)
-			.ofType<Shaped>()
-			.count();
+		const kept: number = SequenceCollection.from(orders).ofType<Shaped>().count();
 
 		// A smoke ceiling. Validating every field of every record, including the
 		// nested line items, is real work — this exists to catch the regression
@@ -465,19 +448,11 @@ describe('a recursive shape check', () => {
 	 * @param next Counter handing out ids.
 	 * @returns The root comment.
 	 */
-	const treeOf = (
-		depth: number,
-		breadth: number,
-		next: { value: number },
-	): Comment => ({
+	const treeOf = (depth: number, breadth: number, next: { value: number }): Comment => ({
 		id: next.value++,
 		text: `comment ${next.value}`,
 		replies:
-			depth === 0
-				? []
-				: Array.from({ length: breadth }, () =>
-						treeOf(depth - 1, breadth, next),
-					),
+			depth === 0 ? [] : Array.from({ length: breadth }, () => treeOf(depth - 1, breadth, next)),
 	});
 
 	let forest: readonly Comment[] = [];
@@ -502,9 +477,7 @@ describe('a recursive shape check', () => {
 			},
 		};
 
-		const kept: number = SequenceCollection.from(observed)
-			.ofType<Comment>()
-			.count();
+		const kept: number = SequenceCollection.from(observed).ofType<Comment>().count();
 
 		expect(kept).toBe(forest.length);
 		expect(built).toBe(1);
@@ -553,9 +526,7 @@ describe('a recursive shape check', () => {
 	it('should stay within a generous ceiling over a forest', () => {
 		const started: number = performance.now();
 
-		const kept: number = SequenceCollection.from(forest)
-			.ofType<Comment>()
-			.count();
+		const kept: number = SequenceCollection.from(forest).ofType<Comment>().count();
 
 		// A smoke ceiling. Walking every node of a thousand trees is real work;
 		// this is here to catch the regression that turns it into minutes.

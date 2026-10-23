@@ -94,9 +94,7 @@ describe('memoize', () => {
 
 describe('partition', () => {
 	it('should split by the condition, keeping source order', () => {
-		const [even, odd] = SequenceCollection.from([1, 2, 3, 4]).partition(
-			(value) => value % 2 === 0,
-		);
+		const [even, odd] = SequenceCollection.from([1, 2, 3, 4]).partition((value) => value % 2 === 0);
 
 		expect(even.toArray()).toEqual([2, 4]);
 		expect(odd.toArray()).toEqual([1, 3]);
@@ -123,9 +121,7 @@ describe('partition', () => {
 	});
 
 	it('should give two empty halves for an empty sequence', () => {
-		const [matched, rest] = SequenceCollection.empty<number>().partition(
-			() => true,
-		);
+		const [matched, rest] = SequenceCollection.empty<number>().partition(() => true);
 
 		expect(matched.toArray()).toEqual([]);
 		expect(rest.toArray()).toEqual([]);
@@ -145,10 +141,7 @@ describe('scan', () => {
 		// One value out per element in, which is what lets it be zipped with the
 		// source it came from.
 		const source = [1, 2, 3];
-		const running = SequenceCollection.from(source).scan(
-			0,
-			(total, value) => total + value,
-		);
+		const running = SequenceCollection.from(source).scan(0, (total, value) => total + value);
 
 		expect(running.count()).toBe(source.length);
 	});
@@ -163,10 +156,7 @@ describe('scan', () => {
 	});
 
 	it('should restart from the seed on a second traversal', () => {
-		const running = SequenceCollection.from([1, 2]).scan(
-			0,
-			(total, value) => total + value,
-		);
+		const running = SequenceCollection.from([1, 2]).scan(0, (total, value) => total + value);
 
 		expect(running.toArray()).toEqual([1, 3]);
 		expect(running.toArray()).toEqual([1, 3]);
@@ -183,13 +173,11 @@ describe('scan', () => {
 
 describe('windowed', () => {
 	it('should yield overlapping runs', () => {
-		expect(SequenceCollection.from([1, 2, 3, 4]).windowed(2).toArray()).toEqual(
-			[
-				[1, 2],
-				[2, 3],
-				[3, 4],
-			],
-		);
+		expect(SequenceCollection.from([1, 2, 3, 4]).windowed(2).toArray()).toEqual([
+			[1, 2],
+			[2, 3],
+			[3, 4],
+		]);
 	});
 
 	it('should yield nothing when the sequence is shorter than one window', () => {
@@ -210,9 +198,7 @@ describe('windowed', () => {
 	});
 
 	it.each([0, -1, 1.5])('should reject a size of %s', (size) => {
-		expect(() => SequenceCollection.from([1, 2]).windowed(size)).toThrow(
-			/positive integer/i,
-		);
+		expect(() => SequenceCollection.from([1, 2]).windowed(size)).toThrow(/positive integer/i);
 	});
 });
 
@@ -239,9 +225,7 @@ describe('pairwise', () => {
 	});
 
 	it('should pair a nullish element rather than treating it as absent', () => {
-		expect(
-			SequenceCollection.from([null, 1, null]).pairwise().toArray(),
-		).toEqual([
+		expect(SequenceCollection.from([null, 1, null]).pairwise().toArray()).toEqual([
 			[null, 1],
 			[1, null],
 		]);
@@ -309,11 +293,7 @@ describe('median', () => {
 	});
 
 	it('should apply a selector', () => {
-		expect(
-			SequenceCollection.from([{ n: 5 }, { n: 1 }, { n: 3 }]).median(
-				(v) => v.n,
-			),
-		).toBe(3);
+		expect(SequenceCollection.from([{ n: 5 }, { n: 1 }, { n: 3 }]).median((v) => v.n)).toBe(3);
 	});
 
 	it('should throw on an empty sequence', () => {
@@ -337,24 +317,18 @@ describe('percentile', () => {
 
 	it('should interpolate between the nearest values', () => {
 		// Position 0.5 of [10, 20, 30, 40] lands halfway between 10 and 20.
-		expect(
-			SequenceCollection.from([10, 20, 30, 40]).percentile(16.6667),
-		).toBeCloseTo(15, 3);
+		expect(SequenceCollection.from([10, 20, 30, 40]).percentile(16.6667)).toBeCloseTo(15, 3);
 	});
 
 	it.each([-1, 101, Number.NaN])('should reject a rank of %s', (rank) => {
-		expect(() => SequenceCollection.from([1, 2]).percentile(rank)).toThrow(
-			/between 0 and 100/i,
-		);
+		expect(() => SequenceCollection.from([1, 2]).percentile(rank)).toThrow(/between 0 and 100/i);
 	});
 });
 
 describe('standardDeviation', () => {
 	it('should measure the population spread', () => {
 		// [2, 4, 4, 4, 5, 5, 7, 9] has a mean of 5 and a population sigma of 2.
-		expect(
-			SequenceCollection.from([2, 4, 4, 4, 5, 5, 7, 9]).standardDeviation(),
-		).toBe(2);
+		expect(SequenceCollection.from([2, 4, 4, 4, 5, 5, 7, 9]).standardDeviation()).toBe(2);
 	});
 
 	it('should be zero when every value is the same', () => {
@@ -372,24 +346,16 @@ describe('standardDeviation', () => {
 	});
 
 	it('should apply a selector', () => {
-		expect(
-			SequenceCollection.from([{ n: 3 }, { n: 3 }]).standardDeviation(
-				(v) => v.n,
-			),
-		).toBe(0);
+		expect(SequenceCollection.from([{ n: 3 }, { n: 3 }]).standardDeviation((v) => v.n)).toBe(0);
 	});
 
 	it('should throw on an empty sequence', () => {
-		expect(() =>
-			SequenceCollection.empty<number>().standardDeviation(),
-		).toThrow(/empty/i);
+		expect(() => SequenceCollection.empty<number>().standardDeviation()).toThrow(/empty/i);
 	});
 
 	it('should refuse a sample of one', () => {
 		// Answering 0 would claim a single measurement says something about the
 		// spread it came from.
-		expect(() =>
-			SequenceCollection.from([1]).sampleStandardDeviation(),
-		).toThrow(/at least two/i);
+		expect(() => SequenceCollection.from([1]).sampleStandardDeviation()).toThrow(/at least two/i);
 	});
 });

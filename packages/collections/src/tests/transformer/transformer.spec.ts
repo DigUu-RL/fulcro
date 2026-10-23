@@ -146,9 +146,7 @@ describe('an interface, written out as checks', () => {
 	});
 
 	it('should allow an optional property to be absent', () => {
-		expect(lineFor('orders')).toContain(
-			'(v.note === undefined || typeof v.note === "string")',
-		);
+		expect(lineFor('orders')).toContain('(v.note === undefined || typeof v.note === "string")');
 	});
 
 	it('should check every element of an array, not just that it is one', () => {
@@ -162,9 +160,7 @@ describe('an interface, written out as checks', () => {
 	});
 
 	it('should compare a union of literals against each one', () => {
-		expect(lineFor('orders')).toContain(
-			'(v.status === "pending" || v.status === "paid")',
-		);
+		expect(lineFor('orders')).toContain('(v.status === "pending" || v.status === "paid")');
 	});
 
 	it('should use instanceof for a built-in class', () => {
@@ -246,8 +242,7 @@ describe('what it still refuses', () => {
 		// Exactly one unresolved call in the whole fixture. A second would mean a
 		// form was quietly skipped, which is the failure that looks like nothing
 		// at compile time.
-		const unresolved: number = (emitted.match(/\.(ofType|cast)\(\)/g) ?? [])
-			.length;
+		const unresolved: number = (emitted.match(/\.(ofType|cast)\(\)/g) ?? []).length;
 
 		expect(unresolved).toBe(1);
 	});
@@ -276,8 +271,6 @@ describe('chained calls', () => {
 	it('should rewrite both halves of a chain', () => {
 		// The rewriter visits the expression it is called on, so a rewritten call
 		// sitting inside another is not skipped.
-		expect(emitted).toMatch(
-			/\.ofType\(['"]string['"]\)\.cast\(['"]string['"]\)/,
-		);
+		expect(emitted).toMatch(/\.ofType\(['"]string['"]\)\.cast\(['"]string['"]\)/);
 	});
 });

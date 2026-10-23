@@ -47,10 +47,8 @@ interface Compiled {
  */
 const compile = (fileName: string): Compiled => {
 	const fixture: string = path.resolve(HERE, fileName);
-	const reflect = require('@fulcro/reflect/transformer')
-		.default as TransformerEntry;
-	const collections = require('@fulcro/collections/transformer')
-		.default as TransformerEntry;
+	const reflect = require('@fulcro/reflect/transformer').default as TransformerEntry;
+	const collections = require('@fulcro/collections/transformer').default as TransformerEntry;
 	const program: ts.Program = ts.createProgram([fixture], {
 		target: ts.ScriptTarget.ES2022,
 		module: ts.ModuleKind.ESNext,
@@ -61,17 +59,11 @@ const compile = (fileName: string): Compiled => {
 	});
 	const errors: readonly ts.Diagnostic[] = ts
 		.getPreEmitDiagnostics(program, program.getSourceFile(fixture))
-		.filter(
-			(diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error,
-		);
+		.filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error);
 
 	if (errors.length > 0) {
 		throw new Error(
-			errors
-				.map((error) =>
-					ts.flattenDiagnosticMessageText(error.messageText, '\n'),
-				)
-				.join('\n'),
+			errors.map((error) => ts.flattenDiagnosticMessageText(error.messageText, '\n')).join('\n'),
 		);
 	}
 

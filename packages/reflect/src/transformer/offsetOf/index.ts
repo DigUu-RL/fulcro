@@ -1,9 +1,6 @@
 import typescript from 'typescript';
 
-import {
-	type CallRewriter,
-	utilityModuleSegment,
-} from '@fulcro/transform-core';
+import { type CallRewriter, utilityModuleSegment } from '@fulcro/transform-core';
 
 import { type PlacedField, readLayout } from '@/transformer/layout';
 
@@ -37,13 +34,10 @@ export const offsetOfRewriter: CallRewriter = {
 			return null;
 		}
 
-		const placed: PlacedField | undefined = readLayout(
-			call,
-			context,
-		)?.fields.find((candidate) => candidate.name === field.text);
+		const placed: PlacedField | undefined = readLayout(call, context)?.fields.find(
+			(candidate) => candidate.name === field.text,
+		);
 
-		return placed === undefined
-			? null
-			: context.factory.createNumericLiteral(placed.offset);
+		return placed === undefined ? null : context.factory.createNumericLiteral(placed.offset);
 	},
 };

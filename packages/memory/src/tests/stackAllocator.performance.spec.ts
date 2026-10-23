@@ -61,9 +61,7 @@ describe('createStackAllocator, counted', () => {
 
 		// Nothing was zeroed on the way out: the bytes are cleared when they are
 		// handed out again, by the allocation that needs them.
-		expect((allocations[FRAMES - 1] as Allocation).bytes.getFloat64(0)).toBe(
-			42,
-		);
+		expect((allocations[FRAMES - 1] as Allocation).bytes.getFloat64(0)).toBe(42);
 		expect(allocations.every((allocation) => !allocation.isLive())).toBe(true);
 	});
 });

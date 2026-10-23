@@ -154,14 +154,9 @@ export const createOwnership = <T>(storage: Storage<T>): Ownership<T> => ({
  * @throws {TypeError} When the value is not an owner made by `own` or `move`.
  * @throws {Error} When the owner was moved or disposed.
  */
-export const requireOwnership = <T>(
-	operation: string,
-	owner: unknown,
-): Ownership<T> => {
+export const requireOwnership = <T>(operation: string, owner: unknown): Ownership<T> => {
 	const state = (
-		typeof owner === 'object' && owner !== null
-			? ownerships.get(owner)
-			: undefined
+		typeof owner === 'object' && owner !== null ? ownerships.get(owner) : undefined
 	) as Ownership<T> | undefined;
 
 	if (state === undefined) {
@@ -173,10 +168,9 @@ export const requireOwnership = <T>(
 	}
 
 	if (state.owner !== owner) {
-		throw createError(
-			disposedOwners.has(owner as object) ? 'FULCRO7030' : 'FULCRO7023',
-			{ operation },
-		);
+		throw createError(disposedOwners.has(owner as object) ? 'FULCRO7030' : 'FULCRO7023', {
+			operation,
+		});
 	}
 
 	return state;
@@ -189,10 +183,7 @@ export const requireOwnership = <T>(
  * @param state The ownership.
  * @param exclusive Whether the borrow about to be taken is the exclusive one.
  */
-export const endBorrows = <T>(
-	state: Ownership<T>,
-	exclusive: boolean,
-): void => {
+export const endBorrows = <T>(state: Ownership<T>, exclusive: boolean): void => {
 	state.generation++;
 	state.exclusive = exclusive;
 };

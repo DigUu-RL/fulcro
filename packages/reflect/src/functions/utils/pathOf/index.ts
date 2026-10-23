@@ -97,5 +97,4 @@ const parsePath = (accessor: PathAccessor): string | null => {
  * @param accessor Accessor walking the path.
  * @returns The path, or `null` when the accessor does not walk one.
  */
-export const pathOf = (accessor: PathAccessor): string | null =>
-	parsePath(accessor);
+export const pathOf = (accessor: PathAccessor): string | null => parsePath(accessor);

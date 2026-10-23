@@ -23,17 +23,13 @@ const mixed = (): Result<number, string>[] =>
 
 describe('Result', () => {
 	it('should share one prototype per variant, however many results exist', () => {
-		const prototypes = new Set(
-			mixed().map((result) => Object.getPrototypeOf(result) as object),
-		);
+		const prototypes = new Set(mixed().map((result) => Object.getPrototypeOf(result) as object));
 
 		expect(prototypes.size).toBe(2);
 	});
 
 	it('should carry two own properties, and no methods', () => {
-		const counts = new Set(
-			mixed().map((result) => Reflect.ownKeys(result).length),
-		);
+		const counts = new Set(mixed().map((result) => Reflect.ownKeys(result).length));
 
 		expect([...counts]).toEqual([2]);
 	});

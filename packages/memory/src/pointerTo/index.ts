@@ -2,10 +2,7 @@ import { createError } from '@fulcro/errors';
 
 import type { Pointer } from '@/pointer';
 import type { Source } from '@/source';
-import {
-	type PointerPosition,
-	pointerPositions,
-} from '@/source/pointerPositions';
+import { type PointerPosition, pointerPositions } from '@/source/pointerPositions';
 import { resolveSource } from '@/source/resolveSource';
 import type { Storage } from '@/storage';
 import { describeValue } from '@/storage/describeValue';
@@ -20,17 +17,8 @@ import { requireIndex } from '@/storage/requireIndex';
  * @throws {RangeError} When the position is not an integer from `0` to
  * `length`.
  */
-const requirePosition = (
-	operation: string,
-	index: unknown,
-	length: number,
-): void => {
-	if (
-		typeof index !== 'number' ||
-		!Number.isSafeInteger(index) ||
-		index < 0 ||
-		index > length
-	) {
+const requirePosition = (operation: string, index: unknown, length: number): void => {
+	if (typeof index !== 'number' || !Number.isSafeInteger(index) || index < 0 || index > length) {
 		throw createError('FULCRO7016', {
 			operation,
 			index: typeof index === 'number' ? index : describeValue(index),
@@ -101,10 +89,7 @@ const createPointer = <T>(source: Source<T>, index: number): Pointer<T> => {
  * @throws {RangeError} When the position is outside `0` to the source's
  * length.
  */
-export const pointerTo = <T>(
-	source: Storage<T> | T[],
-	index: number,
-): Pointer<T> => {
+export const pointerTo = <T>(source: Storage<T> | T[], index: number): Pointer<T> => {
 	const resolved = resolveSource<T>('pointerTo', source, 'write');
 
 	if (resolved.single) {

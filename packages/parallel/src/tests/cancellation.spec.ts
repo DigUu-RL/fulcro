@@ -1,9 +1,6 @@
 import { describe, expect, expectTypeOf, it, vi } from 'vitest';
 
-import {
-	type CancellationSource,
-	type CancellationToken,
-} from '@/@types/index.js';
+import { type CancellationSource, type CancellationToken } from '@/@types/index.js';
 import { createCancellationSource } from '@/cancellation/index.js';
 
 /**
@@ -119,11 +116,9 @@ describe('onCancelled', () => {
 		const error = new Error('from the handler');
 		const deferred: (() => void)[] = [];
 
-		const spy = vi
-			.spyOn(globalThis, 'queueMicrotask')
-			.mockImplementation((callback) => {
-				deferred.push(callback);
-			});
+		const spy = vi.spyOn(globalThis, 'queueMicrotask').mockImplementation((callback) => {
+			deferred.push(callback);
+		});
 
 		source.cancel();
 
@@ -240,9 +235,7 @@ describe('types', () => {
 	it('should be disposable, so using releases the parent', () => {
 		expectTypeOf<CancellationSource>().toExtend<Disposable>();
 
-		expectTypeOf(
-			createCancellationSource,
-		).returns.toEqualTypeOf<CancellationSource>();
+		expectTypeOf(createCancellationSource).returns.toEqualTypeOf<CancellationSource>();
 	});
 
 	it('should hand the platform a real AbortSignal', () => {
@@ -250,8 +243,6 @@ describe('types', () => {
 	});
 
 	it('should accept a parent token and nothing else', () => {
-		expectTypeOf(createCancellationSource).parameters.toEqualTypeOf<
-			[parent?: CancellationToken]
-		>();
+		expectTypeOf(createCancellationSource).parameters.toEqualTypeOf<[parent?: CancellationToken]>();
 	});
 });

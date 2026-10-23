@@ -11,9 +11,7 @@ import { SequenceCollection } from '@/collections/sequence';
  * @param values Elements to yield.
  * @returns The iterable and a reader of how far it has been pulled.
  */
-const counted = <T>(
-	values: readonly T[],
-): { source: Iterable<T>; read: () => number } => {
+const counted = <T>(values: readonly T[]): { source: Iterable<T>; read: () => number } => {
 	let read = 0;
 
 	return {
@@ -31,16 +29,12 @@ const counted = <T>(
 
 describe('except', () => {
 	it('should drop the elements present in the other sequence', () => {
-		expect(
-			SequenceCollection.from([1, 2, 3, 4]).except([2, 4]).toArray(),
-		).toEqual([1, 3]);
+		expect(SequenceCollection.from([1, 2, 3, 4]).except([2, 4]).toArray()).toEqual([1, 3]);
 	});
 
 	it('should return distinct elements', () => {
 		// A set operation, like union and intersect: no element twice.
-		expect(SequenceCollection.from([1, 1, 2]).except([2]).toArray()).toEqual([
-			1,
-		]);
+		expect(SequenceCollection.from([1, 1, 2]).except([2]).toArray()).toEqual([1]);
 	});
 
 	it('should stay deferred', () => {
@@ -55,15 +49,11 @@ describe('except', () => {
 
 describe('concat', () => {
 	it('should keep every element of both sequences', () => {
-		expect(SequenceCollection.from([1, 2]).concat([3, 4]).toArray()).toEqual([
-			1, 2, 3, 4,
-		]);
+		expect(SequenceCollection.from([1, 2]).concat([3, 4]).toArray()).toEqual([1, 2, 3, 4]);
 	});
 
 	it('should keep duplicates, unlike union', () => {
-		expect(SequenceCollection.from([1, 2]).concat([2, 3]).toArray()).toEqual([
-			1, 2, 2, 3,
-		]);
+		expect(SequenceCollection.from([1, 2]).concat([2, 3]).toArray()).toEqual([1, 2, 2, 3]);
 	});
 
 	it('should count without traversing when both sides are known', () => {
@@ -138,21 +128,15 @@ describe('skipWhile', () => {
 
 describe('takeLast', () => {
 	it('should take the trailing elements', () => {
-		expect(SequenceCollection.from([1, 2, 3, 4]).takeLast(2).toArray()).toEqual(
-			[3, 4],
-		);
+		expect(SequenceCollection.from([1, 2, 3, 4]).takeLast(2).toArray()).toEqual([3, 4]);
 	});
 
 	it('should take everything when asked for more than there is', () => {
-		expect(SequenceCollection.from([1, 2]).takeLast(9).toArray()).toEqual([
-			1, 2,
-		]);
+		expect(SequenceCollection.from([1, 2]).takeLast(9).toArray()).toEqual([1, 2]);
 	});
 
 	it.each([0, -1])('should take nothing for %s', (count) => {
-		expect(SequenceCollection.from([1, 2]).takeLast(count).toArray()).toEqual(
-			[],
-		);
+		expect(SequenceCollection.from([1, 2]).takeLast(count).toArray()).toEqual([]);
 	});
 
 	it('should report its count without traversing a known source', () => {
@@ -163,9 +147,7 @@ describe('takeLast', () => {
 
 describe('skipLast', () => {
 	it('should drop the trailing elements', () => {
-		expect(SequenceCollection.from([1, 2, 3, 4]).skipLast(2).toArray()).toEqual(
-			[1, 2],
-		);
+		expect(SequenceCollection.from([1, 2, 3, 4]).skipLast(2).toArray()).toEqual([1, 2]);
 	});
 
 	it('should drop everything when asked for more than there is', () => {
@@ -173,9 +155,7 @@ describe('skipLast', () => {
 	});
 
 	it.each([0, -1])('should drop nothing for %s', (count) => {
-		expect(SequenceCollection.from([1, 2]).skipLast(count).toArray()).toEqual([
-			1, 2,
-		]);
+		expect(SequenceCollection.from([1, 2]).skipLast(count).toArray()).toEqual([1, 2]);
 	});
 
 	it('should report its count without traversing a known source', () => {
@@ -194,10 +174,7 @@ describe('chunk', () => {
 
 	it('should leave the final chunk short rather than padding it', () => {
 		// A padded chunk could not be told from a full one.
-		expect(SequenceCollection.from([1, 2, 3]).chunk(2).toArray()).toEqual([
-			[1, 2],
-			[3],
-		]);
+		expect(SequenceCollection.from([1, 2, 3]).chunk(2).toArray()).toEqual([[1, 2], [3]]);
 	});
 
 	it('should produce nothing for an empty sequence', () => {
@@ -205,9 +182,7 @@ describe('chunk', () => {
 	});
 
 	it.each([0, -1, 1.5, Number.NaN])('should reject a size of %s', (size) => {
-		expect(() => SequenceCollection.from([1, 2]).chunk(size)).toThrow(
-			/positive integer/i,
-		);
+		expect(() => SequenceCollection.from([1, 2]).chunk(size)).toThrow(/positive integer/i);
 	});
 
 	it('should report how many chunks a known source yields', () => {
@@ -217,9 +192,7 @@ describe('chunk', () => {
 
 describe('reverse', () => {
 	it('should reverse the order', () => {
-		expect(SequenceCollection.from([1, 2, 3]).reverse().toArray()).toEqual([
-			3, 2, 1,
-		]);
+		expect(SequenceCollection.from([1, 2, 3]).reverse().toArray()).toEqual([3, 2, 1]);
 	});
 
 	it('should stay deferred even though it cannot stream', () => {
@@ -276,15 +249,11 @@ describe('zip', () => {
 
 describe('append and prepend', () => {
 	it('should add elements at the end', () => {
-		expect(SequenceCollection.from([1, 2]).append(3, 4).toArray()).toEqual([
-			1, 2, 3, 4,
-		]);
+		expect(SequenceCollection.from([1, 2]).append(3, 4).toArray()).toEqual([1, 2, 3, 4]);
 	});
 
 	it('should add elements at the start', () => {
-		expect(SequenceCollection.from([3, 4]).prepend(1, 2).toArray()).toEqual([
-			1, 2, 3, 4,
-		]);
+		expect(SequenceCollection.from([3, 4]).prepend(1, 2).toArray()).toEqual([1, 2, 3, 4]);
 	});
 
 	it('should leave the sequence alone when given nothing', () => {

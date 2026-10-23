@@ -77,9 +77,7 @@ describe('Owned[Symbol.dispose]', () => {
 
 		expect(() => subview.get(0)).toThrow(ended('View.get'));
 		expect(() => readOnly.get(0)).toThrow(ended('ReadOnlyView.get'));
-		expect(() => pointer.get()).toThrow(
-			expect.objectContaining({ code: 'FULCRO7024' }),
-		);
+		expect(() => pointer.get()).toThrow(expect.objectContaining({ code: 'FULCRO7024' }));
 	});
 
 	it('should end every shared borrow too', () => {

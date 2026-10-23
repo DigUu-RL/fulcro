@@ -148,9 +148,7 @@ export const createFakeWorkers = (options: FakeOptions = {}): FakeWorkers => {
 		const task = running.get(id);
 
 		if (task === undefined) {
-			throw new Error(
-				`No task ${id} is in flight; ${[...running.keys()]} are.`,
-			);
+			throw new Error(`No task ${id} is in flight; ${[...running.keys()]} are.`);
 		}
 
 		running.delete(id);
@@ -243,8 +241,7 @@ export const createFakeWorkers = (options: FakeOptions = {}): FakeWorkers => {
 		posted: (): readonly unknown[] => posted,
 		inFlight: (): number => inFlight,
 		peak: (): number => peak,
-		handlers: (): number =>
-			[...listeners.values()].reduce((total, set) => total + set.size, 0),
+		handlers: (): number => [...listeners.values()].reduce((total, set) => total + set.size, 0),
 		terminated: (): number => stopped.size,
 		complete,
 

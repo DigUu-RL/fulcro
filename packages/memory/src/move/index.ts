@@ -1,10 +1,5 @@
 import type { Owned } from '@/owned';
-import {
-	createOwned,
-	endBorrows,
-	type Ownership,
-	requireOwnership,
-} from '@/ownership';
+import { createOwned, endBorrows, type Ownership, requireOwnership } from '@/ownership';
 
 /**
  * Hands the ownership of a storage on, and spends the owner it came from.

@@ -70,9 +70,7 @@ describe('createLinearMemory', () => {
 		['a number', 16, 'number'],
 		['null', null, 'null'],
 	])('should refuse %s', (_, backing, received) => {
-		expect(() =>
-			createLinearMemory(backing as unknown as ArrayBuffer),
-		).toThrowError(
+		expect(() => createLinearMemory(backing as unknown as ArrayBuffer)).toThrowError(
 			coded(
 				new TypeError(
 					`FULCRO7018: createLinearMemory: expected an ArrayBuffer or a WebAssembly.Memory that is not shared, received ${received}.`,
@@ -88,8 +86,6 @@ describe('createLinearMemory types', () => {
 		expectTypeOf(createLinearMemory)
 			.parameter(0)
 			.toEqualTypeOf<ArrayBuffer | { readonly buffer: ArrayBuffer }>();
-		expectTypeOf(
-			createLinearMemory(new ArrayBuffer(8)),
-		).toEqualTypeOf<LinearMemory>();
+		expectTypeOf(createLinearMemory(new ArrayBuffer(8))).toEqualTypeOf<LinearMemory>();
 	});
 });

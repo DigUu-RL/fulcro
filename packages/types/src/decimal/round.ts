@@ -72,12 +72,7 @@ export const discardDigits = (
 	negative: boolean,
 ): bigint => {
 	if (digits > digitCount(magnitude)) {
-		return settle(
-			0n,
-			magnitude === 0n ? 'nothing' : 'belowHalf',
-			mode,
-			negative,
-		);
+		return settle(0n, magnitude === 0n ? 'nothing' : 'belowHalf', mode, negative);
 	}
 
 	const divisor: bigint = powerOfTen(digits);
@@ -150,10 +145,7 @@ export const finish = (
 	let coefficient: bigint = magnitude;
 	let scale: number = exponent;
 
-	const excess: number = Math.max(
-		digitCount(coefficient) - PRECISION,
-		MINIMUM_EXPONENT - scale,
-	);
+	const excess: number = Math.max(digitCount(coefficient) - PRECISION, MINIMUM_EXPONENT - scale);
 
 	if (excess > 0) {
 		coefficient = discardDigits(coefficient, excess, mode, negative);

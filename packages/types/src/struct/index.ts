@@ -45,16 +45,14 @@ type FieldLayout<TDescriptor> =
 		: never;
 
 /** A union, as a tuple in no particular order — enough to sum over it. */
-type UnionToTuple<TUnion, TTuple extends unknown[] = []> = [TUnion] extends [
-	never,
-]
+type UnionToTuple<TUnion, TTuple extends unknown[] = []> = [TUnion] extends [never]
 	? TTuple
 	: UnionToTuple<Exclude<TUnion, LastOf<TUnion>>, [LastOf<TUnion>, ...TTuple]>;
 
 /** One member of a union, picked by how TypeScript orders overloads. */
-type LastOf<TUnion> = (
-	TUnion extends unknown ? (member: () => TUnion) => void : never
-) extends (member: infer TIntersection) => void
+type LastOf<TUnion> = (TUnion extends unknown ? (member: () => TUnion) => void : never) extends (
+	member: infer TIntersection,
+) => void
 	? TIntersection extends () => infer TMember
 		? TMember
 		: never
@@ -115,10 +113,9 @@ type StructData<TFields extends StructFields> = {
  * struct without methods is its fields alone, exactly as before methods
  * existed, so nothing it inferred changes.
  */
-type StructValue<
-	TFields extends StructFields,
-	TMethods extends StructMethods = NoMethods,
-> = [keyof TMethods] extends [never]
+type StructValue<TFields extends StructFields, TMethods extends StructMethods = NoMethods> = [
+	keyof TMethods,
+] extends [never]
 	? StructData<TFields>
 	: StructData<TFields> & Readonly<TMethods>;
 
@@ -192,10 +189,7 @@ export interface StructType<
 	 * @param right Second value.
 	 * @returns `true` when every field is equal.
 	 */
-	equals(
-		left: StructValue<TFields, TMethods>,
-		right: StructValue<TFields, TMethods>,
-	): boolean;
+	equals(left: StructValue<TFields, TMethods>, right: StructValue<TFields, TMethods>): boolean;
 
 	/**
 	 * Reads a value from bytes, in the layout of {@link StructType.layout},
@@ -219,11 +213,7 @@ export interface StructType<
 	 * @throws {RangeError} When the struct does not fit in the view at that
 	 * offset.
 	 */
-	write(
-		view: DataView,
-		offset: number,
-		value: StructValue<TFields, TMethods>,
-	): void;
+	write(view: DataView, offset: number, value: StructValue<TFields, TMethods>): void;
 }
 
 /**
@@ -236,9 +226,7 @@ export interface StructType<
  *
  * @template TDescriptor Type of the descriptor `struct` returned.
  */
-export type Struct<
-	TDescriptor extends StructType<StructFields, StructMethods>,
-> =
+export type Struct<TDescriptor extends StructType<StructFields, StructMethods>> =
 	TDescriptor extends StructType<infer TFields, infer TMethods>
 		? StructValue<TFields, TMethods>
 		: never;
@@ -267,8 +255,7 @@ const ARRAY_INDEX = /^(?:0|[1-9]\d*)$/;
  * @param value Value being reported.
  * @returns Its kind.
  */
-const describeKind = (value: unknown): string =>
-	value === null ? 'null' : typeof value;
+const describeKind = (value: unknown): string => (value === null ? 'null' : typeof value);
 
 /**
  * Re-throws the error a field's own conversion raised, naming the field.
@@ -300,11 +287,7 @@ const rethrowForField = (name: string, key: string, error: unknown): never => {
  * @throws {TypeError} When `methods` is not an object, a method is not a
  * function, or a method is named like a field, an array index or `~layout`.
  */
-const methodPrototype = (
-	name: string,
-	fields: StructFields,
-	methods: StructMethods,
-): object => {
+const methodPrototype = (name: string, fields: StructFields, methods: StructMethods): object => {
 	if (typeof methods !== 'object' || methods === null) {
 		throw createError('FULCRO6008', {
 			operation: 'struct',
@@ -327,10 +310,7 @@ const methodPrototype = (
 			});
 		}
 
-		if (
-			typeof key === 'string' &&
-			(ARRAY_INDEX.test(key) || key === '~layout')
-		) {
+		if (typeof key === 'string' && (ARRAY_INDEX.test(key) || key === '~layout')) {
 			throw createError('FULCRO6010', {
 				operation: 'struct',
 				name,
@@ -403,10 +383,7 @@ const methodPrototype = (
  * layout, a field is named like an array index or `~layout`, or a method is
  * not a function or is named like a field, an array index or `~layout`.
  */
-export const struct = <
-	TFields extends StructFields,
-	TMethods extends StructMethods = NoMethods,
->(
+export const struct = <TFields extends StructFields, TMethods extends StructMethods = NoMethods>(
 	name: string,
 	fields: TFields,
 	methods?: TMethods & ThisType<StructValue<TFields, TMethods>>,
@@ -480,9 +457,7 @@ export const struct = <
 		end += field.codec.size;
 	}
 
-	const alignment: number = Math.max(
-		...declared.map((field) => field.codec.alignment),
-	);
+	const alignment: number = Math.max(...declared.map((field) => field.codec.alignment));
 	const size: number = Math.ceil(end / alignment) * alignment;
 
 	const plan: readonly PlacedField[] = declared.map((field) => ({
@@ -516,11 +491,7 @@ export const struct = <
 	 * @param view View handed in.
 	 * @param offset Offset handed in.
 	 */
-	const requireRoom = (
-		operation: string,
-		view: DataView,
-		offset: number,
-	): void => {
+	const requireRoom = (operation: string, view: DataView, offset: number): void => {
 		if (!(view instanceof DataView)) {
 			throw createError('FULCRO6017', {
 				operation: `${name}.${operation}`,
@@ -528,11 +499,7 @@ export const struct = <
 			});
 		}
 
-		if (
-			!Number.isInteger(offset) ||
-			offset < 0 ||
-			offset + size > view.byteLength
-		) {
+		if (!Number.isInteger(offset) || offset < 0 || offset + size > view.byteLength) {
 			throw createError('FULCRO6018', {
 				operation: `${name}.${operation}`,
 				size,
@@ -552,17 +519,9 @@ export const struct = <
 		return Object.freeze(value);
 	};
 
-	const writeFields = (
-		view: DataView,
-		offset: number,
-		value: unknown,
-	): void => {
+	const writeFields = (view: DataView, offset: number, value: unknown): void => {
 		for (const field of plan) {
-			field.codec.write(
-				view,
-				offset + field.offset,
-				(value as Record<string, unknown>)[field.key],
-			);
+			field.codec.write(view, offset + field.offset, (value as Record<string, unknown>)[field.key]);
 		}
 	};
 
@@ -609,9 +568,7 @@ export const struct = <
 				}
 
 				try {
-					value[field.key] = field.descriptor.from(
-						(source as Record<string, unknown>)[field.key],
-					);
+					value[field.key] = field.descriptor.from((source as Record<string, unknown>)[field.key]);
 				} catch (error) {
 					rethrowForField(name, field.key, error);
 				}

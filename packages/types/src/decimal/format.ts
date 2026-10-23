@@ -2,13 +2,7 @@ import { createError } from '@fulcro/errors';
 
 import type { RoundingMode } from '@/roundingMode';
 
-import {
-	adjustedExponent,
-	type DecimalParts,
-	digitCount,
-	isZero,
-	powerOfTen,
-} from './parts';
+import { adjustedExponent, type DecimalParts, digitCount, isZero, powerOfTen } from './parts';
 import { discardDigits } from './round';
 
 /**
@@ -29,16 +23,8 @@ const MAXIMUM_DIGITS = 100;
  * @returns The count.
  * @throws {RangeError} When the count is not an integer in range.
  */
-export const requireDigits = (
-	operation: string,
-	digits: number,
-	minimum: number,
-): number => {
-	if (
-		!Number.isInteger(digits) ||
-		digits < minimum ||
-		digits > MAXIMUM_DIGITS
-	) {
+export const requireDigits = (operation: string, digits: number, minimum: number): number => {
+	if (!Number.isInteger(digits) || digits < minimum || digits > MAXIMUM_DIGITS) {
 		throw createError('FULCRO6022', {
 			operation: `Decimal.${operation}`,
 			minimum,
@@ -144,19 +130,12 @@ export const formatFixed = (
 	const scaled: bigint =
 		exponent + fractionDigits >= 0
 			? coefficient * powerOfTen(exponent + fractionDigits)
-			: discardDigits(
-					coefficient,
-					-(exponent + fractionDigits),
-					mode,
-					negative,
-				);
+			: discardDigits(coefficient, -(exponent + fractionDigits), mode, negative);
 
 	const digits: string = scaled.toString().padStart(fractionDigits + 1, '0');
 	const point: number = digits.length - fractionDigits;
 	const text: string =
-		fractionDigits === 0
-			? digits
-			: `${digits.slice(0, point)}.${digits.slice(point)}`;
+		fractionDigits === 0 ? digits : `${digits.slice(0, point)}.${digits.slice(point)}`;
 
 	// A negative value that rounded to zero still prints its sign, as
 	// `(-0.001).toFixed(2)` does; `-0` itself does not, as `(-0).toFixed(2)`
@@ -255,9 +234,7 @@ export const formatExponential = (
 	}
 
 	const precision: number =
-		fractionDigits === undefined
-			? digitCount(parts.coefficient)
-			: fractionDigits + 1;
+		fractionDigits === undefined ? digitCount(parts.coefficient) : fractionDigits + 1;
 
 	const { digits, adjusted } = significantDigits(parts, precision, mode);
 

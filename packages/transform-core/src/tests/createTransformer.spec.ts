@@ -38,9 +38,7 @@ beforeAll(() => {
 		target: typescript.ScriptTarget.ES2022,
 		strict: true,
 	});
-	fixture = program.getSourceFile(
-		fileName.split(path.sep).join('/'),
-	) as typescript.SourceFile;
+	fixture = program.getSourceFile(fileName.split(path.sep).join('/')) as typescript.SourceFile;
 });
 
 afterAll(() => {
@@ -86,9 +84,7 @@ const renaming: CallRewriter = {
 			call,
 			context.factory.createIdentifier('renamed'),
 			undefined,
-			call.arguments.map(
-				(argument) => context.visit(argument) as typescript.Expression,
-			),
+			call.arguments.map((argument) => context.visit(argument) as typescript.Expression),
 		),
 };
 

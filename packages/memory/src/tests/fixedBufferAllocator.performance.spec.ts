@@ -1,9 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import {
-	createFixedBufferAllocator,
-	type FixedBufferAllocator,
-} from '@/fixedBufferAllocator';
+import { createFixedBufferAllocator, type FixedBufferAllocator } from '@/fixedBufferAllocator';
 
 import { watchBuffers } from './watchBuffers';
 

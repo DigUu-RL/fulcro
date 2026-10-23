@@ -590,8 +590,7 @@ The contracts ship as interfaces — `Sequence<T>`, `OrderedSequence<T>`,
 over the concrete classes in your own signatures:
 
 ```ts
-const activeUsers = (users: Sequence<User>): Sequence<User> =>
-	users.where((user) => user.active);
+const activeUsers = (users: Sequence<User>): Sequence<User> => users.where((user) => user.active);
 ```
 
 ## Reference

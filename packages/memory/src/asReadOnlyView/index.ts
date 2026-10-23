@@ -47,10 +47,7 @@ export function asReadOnlyView<T>(
  * @throws {RangeError} When the region runs past the end of the pointer's
  * source.
  */
-export function asReadOnlyView<T>(
-	source: Pointer<T>,
-	length?: number,
-): ReadOnlyView<T>;
+export function asReadOnlyView<T>(source: Pointer<T>, length?: number): ReadOnlyView<T>;
 
 /**
  * Observes the one value of a reference, as a read-only view of length `1`.
@@ -62,12 +59,7 @@ export function asReadOnlyView<T>(
 export function asReadOnlyView<T>(source: MemoryReference<T>): ReadOnlyView<T>;
 
 export function asReadOnlyView<T>(
-	source:
-		| ReadOnlyView<T>
-		| Storage<T>
-		| readonly T[]
-		| Pointer<T>
-		| MemoryReference<T>,
+	source: ReadOnlyView<T> | Storage<T> | readonly T[] | Pointer<T> | MemoryReference<T>,
 	first?: number,
 	second?: number,
 ): ReadOnlyView<T> {

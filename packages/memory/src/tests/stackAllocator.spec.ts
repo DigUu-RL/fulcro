@@ -196,9 +196,7 @@ describe('createStackAllocator', () => {
 	});
 
 	it('should hand out frames that are allocation domains', () => {
-		expectTypeOf(
-			createStackAllocator(64).enter(),
-		).toEqualTypeOf<AllocationDomain>();
+		expectTypeOf(createStackAllocator(64).enter()).toEqualTypeOf<AllocationDomain>();
 		expect(Object.isFrozen(createStackAllocator(64).enter())).toBe(true);
 	});
 });

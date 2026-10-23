@@ -1,10 +1,6 @@
 import typescript from 'typescript';
 
-import {
-	CallRewriter,
-	RewriteContext,
-	utilityModuleSegment,
-} from '@fulcro/transform-core';
+import { CallRewriter, RewriteContext, utilityModuleSegment } from '@fulcro/transform-core';
 
 /**
  * Rewriter of `nameOf`.
@@ -105,16 +101,11 @@ export const nameOfRewriter: CallRewriter = {
 
 		if (typeArgument !== undefined && call.arguments.length === 0) {
 			const type: typescript.Type = checker.getTypeFromTypeNode(typeArgument);
-			const symbol: typescript.Symbol | undefined =
-				type.aliasSymbol ?? type.getSymbol();
+			const symbol: typescript.Symbol | undefined = type.aliasSymbol ?? type.getSymbol();
 
 			const name: string =
 				symbol?.getName() ??
-				checker.typeToString(
-					type,
-					undefined,
-					typescript.TypeFormatFlags.NoTruncation,
-				);
+				checker.typeToString(type, undefined, typescript.TypeFormatFlags.NoTruncation);
 
 			return factory.createStringLiteral(name);
 		}

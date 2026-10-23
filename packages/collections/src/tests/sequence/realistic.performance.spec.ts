@@ -160,9 +160,7 @@ describe('grouping and indexing records', () => {
 	it('should tally by key without collecting the records', () => {
 		keyReads = 0;
 
-		const byStatus = SequenceCollection.from(orders).countBy(
-			countedKey((order) => order.status),
-		);
+		const byStatus = SequenceCollection.from(orders).countBy(countedKey((order) => order.status));
 
 		expect(keyReads).toBe(ORDERS);
 		expect(byStatus.size).toBe(STATUSES.length);
@@ -172,9 +170,7 @@ describe('grouping and indexing records', () => {
 	it('should build a lookup over a hundred thousand records within budget', () => {
 		const started: number = performance.now();
 
-		const byCustomer = SequenceCollection.from(orders).toLookup(
-			(order) => order.customerId,
-		);
+		const byCustomer = SequenceCollection.from(orders).toLookup((order) => order.customerId);
 
 		expect(byCustomer.size).toBe(CUSTOMERS);
 		expect(performance.now() - started).toBeLessThan(2_000);
@@ -332,9 +328,7 @@ describe('statistics over a field of a hundred thousand records', () => {
 	it('should find the extreme record rather than the extreme value', () => {
 		keyReads = 0;
 
-		const dearest = SequenceCollection.from(orders).maxBy(
-			countedKey((order) => order.total),
-		);
+		const dearest = SequenceCollection.from(orders).maxBy(countedKey((order) => order.total));
 
 		expect(dearest.id).toBeGreaterThanOrEqual(0);
 		expect(keyReads).toBe(ORDERS);
@@ -350,10 +344,7 @@ describe('memoize on an expensive projection', () => {
 				projections++;
 				return {
 					id: order.id,
-					value: order.items.reduce(
-						(total, item) => total + item.quantity * item.unitPrice,
-						0,
-					),
+					value: order.items.reduce((total, item) => total + item.quantity * item.unitPrice, 0),
 				};
 			})
 			.memoize();

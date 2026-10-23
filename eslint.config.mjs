@@ -49,10 +49,7 @@ const braceWrappedBranches = {
 			context.report({
 				node: body,
 				messageId: 'needed',
-				fix: (fixer) => [
-					fixer.insertTextBefore(body, '{'),
-					fixer.insertTextAfter(body, '}'),
-				],
+				fix: (fixer) => [fixer.insertTextBefore(body, '{'), fixer.insertTextAfter(body, '}')],
 			});
 		};
 
@@ -111,14 +108,7 @@ export default [
 					// sibling packages of the workspace, then the package being read,
 					// then its neighbours. A reader following an import list top to
 					// bottom therefore moves steadily closer to the file in hand.
-					groups: [
-						['^node:'],
-						['^@?\\w'],
-						['^@fulcro/'],
-						['^@/'],
-						['^\\.\\./'],
-						['^\\./'],
-					],
+					groups: [['^node:'], ['^@?\\w'], ['^@fulcro/'], ['^@/'], ['^\\.\\./'], ['^\\./']],
 				},
 			],
 			'simple-import-sort/exports': 'error',

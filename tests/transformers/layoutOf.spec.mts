@@ -38,20 +38,16 @@ describe('layoutOf over the structs of @fulcro/types', () => {
 			const descriptor = compiled.exports[name] as Described;
 
 			expect(layouts[name]).toEqual(descriptor.layout);
-			expect(
-				Object.keys((layouts[name] as Described['layout']).fields),
-			).toEqual(Object.keys(descriptor.layout.fields));
+			expect(Object.keys((layouts[name] as Described['layout']).fields)).toEqual(
+				Object.keys(descriptor.layout.fields),
+			);
 			expect(Object.isFrozen(layouts[name])).toBe(true);
 		},
 	);
 
 	it('should read a struct shipped as a declaration only, in its declared order', () => {
-		const {
-			DoublePrecisionFloat,
-			SinglePrecisionFloat,
-			UnsignedInteger,
-			struct,
-		} = require('@fulcro/types') as typeof import('@fulcro/types');
+		const { DoublePrecisionFloat, SinglePrecisionFloat, UnsignedInteger, struct } =
+			require('@fulcro/types') as typeof import('@fulcro/types');
 
 		// The same fields in the same order as `struct.declared.d.ts`: what that
 		// declaration would have been built from.

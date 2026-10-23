@@ -61,9 +61,7 @@ export interface TypePath {
  * @returns Every leaf, in the order the properties were declared.
  * @throws {Error} When the call was not resolved at compile time.
  */
-export const pathsOf = <T>(
-	paths?: readonly TypePath[],
-): readonly TypePath[] => {
+export const pathsOf = <T>(paths?: readonly TypePath[]): readonly TypePath[] => {
 	if (paths === undefined) {
 		throw createError('FULCRO4005', { operation: 'pathsOf' });
 	}

@@ -24,9 +24,7 @@ a fixture naming a file that is not there proves nothing about a glob.
 ```json
 {
 	"rule": "collections-performance.md",
-	"loads": [
-		"packages/collections/src/collections/sequence/sequence.collection.ts"
-	],
+	"loads": ["packages/collections/src/collections/sequence/sequence.collection.ts"],
 	"ignores": ["packages/parallel/src/pool/index.ts"]
 }
 ```

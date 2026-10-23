@@ -251,10 +251,7 @@ export interface Sequence<T> extends Iterable<T> {
 	 * @returns A new map holding every element of the sequence.
 	 * @throws {Error} When two elements produce the same key.
 	 */
-	toMap<K, R = T>(
-		keySelector: Selector<T, K>,
-		elementSelector?: Selector<T, R>,
-	): Map<K, R>;
+	toMap<K, R = T>(keySelector: Selector<T, K>, elementSelector?: Selector<T, R>): Map<K, R>;
 
 	/**
 	 * Runs an action for every element of the sequence.
@@ -496,10 +493,7 @@ export interface Sequence<T> extends Iterable<T> {
 	 * @param resultSelector Projection merging each pair.
 	 * @returns A deferred sequence with one result per pair.
 	 */
-	zip<S, R>(
-		second: Iterable<S>,
-		resultSelector: ResultSelector<T, S, R>,
-	): Sequence<R>;
+	zip<S, R>(second: Iterable<S>, resultSelector: ResultSelector<T, S, R>): Sequence<R>;
 
 	/**
 	 * Adds elements to the end of the sequence.
@@ -643,10 +637,7 @@ export interface Sequence<T> extends Iterable<T> {
 	 * @param elementSelector Optional projection applied to each element.
 	 * @returns A map of key to the elements sharing it, in first-seen order.
 	 */
-	toLookup<K, R = T>(
-		keySelector: Selector<T, K>,
-		elementSelector?: Selector<T, R>,
-	): Map<K, R[]>;
+	toLookup<K, R = T>(keySelector: Selector<T, K>, elementSelector?: Selector<T, R>): Map<K, R[]>;
 
 	/**
 	 * Materializes the sequence into a set, discarding duplicates.
@@ -857,9 +848,7 @@ export interface Sequence<T> extends Iterable<T> {
 	 * @param type Name of the type to keep.
 	 * @returns A deferred sequence narrowed to that type.
 	 */
-	ofType<K extends keyof TypeNames>(
-		type: K,
-	): Sequence<Narrowed<T, TypeNames[K]>>;
+	ofType<K extends keyof TypeNames>(type: K): Sequence<Narrowed<T, TypeNames[K]>>;
 
 	/**
 	 * Keeps only the elements built from a given class, narrowing the sequence

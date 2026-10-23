@@ -164,17 +164,11 @@ export class TopWindow<T, K> {
 			const right: number = left + 1;
 			let worst: number = parent;
 
-			if (
-				left < this.heap.length &&
-				this.worse(this.heap[left], this.heap[worst])
-			) {
+			if (left < this.heap.length && this.worse(this.heap[left], this.heap[worst])) {
 				worst = left;
 			}
 
-			if (
-				right < this.heap.length &&
-				this.worse(this.heap[right], this.heap[worst])
-			) {
+			if (right < this.heap.length && this.worse(this.heap[right], this.heap[worst])) {
 				worst = right;
 			}
 

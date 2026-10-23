@@ -102,8 +102,7 @@ export interface TypeTest<R> {
  *
  * @template R Type being looked for.
  */
-export type TypeToken<R = unknown> =
-	keyof TypeNames | Constructor<R> | TypeTest<R>;
+export type TypeToken<R = unknown> = keyof TypeNames | Constructor<R> | TypeTest<R>;
 
 /**
  * Narrows `T` to the members assignable to `R`, keeping `R` when the two have
@@ -159,10 +158,7 @@ export type ResultSelector<O, I, R> = (outer: O, inner: I) => R;
  * @param inner Element coming from the inner sequence.
  * @returns The merged result, or a promise of it.
  */
-export type AsyncResultSelector<O, I, R> = (
-	outer: O,
-	inner: I,
-) => R | PromiseLike<R>;
+export type AsyncResultSelector<O, I, R> = (outer: O, inner: I) => R | PromiseLike<R>;
 
 /**
  * Accumulates a sequence into a single value.
@@ -221,10 +217,7 @@ export type AsyncOptionalSelector<T, R> = (
  * @param index Zero based position of the element in the sequence.
  * @returns Nothing, or a promise that settles when the element is dealt with.
  */
-export type AsyncAction<T> = (
-	value: T,
-	index: number,
-) => void | PromiseLike<void>;
+export type AsyncAction<T> = (value: T, index: number) => void | PromiseLike<void>;
 
 /**
  * Accumulates a sequence into a single value, possibly waiting on each step.
@@ -235,10 +228,7 @@ export type AsyncAction<T> = (
  * @param item Element being aggregated.
  * @returns The new accumulated value, or a promise of it.
  */
-export type AsyncAccumulator<A, T> = (
-	accumulator: A,
-	item: T,
-) => A | PromiseLike<A>;
+export type AsyncAccumulator<A, T> = (accumulator: A, item: T) => A | PromiseLike<A>;
 
 /**
  * What a terminal operator of an asynchronous sequence accepts beyond its own

@@ -67,11 +67,8 @@ larguras, `8 | 16 | 32 | 64 | 128`.
 ```ts
 import type { NumericType } from '@fulcro/types';
 
-const sum = <T>(
-	type: NumericType<T, unknown>,
-	values: readonly T[],
-	zero: T,
-): T => values.reduce((total, value) => type.add(total, value), zero);
+const sum = <T>(type: NumericType<T, unknown>, values: readonly T[], zero: T): T =>
+	values.reduce((total, value) => type.add(total, value), zero);
 ```
 
 Todo tipo com faixa a informa como `minimum` e `maximum`: o menor e o maior
@@ -548,13 +545,7 @@ objeto, segurar um ainda custa.
 ## Matemática
 
 ```ts
-import {
-	ComplexNumber,
-	Fraction,
-	Matrix,
-	Quaternion,
-	Vector,
-} from '@fulcro/types';
+import { ComplexNumber, Fraction, Matrix, Quaternion, Vector } from '@fulcro/types';
 ```
 
 Cinco tipos construídos sobre os numéricos, cada um declarado do mesmo jeito —

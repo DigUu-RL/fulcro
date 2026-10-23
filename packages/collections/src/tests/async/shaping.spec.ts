@@ -24,9 +24,7 @@ import { SequenceCollection } from '@/collections/sequence';
  * @param values Elements to yield.
  * @returns The asynchronous iterable and a reader of how far it got.
  */
-const counted = <T>(
-	values: readonly T[],
-): { source: AsyncIterable<T>; pulled: () => number } => {
+const counted = <T>(values: readonly T[]): { source: AsyncIterable<T>; pulled: () => number } => {
 	let pulled = 0;
 
 	return {
@@ -58,30 +56,26 @@ const streamOf = <T>(values: readonly T[]): AsyncIterable<T> => ({
 describe('choose', () => {
 	it('should keep what the projection produced and drop what it did not', async () => {
 		const values = AsyncSequenceCollection.from(
-			streamOf([
-				{ email: 'a@b.c' },
-				{ email: null },
-				{ email: 'c@d.e' },
-			] as readonly { email: string | null }[]),
+			streamOf([{ email: 'a@b.c' }, { email: null }, { email: 'c@d.e' }] as readonly {
+				email: string | null;
+			}[]),
 		).choose((user) => user.email);
 
 		expect(await values.toArray()).toEqual(['a@b.c', 'c@d.e']);
 	});
 
 	it('should await a projection that has to wait', async () => {
-		const values = AsyncSequenceCollection.from(streamOf([1, 2, 3])).choose(
-			async (value) => {
-				await Promise.resolve();
-				return value % 2 === 0 ? value : null;
-			},
-		);
+		const values = AsyncSequenceCollection.from(streamOf([1, 2, 3])).choose(async (value) => {
+			await Promise.resolve();
+			return value % 2 === 0 ? value : null;
+		});
 
 		expect(await values.toArray()).toEqual([2]);
 	});
 
 	it('should treat falsy values as results, not as absence', async () => {
-		const values = AsyncSequenceCollection.from(streamOf([1, 2, 3])).choose(
-			(value) => (value === 2 ? null : 0),
+		const values = AsyncSequenceCollection.from(streamOf([1, 2, 3])).choose((value) =>
+			value === 2 ? null : 0,
 		);
 
 		expect(await values.toArray()).toEqual([0, 0]);
@@ -103,9 +97,7 @@ describe('choose', () => {
 		let running = 0;
 		let peak = 0;
 
-		const values = AsyncSequenceCollection.from(
-			streamOf([...Array(12).keys()]),
-		).chooseAwait(
+		const values = AsyncSequenceCollection.from(streamOf([...Array(12).keys()])).chooseAwait(
 			async (value) => {
 				running++;
 				peak = Math.max(peak, running);
@@ -150,10 +142,7 @@ describe('choose', () => {
 
 	it.each([0, -1, 1.5])('should reject a concurrency of %s', (concurrency) => {
 		expect(() =>
-			AsyncSequenceCollection.from(streamOf([1])).chooseAwait(
-				(value) => value,
-				{ concurrency },
-			),
+			AsyncSequenceCollection.from(streamOf([1])).chooseAwait((value) => value, { concurrency }),
 		).toThrow(/positive integer/i);
 	});
 });
@@ -162,9 +151,7 @@ describe('ofType and cast', () => {
 	it('should keep only the elements of a type', async () => {
 		const values: unknown[] = ['a', 1, 'b', null];
 
-		const strings = AsyncSequenceCollection.from(streamOf(values)).ofType(
-			'string',
-		);
+		const strings = AsyncSequenceCollection.from(streamOf(values)).ofType('string');
 
 		expect(await strings.toArray()).toEqual(['a', 'b']);
 	});
@@ -174,9 +161,9 @@ describe('ofType and cast', () => {
 		// without the remainder of the feed being fetched.
 		const { source, pulled } = counted<unknown>(['a', 'b', 7, 'c', 'd']);
 
-		await expect(
-			AsyncSequenceCollection.from(source).cast('string').toArray(),
-		).rejects.toThrow(/cast\('string'\) found a number at index 2/);
+		await expect(AsyncSequenceCollection.from(source).cast('string').toArray()).rejects.toThrow(
+			/cast\('string'\) found a number at index 2/,
+		);
 
 		expect(pulled()).toBe(3);
 	});
@@ -225,9 +212,10 @@ describe('ofType and cast', () => {
 
 describe('topBy', () => {
 	it('should return the largest keys, largest first', async () => {
-		const best = AsyncSequenceCollection.from(
-			streamOf([3, 1, 4, 1, 5, 9, 2, 6]),
-		).topBy((value) => value, 3);
+		const best = AsyncSequenceCollection.from(streamOf([3, 1, 4, 1, 5, 9, 2, 6])).topBy(
+			(value) => value,
+			3,
+		);
 
 		expect(await best.toArray()).toEqual([9, 6, 5]);
 	});
@@ -258,9 +246,7 @@ describe('topBy', () => {
 		// element and is bounded by nothing at all.
 		const size = 50_000;
 
-		const best = await AsyncSequenceCollection.from(
-			streamOf([...Array(size).keys()]),
-		)
+		const best = await AsyncSequenceCollection.from(streamOf([...Array(size).keys()]))
 			.topBy((value) => value, 5)
 			.toArray();
 
@@ -268,9 +254,7 @@ describe('topBy', () => {
 	});
 
 	it('should await a key that has to be fetched', async () => {
-		const best = AsyncSequenceCollection.from(
-			streamOf(['a', 'bbb', 'bb']),
-		).topBy(async (value) => {
+		const best = AsyncSequenceCollection.from(streamOf(['a', 'bbb', 'bb'])).topBy(async (value) => {
 			await Promise.resolve();
 			return value.length;
 		}, 2);
@@ -292,9 +276,7 @@ describe('topBy', () => {
 			.topByAwait(
 				async (player) => {
 					// Deliberately uneven: the later ones finish first.
-					await new Promise((resolve) =>
-						setTimeout(resolve, 24 - player.index),
-					);
+					await new Promise((resolve) => setTimeout(resolve, 24 - player.index));
 					return player.score;
 				},
 				3,
@@ -331,10 +313,7 @@ describe('topBy', () => {
 	it.each([0, -1])('should yield nothing for a count of %s', async (count) => {
 		const { source, pulled } = counted([1, 2, 3]);
 
-		const best = AsyncSequenceCollection.from(source).topBy(
-			(value) => value,
-			count,
-		);
+		const best = AsyncSequenceCollection.from(source).topBy((value) => value, count);
 
 		expect(await best.toArray()).toEqual([]);
 		expect(pulled()).toBe(0);
@@ -345,11 +324,9 @@ describe('tap', () => {
 	it('should yield every element unchanged', async () => {
 		const seen: number[] = [];
 
-		const values = AsyncSequenceCollection.from(streamOf([1, 2, 3])).tap(
-			(value) => {
-				seen.push(value);
-			},
-		);
+		const values = AsyncSequenceCollection.from(streamOf([1, 2, 3])).tap((value) => {
+			seen.push(value);
+		});
 
 		expect(await values.toArray()).toEqual([1, 2, 3]);
 		expect(seen).toEqual([1, 2, 3]);

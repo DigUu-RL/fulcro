@@ -22,10 +22,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 const require = createRequire(import.meta.url);
 
 /** Fixture fed to the compiler. */
-const FIXTURE = path.resolve(
-	path.dirname(fileURLToPath(import.meta.url)),
-	'layout.sample.ts',
-);
+const FIXTURE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'layout.sample.ts');
 
 /** JavaScript emitted for the fixture. */
 let emitted = '';
@@ -46,17 +43,11 @@ beforeAll(() => {
 
 	const errors: readonly ts.Diagnostic[] = ts
 		.getPreEmitDiagnostics(program, program.getSourceFile(FIXTURE))
-		.filter(
-			(diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error,
-		);
+		.filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error);
 
 	if (errors.length > 0) {
 		throw new Error(
-			errors
-				.map((error) =>
-					ts.flattenDiagnosticMessageText(error.messageText, '\n'),
-				)
-				.join('\n'),
+			errors.map((error) => ts.flattenDiagnosticMessageText(error.messageText, '\n')).join('\n'),
 		);
 	}
 
@@ -100,8 +91,6 @@ describe('the layout of @fulcro/types, read by @fulcro/reflect', () => {
 		// `import type` is erased, which is the promise to a consumer who wants
 		// only the types: no module of the package is loaded.
 		expect(emitted).toMatch(/from ['"]@fulcro\/reflect['"]/);
-		expect(emitted).not.toMatch(
-			/from ['"]@fulcro\/types['"]|import\(['"]@fulcro\/types['"]\)/,
-		);
+		expect(emitted).not.toMatch(/from ['"]@fulcro\/types['"]|import\(['"]@fulcro\/types['"]\)/);
 	});
 });

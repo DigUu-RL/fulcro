@@ -182,9 +182,7 @@ describe('wall clock ceilings', () => {
 	it('should settle ten thousand tryCatch calls within budget', async () => {
 		const started: number = performance.now();
 
-		await Promise.all(
-			[...Array(10_000).keys()].map((value) => tryCatch(async () => value)),
-		);
+		await Promise.all([...Array(10_000).keys()].map((value) => tryCatch(async () => value)));
 
 		expect(performance.now() - started).toBeLessThan(2_000);
 	});

@@ -15,11 +15,7 @@ import { describeValue } from '@/storage/describeValue';
  * @throws {RangeError} When the index is not an integer from `0` to
  * `length - 1`.
  */
-export const requireIndex = (
-	operation: string,
-	index: number,
-	length: number,
-): void => {
+export const requireIndex = (operation: string, index: number, length: number): void => {
 	if (!Number.isInteger(index) || index < 0 || index >= length) {
 		throw createError('FULCRO7002', {
 			operation,
