@@ -1,5 +1,5 @@
 <h1 align="left">
-  <img src="icon-wide.png" alt="fulcro" width="80%" />
+  <img src="icon-wide.png" alt="fulcro" width="100%" />
 </h1>
 
 <p align="left">
