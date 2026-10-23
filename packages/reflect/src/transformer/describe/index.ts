@@ -293,7 +293,7 @@ export const pathsOfType = (
 	// A single entry with an empty path means the root itself was a leaf, which
 	// is not a walk anyone asked for.
 	if (found.length === 0) return null;
-	if (found.length === 1 && found[0].path === '') return null;
+	if (found.length === 1 && found[0]?.path === '') return null;
 
 	return found;
 };

@@ -378,7 +378,7 @@ describe('SequenceCollection Performance', () => {
 			const sorted = numbers.orderBy((item) => item.key).toArray();
 			const elapsed = performance.now() - startedAt;
 
-			expect(sorted[0].key).toBe(0);
+			expect(sorted[0]?.key).toBe(0);
 			expect(sorted.length).toBe(LARGE_VOLUME);
 			expect(elapsed).toBeLessThan(5_000);
 		});

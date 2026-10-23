@@ -129,7 +129,7 @@ describe('running work on workers', () => {
 		const results = await poolFor<number, number>('burn', 4).map([5_000_000, 1, 1, 1]);
 
 		expect(results).toHaveLength(4);
-		expect(results[0]).toBeGreaterThan(results[1]);
+		expect(results[0]).toBeGreaterThan(results[1] as number);
 	});
 
 	it('should carry structured records across the boundary', async () => {

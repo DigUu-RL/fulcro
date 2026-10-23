@@ -188,7 +188,13 @@ export function switchFor<T, R>(
 	otherwise?: (value: T) => R,
 ): R | undefined {
 	if (!Array.isArray(cases)) {
-		return (cases as Record<PropertyKey, (value: T) => R>)[value as unknown as PropertyKey](value);
+		// `ExhaustiveCases` has a branch for every member of `T`, so the one for
+		// `value` is there.
+		const branch = (cases as Record<PropertyKey, (value: T) => R>)[
+			value as unknown as PropertyKey
+		] as (value: T) => R;
+
+		return branch(value);
 	}
 
 	const matched: SwitchCase<T, R> | undefined = (cases as readonly SwitchCase<T, R>[]).find(

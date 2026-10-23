@@ -106,7 +106,7 @@ describe('sizeOf at compile time', () => {
 					error.start ?? 0,
 				);
 
-				return (error.file as ts.SourceFile).text.split(/\r?\n/)[line].trim();
+				return ((error.file as ts.SourceFile).text.split(/\r?\n/)[line] ?? '').trim();
 			});
 
 		expect(refused).toEqual([

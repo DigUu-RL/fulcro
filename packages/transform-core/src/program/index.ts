@@ -188,7 +188,9 @@ export class ProgramHost implements typescript.LanguageServiceHost {
 	readDirectory = typescript.sys.readDirectory;
 	directoryExists = typescript.sys.directoryExists;
 	getDirectories = typescript.sys.getDirectories;
-	realpath = typescript.sys.realpath;
+	// The system may not offer one; the path as given is what the compiler
+	// uses itself when a host has no `realpath`.
+	realpath = (path: string): string => typescript.sys.realpath?.(path) ?? path;
 }
 
 /**
@@ -288,7 +290,7 @@ export const createFileTransformer = (
 	let service: typescript.LanguageService | undefined;
 
 	const handles = (id: string): boolean => {
-		const fileName: string = id.split('?')[0];
+		const fileName = id.split('?')[0] as string;
 
 		if (!HANDLED_EXTENSIONS.includes(path.extname(fileName))) return false;
 
@@ -303,7 +305,7 @@ export const createFileTransformer = (
 		// would cost seconds for nothing.
 		if (!utilityPattern.test(code)) return null;
 
-		const fileName: string = toCompilerPath(id.split('?')[0]);
+		const fileName: string = toCompilerPath(id.split('?')[0] as string);
 
 		if (host === undefined || service === undefined) {
 			host = new ProgramHost(parseTsconfig(root, options.tsconfig), root);
@@ -323,7 +325,8 @@ export const createFileTransformer = (
 			program.getCompilerOptions(),
 		);
 
-		const [transformed] = result.transformed;
+		// One source file in, one transformed file out.
+		const transformed = result.transformed[0] as typescript.SourceFile;
 
 		// Nothing rewritten — every file an analyzer only checks, and every file
 		// that merely mentions a utility's name. Printing it anyway would hand the

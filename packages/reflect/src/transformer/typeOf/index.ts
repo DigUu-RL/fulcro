@@ -187,7 +187,10 @@ const buildMetadataLiteral = (
 		: null;
 
 	const element: string | null = checker.isArrayType(type)
-		? checker.typeToString(checker.getTypeArguments(type as typescript.TypeReference)[0])
+		? checker.typeToString(
+				// An array type always has its element as its one type argument.
+				checker.getTypeArguments(type as typescript.TypeReference)[0] as typescript.Type,
+			)
 		: null;
 
 	return factory.createObjectLiteralExpression(
@@ -254,7 +257,7 @@ export const typeOfRewriter: CallRewriter = {
 		if (call.arguments.length !== 1) return null;
 
 		const { checker, factory, visit } = context;
-		const [argument] = call.arguments;
+		const argument = call.arguments[0] as typescript.Expression;
 
 		return factory.updateCallExpression(
 			call,

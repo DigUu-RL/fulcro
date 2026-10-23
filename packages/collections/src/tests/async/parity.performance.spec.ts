@@ -40,7 +40,7 @@ beforeAll(() => {
 	// measurement of the builder.
 	orders = Array.from({ length: SIZE }, (_, index) => ({
 		id: index,
-		region: ['north', 'south', 'east', 'west'][index % 4],
+		region: ['north', 'south', 'east', 'west'][index % 4] as string,
 		total: (index * 7919) % 50_000,
 		items: [
 			{ sku: `sku-${index % 97}`, quantity: (index % 5) + 1 },
@@ -106,7 +106,7 @@ describe('the terminals that can stop, stop', () => {
 	it('should leave contains where it found the value', async () => {
 		const { source, pulled } = counted(orders);
 
-		await AsyncSequenceCollection.from(source).contains(orders[2]);
+		await AsyncSequenceCollection.from(source).contains(orders[2] as Order);
 
 		expect(pulled()).toBe(3);
 	});
@@ -122,7 +122,11 @@ describe('the terminals that can stop, stop', () => {
 	it('should leave sequenceEqual at the first difference', async () => {
 		const { source, pulled } = counted(orders);
 
-		const different: readonly Order[] = [orders[0], { ...orders[1], id: -1 }, ...orders.slice(2)];
+		const different: readonly Order[] = [
+			orders[0] as Order,
+			{ ...(orders[1] as Order), id: -1 },
+			...orders.slice(2),
+		];
 
 		await AsyncSequenceCollection.from(source).sequenceEqual(different);
 

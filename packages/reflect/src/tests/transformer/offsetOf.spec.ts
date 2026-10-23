@@ -82,7 +82,10 @@ let accepted: Compiled;
 let rejected: Compiled;
 
 beforeAll(() => {
-	[accepted, rejected] = compile('fieldLayout.sample.ts', 'fieldLayout.rejected.fixture.ts');
+	[accepted, rejected] = compile('fieldLayout.sample.ts', 'fieldLayout.rejected.fixture.ts') as [
+		Compiled,
+		Compiled,
+	];
 });
 
 describe('offsetOf at compile time', () => {
@@ -129,7 +132,7 @@ describe('offsetOf at compile time', () => {
 					error.start ?? 0,
 				);
 
-				return (error.file as ts.SourceFile).text.split(/\r?\n/)[line].trim();
+				return ((error.file as ts.SourceFile).text.split(/\r?\n/)[line] ?? '').trim();
 			})
 			.filter((line) => line.includes('offsetOf'));
 

@@ -17,7 +17,9 @@ import { type PathAccessor, pathOf } from '@/functions/utils/pathOf';
 interface Order {
 	readonly id: number;
 	readonly customer: { readonly address: { readonly city: string } };
-	readonly items: readonly { readonly sku: string }[];
+	// Never empty, so `items[0]` is an item: the accessors below are parsed from
+	// their source text, which an optional chain or a cast would change.
+	readonly items: readonly [{ readonly sku: string }, ...{ readonly sku: string }[]];
 }
 
 declare const order: Order;

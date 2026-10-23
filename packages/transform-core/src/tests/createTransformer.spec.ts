@@ -100,7 +100,11 @@ const run = (
 	addDiagnostic?: (diagnostic: typescript.Diagnostic) => unknown,
 ): string => {
 	const result = typescript.transform(fixture, [
-		createTransformer([renaming], analyzers)(program, {}, { addDiagnostic }),
+		createTransformer([renaming], analyzers)(
+			program,
+			{},
+			addDiagnostic === undefined ? {} : { addDiagnostic },
+		),
 	]);
 	const printed: string = typescript
 		.createPrinter()

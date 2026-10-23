@@ -281,7 +281,7 @@ describe('@fulcro/collections', () => {
 			.toArray();
 
 		expect(groups.map((group) => group.key)).toEqual(['a', 'b']);
-		expect(groups[0].toArray()).toEqual(['aa', 'ab']);
+		expect(groups[0]?.toArray()).toEqual(['aa', 'ab']);
 	});
 
 	it('should keep the concrete subclasses and the registry unexported', async () => {

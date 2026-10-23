@@ -83,13 +83,16 @@ export class OrderedSequenceCollection<T>
 		const keys: unknown[][] = new Array<unknown[]>(criteriaCount);
 		const directions: Int8Array = new Int8Array(criteriaCount);
 
+		// Every index below is bounded by `length` or `criteriaCount`, so each
+		// access is asserted rather than checked: a check would add a branch to
+		// the comparator, which runs O(n log n) times.
 		for (let criterionIndex = 0; criterionIndex < criteriaCount; criterionIndex++) {
-			const criterion: SortCriterion<T> = criteria[criterionIndex];
+			const criterion = criteria[criterionIndex] as SortCriterion<T>;
 			const keySelector: Selector<T, unknown> = criterion.keySelector;
 			const extracted: unknown[] = new Array<unknown>(length);
 
 			for (let index = 0; index < length; index++) {
-				extracted[index] = keySelector(elements[index]);
+				extracted[index] = keySelector(elements[index] as T);
 			}
 
 			keys[criterionIndex] = extracted;
@@ -101,12 +104,13 @@ export class OrderedSequenceCollection<T>
 
 		positions.sort((left, right) => {
 			for (let criterionIndex = 0; criterionIndex < criteriaCount; criterionIndex++) {
-				const extracted: unknown[] = keys[criterionIndex];
+				const extracted = keys[criterionIndex] as unknown[];
 				const leftKey = extracted[left] as never;
 				const rightKey = extracted[right] as never;
+				const direction = directions[criterionIndex] as number;
 
-				if (leftKey > rightKey) return directions[criterionIndex];
-				if (leftKey < rightKey) return -directions[criterionIndex];
+				if (leftKey > rightKey) return direction;
+				if (leftKey < rightKey) return -direction;
 			}
 
 			// Equivalent under every criterion: the original positions keep the
@@ -116,7 +120,7 @@ export class OrderedSequenceCollection<T>
 
 		const sorted: T[] = new Array<T>(length);
 		for (let index = 0; index < length; index++) {
-			sorted[index] = elements[positions[index]];
+			sorted[index] = elements[positions[index] as number] as T;
 		}
 
 		return sorted;

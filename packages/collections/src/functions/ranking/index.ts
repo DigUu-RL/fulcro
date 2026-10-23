@@ -60,8 +60,12 @@ export class TopWindow<T, K> {
 			return;
 		}
 
-		const worstSlot: number = this.heap[0];
-		const worstKey: K = this.keys[worstSlot];
+		// The window is full here, so the heap has a root, and every heap entry is
+		// a slot of `elements`, `keys` and `arrivals`. The accesses through this
+		// class are asserted rather than checked: a check would add a branch to
+		// every comparison of every sift.
+		const worstSlot = this.heap[0] as number;
+		const worstKey = this.keys[worstSlot] as K;
 
 		if (key < worstKey) return;
 
@@ -71,7 +75,7 @@ export class TopWindow<T, K> {
 		// the window fills with whichever finished first. Testing the key alone
 		// let those incumbents hold their places against elements that arrived
 		// before them, and the answer silently became "whichever was quickest".
-		if (!(key > worstKey) && arrival > this.arrivals[worstSlot]) return;
+		if (!(key > worstKey) && arrival > (this.arrivals[worstSlot] as number)) return;
 
 		// The winner takes the loser's slot rather than a new one. Appending
 		// instead would grow these arrays once per winner, which on keys that
@@ -101,7 +105,7 @@ export class TopWindow<T, K> {
 		return this.heap
 			.slice()
 			.sort((left, right) => (this.worse(left, right) ? 1 : -1))
-			.map((position) => this.elements[position]);
+			.map((position) => this.elements[position] as T);
 	}
 
 	/**
@@ -116,8 +120,8 @@ export class TopWindow<T, K> {
 	 * @returns `true` when the left element is worse.
 	 */
 	private worse(left: number, right: number): boolean {
-		const leftKey: K = this.keys[left];
-		const rightKey: K = this.keys[right];
+		const leftKey = this.keys[left] as K;
+		const rightKey = this.keys[right] as K;
 
 		if (leftKey < rightKey) return true;
 		if (leftKey > rightKey) return false;
@@ -125,7 +129,7 @@ export class TopWindow<T, K> {
 		// Tied: the one that arrived later is the one to lose. Compared by
 		// arrival rather than by position, because a concurrent producer stores
 		// them in whatever order its work finished in.
-		return this.arrivals[left] > this.arrivals[right];
+		return (this.arrivals[left] as number) > (this.arrivals[right] as number);
 	}
 
 	/**
@@ -139,12 +143,14 @@ export class TopWindow<T, K> {
 		while (child > 0) {
 			const parent: number = (child - 1) >> 1;
 
-			if (!this.worse(this.heap[child], this.heap[parent])) break;
+			const childSlot = this.heap[child] as number;
+			const held = this.heap[parent] as number;
+
+			if (!this.worse(childSlot, held)) break;
 
 			// Swapped through a temporary rather than by destructuring, which
 			// would allocate an array on every level of every sift.
-			const held: number = this.heap[parent];
-			this.heap[parent] = this.heap[child];
+			this.heap[parent] = childSlot;
 			this.heap[child] = held;
 
 			child = parent;
@@ -164,18 +170,24 @@ export class TopWindow<T, K> {
 			const right: number = left + 1;
 			let worst: number = parent;
 
-			if (left < this.heap.length && this.worse(this.heap[left], this.heap[worst])) {
+			if (
+				left < this.heap.length &&
+				this.worse(this.heap[left] as number, this.heap[worst] as number)
+			) {
 				worst = left;
 			}
 
-			if (right < this.heap.length && this.worse(this.heap[right], this.heap[worst])) {
+			if (
+				right < this.heap.length &&
+				this.worse(this.heap[right] as number, this.heap[worst] as number)
+			) {
 				worst = right;
 			}
 
 			if (worst === parent) break;
 
-			const held: number = this.heap[parent];
-			this.heap[parent] = this.heap[worst];
+			const held = this.heap[parent] as number;
+			this.heap[parent] = this.heap[worst] as number;
 			this.heap[worst] = held;
 
 			parent = worst;

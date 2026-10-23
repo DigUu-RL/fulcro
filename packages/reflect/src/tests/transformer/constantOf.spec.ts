@@ -114,7 +114,7 @@ const lineOf = (diagnostic: ts.Diagnostic): string => {
 	const file = diagnostic.file as ts.SourceFile;
 	const { line } = file.getLineAndCharacterOfPosition(diagnostic.start ?? 0);
 
-	return file.text.split(/\r?\n/)[line].trim();
+	return (file.text.split(/\r?\n/)[line] ?? '').trim();
 };
 
 /**
@@ -127,7 +127,7 @@ const refusalOf = (binding: string): string => {
 	const declaration: number =
 		rejected.refused.length === 0
 			? -1
-			: (rejected.refused[0].file as ts.SourceFile).text.indexOf(`export const ${binding} =`);
+			: (rejected.refused[0]?.file as ts.SourceFile).text.indexOf(`export const ${binding} =`);
 	const found: ts.Diagnostic | undefined = rejected.refused.find(
 		(diagnostic) =>
 			declaration >= 0 &&

@@ -60,6 +60,9 @@ const REGIONS = ['north', 'south', 'east', 'west'] as const;
 /** Statuses the dataset is spread across. */
 const STATUSES = ['pending', 'paid', 'shipped', 'cancelled'] as const;
 
+type Region = (typeof REGIONS)[number];
+type Status = (typeof STATUSES)[number];
+
 let orders: readonly Order[] = [];
 let customers: readonly Customer[] = [];
 
@@ -69,8 +72,8 @@ beforeAll(() => {
 	orders = Array.from({ length: ORDERS }, (_, index) => ({
 		id: index,
 		customerId: index % CUSTOMERS,
-		region: REGIONS[index % REGIONS.length],
-		status: STATUSES[index % STATUSES.length],
+		region: REGIONS[index % REGIONS.length] as Region,
+		status: STATUSES[index % STATUSES.length] as Status,
 		total: (index % 997) + (index % 13) / 10,
 		placedAt: new Date(2020, 0, 1 + (index % 1_000)),
 		items: Array.from({ length: ITEMS_PER_ORDER }, (__, line) => ({
@@ -83,7 +86,7 @@ beforeAll(() => {
 	customers = Array.from({ length: CUSTOMERS }, (_, index) => ({
 		id: index,
 		name: `customer-${index}`,
-		region: REGIONS[index % REGIONS.length],
+		region: REGIONS[index % REGIONS.length] as Region,
 	}));
 }, 60_000);
 
@@ -241,7 +244,7 @@ describe('joining two large collections', () => {
 			.toArray();
 
 		expect(grouped).toHaveLength(CUSTOMERS);
-		expect(grouped[0].count).toBe(ORDERS / CUSTOMERS);
+		expect(grouped[0]?.count).toBe(ORDERS / CUSTOMERS);
 		expect(performance.now() - started).toBeLessThan(3_000);
 	});
 });

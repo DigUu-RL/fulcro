@@ -168,12 +168,12 @@ describe('SequenceCollection Unit Tests', () => {
 		const grouped = items.groupBy((i) => i.category).toArray();
 
 		expect(grouped.length).toBe(2);
-		expect(grouped[0].key).toBe('A');
-		expect(grouped[0].toArray()).toEqual([
+		expect(grouped[0]?.key).toBe('A');
+		expect(grouped[0]?.toArray()).toEqual([
 			{ category: 'A', val: 1 },
 			{ category: 'A', val: 3 },
 		]);
-		expect(grouped[1].key).toBe('B');
+		expect(grouped[1]?.key).toBe('B');
 	});
 
 	it('should paginate elements using take() and skip()', () => {

@@ -65,8 +65,8 @@ describe.each([8, 16, 32] as const)('SignedInteger<%i>, carried by a number', (w
 		conversions = 0;
 
 		for (let index = 0; index < OPERATIONS; index++) {
-			const left = values[index % 3];
-			const right = values[(index + 1) % 3];
+			const left = values[index % 3] as (typeof values)[number];
+			const right = values[(index + 1) % 3] as (typeof values)[number];
 
 			type.add(left, right);
 			type.subtract(left, right);

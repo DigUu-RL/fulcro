@@ -52,7 +52,7 @@ afterAll(() => {
 
 describe('createTransformer with analyzers, counted', () => {
 	it('should invoke each analyzer once per file, however many calls it holds', () => {
-		const counts: number[] = [0, 0];
+		const counts: [number, number] = [0, 0];
 		const counting = (slot: 0 | 1): FileAnalyzer => ({
 			functionNames: ['flag'],
 			analyze: (): void => {

@@ -95,7 +95,10 @@ let accepted: Compiled;
 let rejected: Compiled;
 
 beforeAll(() => {
-	[accepted, rejected] = compile('ownership.sample.ts', 'ownership.rejected.fixture.ts');
+	[accepted, rejected] = compile('ownership.sample.ts', 'ownership.rejected.fixture.ts') as [
+		Compiled,
+		Compiled,
+	];
 });
 
 describe('ownership rules at compile time', () => {

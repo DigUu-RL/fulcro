@@ -480,7 +480,7 @@ export const createMatrixOperations = <T, R extends number, C extends number>(
 
 			for (let row = 0; row < rows; row++) {
 				for (let column = 0; column < columns; column++) {
-					elements[column * rows + row] = value[row * columns + column];
+					elements[column * rows + row] = value[row * columns + column] as T;
 				}
 			}
 

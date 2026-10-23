@@ -314,7 +314,8 @@ const bind = (
 		return '';
 	}
 
-	const [declaration] = declarations;
+	// An empty list was refused above.
+	const declaration = declarations[0] as typescript.Declaration;
 	const file: typescript.SourceFile = declaration.getSourceFile();
 
 	if (file.hasNoDefaultLib) {
@@ -522,7 +523,7 @@ const computeOutcome = (call: typescript.CallExpression, context: RewriteContext
 		return refuse('it takes exactly one function');
 	}
 
-	const [argument] = call.arguments;
+	const argument = call.arguments[0] as typescript.Expression;
 
 	if (
 		!typescript.isArrowFunction(argument) &&

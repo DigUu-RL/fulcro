@@ -160,14 +160,14 @@ export const createHypercomplexType = <T, TValue, TSource, TComponents>(
 	 * @returns Its components, in declared order.
 	 */
 	const componentsOf = (value: TValue): T[] =>
-		components.map((key) => (value as Record<string, T>)[key]);
+		components.map((key) => (value as Record<string, T>)[key] as T);
 
 	/**
 	 * @param value Components of a value.
 	 * @returns The same real part, and every imaginary part negated.
 	 */
 	const conjugateOf = (value: readonly T[]): T[] => [
-		value[0],
+		value[0] as T,
 		...negateEach(element, value.slice(1)),
 	];
 

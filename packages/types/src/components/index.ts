@@ -86,7 +86,7 @@ export const createComponentRecord = <T, TValue>(
 		const value: Record<string, T> = {};
 
 		for (let index = 0; index < keys.length; index++) {
-			value[keys[index]] = components[index];
+			value[keys[index] as string] = components[index] as T;
 		}
 
 		return Object.freeze(value) as TValue;

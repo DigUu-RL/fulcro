@@ -445,7 +445,7 @@ export const createPool = <T, R>(
 				if (signal?.aborted === true) return;
 
 				const position: number = handedOut++;
-				const value: T = pending[position];
+				const value = pending[position] as T;
 
 				member.busyWith = position;
 				outstanding.set(position, member);

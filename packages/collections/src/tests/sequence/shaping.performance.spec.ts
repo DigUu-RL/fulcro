@@ -46,8 +46,8 @@ beforeAll(() => {
 	// measurement of the builder.
 	orders = Array.from({ length: SIZE }, (_, index) => ({
 		id: index,
-		region: ['north', 'south', 'east', 'west'][index % 4],
-		status: (['pending', 'paid', 'shipped'] as const)[index % 3],
+		region: ['north', 'south', 'east', 'west'][index % 4] as string,
+		status: (['pending', 'paid', 'shipped'] as const)[index % 3] as Order['status'],
 		// Spread by a prime so the ranking cannot be satisfied by arrival order,
 		// and so the best elements are not clustered at either end.
 		total: (index * 7919) % 50_000,

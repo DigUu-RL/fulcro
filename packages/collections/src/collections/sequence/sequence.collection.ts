@@ -1308,7 +1308,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 					const materialized: T[] = SequenceCollection.materialize(source);
 
 					for (let index = materialized.length - 1; index >= 0; index--) {
-						yield materialized[index];
+						yield materialized[index] as T;
 					}
 				},
 			},
@@ -1722,7 +1722,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 
 					for (;;) {
 						if (index < cache.length) {
-							yield cache[index];
+							yield cache[index] as T;
 							index++;
 							continue;
 						}
@@ -1941,8 +1941,10 @@ export class SequenceCollection<T> implements Sequence<T> {
 	median(selector?: Selector<T, number>): number {
 		const values: number[] = this.sortedValues('median', selector);
 		const middle: number = Math.floor(values.length / 2);
+		// `sortedValues` refuses an empty sequence, so both neighbours exist.
+		const upper = values[middle] as number;
 
-		return values.length % 2 === 1 ? values[middle] : (values[middle - 1] + values[middle]) / 2;
+		return values.length % 2 === 1 ? upper : ((values[middle - 1] as number) + upper) / 2;
 	}
 
 	/**
@@ -1965,10 +1967,12 @@ export class SequenceCollection<T> implements Sequence<T> {
 		const position: number = ((values.length - 1) * rank) / 100;
 		const lower: number = Math.floor(position);
 		const upper: number = Math.ceil(position);
+		// Both positions lie within `0..length - 1`, and the sequence is not empty.
+		const lowerValue = values[lower] as number;
 
-		if (lower === upper) return values[lower];
+		if (lower === upper) return lowerValue;
 
-		return values[lower] + (values[upper] - values[lower]) * (position - lower);
+		return lowerValue + ((values[upper] as number) - lowerValue) * (position - lower);
 	}
 
 	/**

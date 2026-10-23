@@ -1,6 +1,7 @@
 import {
 	type ElementDescriptor,
 	type ElementSize,
+	type ElementType,
 	type RepeatedLayout,
 	type SourceOf,
 	type ValueOf,
@@ -51,10 +52,20 @@ export type ComplexNumberType<T, TSource = number> = HypercomplexType<
 const PARTS: readonly string[] = ['real', 'imaginary'];
 
 /** (a + bi)(c + di) = (ac − bd) + (ad + bc)i. */
-const complexProduct: ProductRule = (element, [a, b], [c, d]) => [
-	element.subtract(element.multiply(a, c), element.multiply(b, d)),
-	element.add(element.multiply(a, d), element.multiply(b, c)),
-];
+const complexProduct: ProductRule = <T>(
+	element: ElementType<T>,
+	left: readonly T[],
+	right: readonly T[],
+): T[] => {
+	// A complex number always has its two parts.
+	const [a, b] = left as readonly [T, T];
+	const [c, d] = right as readonly [T, T];
+
+	return [
+		element.subtract(element.multiply(a, c), element.multiply(b, d)),
+		element.add(element.multiply(a, d), element.multiply(b, c)),
+	];
+};
 
 /**
  * Declares a complex number type over a part type.

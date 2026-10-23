@@ -148,7 +148,7 @@ describe('defaultOf at compile time', () => {
 
 		if (match === null) throw new Error(`${binding} was not emitted`);
 
-		return match[1].replace(/\s+/g, ' ');
+		return (match[1] ?? '').replace(/\s+/g, ' ');
 	};
 
 	it('should resolve the primitives to their empty value', () => {

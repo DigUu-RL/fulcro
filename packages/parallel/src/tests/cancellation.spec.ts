@@ -133,7 +133,7 @@ describe('onCancelled', () => {
 		}
 
 		expect(deferred).toHaveLength(1);
-		expect(() => deferred[0]()).toThrow(error);
+		expect(() => deferred[0]?.()).toThrow(error);
 	});
 
 	it('should run handlers before cancel returns', () => {

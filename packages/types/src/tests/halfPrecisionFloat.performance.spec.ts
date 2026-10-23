@@ -29,7 +29,7 @@ const timed = (inputs: readonly number[], convert: (value: number) => number): n
 	const started: number = performance.now();
 
 	for (let index = 0; index < CONVERSIONS; index++) {
-		sink += convert(inputs[index % inputs.length]);
+		sink += convert(inputs[index % inputs.length] as number);
 	}
 
 	const elapsed: number = performance.now() - started;

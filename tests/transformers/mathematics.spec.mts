@@ -153,7 +153,7 @@ describe('the mathematics types and constantOf across the package boundary', () 
 	it('should refuse a constant that calls into another package, at its call', () => {
 		expect(rejected.refused).toHaveLength(1);
 
-		const [refusal] = rejected.refused;
+		const refusal = rejected.refused[0] as ts.Diagnostic;
 		const file = refusal.file as ts.SourceFile;
 		const { line } = file.getLineAndCharacterOfPosition(refusal.start ?? 0);
 

@@ -101,10 +101,10 @@ export const powerOfTen = (exponent: number): bigint => {
 	if (exponent > 128) return 10n ** BigInt(exponent);
 
 	while (POWERS_OF_TEN.length <= exponent) {
-		POWERS_OF_TEN.push(POWERS_OF_TEN[POWERS_OF_TEN.length - 1] * 10n);
+		POWERS_OF_TEN.push((POWERS_OF_TEN[POWERS_OF_TEN.length - 1] as bigint) * 10n);
 	}
 
-	return POWERS_OF_TEN[exponent];
+	return POWERS_OF_TEN[exponent] as bigint;
 };
 
 /**

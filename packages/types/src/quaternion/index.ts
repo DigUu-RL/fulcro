@@ -67,9 +67,12 @@ const COMPONENTS: readonly string[] = ['w', 'x', 'y', 'z'];
 /** Hamilton's product, `left` then `right`. */
 const hamiltonProduct: ProductRule = <T>(
 	element: ElementType<T>,
-	[leftW, leftX, leftY, leftZ]: readonly T[],
-	[rightW, rightX, rightY, rightZ]: readonly T[],
+	left: readonly T[],
+	right: readonly T[],
 ): T[] => {
+	// A quaternion always has its four components.
+	const [leftW, leftX, leftY, leftZ] = left as readonly [T, T, T, T];
+	const [rightW, rightX, rightY, rightZ] = right as readonly [T, T, T, T];
 	const times = (left: T, right: T): T => element.multiply(left, right);
 
 	return [

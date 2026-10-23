@@ -60,8 +60,10 @@ describe('Fraction', () => {
 			return remainder.mock.calls.length;
 		});
 
-		expect(counts[1] / counts[0]).toBeCloseTo(2, 0);
-		expect(counts[2] / counts[1]).toBeCloseTo(2, 0);
+		const [first, second, third] = counts as [number, number, number];
+
+		expect(second / first).toBeCloseTo(2, 0);
+		expect(third / second).toBeCloseTo(2, 0);
 	});
 
 	it('should skip the divisions when the fraction is already in lowest terms', () => {

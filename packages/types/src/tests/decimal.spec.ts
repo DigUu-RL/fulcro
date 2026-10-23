@@ -67,7 +67,7 @@ const referenceRound = (value: Exact, mode: RoundingMode): string => {
 	if (digits.length <= 34) return `${sign}${digits}e${value.exponent}`;
 
 	const kept: bigint = BigInt(digits.slice(0, 34));
-	const first: string = digits[34];
+	const first = digits[34] as string;
 	const rest: boolean = /[1-9]/.test(digits.slice(35));
 	const inexact: boolean = first !== '0' || rest;
 
@@ -320,10 +320,10 @@ describe('Decimal', () => {
 			for (let index = 0; index < 3_000; index++) {
 				// Spreads from a few places to a hundred, so both the aligned
 				// path and the far-operand path are exercised.
-				const spread: number = [4, 40, 80, 200][index % 4];
+				const spread = [4, 40, 80, 200][index % 4] as number;
 				const left: Exact = operand(random, spread);
 				const right: Exact = operand(random, spread);
-				const mode: RoundingMode = MODES[index % MODES.length];
+				const mode = MODES[index % MODES.length] as RoundingMode;
 				const sum: Exact = exactSum(left, right);
 
 				if (sum.coefficient === 0n) continue;
@@ -383,7 +383,7 @@ describe('Decimal', () => {
 			for (let index = 0; index < 2_000; index++) {
 				const left: Exact = operand(random, 60);
 				const right: Exact = operand(random, 60);
-				const mode: RoundingMode = MODES[index % MODES.length];
+				const mode = MODES[index % MODES.length] as RoundingMode;
 				const product: Exact = {
 					negative: left.negative !== right.negative,
 					coefficient: left.coefficient * right.coefficient,
@@ -449,7 +449,7 @@ describe('Decimal', () => {
 					const quotient: string = D(literal(left))
 						.divide(D(literal(right)), mode)
 						.toExponential(33);
-					const [mantissa, power] = quotient.split('e');
+					const [mantissa = '', power] = quotient.split('e');
 					const digits: string = mantissa.replace('.', '');
 					const q: Exact = {
 						negative: false,
@@ -792,7 +792,7 @@ describe('Decimal', () => {
 			for (let index = 0; index < 1_500; index++) {
 				const base: Exact = operand(random, 20);
 				const power: number = Math.floor(random() * 9);
-				const mode: RoundingMode = MODES[index % MODES.length];
+				const mode = MODES[index % MODES.length] as RoundingMode;
 				const exact: Exact = {
 					negative: base.negative && power % 2 === 1,
 					coefficient: base.coefficient ** BigInt(power),

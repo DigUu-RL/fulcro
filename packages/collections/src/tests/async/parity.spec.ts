@@ -74,7 +74,7 @@ interface Order {
 /** The dataset both halves are run over. */
 const ORDERS: readonly Order[] = Array.from({ length: 200 }, (_, index) => ({
 	id: index,
-	region: ['north', 'south', 'east', 'west'][index % 4],
+	region: ['north', 'south', 'east', 'west'][index % 4] as string,
 	total: (index * 37) % 500,
 }));
 

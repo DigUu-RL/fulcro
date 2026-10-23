@@ -35,7 +35,7 @@ const propagate = (step: () => void): void => {
 	propagating = queue;
 
 	try {
-		for (let index = 0; index < queue.length; index++) queue[index]();
+		for (let index = 0; index < queue.length; index++) (queue[index] as () => void)();
 	} finally {
 		propagating = null;
 	}

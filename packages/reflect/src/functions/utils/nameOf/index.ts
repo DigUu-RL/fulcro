@@ -34,12 +34,12 @@ const parseAccessedName = (accessor: NameAccessor): string | null => {
 
 	const indexed: RegExpMatchArray | null = source.match(INDEXED_MEMBER_PATTERN);
 
-	if (indexed !== null) return indexed[2];
+	if (indexed !== null) return indexed[2] ?? null;
 
 	const member: RegExpMatchArray | null = source.match(MEMBER_PATTERN);
 
 	// A call, a literal or an expression is not a name to report.
-	return member !== null && !source.endsWith(')') ? member[1] : null;
+	return member !== null && !source.endsWith(')') ? (member[1] ?? null) : null;
 };
 
 /**
