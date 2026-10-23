@@ -102,7 +102,7 @@ reader builds on it. A claim no suite covers, where the implementation appears
 to honour it, is a `MEDIUM` and the missing suite is `/test-gap`'s subject — say
 so and hand it over rather than writing the assertion here.
 
-**The prohibition lives here.** `.roadmap/features/F18-docs-sync.md` states it:
+**The prohibition lives here.** F18's specification states it:
 where a page and the implementation disagree, the report says which one is
 wrong. It does not rewrite the page to match an implementation that is the
 defect. A documented behaviour the code stopped honouring is a regression in the
@@ -137,9 +137,9 @@ a README is edited when a feature ships and the guide is edited when someone
 remembers, so the README is where the newer claim usually is and the guide is
 where the reader goes.
 
-Each package README carries a link to its guide, and per
-`.roadmap/features/F18-docs-sync.md` the READMEs stay English and carry a
-visible link to the Portuguese documentation.
+Each package README carries a link to its guide, and per F18's specification
+the READMEs stay English and carry a visible link to the Portuguese
+documentation.
 
 **Not a finding.** An anchor GitHub generates differently from the link text —
 check the generated form before reporting it.
@@ -163,8 +163,8 @@ docs/README.md      ↔  docs/pt-BR/README.md
 packages/<p>/README.md  — English, with a link to the Portuguese docs
 ```
 
-The English page keeps its path. `.roadmap/features/F18-docs-sync.md` is
-explicit that the canonical page is not moved to build a localization tree,
+The English page keeps its path. F18's specification is explicit that the
+canonical page is not moved to build a localization tree,
 because its URL is public and links to it exist outside this repository.
 
 **A finding** is a public English page with no counterpart at the mapped path,
@@ -182,9 +182,8 @@ identical findings say nothing the one row does not.
 **Reads.** The first few lines of each page in the public set and its
 counterpart.
 
-`.roadmap/features/F18-docs-sync.md` fixes the spelling of both notices, and
-they are checked as written there — a notice the reader cannot see is a notice
-that is not there:
+F18's specification fixed the spelling of both notices, and they are checked
+as written here — a notice the reader cannot see is a notice that is not there:
 
 ```text
 🇧🇷 Português (Brasil): [Leia esta documentação em português](<pt-BR-path>)
@@ -223,7 +222,7 @@ prose length. An example's surrounding narrative in Portuguese.
 ## 10. Roadmap and release metadata
 
 **Reads.** `git diff` against the base branch, `.changeset/`, the `CHANGELOG.md`
-of each package, and the roadmap checklist under `.roadmap/`.
+of each package, and the roadmap issues.
 
 **A finding:**
 
@@ -239,12 +238,12 @@ of each package, and the roadmap checklist under `.roadmap/`.
 - **A bump that understates the change.** A surface break recorded as a minor
   is `api-design.md`'s territory before it is a version number's; report it and
   stop.
-- **Roadmap drift.** A checklist box ticked for a feature whose files are not
-  there, or a feature complete in the tree and unticked. A checkbox is a claim
-  about the tree and is read against the tree.
+- **Roadmap drift.** A feature issue closed as completed whose files are not
+  there, or a feature complete in the tree whose issue is still open. Closing an
+  issue is a claim about the tree and is read against the tree.
 
-**Not a finding.** The roadmap itself being absent — it is gitignored and local,
-so a checkout without it is normal. Say the check did not run and why.
+**Not a finding.** The issues being unreachable — no network, or `gh` not
+signed in. Say the check did not run and why.
 
 ## References
 

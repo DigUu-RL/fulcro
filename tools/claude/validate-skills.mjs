@@ -40,8 +40,8 @@ import {
  * The frontmatter keys a skill may set.
  *
  * Seven come from the contract in `.claude/skills/skill-authoring/SKILL.md`;
- * `paths` is the path-scoping key that `.roadmap/features/F04-skill-eval-harness.md`
- * asks to be validated where it is used. A key outside this set is an error
+ * `paths` is the path-scoping key that F04's specification (issue #105) asks to
+ * be validated where it is used. A key outside this set is an error
  * rather than a warning because of how it fails: Claude Code ignores it in
  * silence, so the skill runs with whatever the missing key was meant to
  * prevent.

@@ -34,8 +34,8 @@ changes behaviour stays readable.
 
 ## What a commit must not carry
 
-Secrets, tokens, `.env` files and anything under `.roadmap/`, which
-`.gitignore` keeps local on purpose. Built output belongs in `dist/` and is
+Secrets, tokens and `.env` files. The roadmap is GitHub issues, so a planning
+file has no place in a commit either. Built output belongs in `dist/` and is
 ignored — if a `.js` or `.d.ts` turns up under `packages/*/src/`, read
 `build-output.md` before staging anything.
 

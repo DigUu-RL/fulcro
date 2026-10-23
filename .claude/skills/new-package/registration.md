@@ -49,7 +49,7 @@ pages disagree about who owns the digit.
 | `docs/pt-BR/errors/FULCRO<digit>xxx.md`     | Its counterpart, linked both ways.                                                                                                                                |
 | `docs/errors.md`, `docs/pt-BR/errors.md`    | The row in the range table.                                                                                                                                       |
 | `.claude/rules/errors.md`                   | The range list in "A code belongs to one package, forever".                                                                                                       |
-| `.roadmap/**/F50-error-codes.md`            | The range table, **if the file exists** — `.roadmap/` is local to a checkout, so its absence is reported, not a stop.                                             |
+| F50's issue, #139                           | Nothing: its range table is history now, and `.claude/rules/errors.md` is the list that is kept current.                                                          |
 
 ## The documentation that lists packages
 

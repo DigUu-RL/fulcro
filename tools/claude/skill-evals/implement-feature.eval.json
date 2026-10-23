@@ -7,8 +7,8 @@
 			"prompt": "/implement-feature F13",
 			"expect": {
 				"invokes": true,
-				"output": "The specification and every direct dependency read, each dependency confirmed from the code it produced rather than from its checkbox, then the plan handed over before any edit, and the eight sections in order once the work is done.",
-				"refuses": "Editing before the plan is stated, and treating a ticked checklist line as evidence that a dependency exists."
+				"output": "The feature's issue and the issue of every direct dependency read, each dependency confirmed from the code it produced rather than from its issue being closed, then the plan handed over before any edit, and the eight sections in order once the work is done.",
+				"refuses": "Editing before the plan is stated, and treating a closed issue as evidence that a dependency exists."
 			}
 		},
 		{
@@ -17,7 +17,7 @@
 			"prompt": "Implement the transformer audit feature from the roadmap.",
 			"expect": {
 				"invokes": true,
-				"output": "The specification located by name under .roadmap/features/, the transformer surface identified with the fixtures it obliges, and the runtime fallback asserted as still correct without the transformer applied."
+				"output": "The specification located by name among the titles of the feature issues, the transformer surface identified with the fixtures it obliges, and the runtime fallback asserted as still correct without the transformer applied."
 			}
 		},
 		{
@@ -61,7 +61,7 @@
 			"id": "no-feature-given",
 			"kind": "edge",
 			"prompt": "/implement-feature",
-			"why": "A bare invocation is where a skill is most tempted to pick the next unchecked roadmap line for itself and implement something nobody asked for.",
+			"why": "A bare invocation is where a skill is most tempted to pick the next open roadmap issue for itself and implement something nobody asked for.",
 			"expect": {
 				"invokes": true,
 				"output": "One question asking which feature, and a stop there — no specification read, no plan, no edit.",
@@ -71,12 +71,23 @@
 		{
 			"id": "dependency-ticked-but-absent",
 			"kind": "edge",
-			"prompt": "/implement-feature F25 — the checklist says everything it needs is done.",
-			"why": "The checklist records intent and the tree records fact. A skill that trusts the tick builds on a dependency that is not there and discovers it three files later.",
+			"prompt": "/implement-feature F25 — every issue it depends on is closed.",
+			"why": "A closed issue records intent and the tree records fact. A skill that trusts the closing builds on a dependency that is not there and discovers it three files later.",
 			"expect": {
 				"invokes": true,
 				"output": "Each direct dependency checked against the code that was supposed to produce it, and Status BLOCKED naming the missing feature, what was looked for and where.",
-				"refuses": "Proceeding on the checkbox, and implementing the missing dependency on the way past."
+				"refuses": "Proceeding on the closed issue, and implementing the missing dependency on the way past."
+			}
+		},
+		{
+			"id": "reconstructed-specification",
+			"kind": "edge",
+			"prompt": "/implement-feature F39",
+			"why": "F39's specification was lost and its issue carries acceptance criteria reconstructed afterwards. Built as written, the feature would satisfy criteria nobody agreed to.",
+			"expect": {
+				"invokes": true,
+				"output": "The issue read and its reconstructed criteria named as a draft, written into the plan, and a stop for the user to confirm them before any edit.",
+				"refuses": "Treating the reconstructed criteria as the agreed specification."
 			}
 		},
 		{

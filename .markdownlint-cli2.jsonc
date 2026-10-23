@@ -19,10 +19,5 @@
 		// line is never a heading — MD041 fires on every one of them, and the
 		// only way to satisfy it is to write something changesets will discard.
 		".changeset",
-
-		// Working notes, kept out of the repository by .gitignore. Linting
-		// files that are never committed puts 265 of 266 complaints between the
-		// reader and the one that is about the project.
-		".roadmap",
 	],
 }

@@ -15,9 +15,9 @@ a name chosen while the feature is being written is chosen by whoever got there
 first. The vocabulary is therefore agreed up front, and a feature that cannot
 find its name in it goes back before it is built.
 
-`.roadmap/GLOSSARY.md` holds the agreed list. It is local to a checkout —
-`.gitignore` keeps `.roadmap/` out — so the conventions a review actually cites
-are written here.
+The pinned glossary issue, #113, holds the agreed list. It lives on GitHub
+rather than in the checkout, so the conventions a review actually cites are
+written here.
 
 ## What the conventions are
 
@@ -69,6 +69,6 @@ evidence, not by an adjective in an identifier.
 
 A name that is not in the glossary is proposed before it is exported, in the
 same breath as the surface change `api-design.md` already asks for, and the
-glossary gains the entry as part of the change. That order matters: once the
+glossary issue gains the entry as part of the change. That order matters: once the
 name ships, `api-design.md` keeps it, and the better name arrives as an alias
 that both have to be maintained until the next major.

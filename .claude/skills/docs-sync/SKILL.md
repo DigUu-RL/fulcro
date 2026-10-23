@@ -1,7 +1,7 @@
 ---
 name: docs-sync
 description: Audits the documentation against the code it describes — whether every exported name is documented, whether the signatures and examples still compile against the built output, whether a behaviour claim is held up by a suite, whether the READMEs point at the current pages, whether every public English page has its pt-BR counterpart with both language links resolving and the same API facts, and whether the changesets and the roadmap match the diff — and reports the drift with the page and line of each one. Use after every feature in the library is created or changed and its suites pass — always, whether or not a page was edited — and when a page under `docs/` or a package README changed, when a public surface or a documented behaviour changed, when a page was translated, or before a release.
-allowed-tools: Read, Grep, Glob, Bash(git diff:*), Bash(git log:*), Bash(git show:*), Bash(git status:*), Bash(git describe:*), Bash(npm run build), Bash(npm run typecheck), Bash(npm run lint:md), Bash(npx tsc:*), Bash(npx vitest run:*)
+allowed-tools: Read, Grep, Glob, Bash(git diff:*), Bash(git log:*), Bash(git show:*), Bash(git status:*), Bash(git describe:*), Bash(npm run build), Bash(npm run typecheck), Bash(npm run lint:md), Bash(npx tsc:*), Bash(npx vitest run:*), Bash(gh issue list:*), Bash(gh issue view:*)
 argument-hint: '[a page | a package | a symbol | --all | nothing for the documentation this branch touches]'
 ---
 
@@ -149,9 +149,9 @@ laziness, of a single traversal or of bounded memory is traced to a counted
 assertion, per `.claude/rules/testing.md`; a claim traced to nothing is a
 finding whichever way the implementation happens to behave today.
 
-The roadmap under `.roadmap/` is read for check 10 when it is there. It is
-gitignored, so a checkout without it is normal: the check is reported as not run
-rather than guessed at.
+The roadmap is read for check 10 from its GitHub issues, laid out as
+`.claude/CLAUDE.md` describes. Where `gh` cannot reach them, the check is
+reported as not run rather than guessed at.
 
 ## 2. Build the surface table
 
@@ -183,7 +183,7 @@ decisions already argued through. The table is the index.
 | 7   | Localization parity        | Does every public page have its counterpart?                  |
 | 8   | Language switch links      | Can a reader get to the other language?                       |
 | 9   | Cross-language equivalence | Do both pages state the same facts?                           |
-| 10  | Roadmap and release data   | Do the changesets and the checklist match the diff?           |
+| 10  | Roadmap and release data   | Do the changesets and the issues match the diff?              |
 
 Checks 3, 4 and 9 are the ones that survive every green check in the repository,
 and they are read first when the scope is large. A check whose source could not
@@ -238,8 +238,10 @@ side by side. There is no score and no verdict on the documentation as a whole.
 ### The one prohibition
 
 **Never propose rewriting a page to match an implementation that is the defect.**
-`.roadmap/features/F18-docs-sync.md` states it, and it is the recommendation
-this audit may not make. Where a page and the code disagree, the report names
+F18's specification states it, and it is the recommendation this audit may not
+make. That specification's text did not survive the move of the roadmap to
+issues (F18 is #120), so this skill and `checks.md` are where its rules are now
+kept. Where a page and the code disagree, the report names
 both, says which is more likely the intended behaviour and on what evidence — a
 suite, a changeset, a commit message, the conversation — and stops. A documented
 guarantee the code stopped honouring is a regression in the code until someone

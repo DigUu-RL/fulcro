@@ -175,7 +175,7 @@ dependencies. Severity follows the reach, not the registry's own label:
 | `devDependencies`, reachable during build or test | `MEDIUM`     |
 | `devDependencies`, reachable only in tooling      | `LOW`/`NOTE` |
 
-Two prohibitions, both from `.roadmap/features/F17-dependency-audit.md`:
+Two prohibitions, both from F17's specification:
 
 - **Never bump a dependency to quiet a warning.** This skill writes nothing, so
   the failure shape is subtler: reporting a bump as the fix when the advisory's

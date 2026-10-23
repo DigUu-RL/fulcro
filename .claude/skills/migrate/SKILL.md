@@ -3,7 +3,7 @@ name: migrate
 description: Carries one agreed API change across the whole repository — an exported name renamed, moved to another entry point or package, its signature reshaped, or a deprecated name finally removed — with an inventory of every use in source, suites, transformers, error texts, documentation in both languages and `.claude/`, the compatibility path kept, mechanical edits applied apart from semantic ones, and the residue reported by site. Use when an export of a `@fulcro/*` package is to change its name, place or shape and every use of it has to follow.
 argument-hint: <old> -> <new> | remove <name> | <the change, described>
 disable-model-invocation: true
-allowed-tools: Read, Grep, Glob, Edit, Write, AskUserQuestion, Agent, Skill, Bash(npm run build), Bash(npm run typecheck), Bash(npm run format), Bash(npm run format:check), Bash(npm run lint:md), Bash(npm run validate:claude), Bash(npx vitest run:*), Bash(npx eslint:*), Bash(npm ls:*), Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git show:*), Bash(git tag:*), Bash(git grep:*), Bash(git ls-files:*), Bash(git branch:*), Bash(git switch:*), Bash(git mv:*), Bash(git add:*), Bash(git commit:*)
+allowed-tools: Read, Grep, Glob, Edit, Write, AskUserQuestion, Agent, Skill, Bash(npm run build), Bash(npm run typecheck), Bash(npm run format), Bash(npm run format:check), Bash(npm run lint:md), Bash(npm run validate:claude), Bash(npx vitest run:*), Bash(npx eslint:*), Bash(npm ls:*), Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git show:*), Bash(git tag:*), Bash(git grep:*), Bash(git ls-files:*), Bash(git branch:*), Bash(git switch:*), Bash(git mv:*), Bash(git add:*), Bash(git commit:*), Bash(gh issue list:*), Bash(gh issue view:*)
 ---
 
 # migrate
@@ -111,8 +111,8 @@ What each line requires:
   already in a released version — `git tag` and the package's `CHANGELOG.md`
   say whether it is. Anything else asks for an explicit decision, as its own
   question.
-- **Glossary.** The new name follows `.claude/rules/naming.md` and is in
-  `.roadmap/first/GLOSSARY.md`, or the contract proposes its entry.
+- **Glossary.** The new name follows `.claude/rules/naming.md` and is in the
+  pinned glossary issue, #113, or the contract proposes its entry.
 
 ## 2. Read
 
@@ -121,7 +121,7 @@ What each line requires:
 | 1   | The declaration of the old name and its barrel           | What it is today, and where it is exported from     |
 | 2   | The package's `package.json` `exports` map               | Which entry point a consumer imports it through     |
 | 3   | `.claude/rules/api-design.md`, `naming.md`, `general.md` | What the contract may be                            |
-| 4   | `.roadmap/first/GLOSSARY.md`                             | Whether the new name is agreed                      |
+| 4   | The pinned glossary issue, #113 (`gh issue view 113`)    | Whether the new name is agreed                      |
 | 5   | `surfaces.md` beside this file                           | Every place a name lives, and the search for each   |
 | 6   | `git tag`, the package's `CHANGELOG.md`                  | Whether a deprecation has shipped, for a removal    |
 | 7   | `.changeset/config.json` and pending `.changeset/*.md`   | Which packages version together; bumps already made |

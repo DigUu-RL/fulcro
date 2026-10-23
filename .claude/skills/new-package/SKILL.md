@@ -3,7 +3,7 @@ name: new-package
 description: Creates a new `@fulcro/*` workspace package wired the way the existing ones are — the ownership case made first, the dependency direction checked, the manifest, tsconfigs, Vitest project, entry point coverage, the next free `FULCRO` error range, the README and table rows, and the changeset — and leaves it verified and empty, ready for its first feature. Use when a capability is to get a package of its own under `packages/`.
 argument-hint: <package name> — <the capability it will own>
 disable-model-invocation: true
-allowed-tools: Read, Grep, Glob, Edit, Write, AskUserQuestion, Agent, Skill, Bash(npm install), Bash(npm run build), Bash(npm run typecheck), Bash(npm run format), Bash(npm run format:check), Bash(npm run lint:md), Bash(npm run validate:claude), Bash(npx vitest run:*), Bash(npx eslint:*), Bash(npm ls:*), Bash(npm view:*), Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git show:*), Bash(git branch:*), Bash(git switch:*)
+allowed-tools: Read, Grep, Glob, Edit, Write, AskUserQuestion, Agent, Skill, Bash(npm install), Bash(npm run build), Bash(npm run typecheck), Bash(npm run format), Bash(npm run format:check), Bash(npm run lint:md), Bash(npm run validate:claude), Bash(npx vitest run:*), Bash(npx eslint:*), Bash(npm ls:*), Bash(npm view:*), Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git show:*), Bash(git branch:*), Bash(git switch:*), Bash(gh issue list:*), Bash(gh issue view:*)
 ---
 
 # new-package
@@ -84,8 +84,8 @@ nothing to decide.
 | --- | -------------------------------------------------------- | -------------------------------------------------- |
 | 1   | `.claude/CLAUDE.md` "What this repository is"            | What every existing package owns, and its deps     |
 | 2   | Each existing `packages/*/README.md` and its barrel      | Whether the capability already has a home          |
-| 3   | `.roadmap/first/MASTER-ROADMAP.md` and the feature spec  | Which features will live in the package — the case |
-| 4   | `.roadmap/first/GLOSSARY.md`                             | The canonical name for the concept                 |
+| 3   | The feature issues that will live in the package         | Which features will live in the package — the case |
+| 4   | The pinned glossary issue, #113                          | The canonical name for the concept                 |
 | 5   | `.claude/rules/naming.md`, `general.md`, `api-design.md` | What a package name and its first surface must be  |
 | 6   | `tools/eslint/coded-errors.mjs` `PACKAGE_RANGES`         | The digits taken, and so the next one              |
 | 7   | `packages/functions/` — manifest, tsconfigs, LICENSE     | The shape to copy                                  |

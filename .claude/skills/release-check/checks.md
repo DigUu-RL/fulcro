@@ -36,10 +36,10 @@ the branch and, when it is not `main`, the commits
 `git log --oneline origin/main..HEAD` says a merge would carry — because those
 are what the release would publish, and a reader is entitled to see the list.
 
-**Not a failure either.** An untracked file that `.gitignore` covers. `dist/`,
-`.roadmap/` and the emitted extensions under `packages/*/src/` are ignored on
-purpose; `.claude/rules/build-output.md` explains the last of those, and an
-untracked `.js` beside a `.ts` is check 13's business, not this one's.
+**Not a failure either.** An untracked file that `.gitignore` covers. `dist/`
+and the emitted extensions under `packages/*/src/` are ignored on purpose;
+`.claude/rules/build-output.md` explains the second, and an untracked `.js`
+beside a `.ts` is check 13's business, not this one's.
 
 ## 2. Build
 

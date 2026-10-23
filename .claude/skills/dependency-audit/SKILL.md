@@ -225,8 +225,10 @@ side by side. There is no score and no verdict on the tree.
 
 ### Two prohibitions
 
-From `.roadmap/features/F17-dependency-audit.md`, and both are about what the
-report says rather than what it does:
+From F17's specification, and both are about what the report says rather than
+what it does. That specification's text did not survive the move of the roadmap
+to issues (F17 is #119), so this skill and `checks.md` are where its rules are
+now kept:
 
 - **Never recommend a bump merely to quiet a warning.** An unmet peer warning,
   an audit line, a deprecation notice: each is reported with the path it reaches

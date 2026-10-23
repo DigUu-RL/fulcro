@@ -285,10 +285,10 @@ describe('what the contract and the rules name', () => {
 			'.claude/settings.json',
 			settings(['.claude/hooks/protect-publish.mjs']),
 		);
-		fixture.write('.gitignore', '.roadmap/*\n');
+		fixture.write('.gitignore', '.notes/*\n');
 		fixture.write(
 			'.claude/CLAUDE.md',
-			'# Contract\n\nThe plan is `.roadmap/MASTER-ROADMAP.md`.\n',
+			'# Contract\n\nThe plan is `.notes/PLAN.md`.\n',
 		);
 
 		// Without a repository there are no ignore rules to read, and the

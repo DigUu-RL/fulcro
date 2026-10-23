@@ -127,9 +127,9 @@ export const basenamesOf = (root = repositoryRoot) => {
 /**
  * Which of these paths the repository deliberately keeps out of itself.
  *
- * A prompt may point at something that is not committed — `.roadmap/` is
- * ignored here, and the planning tree it holds is a local working copy rather
- * than part of the checkout. On the machine that wrote the sentence the file
+ * A prompt may point at something that is not committed — a gitignored
+ * directory of working notes, say, which is a local copy rather than part of
+ * the checkout. On the machine that wrote the sentence the file
  * is right there, and on a clean checkout it is not, so a validator reading
  * only the disk answers differently in the two places. That is exactly the
  * failure this repository already learnt once, in the `.gitignore` comment

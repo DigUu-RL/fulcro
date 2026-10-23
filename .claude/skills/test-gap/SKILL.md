@@ -1,7 +1,7 @@
 ---
 name: test-gap
 description: Derives the scenarios a unit of code owes tests for — from its implementation, its public signature, its documentation and its roadmap spec — compares them against the suites that exist, and reports the missing ones ranked by what they would catch. Use when asked what is untested, before writing tests for something, or when a feature is about to be called finished.
-allowed-tools: Read, Grep, Glob, Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git show:*), Bash(git merge-base:*)
+allowed-tools: Read, Grep, Glob, Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git show:*), Bash(git merge-base:*), Bash(gh issue list:*), Bash(gh issue view:*)
 context: fork
 argument-hint: '[path | package | feature id | nothing for the working tree]'
 ---
@@ -53,8 +53,7 @@ that matters, say it in the invocation.
 - "I am about to write tests for the async sequence operators — what are the
   cases?"
 - "Is `takeWhile` finished?" where finished means both suites carry it;
-- a feature spec under `.roadmap/features/` lists behaviour that no assertion
-  names;
+- a feature issue lists behaviour that no assertion names;
 - `/fulcro-review` reported a missing suite and the next question is what goes
   in it.
 
@@ -72,7 +71,7 @@ It does not apply when:
   `.claude/skills/fulcro-review/SKILL.md`, which reads a diff against every
   contract rather than one unit against its scenarios.
 - **The unit does not exist yet.** A scenario list for unwritten code is a
-  specification, and `.roadmap/features/` is where those live.
+  specification, and the feature issues are where those live.
 
 ## Arguments
 
@@ -81,7 +80,7 @@ It does not apply when:
 | none           | Every unit touched by the working tree and this branch  |
 | a path         | That file, or every source file under that directory    |
 | a package name | That package's public surface, entry point outward      |
-| a feature id   | The unit or units that `.roadmap/features/` spec names  |
+| a feature id   | The unit or units that feature's issue names            |
 | `deep <path>`  | That unit alone, every catalogue in §2.2 worked in full |
 
 A bare invocation is the common case and is bounded by the diff. `deep` is for
@@ -104,15 +103,15 @@ is completeness rather than triage.
 Seven sources, in this order, because each constrains what the next can claim.
 Every one is named; nothing is recalled from memory.
 
-| #   | Source                                        | What it settles                        |
-| --- | --------------------------------------------- | -------------------------------------- |
-| 1   | The implementation file, in full              | What the code actually branches on     |
-| 2   | The exported signature and its doc comment    | What a consumer was promised           |
-| 3   | The `docs/` page covering it                  | What the documentation claims out loud |
-| 4   | `.roadmap/features/<id>.md`, where one exists | What the feature was asked to do       |
-| 5   | Every spec that names the unit                | What is already asserted               |
-| 6   | `package.json` of the package, `exports`      | Which entry points a consumer reaches  |
-| 7   | `vitest.config.mts`                           | Which project a given spec runs under  |
+| #   | Source                                     | What it settles                        |
+| --- | ------------------------------------------ | -------------------------------------- |
+| 1   | The implementation file, in full           | What the code actually branches on     |
+| 2   | The exported signature and its doc comment | What a consumer was promised           |
+| 3   | The `docs/` page covering it               | What the documentation claims out loud |
+| 4   | The feature's issue, where one exists      | What the feature was asked to do       |
+| 5   | Every spec that names the unit             | What is already asserted               |
+| 6   | `package.json` of the package, `exports`   | Which entry points a consumer reaches  |
+| 7   | `vitest.config.mts`                        | Which project a given spec runs under  |
 
 Read the whole implementation, not the export. A gap is usually a branch — an
 early `return`, a `catch`, a `finally`, a fast path for an array that a

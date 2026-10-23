@@ -193,7 +193,9 @@ never becomes a `PASS` here.
 
 ### The four statuses
 
-From `.roadmap/features/F19-release-check.md`, and they mean exactly this:
+From F19's specification, and they mean exactly this. That specification's text
+did not survive the move of the roadmap to issues (F19 is #121), so this skill
+is where its rules are now kept.
 
 | Status    | Means                                                                     |
 | --------- | ------------------------------------------------------------------------- |
@@ -265,8 +267,8 @@ over that tree, and their output is the evidence. Nothing else is executed.
 
 ### The three prohibitions
 
-From `.roadmap/features/F19-release-check.md`, and each one is a thing the
-report may not do rather than a thing it may not say:
+From F19's specification, and each one is a thing the report may not do rather
+than a thing it may not say:
 
 - **Never publish.** Not `npm run release`, not `changeset publish`, not a
   workspace publish of one package. The hooks refuse them and

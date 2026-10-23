@@ -177,8 +177,15 @@ editing the page to agree.
   `tools/claude/skill-evals/` and the rule fixtures in
   `tools/claude/rule-fixtures/`; `tests/claude/` is their suite. They run on a
   bare checkout, with no dependency beyond Node.
-- `.roadmap/` — the implementation plan, and not part of the checkout:
-  `.gitignore` keeps it local. `.roadmap/MASTER-ROADMAP.md` is the ordering,
-  `.roadmap/CHECKLIST-MASTER.md` the state, `.roadmap/features/` one spec per
-  feature.
+- The roadmap — GitHub issues on `DigUu-RL/fulcro`, not files in the
+  checkout. A feature is an issue labelled `feature` and titled
+  `F<n> — <name>`, found with
+  `gh issue list --label feature --state all --search "F43 in:title"` and
+  read with `gh issue view <number>`. Its body
+  carries the priority, the phase, the dependencies as linked issues and the
+  acceptance criteria; the `P0`–`P2` and `fase <n>` labels repeat the first
+  two. An open issue is not done, one closed as completed is done, one closed
+  as not planned was dropped. Some specifications of the original roadmap
+  were lost, and their issues say the criteria were reconstructed. The
+  canonical vocabulary is the pinned glossary issue, #113.
 - `docs/` — library documentation, `docs/testing.md` for the testing standard.
