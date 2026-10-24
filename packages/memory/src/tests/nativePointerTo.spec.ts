@@ -458,7 +458,7 @@ describe('nativePointerTo an allocation', () => {
 	// of its own, the bump allocators put it after the first eight bytes, and
 	// the pool hands out the second 64-byte block.
 	it.each<[string, () => Allocator, number, number]>([
-		['managed', () => createManagedAllocator(), 0, 16],
+		['managed', (): Allocator => createManagedAllocator(), 0, 16],
 		['arena', () => createArenaAllocator(256), 8, 256],
 		['stack', () => createStackAllocator(256), 8, 256],
 		['fixed buffer', () => createFixedBufferAllocator(new ArrayBuffer(256)), 8, 256],

@@ -33,7 +33,7 @@ describe('typeOf', () => {
 				reads++;
 				return Reflect.get(target, key, receiver);
 			},
-			ownKeys(target) {
+			ownKeys(target): (string | symbol)[] {
 				// Enumerating the keys would make the cost grow with the value,
 				// which is the thing being ruled out. Counted heavily so it cannot
 				// hide among the handful of legitimate reads.

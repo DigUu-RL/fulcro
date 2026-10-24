@@ -157,7 +157,7 @@ describe('SignedInteger', () => {
 		'the operations behind the operators, at $width bits',
 		({ width, minimum, maximum }) => {
 			const type = SignedInteger(width) as IntegerType<number | bigint>;
-			const of = (value: bigint) => type.from(carried(width, value));
+			const of = (value: bigint): number | bigint => type.from(carried(width, value));
 
 			it('should raise to a power by squaring, checked', () => {
 				expect(type.power(of(-2n), of(3n))).toBe(carried(width, -8n));

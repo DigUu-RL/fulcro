@@ -120,15 +120,18 @@ describe('constantOf', () => {
 
 		it.each([
 			['a function', () => (): number => 1],
-			['a symbol', () => Symbol('refused')],
-			['an instance of Map', () => new Map()],
-			['an instance of Date', () => new Date(0)],
-			['an array with holes', () => [1, , 3]],
-			['an array with properties besides its elements', () => Object.assign([1], { extra: 2 })],
-			['an object with symbol keys', () => ({ [Symbol('key')]: 1 })],
+			['a symbol', (): symbol => Symbol('refused')],
+			['an instance of Map', (): Map<any, any> => new Map()],
+			['an instance of Date', (): Date => new Date(0)],
+			['an array with holes', (): (number | undefined)[] => [1, , 3]],
+			[
+				'an array with properties besides its elements',
+				(): number[] & { extra: number } => Object.assign([1], { extra: 2 }),
+			],
+			['an object with symbol keys', (): { [x: symbol]: number } => ({ [Symbol('key')]: 1 })],
 			[
 				"an object whose 'value' is a getter",
-				() => {
+				(): { readonly value: number } => {
 					return {
 						get value(): number {
 							return 1;

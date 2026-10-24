@@ -52,14 +52,14 @@ const questionsFor = (text: string): { questions: number; refused: number } => {
 	const host: ts.CompilerHost = ts.createCompilerHost(options);
 	const { getSourceFile, fileExists, readFile } = host;
 
-	host.getSourceFile = (name, ...rest) => {
+	host.getSourceFile = (name, ...rest): ts.SourceFile | undefined => {
 		return name === fileName
 			? ts.createSourceFile(name, text, ts.ScriptTarget.ES2022, true)
 			: getSourceFile(name, ...rest);
 	};
 
-	host.fileExists = (name) => name === fileName || fileExists(name);
-	host.readFile = (name) => (name === fileName ? text : readFile(name));
+	host.fileExists = (name): boolean => name === fileName || fileExists(name);
+	host.readFile = (name): string | undefined => (name === fileName ? text : readFile(name));
 
 	const program: ts.Program = ts.createProgram([fileName], options, host);
 	const checker: ts.TypeChecker = program.getTypeChecker();
@@ -73,7 +73,7 @@ const questionsFor = (text: string): { questions: number; refused: number } => {
 			const value: unknown = Reflect.get(target, key, receiver);
 
 			return typeof value === 'function'
-				? (...args: unknown[]) => {
+				? (...args: unknown[]): unknown => {
 						questions++;
 
 						return (value as (...inner: unknown[]) => unknown).apply(target, args);
@@ -84,7 +84,9 @@ const questionsFor = (text: string): { questions: number; refused: number } => {
 
 	const counted: ts.Program = new Proxy(program, {
 		get: (target, key, receiver) => {
-			return key === 'getTypeChecker' ? () => counting : Reflect.get(target, key, receiver);
+			return key === 'getTypeChecker'
+				? (): ts.TypeChecker => counting
+				: Reflect.get(target, key, receiver);
 		},
 	});
 

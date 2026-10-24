@@ -117,7 +117,7 @@ const createAdapters = (
 				return resolve().handles(id);
 			},
 
-			transform(code: string, id: string) {
+			transform(code: string, id: string): { code: string; map: null } | null {
 				const transformed: string | null = resolve().transform(id, code);
 
 				return transformed === null ? null : { code: transformed, map: null };

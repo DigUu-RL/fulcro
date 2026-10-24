@@ -86,10 +86,10 @@ const ORDERS: readonly Order[] = Array.from({ length: 200 }, (_, index) => {
 
 describe('the numeric terminals', () => {
 	it.each([
-		['sum', (o: Order) => o.total],
-		['average', (o: Order) => o.total],
-		['min', (o: Order) => o.total],
-		['max', (o: Order) => o.total],
+		['sum', (o: Order): number => o.total],
+		['average', (o: Order): number => o.total],
+		['min', (o: Order): number => o.total],
+		['max', (o: Order): number => o.total],
 	])('should agree with the synchronous %s', async (name, selector) => {
 		type Numeric = 'sum' | 'average' | 'min' | 'max';
 
@@ -734,11 +734,19 @@ describe('the map terminals', () => {
 
 describe('cancellation', () => {
 	it.each([
-		['sum', (sequence: ReturnType<typeof numbers>) => sequence.sum()],
-		['average', (sequence: ReturnType<typeof numbers>) => sequence.average()],
-		['countBy', (sequence: ReturnType<typeof numbers>) => sequence.countBy((value) => value)],
-		['toMap', (sequence: ReturnType<typeof numbers>) => sequence.toMap((value) => value)],
-		['single', (sequence: ReturnType<typeof numbers>) => sequence.single()],
+		['sum', (sequence: ReturnType<typeof numbers>): Promise<number> => sequence.sum()],
+		['average', (sequence: ReturnType<typeof numbers>): Promise<number> => sequence.average()],
+		[
+			'countBy',
+			(sequence: ReturnType<typeof numbers>): Promise<Map<number, number>> =>
+				sequence.countBy((value) => value),
+		],
+		[
+			'toMap',
+			(sequence: ReturnType<typeof numbers>): Promise<Map<number, number>> =>
+				sequence.toMap((value) => value),
+		],
+		['single', (sequence: ReturnType<typeof numbers>): Promise<number> => sequence.single()],
 	])('should reject %s with the reason the signal carries', async (_label, run) => {
 		const controller = new AbortController();
 		const reason = new Error('called off');

@@ -540,26 +540,32 @@ describe('the shape check the transformer writes', () => {
 	// every test above while being worthless, so each clause is spoiled on its
 	// own and has to be the one that rejects.
 	it.each([
-		['a missing required property', () => ({ ...valid(), id: undefined })],
-		['a required property of the wrong type', () => ({ ...valid(), id: '1' })],
-		['an optional property of the wrong type', () => ({ ...valid(), note: 7 })],
-		['an array that is not one', () => ({ ...valid(), tags: 'a' })],
-		['an array with a wrong element', () => ({ ...valid(), tags: ['a', 2] })],
-		['a nested object missing its field', () => ({ ...valid(), customer: {} })],
-		['a nested object of the wrong type', () => ({ ...valid(), customer: 'a@b.c' })],
-		['a value outside the union', () => ({ ...valid(), status: 'shipped' })],
+		['a missing required property', (): { id: undefined } => ({ ...valid(), id: undefined })],
+		['a required property of the wrong type', (): { id: string } => ({ ...valid(), id: '1' })],
+		['an optional property of the wrong type', (): { note: number } => ({ ...valid(), note: 7 })],
+		['an array that is not one', (): { tags: string } => ({ ...valid(), tags: 'a' })],
+		[
+			'an array with a wrong element',
+			(): { tags: (string | number)[] } => ({ ...valid(), tags: ['a', 2] }),
+		],
+		['a nested object missing its field', (): { customer: {} } => ({ ...valid(), customer: {} })],
+		[
+			'a nested object of the wrong type',
+			(): { customer: string } => ({ ...valid(), customer: 'a@b.c' }),
+		],
+		['a value outside the union', (): { status: string } => ({ ...valid(), status: 'shipped' })],
 		[
 			'a class field that is not an instance',
-			() => {
+			(): { placedAt: string } => {
 				return {
 					...valid(),
 					placedAt: '2020-01-01',
 				};
 			},
 		],
-		['null', () => null],
-		['a primitive', () => 'an order'],
-		['an array', () => []],
+		['null', (): null => null],
+		['a primitive', (): string => 'an order'],
+		['an array', (): never[] => []],
 	])('should reject %s', (_label, build) => {
 		expect(accepts(build())).toBe(false);
 	});

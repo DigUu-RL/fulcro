@@ -68,16 +68,22 @@ describe('what it accepts', () => {
 
 describe('what it refuses', () => {
 	it.each([
-		['a missing required property', () => ({ ...valid(), id: undefined })],
-		['a property of the wrong type', () => ({ ...valid(), id: '1' })],
-		['an optional property of the wrong type', () => ({ ...valid(), note: 7 })],
-		['an array that is not one', () => ({ ...valid(), tags: 'a' })],
-		['an array with a wrong element', () => ({ ...valid(), tags: ['a', 2] })],
-		['a nested object missing its field', () => ({ ...valid(), customer: {} })],
-		['a value outside the union', () => ({ ...valid(), status: 'shipped' })],
-		['a class field that is not an instance', () => ({ ...valid(), placedAt: '2020-01-01' })],
-		['null', () => null],
-		['a primitive', () => 'an order'],
+		['a missing required property', (): { id: undefined } => ({ ...valid(), id: undefined })],
+		['a property of the wrong type', (): { id: string } => ({ ...valid(), id: '1' })],
+		['an optional property of the wrong type', (): { note: number } => ({ ...valid(), note: 7 })],
+		['an array that is not one', (): { tags: string } => ({ ...valid(), tags: 'a' })],
+		[
+			'an array with a wrong element',
+			(): { tags: (string | number)[] } => ({ ...valid(), tags: ['a', 2] }),
+		],
+		['a nested object missing its field', (): { customer: {} } => ({ ...valid(), customer: {} })],
+		['a value outside the union', (): { status: string } => ({ ...valid(), status: 'shipped' })],
+		[
+			'a class field that is not an instance',
+			(): { placedAt: string } => ({ ...valid(), placedAt: '2020-01-01' }),
+		],
+		['null', (): null => null],
+		['a primitive', (): string => 'an order'],
 	])('should reject %s', (_label, build) => {
 		expect(is<Order>(build())).toBe(false);
 	});

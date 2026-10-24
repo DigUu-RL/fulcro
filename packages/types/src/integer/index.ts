@@ -337,11 +337,11 @@ const createNumberIntegerType = <T>(
 	const truncate: (value: number) => number =
 		width === 32
 			? signed
-				? (value) => value | 0
-				: (value) => value >>> 0
+				? (value): number => value | 0
+				: (value): number => value >>> 0
 			: signed
-				? (value) => (value << (32 - width)) >> (32 - width)
-				: (value) => value & (2 ** width - 1);
+				? (value): number => (value << (32 - width)) >> (32 - width)
+				: (value): number => value & (2 ** width - 1);
 
 	/**
 	 * Refuses a zero divisor.

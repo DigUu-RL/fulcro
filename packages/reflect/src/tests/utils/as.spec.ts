@@ -62,20 +62,24 @@ describe('what it refuses, and what it says', () => {
 	});
 
 	it.each([
-		['a top level property', () => ({ ...valid(), id: 'x' }), /id: expected number, got string/],
+		[
+			'a top level property',
+			(): { id: string } => ({ ...valid(), id: 'x' }),
+			/id: expected number, got string/,
+		],
 		[
 			'a nested property',
-			() => ({ ...valid(), customer: { email: 7 } }),
+			(): { customer: { email: number } } => ({ ...valid(), customer: { email: 7 } }),
 			/customer\.email: expected string, got number/,
 		],
 		[
 			'an element of an array',
-			() => ({ ...valid(), tags: ['a', 'b', 4] }),
+			(): { tags: (string | number)[] } => ({ ...valid(), tags: ['a', 'b', 4] }),
 			/tags\[2\]: expected string, got number/,
 		],
 		[
 			'a missing property',
-			() => {
+			(): Record<string, unknown> => {
 				const value = valid();
 				delete value.id;
 				return value;

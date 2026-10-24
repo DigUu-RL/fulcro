@@ -144,7 +144,7 @@ describe.each(STRATEGIES)('%s, as a Storage<T>', (name, create) => {
 
 describe('Storage<T> lengths', () => {
 	it.each([
-		['createManagedStorage', (length: number) => createManagedStorage(length, 0)],
+		['createManagedStorage', (length: number): Storage<number> => createManagedStorage(length, 0)],
 		['createFixedBufferStorage', (length: number) => createFixedBufferStorage(Point, length)],
 		['allocate', (length: number) => allocate(Point, length, createManagedAllocator())],
 	] as const)('%s should refuse a length that is not a count', (name, create) => {

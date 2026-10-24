@@ -33,7 +33,7 @@ describe('switchFor, exhaustive form', () => {
 			[...Array(BRANCHES).keys()].map((key) => {
 				return [
 					key,
-					() => {
+					(): number => {
 						run.push(key);
 						return key;
 					},
@@ -49,7 +49,7 @@ describe('switchFor, exhaustive form', () => {
 
 	it('should cost the same for the first branch as for the last', () => {
 		const cases = Object.fromEntries(
-			[...Array(BRANCHES).keys()].map((key) => [key, () => key]),
+			[...Array(BRANCHES).keys()].map((key) => [key, (): number => key]),
 		) as Record<number, () => number>;
 
 		// Typed as `number` rather than left as the literal `0`, which would ask

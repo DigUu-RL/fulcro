@@ -98,7 +98,7 @@ describe('UnsignedInteger', () => {
 		'the operations behind the operators, at $width bits',
 		({ width, maximum }) => {
 			const type = UnsignedInteger(width) as IntegerType<number | bigint>;
-			const of = (value: bigint) => type.from(carried(width, value));
+			const of = (value: bigint): number | bigint => type.from(carried(width, value));
 
 			it('should negate only zero', () => {
 				expect(type.negate(of(0n))).toBe(carried(width, 0n));

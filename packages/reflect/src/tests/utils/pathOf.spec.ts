@@ -69,10 +69,10 @@ describe('resolved at compile time', () => {
 
 describe('parsed at runtime, without the transformer', () => {
 	it.each([
-		['a nested path', () => order.customer.address.city, 'customer.address.city'],
-		['a single segment', () => order.id, 'id'],
-		['an indexed element', () => order.items[0].sku, 'items[0].sku'],
-		['a quoted key', () => order.customer.address.city, 'customer.address.city'],
+		['a nested path', (): string => order.customer.address.city, 'customer.address.city'],
+		['a single segment', (): number => order.id, 'id'],
+		['an indexed element', (): string => order.items[0].sku, 'items[0].sku'],
+		['a quoted key', (): string => order.customer.address.city, 'customer.address.city'],
 	])('should agree with the compiled form on %s', (_label, accessor, expected) => {
 		// The two implementations answering differently would be worse than
 		// either being wrong, since which one runs depends on the build.
