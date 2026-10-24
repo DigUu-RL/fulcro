@@ -232,7 +232,7 @@ describe('nativePointerTo a memory', () => {
 		const { memory } = memoryOf(16);
 		const end: NativePointer<Sample> = nativePointerTo(memory, 16, Sample);
 
-		expect(() => end.get()).toThrowError(
+		expect(() => end.get()).toThrow(
 			coded(
 				new RangeError(
 					'FULCRO7021: NativePointer.get: the 8 bytes of Sample at address 16 run past 16, the end of where this pointer may read.',
@@ -249,7 +249,7 @@ describe('nativePointerTo a memory', () => {
 
 		expect(() => {
 			end.set(Sample.from({ value: 1 }));
-		}).toThrowError(
+		}).toThrow(
 			expect.objectContaining({
 				code: 'FULCRO7021',
 				details: expect.objectContaining({ operation: 'NativePointer.set' }),
@@ -267,7 +267,7 @@ describe('nativePointerTo a memory', () => {
 	])('should refuse address %s in 16 bytes', (address, shown) => {
 		const { memory } = memoryOf(16);
 
-		expect(() => nativePointerTo(memory, address as number, Sample)).toThrowError(
+		expect(() => nativePointerTo(memory, address as number, Sample)).toThrow(
 			coded(
 				new RangeError(
 					`FULCRO7019: nativePointerTo: address ${String(shown)} is outside 0 to 16, where this pointer may point.`,
@@ -280,7 +280,7 @@ describe('nativePointerTo a memory', () => {
 	it('should refuse an address the type may not start at', () => {
 		const { memory } = memoryOf(16);
 
-		expect(() => nativePointerTo(memory, 4, Sample)).toThrowError(
+		expect(() => nativePointerTo(memory, 4, Sample)).toThrow(
 			coded(
 				new RangeError(
 					'FULCRO7020: nativePointerTo: address 4 is not a multiple of 8, where a value of Sample may start.',
@@ -294,7 +294,7 @@ describe('nativePointerTo a memory', () => {
 			),
 		);
 
-		expect(() => nativePointerTo(memory, 0, Sample).at(4)).toThrowError(
+		expect(() => nativePointerTo(memory, 0, Sample).at(4)).toThrow(
 			expect.objectContaining({
 				code: 'FULCRO7020',
 				details: expect.objectContaining({ operation: 'NativePointer.at' }),
@@ -307,7 +307,7 @@ describe('nativePointerTo a memory', () => {
 	it('should refuse a move outside the memory', () => {
 		const { memory } = memoryOf(16);
 
-		expect(() => nativePointerTo(memory, 8, Sample).at(-16)).toThrowError(
+		expect(() => nativePointerTo(memory, 8, Sample).at(-16)).toThrow(
 			coded(
 				new RangeError(
 					'FULCRO7019: NativePointer.at: address -8 is outside 0 to 16, where this pointer may point.',
@@ -322,7 +322,7 @@ describe('nativePointerTo a memory', () => {
 
 		expect(() => {
 			nativePointerTo(memory, 0, Sample).set(Point.from({ x: 1, y: 1 }) as unknown as Sample);
-		}).toThrowError(
+		}).toThrow(
 			coded(new TypeError('FULCRO7004: NativePointer.set: the value is not a value of Sample.'), {
 				operation: 'NativePointer.set',
 				element: 'Sample',
@@ -341,7 +341,7 @@ describe('nativePointerTo a memory', () => {
 			is: (value: unknown): value is number => typeof value === 'number',
 		};
 
-		expect(() => nativePointerTo(memory, 0, unaligned as unknown as typeof Sample)).toThrowError(
+		expect(() => nativePointerTo(memory, 0, unaligned as unknown as typeof Sample)).toThrow(
 			coded(
 				new RangeError(
 					'FULCRO7006: nativePointerTo: expected an alignment that is a positive power of two, received undefined.',
@@ -350,7 +350,7 @@ describe('nativePointerTo a memory', () => {
 			),
 		);
 
-		expect(() => nativePointerTo(memory, 0, {} as unknown as typeof Sample)).toThrowError(
+		expect(() => nativePointerTo(memory, 0, {} as unknown as typeof Sample)).toThrow(
 			expect.objectContaining({ code: 'FULCRO7003' }),
 		);
 	});
@@ -361,7 +361,7 @@ describe('nativePointerTo a memory', () => {
 
 		buffer.resize(8);
 
-		expect(() => pointer.get()).toThrowError(
+		expect(() => pointer.get()).toThrow(
 			expect.objectContaining({
 				code: 'FULCRO7021',
 				details: expect.objectContaining({ end: 8 }),
@@ -526,7 +526,7 @@ describe('nativePointerTo an allocation', () => {
 
 		expect(pointer.at(16).address).toBe(24);
 
-		expect(() => pointer.at(24)).toThrowError(
+		expect(() => pointer.at(24)).toThrow(
 			coded(
 				new RangeError(
 					'FULCRO7019: NativePointer.at: address 32 is outside 8 to 24, where this pointer may point.',
@@ -535,16 +535,14 @@ describe('nativePointerTo an allocation', () => {
 			),
 		);
 
-		expect(() => pointer.at(-8)).toThrowError(
+		expect(() => pointer.at(-8)).toThrow(
 			expect.objectContaining({
 				code: 'FULCRO7019',
 				details: expect.objectContaining({ address: 0, start: 8 }),
 			}),
 		);
 
-		expect(() => pointer.at(16).get()).toThrowError(
-			expect.objectContaining({ code: 'FULCRO7021' }),
-		);
+		expect(() => pointer.at(16).get()).toThrow(expect.objectContaining({ code: 'FULCRO7021' }));
 	});
 
 	it('should refuse every access once the allocator released the memory, through every pointer moved from it', () => {
@@ -564,11 +562,11 @@ describe('nativePointerTo an allocation', () => {
 			);
 		};
 
-		expect(() => pointer.get()).toThrowError(released('NativePointer.get'));
+		expect(() => pointer.get()).toThrow(released('NativePointer.get'));
 
 		expect(() => {
 			second.set(Sample.from({ value: 1 }));
-		}).toThrowError(released('NativePointer.set'));
+		}).toThrow(released('NativePointer.set'));
 	});
 
 	it('should refuse an allocation that does not start where the type may', () => {
@@ -576,7 +574,7 @@ describe('nativePointerTo an allocation', () => {
 
 		allocator.allocate(1, 1);
 
-		expect(() => nativePointerTo(allocator.allocate(8, 1), Sample)).toThrowError(
+		expect(() => nativePointerTo(allocator.allocate(8, 1), Sample)).toThrow(
 			coded(
 				new RangeError(
 					'FULCRO7020: nativePointerTo: address 1 is not a multiple of 8, where a value of Sample may start.',
@@ -597,7 +595,7 @@ describe('nativePointerTo an allocation', () => {
 			isLive: () => true,
 		};
 
-		expect(() => nativePointerTo(shared, Sample)).toThrowError(
+		expect(() => nativePointerTo(shared, Sample)).toThrow(
 			coded(
 				new TypeError(
 					'FULCRO7018: nativePointerTo: expected an ArrayBuffer or a WebAssembly.Memory that is not shared, received SharedArrayBuffer.',
@@ -615,7 +613,7 @@ describe('nativePointerTo something else', () => {
 		['null', null, 'null'],
 		['a number', 0, 'number'],
 	])('should refuse %s', (_, target, received) => {
-		expect(() => nativePointerTo(target as unknown as Allocation, Sample)).toThrowError(
+		expect(() => nativePointerTo(target as unknown as Allocation, Sample)).toThrow(
 			coded(
 				new TypeError(
 					`FULCRO7022: nativePointerTo: expected a linear memory or an allocation, received ${received}.`,

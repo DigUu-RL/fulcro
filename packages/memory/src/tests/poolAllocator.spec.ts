@@ -59,7 +59,7 @@ describe('createPoolAllocator', () => {
 		pool.allocate(16, 8);
 		pool.allocate(16, 8);
 
-		expect(() => pool.allocate(4, 4)).toThrowError(
+		expect(() => pool.allocate(4, 4)).toThrow(
 			coded(
 				new RangeError(
 					'FULCRO7007: PoolAllocator.allocate: 4 bytes aligned to 4 were requested, but only 0 of 32 bytes remain.',
@@ -94,7 +94,7 @@ describe('createPoolAllocator', () => {
 		[49, 8],
 		[8, 32],
 	])('should refuse %s bytes aligned to %s from blocks of 48 bytes', (requested, alignment) => {
-		expect(() => createPoolAllocator(48, 2).allocate(requested, alignment)).toThrowError(
+		expect(() => createPoolAllocator(48, 2).allocate(requested, alignment)).toThrow(
 			coded(
 				new RangeError(
 					`FULCRO7010: PoolAllocator.allocate: ${String(requested)} bytes aligned to ${String(alignment)} do not fit a pool block of 48 bytes.`,
@@ -117,7 +117,7 @@ describe('createPoolAllocator', () => {
 		for (const allocation of [elsewhere, otherPool]) {
 			expect(() => {
 				pool.deallocate(allocation);
-			}).toThrowError(
+			}).toThrow(
 				coded(
 					new Error(
 						'FULCRO7011: PoolAllocator.deallocate: the allocation was not made by this allocator.',
@@ -138,7 +138,7 @@ describe('createPoolAllocator', () => {
 
 		expect(() => {
 			pool.deallocate(first);
-		}).toThrowError(
+		}).toThrow(
 			coded(
 				new Error(
 					'FULCRO7009: PoolAllocator.deallocate: the memory was released by its allocator, and may already hold other values.',
@@ -151,7 +151,7 @@ describe('createPoolAllocator', () => {
 	});
 
 	it('should refuse a block size or a block count that is not a count', () => {
-		expect(() => createPoolAllocator(-1, 1)).toThrowError(
+		expect(() => createPoolAllocator(-1, 1)).toThrow(
 			coded(
 				new RangeError(
 					'FULCRO7005: createPoolAllocator: expected a size in bytes that is a non-negative safe integer, received -1.',
@@ -160,7 +160,7 @@ describe('createPoolAllocator', () => {
 			),
 		);
 
-		expect(() => createPoolAllocator(8, 1.5)).toThrowError(
+		expect(() => createPoolAllocator(8, 1.5)).toThrow(
 			coded(
 				new RangeError(
 					'FULCRO7001: createPoolAllocator: expected a length that is a non-negative safe integer, received 1.5.',
@@ -241,7 +241,7 @@ describe('createPoolAllocator', () => {
 
 	it('should be an allocator with a deallocate, and not a domain', () => {
 		expectTypeOf(createPoolAllocator(8, 1)).toEqualTypeOf<PoolAllocator>();
-		expectTypeOf<PoolAllocator>().not.toMatchTypeOf<Disposable>();
+		expectTypeOf<PoolAllocator>().not.toExtend<Disposable>();
 	});
 
 	it('should hand out allocations that are disposable', () => {

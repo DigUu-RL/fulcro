@@ -586,11 +586,13 @@ nomes e aceitam as mesmas opções. O plugin declara `enforce: 'pre'`, o que
 importa — depois que o esbuild ou o swc apagou os tipos, não sobra nada para
 ler.
 
-### Só TypeScript 5, até o 7 exclusive
+### TypeScript 5.9 ou mais recente, até o 7 exclusive
 
-O 7.x é o port nativo, e o pacote dele não expõe mais a API do compilador sobre
-a qual isto é construído. A faixa de peer diz isso, em vez de deixar uma
-instalação dar certo e acabar num transformer que não consegue iniciar. O
+O 5.9 é a versão em que o compilador marca um import só de tipos do jeito que o
+transformer lê. O 7.x é o port nativo, e o pacote dele não expõe mais a API do
+compilador sobre a qual isto é construído. A faixa de peer diz isso, em vez de
+deixar uma instalação dar certo e acabar num transformer que não consegue
+iniciar. O
 `@fulcro/reflect` em si não é afetado e roda em qualquer lugar, no seu
 comportamento de fallback.
 

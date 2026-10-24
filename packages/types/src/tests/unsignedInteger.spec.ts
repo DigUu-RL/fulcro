@@ -143,10 +143,10 @@ describe('UnsignedInteger', () => {
 	it('should be told apart from the signed type of the same width', () => {
 		expectTypeOf(UnsignedInteger(16).from(1)).toEqualTypeOf<UnsignedInteger<16>>();
 
-		expectTypeOf<UnsignedInteger<16>>().not.toMatchTypeOf<
+		expectTypeOf<UnsignedInteger<16>>().not.toExtend<
 			import('@/src/signedInteger').SignedInteger<16>
 		>();
 
-		expectTypeOf(UnsignedInteger(64).from(1)).toMatchTypeOf<bigint>();
+		expectTypeOf(UnsignedInteger(64).from(1)).toExtend<bigint>();
 	});
 });

@@ -161,7 +161,7 @@ describe('Fraction', () => {
 				readonly alignment: 4;
 			}>();
 
-			expectTypeOf<Fraction<BigInteger>>().not.toMatchTypeOf<Layout<number, number>>();
+			expectTypeOf<Fraction<BigInteger>>().not.toExtend<Layout<number, number>>();
 		});
 
 		it('should be stored by a struct as its two parts', () => {

@@ -48,10 +48,11 @@ peer range in check 10.
 **Reads.** The `peerDependencies` and `peerDependenciesMeta` of all five
 manifests, and `npm explain <name>` for the peer in question.
 
-Three packages declare `typescript` as `>=5.3.3 <7`, optional through
-`peerDependenciesMeta`: `@fulcro/collections`, `@fulcro/reflect` and
-`@fulcro/transform-core`. Optional because the runtime fallback works without a
-compiler — `tests/entrypoints.spec.mts` is what proves that — and only the
+Four packages declare `typescript` as `>=5.9 <7`, optional through
+`peerDependenciesMeta`: `@fulcro/collections`, `@fulcro/memory`,
+`@fulcro/reflect` and `@fulcro/transform-core`. Optional because the runtime
+fallback works without a compiler — `tests/entrypoints.spec.mts` is what proves
+that — and only the
 transformer entry points need one.
 
 A finding when:
@@ -238,10 +239,9 @@ A finding when:
 **Reads.** The peer ranges of check 2, the root `devDependencies`, and
 `npm ls typescript --all`.
 
-The root holds two compiler lines on purpose: `typescript` at `^5.3.3`,
-resolving to 5.9.3, and `typescript7`, an alias for `typescript@^7.0.2`. The
-peer range is `>=5.3.3 <7`, so the second line is held for testing and is not
-yet promised to anyone.
+The root holds two compiler lines on purpose: `typescript` at `^5.9.3`, and
+`typescript7`, an alias for `typescript@^7.0.2`. The peer range is `>=5.9 <7`,
+so the second line is held for testing and is not yet promised to anyone.
 
 A finding when:
 

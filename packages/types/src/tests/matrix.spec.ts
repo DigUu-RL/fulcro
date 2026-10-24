@@ -254,7 +254,7 @@ describe('Matrix', () => {
 		});
 
 		it('should declare no layout over a type that has none', () => {
-			expectTypeOf<Matrix<BigInteger, 2, 2>>().not.toMatchTypeOf<Layout<number, number>>();
+			expectTypeOf<Matrix<BigInteger, 2, 2>>().not.toExtend<Layout<number, number>>();
 		});
 
 		it('should be a field of a struct, laid out as its type declares', () => {

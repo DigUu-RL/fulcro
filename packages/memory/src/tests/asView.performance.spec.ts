@@ -63,11 +63,11 @@ describe('asView, counted', () => {
 		const { storage, counts } = countedStorage(VOLUME);
 		const view: View<number> = asView(storage, 0, 10);
 
-		expect(() => view.get(10)).toThrowError(RangeError);
+		expect(() => view.get(10)).toThrow(RangeError);
 
 		expect(() => {
 			view.set(-1, 0);
-		}).toThrowError(RangeError);
+		}).toThrow(RangeError);
 
 		expect(counts).toEqual({ reads: 0, writes: 0 });
 	});

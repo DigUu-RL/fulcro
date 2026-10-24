@@ -579,9 +579,10 @@ names and take the same options. The plugin declares `enforce: 'pre'`, which
 matters — once esbuild or swc has erased the types, there is nothing left to
 read.
 
-### TypeScript 5 only, up to but not including 7
+### TypeScript 5.9 or later, up to but not including 7
 
-7.x is the native port, and its package no longer exposes the compiler API this
+5.9 is where the compiler marks a type-only import the way the transformer reads
+it. 7.x is the native port, and its package no longer exposes the compiler API this
 is built on. The peer range says so rather than letting an install succeed into
 a transformer that cannot start. `@fulcro/reflect` itself is unaffected and runs
 anywhere, in its fallback behaviour.

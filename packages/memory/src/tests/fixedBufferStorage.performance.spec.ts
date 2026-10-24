@@ -90,9 +90,9 @@ describe('createFixedBufferStorage, counted', () => {
 
 		expect(() => {
 			samples.set(VOLUME, sample);
-		}).toThrowError(RangeError);
+		}).toThrow(RangeError);
 
-		expect(() => samples.get(-1)).toThrowError(RangeError);
+		expect(() => samples.get(-1)).toThrow(RangeError);
 		expect([reads, writes, recognitions]).toEqual([0, 0, 0]);
 	});
 

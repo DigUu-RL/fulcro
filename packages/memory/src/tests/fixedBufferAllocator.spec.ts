@@ -39,7 +39,7 @@ describe('createFixedBufferAllocator', () => {
 
 		allocator.allocate(12, 4);
 
-		expect(() => allocator.allocate(8, 1)).toThrowError(
+		expect(() => allocator.allocate(8, 1)).toThrow(
 			coded(
 				new RangeError(
 					'FULCRO7007: FixedBufferAllocator.allocate: 8 bytes aligned to 1 were requested, but only 4 of 16 bytes remain.',
@@ -60,7 +60,7 @@ describe('createFixedBufferAllocator', () => {
 
 		allocator.allocate(1, 1);
 
-		expect(() => allocator.allocate(12, 8)).toThrowError(RangeError);
+		expect(() => allocator.allocate(12, 8)).toThrow(RangeError);
 		expect(allocator.allocate(8, 8).bytes.byteOffset).toBe(8);
 	});
 
@@ -84,7 +84,7 @@ describe('createFixedBufferAllocator', () => {
 		['SharedArrayBuffer', new SharedArrayBuffer(16)],
 		['Uint8Array', new Uint8Array(16)],
 	])('should refuse %s where a buffer is expected', (received, buffer) => {
-		expect(() => createFixedBufferAllocator(buffer as unknown as ArrayBuffer)).toThrowError(
+		expect(() => createFixedBufferAllocator(buffer as unknown as ArrayBuffer)).toThrow(
 			coded(
 				new TypeError(
 					`FULCRO7013: createFixedBufferAllocator: expected an ArrayBuffer, received ${received}.`,
@@ -123,6 +123,6 @@ describe('createFixedBufferAllocator', () => {
 			createFixedBufferAllocator(new ArrayBuffer(8)),
 		).toEqualTypeOf<FixedBufferAllocator>();
 
-		expectTypeOf<FixedBufferAllocator>().toMatchTypeOf<AllocationDomain>();
+		expectTypeOf<FixedBufferAllocator>().toExtend<AllocationDomain>();
 	});
 });

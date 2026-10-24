@@ -115,7 +115,7 @@ describe('asView over a storage', () => {
 	])(
 		'should refuse start %s and length %s on a source of 3',
 		(start, length, shownStart, shownLength) => {
-			expect(() => asView(counting(3), start, length)).toThrowError(
+			expect(() => asView(counting(3), start, length)).toThrow(
 				coded(
 					new RangeError(
 						`FULCRO7014: asView: ${String(shownLength)} values from position ${String(shownStart)} do not fit in a source of 3.`,
@@ -161,7 +161,7 @@ describe('asView over an array', () => {
 
 		expect(view.get(0)).toBe('b');
 
-		expect(() => view.get(1)).toThrowError(
+		expect(() => view.get(1)).toThrow(
 			coded(
 				new RangeError(
 					'FULCRO7015: View.get: position 2 is past the end of the array, which now holds 2 values; it shrank after it was viewed.',
@@ -172,7 +172,7 @@ describe('asView over an array', () => {
 
 		expect(() => {
 			view.set(1, 'z');
-		}).toThrowError(
+		}).toThrow(
 			coded(
 				new RangeError(
 					'FULCRO7015: View.set: position 2 is past the end of the array, which now holds 2 values; it shrank after it was viewed.',
@@ -208,14 +208,14 @@ describe('asView over a pointer or a reference', () => {
 	});
 
 	it('should refuse a region running past the end of the pointer', () => {
-		expect(() => asView(pointerTo(counting(5), 3), 3)).toThrowError(
+		expect(() => asView(pointerTo(counting(5), 3), 3)).toThrow(
 			coded(
 				new RangeError('FULCRO7014: asView: 3 values from position 3 do not fit in a source of 5.'),
 				{ operation: 'asView', start: 3, length: 3, available: 5 },
 			),
 		);
 
-		expect(() => asView(pointerTo(counting(2), 2))).toThrowError(RangeError);
+		expect(() => asView(pointerTo(counting(2), 2))).toThrow(RangeError);
 	});
 
 	it('should observe a reference as a view of length 1, both ways', () => {
@@ -226,7 +226,7 @@ describe('asView over a pointer or a reference', () => {
 
 		expect(view.length).toBe(1);
 		expect(total.get()).toBe(8);
-		expect(() => view.get(1)).toThrowError(RangeError);
+		expect(() => view.get(1)).toThrow(RangeError);
 	});
 
 	it('should observe a reference written outside the package', () => {
@@ -266,7 +266,7 @@ describe('asView refusals', () => {
 		[{}, 'an object without get'],
 		[{ length: 2 }, 'an object without get'],
 	])('should refuse %s as a source', (source, received) => {
-		expect(() => asView(source as unknown as Storage<number>)).toThrowError(
+		expect(() => asView(source as unknown as Storage<number>)).toThrow(
 			coded(
 				new TypeError(
 					`FULCRO7017: asView: expected a storage, a view, an array, a pointer or a memory reference, received ${received}.`,
@@ -283,7 +283,7 @@ describe('asView refusals', () => {
 	it('should refuse a read-only view, which has nothing to write with', () => {
 		const readOnly: ReadOnlyView<number> = asReadOnlyView(counting(3));
 
-		expect(() => asView(readOnly as unknown as Storage<number>)).toThrowError(
+		expect(() => asView(readOnly as unknown as Storage<number>)).toThrow(
 			coded(
 				new TypeError(
 					'FULCRO7017: asView: expected a storage, a view, an array, a pointer or a memory reference, received an object with get but no set.',
@@ -307,7 +307,7 @@ describe('View<T>', () => {
 	])('should refuse index %s, inside the source but outside the view', (index, shown) => {
 		const view: View<number> = asView(counting(10), 4, 2);
 
-		expect(() => view.get(index)).toThrowError(
+		expect(() => view.get(index)).toThrow(
 			coded(
 				new RangeError(`FULCRO7002: View.get: index ${shown} is outside a storage of length 2.`),
 				{ operation: 'View.get', index, length: 2 },
@@ -316,7 +316,7 @@ describe('View<T>', () => {
 
 		expect(() => {
 			view.set(index, 0);
-		}).toThrowError(
+		}).toThrow(
 			coded(
 				new RangeError(`FULCRO7002: View.set: index ${shown} is outside a storage of length 2.`),
 				{ operation: 'View.set', index, length: 2 },
@@ -349,7 +349,7 @@ describe('View<T>', () => {
 		arena.reset();
 		allocate(Point, 4, arena).set(1, Point.from({ x: 9, y: 9 }));
 
-		expect(() => view.get(0)).toThrowError(
+		expect(() => view.get(0)).toThrow(
 			coded(
 				new Error(
 					'FULCRO7009: Storage.get: the memory was released by its allocator, and may already hold other values.',
@@ -360,7 +360,7 @@ describe('View<T>', () => {
 
 		expect(() => {
 			view.set(0, Point.from({ x: 2, y: 2 }));
-		}).toThrowError(
+		}).toThrow(
 			coded(
 				new Error(
 					'FULCRO7009: Storage.set: the memory was released by its allocator, and may already hold other values.',
@@ -389,7 +389,7 @@ describe('View.subview', () => {
 	it('should stay inside the view, even where the source goes on', () => {
 		const view: View<number> = asView(counting(10), 0, 4);
 
-		expect(() => view.subview(2, 3)).toThrowError(
+		expect(() => view.subview(2, 3)).toThrow(
 			coded(
 				new RangeError(
 					'FULCRO7014: View.subview: 3 values from position 2 do not fit in a source of 4.',
@@ -398,8 +398,8 @@ describe('View.subview', () => {
 			),
 		);
 
-		expect(() => view.subview(5)).toThrowError(RangeError);
-		expect(() => view.subview(-1)).toThrowError(RangeError);
+		expect(() => view.subview(5)).toThrow(RangeError);
+		expect(() => view.subview(-1)).toThrow(RangeError);
 	});
 
 	it('should nest, each level shifted onto the original source', () => {

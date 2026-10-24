@@ -51,13 +51,15 @@ What lives in each library instead is the part that knows what to **emit** — h
 split is why a package can own its compile time behaviour without a second
 install, and why two of them can do so without knowing about each other.
 
-## TypeScript 5 and 6 only
+## TypeScript 5.9 and 6 only
 
 ```json
-{ "typescript": ">=5.3.3 <7" }
+{ "typescript": ">=5.9 <7" }
 ```
 
-7.x is the native port, and its package no longer exposes the compiler API this
+5.9 is where the compiler marks a type-only import through `phaseModifier`, which
+replaced the deprecated `isTypeOnly` the transformers used to read. 7.x is the
+native port, and its package no longer exposes the compiler API this
 is built on. Declared as an **optional** peer dependency, so that a project only
 using the runtime half of a library never has to install a compiler it is not
 going to run.

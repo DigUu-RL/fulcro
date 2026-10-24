@@ -175,9 +175,9 @@ describe('HalfPrecisionFloat', () => {
 
 	it('should stay a number at the type level, and not a single precision one', () => {
 		expectTypeOf(HalfPrecisionFloat.from(1)).toEqualTypeOf<HalfPrecisionFloat>();
-		expectTypeOf<HalfPrecisionFloat>().toMatchTypeOf<number>();
+		expectTypeOf<HalfPrecisionFloat>().toExtend<number>();
 
-		expectTypeOf<HalfPrecisionFloat>().not.toMatchTypeOf<
+		expectTypeOf<HalfPrecisionFloat>().not.toExtend<
 			import('@/src/singlePrecisionFloat').SinglePrecisionFloat
 		>();
 	});

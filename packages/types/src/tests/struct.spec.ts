@@ -201,13 +201,13 @@ describe('struct', () => {
 		it('should accept only types with a fixed layout, in the type checker', () => {
 			type Fields = Parameters<typeof struct>[1];
 
-			expectTypeOf<{ value: typeof Decimal }>().toMatchTypeOf<Fields>();
-			expectTypeOf<{ value: typeof Vector3 }>().toMatchTypeOf<Fields>();
-			expectTypeOf<{ value: typeof BigInteger }>().not.toMatchTypeOf<Fields>();
+			expectTypeOf<{ value: typeof Decimal }>().toExtend<Fields>();
+			expectTypeOf<{ value: typeof Vector3 }>().toExtend<Fields>();
+			expectTypeOf<{ value: typeof BigInteger }>().not.toExtend<Fields>();
 		});
 
 		it('should refuse a field with no fixed layout at runtime too', () => {
-			expect(() => struct('Account', { balance: BigInteger } as never)).toThrowError(
+			expect(() => struct('Account', { balance: BigInteger } as never)).toThrow(
 				coded(
 					new TypeError(
 						"FULCRO6016: struct Account: field 'balance' has no fixed layout. Declare it with a numeric type of @fulcro/types other than BigInteger, or with another struct.",
@@ -220,7 +220,7 @@ describe('struct', () => {
 		});
 
 		it('should refuse no fields, no name, and names an object would reorder', () => {
-			expect(() => struct('Empty', {})).toThrowError(
+			expect(() => struct('Empty', {})).toThrow(
 				coded(new TypeError('FULCRO6014: struct Empty: expected at least one field.'), {
 					operation: 'struct',
 					name: 'Empty',
@@ -285,21 +285,21 @@ describe('struct', () => {
 		});
 
 		it('should refuse a missing field, an unknown one, and a non-object', () => {
-			expect(() => Vector3.from({ x: 1, y: 2 } as never)).toThrowError(
+			expect(() => Vector3.from({ x: 1, y: 2 } as never)).toThrow(
 				coded(new TypeError("FULCRO6021: Vector3.from: missing field 'z'."), {
 					operation: 'Vector3.from',
 					field: 'z',
 				}),
 			);
 
-			expect(() => Vector3.from({ x: 1, y: 2, z: 3, w: 4 } as never)).toThrowError(
+			expect(() => Vector3.from({ x: 1, y: 2, z: 3, w: 4 } as never)).toThrow(
 				coded(
 					new TypeError("FULCRO6020: Vector3.from: 'w' is not a field; the fields are x, y, z."),
 					{ operation: 'Vector3.from', key: 'w', fields: 'x, y, z' },
 				),
 			);
 
-			expect(() => Vector3.from(null as never)).toThrowError(
+			expect(() => Vector3.from(null as never)).toThrow(
 				coded(new TypeError('FULCRO6019: Vector3.from: expected an object, received null.'), {
 					operation: 'Vector3.from',
 					received: 'null',
@@ -466,7 +466,7 @@ describe('struct', () => {
 		it('should refuse a method named like a field, an index or the layout', () => {
 			expect(() => {
 				return struct('Clash', { x: SinglePrecisionFloat }, { x: () => 1 } as never);
-			}).toThrowError(
+			}).toThrow(
 				coded(
 					new TypeError(
 						"FULCRO6009: struct Clash: method 'x' has the name of a field; a value could not hold both.",
@@ -485,7 +485,7 @@ describe('struct', () => {
 		});
 
 		it('should refuse a method that is not a function, and methods that are not an object', () => {
-			expect(() => struct('Loose', { x: SinglePrecisionFloat }, { size: 3 } as never)).toThrowError(
+			expect(() => struct('Loose', { x: SinglePrecisionFloat }, { size: 3 } as never)).toThrow(
 				coded(
 					new TypeError(
 						"FULCRO6011: struct Loose: method 'size' must be a function, received number.",
@@ -499,7 +499,7 @@ describe('struct', () => {
 				),
 			);
 
-			expect(() => struct('Null', { x: SinglePrecisionFloat }, null as never)).toThrowError(
+			expect(() => struct('Null', { x: SinglePrecisionFloat }, null as never)).toThrow(
 				coded(
 					new TypeError('FULCRO6008: struct Null: expected an object of methods, received null.'),
 					{ operation: 'struct', name: 'Null', received: 'null' },
@@ -667,7 +667,7 @@ describe('struct', () => {
 
 			expect(() => {
 				Vector3.write(view, 4, value);
-			}).toThrowError(
+			}).toThrow(
 				coded(
 					new RangeError(
 						'FULCRO6018: Vector3.write: 12 bytes at offset 4 do not fit in a view of 12 bytes.',

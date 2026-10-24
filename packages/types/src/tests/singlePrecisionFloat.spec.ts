@@ -93,7 +93,7 @@ describe('SinglePrecisionFloat', () => {
 	it('should be its own type, not a double precision one', () => {
 		expectTypeOf(SinglePrecisionFloat.from(1)).toEqualTypeOf<SinglePrecisionFloat>();
 
-		expectTypeOf<SinglePrecisionFloat>().not.toMatchTypeOf<
+		expectTypeOf<SinglePrecisionFloat>().not.toExtend<
 			import('@/src/doublePrecisionFloat').DoublePrecisionFloat
 		>();
 	});

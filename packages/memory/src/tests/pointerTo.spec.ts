@@ -86,7 +86,7 @@ describe('pointerTo', () => {
 
 		expect(end.index).toBe(3);
 
-		expect(() => end.get()).toThrowError(
+		expect(() => end.get()).toThrow(
 			coded(new RangeError('FULCRO7002: Pointer.get: index 3 is outside a storage of length 3.'), {
 				operation: 'Pointer.get',
 				index: 3,
@@ -96,7 +96,7 @@ describe('pointerTo', () => {
 
 		expect(() => {
 			end.set(0);
-		}).toThrowError(
+		}).toThrow(
 			coded(new RangeError('FULCRO7002: Pointer.set: index 3 is outside a storage of length 3.'), {
 				operation: 'Pointer.set',
 				index: 3,
@@ -112,7 +112,7 @@ describe('pointerTo', () => {
 		[Number.NaN, Number.NaN],
 		['1', 'string'],
 	])('should refuse position %s in 3 values', (index, shown) => {
-		expect(() => pointerTo(counting(3), index as number)).toThrowError(
+		expect(() => pointerTo(counting(3), index as number)).toThrow(
 			coded(
 				new RangeError(
 					`FULCRO7016: pointerTo: position ${String(shown)} is outside 0 to 3, where a pointer into 3 values may point.`,
@@ -136,9 +136,9 @@ describe('pointerTo', () => {
 
 		expect(() => {
 			return pointerTo(pointerTo(counting(2), 0) as unknown as Storage<number>, 0);
-		}).toThrowError(expected);
+		}).toThrow(expected);
 
-		expect(() => pointerTo(referenceTo(0) as unknown as Storage<number>, 0)).toThrowError(expected);
+		expect(() => pointerTo(referenceTo(0) as unknown as Storage<number>, 0)).toThrow(expected);
 	});
 
 	it('should refuse to read once the allocator released its memory', () => {
@@ -147,7 +147,7 @@ describe('pointerTo', () => {
 
 		arena.reset();
 
-		expect(() => pointer.get()).toThrowError(
+		expect(() => pointer.get()).toThrow(
 			coded(
 				new Error(
 					'FULCRO7009: Storage.get: the memory was released by its allocator, and may already hold other values.',
@@ -200,7 +200,7 @@ describe('Pointer.offset', () => {
 		[2, 4],
 		[0.5, 2.5],
 	])('should refuse a move of %s from position 2 in 3 values', (delta, shown) => {
-		expect(() => pointerTo(counting(3), 2).offset(delta)).toThrowError(
+		expect(() => pointerTo(counting(3), 2).offset(delta)).toThrow(
 			coded(
 				new RangeError(
 					`FULCRO7016: Pointer.offset: position ${String(shown)} is outside 0 to 3, where a pointer into 3 values may point.`,
@@ -211,7 +211,7 @@ describe('Pointer.offset', () => {
 	});
 
 	it('should describe a move that is not a number', () => {
-		expect(() => pointerTo(counting(3), 0).offset(null as unknown as number)).toThrowError(
+		expect(() => pointerTo(counting(3), 0).offset(null as unknown as number)).toThrow(
 			expect.objectContaining({
 				code: 'FULCRO7016',
 				details: { operation: 'Pointer.offset', index: 'null', length: 3 },

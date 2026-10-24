@@ -60,7 +60,7 @@ describe('DoublePrecisionFloat', () => {
 
 	it('should need a conversion to be told apart from a plain number', () => {
 		expectTypeOf(DoublePrecisionFloat.from(1)).toEqualTypeOf<DoublePrecisionFloat>();
-		expectTypeOf<DoublePrecisionFloat>().toMatchTypeOf<number>();
-		expectTypeOf<number>().not.toMatchTypeOf<DoublePrecisionFloat>();
+		expectTypeOf<DoublePrecisionFloat>().toExtend<number>();
+		expectTypeOf<number>().not.toExtend<DoublePrecisionFloat>();
 	});
 });

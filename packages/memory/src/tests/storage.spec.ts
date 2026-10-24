@@ -108,7 +108,7 @@ describe.each(STRATEGIES)('%s, as a Storage<T>', (name, create) => {
 		[Number.NaN, 'NaN'],
 		[Number.POSITIVE_INFINITY, 'Infinity'],
 	])('should refuse to get index %s', (index, shown) => {
-		expect(() => create(3).get(index)).toThrowError(
+		expect(() => create(3).get(index)).toThrow(
 			coded(
 				new RangeError(`FULCRO7002: ${name}.get: index ${shown} is outside a storage of length 3.`),
 				{ operation: `${name}.get`, index, length: 3 },
@@ -121,7 +121,7 @@ describe.each(STRATEGIES)('%s, as a Storage<T>', (name, create) => {
 
 		expect(() => {
 			points.set(2, Point.from({ x: 1, y: 1 }));
-		}).toThrowError(
+		}).toThrow(
 			coded(new RangeError(`FULCRO7002: ${name}.set: index 2 is outside a storage of length 2.`), {
 				operation: `${name}.set`,
 				index: 2,
@@ -133,7 +133,7 @@ describe.each(STRATEGIES)('%s, as a Storage<T>', (name, create) => {
 	});
 
 	it('should hold nothing at length 0', () => {
-		expect(() => create(0).get(0)).toThrowError(RangeError);
+		expect(() => create(0).get(0)).toThrow(RangeError);
 	});
 
 	it('should infer the type of the values it holds', () => {
@@ -154,7 +154,7 @@ describe('Storage<T> lengths', () => {
 			[Number.NaN, 'NaN'],
 			[2 ** 53, String(2 ** 53)],
 		] as const) {
-			expect(() => create(length)).toThrowError(
+			expect(() => create(length)).toThrow(
 				coded(
 					new RangeError(
 						`FULCRO7001: ${name}: expected a length that is a non-negative safe integer, received ${shown}.`,

@@ -82,8 +82,8 @@ describe('BigInteger', () => {
 
 	it('should be a branded bigint at the type level, with no layout', () => {
 		expectTypeOf(BigInteger.from(1)).toEqualTypeOf<BigInteger>();
-		expectTypeOf<BigInteger>().toMatchTypeOf<bigint>();
-		expectTypeOf<bigint>().not.toMatchTypeOf<BigInteger>();
+		expectTypeOf<BigInteger>().toExtend<bigint>();
+		expectTypeOf<bigint>().not.toExtend<BigInteger>();
 		expectTypeOf<BigInteger>().not.toHaveProperty('~layout');
 	});
 });

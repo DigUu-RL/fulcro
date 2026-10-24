@@ -84,7 +84,7 @@ describe('asReadOnlyView', () => {
 	});
 
 	it('should refuse an index outside it, under its own name', () => {
-		expect(() => asReadOnlyView(counting(5), 1, 2).get(2)).toThrowError(
+		expect(() => asReadOnlyView(counting(5), 1, 2).get(2)).toThrow(
 			coded(
 				new RangeError('FULCRO7002: ReadOnlyView.get: index 2 is outside a storage of length 2.'),
 				{ operation: 'ReadOnlyView.get', index: 2, length: 2 },
@@ -98,7 +98,7 @@ describe('asReadOnlyView', () => {
 
 		levels.pop();
 
-		expect(() => view.get(2)).toThrowError(
+		expect(() => view.get(2)).toThrow(
 			coded(
 				new RangeError(
 					'FULCRO7015: ReadOnlyView.get: position 2 is past the end of the array, which now holds 2 values; it shrank after it was viewed.',
@@ -109,7 +109,7 @@ describe('asReadOnlyView', () => {
 	});
 
 	it('should refuse a region that does not fit', () => {
-		expect(() => asReadOnlyView(counting(3), 2, 2)).toThrowError(
+		expect(() => asReadOnlyView(counting(3), 2, 2)).toThrow(
 			coded(
 				new RangeError(
 					'FULCRO7014: asReadOnlyView: 2 values from position 2 do not fit in a source of 3.',
@@ -120,7 +120,7 @@ describe('asReadOnlyView', () => {
 	});
 
 	it('should refuse what is not a source', () => {
-		expect(() => asReadOnlyView(7 as unknown as readonly number[])).toThrowError(
+		expect(() => asReadOnlyView(7 as unknown as readonly number[])).toThrow(
 			coded(
 				new TypeError(
 					'FULCRO7017: asReadOnlyView: expected a storage, a view, a read-only view, an array, a pointer or a memory reference, received number.',
@@ -156,7 +156,7 @@ describe('asReadOnlyView', () => {
 
 		arena.reset();
 
-		expect(() => view.get(0)).toThrowError(expect.objectContaining({ code: 'FULCRO7009' }));
+		expect(() => view.get(0)).toThrow(expect.objectContaining({ code: 'FULCRO7009' }));
 	});
 });
 
@@ -168,7 +168,7 @@ describe('ReadOnlyView.subview', () => {
 	});
 
 	it('should stay inside the view', () => {
-		expect(() => asReadOnlyView(counting(10), 0, 3).subview(1, 3)).toThrowError(
+		expect(() => asReadOnlyView(counting(10), 0, 3).subview(1, 3)).toThrow(
 			coded(
 				new RangeError(
 					'FULCRO7014: ReadOnlyView.subview: 3 values from position 1 do not fit in a source of 3.',

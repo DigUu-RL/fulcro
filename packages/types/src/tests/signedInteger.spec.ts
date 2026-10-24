@@ -243,13 +243,13 @@ describe('SignedInteger', () => {
 
 	it('should infer a number up to 32 bits and a bigint from 64', () => {
 		expectTypeOf(SignedInteger(32).from(1)).toEqualTypeOf<SignedInteger<32>>();
-		expectTypeOf(SignedInteger(32).from(1)).toMatchTypeOf<number>();
-		expectTypeOf(SignedInteger(64).from(1)).toMatchTypeOf<bigint>();
+		expectTypeOf(SignedInteger(32).from(1)).toExtend<number>();
+		expectTypeOf(SignedInteger(64).from(1)).toExtend<bigint>();
 		expectTypeOf(SignedInteger(128).maximum).toEqualTypeOf<SignedInteger<128>>();
 	});
 
 	it('should keep the widths apart at the type level', () => {
-		expectTypeOf<SignedInteger<8>>().not.toMatchTypeOf<SignedInteger<32>>();
-		expectTypeOf<number>().not.toMatchTypeOf<SignedInteger<32>>();
+		expectTypeOf<SignedInteger<8>>().not.toExtend<SignedInteger<32>>();
+		expectTypeOf<number>().not.toExtend<SignedInteger<32>>();
 	});
 });

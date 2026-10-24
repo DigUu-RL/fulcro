@@ -135,7 +135,7 @@ describe.each(STRATEGIES)('%s, as an Allocator', (_name, operation, create) => {
 		[Number.NaN, 'NaN'],
 		[2 ** 53, String(2 ** 53)],
 	])('should refuse a size of %s', (size, shown) => {
-		expect(() => create().allocate(size, 1)).toThrowError(
+		expect(() => create().allocate(size, 1)).toThrow(
 			coded(
 				new RangeError(
 					`FULCRO7005: ${operation}: expected a size in bytes that is a non-negative safe integer, received ${shown}.`,
@@ -152,7 +152,7 @@ describe.each(STRATEGIES)('%s, as an Allocator', (_name, operation, create) => {
 		[1.5, '1.5'],
 		[Number.NaN, 'NaN'],
 	])('should refuse an alignment of %s', (alignment, shown) => {
-		expect(() => create().allocate(8, alignment)).toThrowError(
+		expect(() => create().allocate(8, alignment)).toThrow(
 			coded(
 				new RangeError(
 					`FULCRO7006: ${operation}: expected an alignment that is a positive power of two, received ${shown}.`,
@@ -163,7 +163,7 @@ describe.each(STRATEGIES)('%s, as an Allocator', (_name, operation, create) => {
 	});
 
 	it('should describe a request that is not a number', () => {
-		expect(() => create().allocate('8' as unknown as number, 1)).toThrowError(
+		expect(() => create().allocate('8' as unknown as number, 1)).toThrow(
 			coded(
 				new RangeError(
 					`FULCRO7005: ${operation}: expected a size in bytes that is a non-negative safe integer, received string.`,
@@ -174,7 +174,7 @@ describe.each(STRATEGIES)('%s, as an Allocator', (_name, operation, create) => {
 	});
 
 	it('should satisfy the contract by type', () => {
-		expectTypeOf(create()).toMatchTypeOf<Allocator>();
+		expectTypeOf(create()).toExtend<Allocator>();
 		expectTypeOf(create().allocate(8, 8)).toEqualTypeOf<Allocation>();
 	});
 });

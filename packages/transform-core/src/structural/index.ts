@@ -363,10 +363,15 @@ const isValueInScope = (name: string, generation: Generation): boolean => {
 
 	return !(resolved.declarations ?? []).some((declaration) => {
 		if (typescript.isImportSpecifier(declaration)) {
-			return declaration.isTypeOnly || declaration.parent.parent.isTypeOnly;
+			return (
+				declaration.isTypeOnly ||
+				declaration.parent.parent.phaseModifier === typescript.SyntaxKind.TypeKeyword
+			);
 		}
 
-		if (typescript.isImportClause(declaration)) return declaration.isTypeOnly;
+		if (typescript.isImportClause(declaration)) {
+			return declaration.phaseModifier === typescript.SyntaxKind.TypeKeyword;
+		}
 
 		return false;
 	});
@@ -621,7 +626,10 @@ const checkForObject = (
 
 			// A rest or optional element makes the length variable, and a length
 			// this cannot pin down is one it will not guess at.
-			if (target.hasRestElement || target.minLength !== target.fixedLength) {
+			if (
+				(target.combinedFlags & typescript.ElementFlags.Variable) !== 0 ||
+				target.minLength !== target.fixedLength
+			) {
 				return null;
 			}
 

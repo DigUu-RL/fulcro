@@ -1059,10 +1059,12 @@ describe('@fulcro/memory/transformer', () => {
 		// installs it, so the main entry point must not reach the transformer.
 		const { manifest } = manifestOf('@fulcro/memory');
 
-		expect(manifest.peerDependencies).toEqual({ typescript: '>=5.3.3 <7' });
+		expect(manifest.peerDependencies).toEqual({ typescript: '>=5.9 <7' });
 
+		// Every way a module can load another: the build is ES modules, so a check
+		// for `require(` alone would pass whatever the entry point imported.
 		expect(readFileSync(resolve('@fulcro/memory'), 'utf8')).not.toMatch(
-			/require\(["'][^"']*(transformer|typescript)/,
+			/(?:\bfrom\s*|\bimport\s*\(\s*|\brequire\(\s*)["'][^"']*(transformer|typescript)/,
 		);
 	});
 });

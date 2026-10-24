@@ -29,16 +29,6 @@ export type ErrorCode = keyof Catalog;
  */
 export type DetailsOf<TCode extends ErrorCode> = Readonly<Parameters<Catalog[TCode]['message']>[0]>;
 
-/**
- * An error thrown by a `@fulcro` package, as it was named before it carried
- * its details.
- *
- * @deprecated Use {@link FulcroError}, which also carries `details`. Removed
- * in the next major version.
- * @template TError The class the error is an instance of.
- */
-export type CodedError<TError extends Error = Error> = TError & FulcroError;
-
 /** The class the error of a code is created as. */
 type KindOf<TCode extends ErrorCode> = InstanceType<Catalog[TCode]['kind']>;
 
