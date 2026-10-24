@@ -177,7 +177,7 @@ const createRules = (
 	 * @param message What.
 	 */
 	const report = (node: typescript.Node, message: string): void => {
-		const key = `${node.getStart(sourceFile)}:${message.slice(0, 10)}`;
+		const key = `${String(node.getStart(sourceFile))}:${message.slice(0, 10)}`;
 
 		if (reported.has(key)) return;
 

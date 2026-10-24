@@ -54,10 +54,10 @@ beforeAll(() => {
 			total: (index * 7919) % 50_000,
 			placedAt: new Date(2020, 0, 1 + (index % 1_000)),
 			items: [
-				{ sku: `sku-${index % 97}`, quantity: (index % 5) + 1 },
-				{ sku: `sku-${index % 89}`, quantity: (index % 3) + 1 },
+				{ sku: `sku-${String(index % 97)}`, quantity: (index % 5) + 1 },
+				{ sku: `sku-${String(index % 89)}`, quantity: (index % 3) + 1 },
 			],
-			reference: index % 4 === 0 ? null : `ref-${index}`,
+			reference: index % 4 === 0 ? null : `ref-${String(index)}`,
 		};
 	});
 });
@@ -462,7 +462,7 @@ describe('a recursive shape check', () => {
 	const treeOf = (depth: number, breadth: number, next: { value: number }): Comment => {
 		return {
 			id: next.value++,
-			text: `comment ${next.value}`,
+			text: `comment ${String(next.value)}`,
 			replies:
 				depth === 0 ? [] : Array.from({ length: breadth }, () => treeOf(depth - 1, breadth, next)),
 		};

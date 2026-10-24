@@ -62,6 +62,7 @@ const event = async (): Promise<object | null> => {
  */
 export const guard = async (review: (input: object) => string | null): Promise<void> => {
 	const received = await event();
+
 	const input: unknown =
 		received !== null && 'tool_input' in received ? received.tool_input : undefined;
 

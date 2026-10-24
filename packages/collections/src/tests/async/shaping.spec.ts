@@ -232,7 +232,7 @@ describe('topBy', () => {
 		// dataset is mostly ties, which is where two heaps would disagree.
 		const players = Array.from({ length: 500 }, (_, index) => {
 			return {
-				name: `player-${index}`,
+				name: `player-${String(index)}`,
 				score: index % 7,
 			};
 		});
@@ -351,7 +351,7 @@ describe('tap', () => {
 		const source: AsyncIterable<number> = {
 			async *[Symbol.asyncIterator](): AsyncIterator<number> {
 				for (const value of [1, 2]) {
-					order.push(`pulled ${value}`);
+					order.push(`pulled ${String(value)}`);
 					yield value;
 				}
 			},
@@ -360,7 +360,7 @@ describe('tap', () => {
 		await AsyncSequenceCollection.from(source)
 			.tap(async (value) => {
 				await new Promise((resolve) => setTimeout(resolve, 5));
-				order.push(`observed ${value}`);
+				order.push(`observed ${String(value)}`);
 			})
 			.toArray();
 

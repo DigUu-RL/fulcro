@@ -126,7 +126,7 @@ export const constantLiteral = (
 
 		case 'bigint': {
 			const magnitude: typescript.Expression = factory.createBigIntLiteral(
-				`${value < 0n ? -value : value}n`,
+				`${String(value < 0n ? -value : value)}n`,
 			);
 
 			return value < 0n

@@ -38,6 +38,7 @@ describe('borrowMutable, unchecked', () => {
 		expect(() => {
 			first.set(0, 1);
 		}).toThrow(ended('View.set'));
+
 		expect(() => first.get(0)).toThrow(ended('View.get'));
 
 		second.set(0, 2);
@@ -68,7 +69,9 @@ describe('borrowMutable, unchecked', () => {
 		expect(() => {
 			subview.set(0, 1);
 		}).toThrow(ended('View.set'));
+
 		expect(() => readOnly.get(0)).toThrow(ended('ReadOnlyView.get'));
+
 		expect(() => {
 			viewed.set(0, 1);
 		}).toThrow(expect.objectContaining({ code: 'FULCRO7024' }));
@@ -84,6 +87,7 @@ describe('borrowMutable, unchecked', () => {
 		expect(() => {
 			writing.set(0, 1);
 		}).toThrow(ended('View.set'));
+
 		expect(borrow(owner).get(0)).toBe(9);
 	});
 });

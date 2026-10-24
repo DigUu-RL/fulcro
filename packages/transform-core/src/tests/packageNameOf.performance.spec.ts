@@ -40,7 +40,7 @@ describe('packageNameOf, counted', () => {
 		const directory: string = path.join(workspace.root, 'dist', 'deep', 'er', 'still');
 
 		for (let index = 0; index < FILES; index++) {
-			expect(packageNameOf(path.join(directory, `file${index}.d.ts`))).toBe('library');
+			expect(packageNameOf(path.join(directory, `file${String(index)}.d.ts`))).toBe('library');
 		}
 
 		// Five directories from `still` up to the root, each looked at once;

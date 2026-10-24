@@ -368,7 +368,7 @@ const checkFrontmatter = (skill: Skill, where: string, names: Map<string, string
 				error(
 					'name-duplicate',
 					`${where} (name)`,
-					`\`${name}\` is already used by \`${names.get(name)}\`.`,
+					`\`${name}\` is already used by \`${String(names.get(name))}\`.`,
 				),
 			);
 		} else {
@@ -432,7 +432,7 @@ const checkPaths = (skill: Skill, where: string, root: string): Finding[] => {
 
 	if (value === undefined) return [];
 
-	const globs = Array.isArray(value) ? value : [`${value}`];
+	const globs = Array.isArray(value) ? value : [`${String(value)}`];
 	const findings = [];
 
 	if (globs.length === 0) {
@@ -485,7 +485,7 @@ const checkBody = (
 			error(
 				'script-missing',
 				where,
-				`Names \`npm run ${match[1]}\`, which is not a script in \`package.json\`.`,
+				`Names \`npm run ${String(match[1])}\`, which is not a script in \`package.json\`.`,
 			),
 		);
 	}
@@ -497,7 +497,7 @@ const checkBody = (
 			error(
 				'agent-missing',
 				where,
-				`Delegates to the subagent \`${match[1]}\`, which is not declared under \`.claude/agents\`.`,
+				`Delegates to the subagent \`${String(match[1])}\`, which is not declared under \`.claude/agents\`.`,
 			),
 		);
 	}
@@ -525,7 +525,7 @@ const checkBody = (
 			warning(
 				'size',
 				where,
-				`${skill.lines} lines; past about 500 the parts that matter are diluted by the parts that do not.`,
+				`${String(skill.lines)} lines; past about 500 the parts that matter are diluted by the parts that do not.`,
 			),
 		);
 	}
@@ -549,7 +549,7 @@ const checkEvals = (
 	const where = `tools/claude/skill-evals/${suite.file}`;
 
 	if (suite.problem !== null || suite.document === null) {
-		return [error('eval-unreadable', where, `Not readable as JSON: ${suite.problem}.`)];
+		return [error('eval-unreadable', where, `Not readable as JSON: ${String(suite.problem)}.`)];
 	}
 
 	const findings = [];
@@ -561,7 +561,7 @@ const checkEvals = (
 			error(
 				'eval-unknown-skill',
 				where,
-				`\`skill\` names \`${skill}\`, which is not a skill in \`.claude/skills\`.`,
+				`\`skill\` names \`${String(skill)}\`, which is not a skill in \`.claude/skills\`.`,
 			),
 		);
 	}
@@ -590,7 +590,7 @@ const checkEvals = (
 	const kinds = new Set<string>();
 
 	for (const [index, entry] of cases.entries()) {
-		const at = `${where} (case ${index + 1})`;
+		const at = `${where} (case ${String(index + 1)})`;
 
 		if (typeof entry !== 'object' || entry === null) {
 			findings.push(error('eval-case-shape', at, 'Not an object.'));
@@ -690,7 +690,7 @@ export const validateSkills = (root: string = repositoryRoot): Finding[] => {
 		findings.push(...checkBody(skill, where, root, available));
 	}
 
-	const covered: Map<string, Set<string>> = new Map();
+	const covered = new Map<string, Set<string>>();
 
 	for (const suite of evalsOf(root)) {
 		findings.push(...checkEvals(suite, names, covered));
@@ -698,14 +698,14 @@ export const validateSkills = (root: string = repositoryRoot): Finding[] => {
 
 	for (const [name, directory] of names) {
 		const kinds = covered.get(name);
-		const where = `.claude/skills/${directory}/SKILL.md`;
+		const where = `.claude/skills/${String(directory)}/SKILL.md`;
 
 		if (kinds === undefined) {
 			findings.push(
 				warning(
 					'eval-absent',
 					where,
-					`No eval suite; write \`tools/claude/skill-evals/${name}.eval.json\`.`,
+					`No eval suite; write \`tools/claude/skill-evals/${String(name)}.eval.json\`.`,
 				),
 			);
 
@@ -718,7 +718,7 @@ export const validateSkills = (root: string = repositoryRoot): Finding[] => {
 			findings.push(
 				warning(
 					'eval-coverage',
-					`tools/claude/skill-evals/${name}.eval.json`,
+					`tools/claude/skill-evals/${String(name)}.eval.json`,
 					`No ${kind} case; a skill without one has no stated edge on that side.`,
 				),
 			);

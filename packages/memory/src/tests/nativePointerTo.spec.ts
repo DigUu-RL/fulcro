@@ -270,7 +270,7 @@ describe('nativePointerTo a memory', () => {
 		expect(() => nativePointerTo(memory, address as number, Sample)).toThrowError(
 			coded(
 				new RangeError(
-					`FULCRO7019: nativePointerTo: address ${shown} is outside 0 to 16, where this pointer may point.`,
+					`FULCRO7019: nativePointerTo: address ${String(shown)} is outside 0 to 16, where this pointer may point.`,
 				),
 				{ operation: 'nativePointerTo', address: shown, start: 0, end: 16 },
 			),
@@ -565,6 +565,7 @@ describe('nativePointerTo an allocation', () => {
 		};
 
 		expect(() => pointer.get()).toThrowError(released('NativePointer.get'));
+
 		expect(() => {
 			second.set(Sample.from({ value: 1 }));
 		}).toThrowError(released('NativePointer.set'));

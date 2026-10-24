@@ -88,7 +88,7 @@ const located = (diagnostic: ts.Diagnostic): string => {
 		diagnostic.start ?? 0,
 	);
 
-	return `${line + 1}: FULCRO${diagnostic.code}`;
+	return `${String(line + 1)}: FULCRO${String(diagnostic.code)}`;
 };
 
 let accepted: Compiled;
@@ -122,7 +122,7 @@ describe('ownership rules at compile time', () => {
 		const marked: string[] = rejected.source.text.split(/\r?\n/).flatMap((line, index) => {
 			const code: string | undefined = /\/\/ (FULCRO\d{4})$/.exec(line)?.[1];
 
-			return code === undefined ? [] : [`${index + 1}: ${code}`];
+			return code === undefined ? [] : [`${String(index + 1)}: ${code}`];
 		});
 
 		expect(marked.length).toBeGreaterThan(10);

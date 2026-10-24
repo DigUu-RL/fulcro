@@ -112,7 +112,7 @@ export const reflectCatalog = {
 			call: string;
 			milliseconds: number;
 		}) => {
-			return `${call} did not finish within ${milliseconds} ms at compile time.`;
+			return `${call} did not finish within ${String(milliseconds)} ms at compile time.`;
 		},
 	},
 	FULCRO4014: {

@@ -20,12 +20,12 @@
  * One thing a validator found.
  *
  */
-export type Finding = {
+export interface Finding {
 	level: 'error' | 'warning';
 	rule: string;
 	where: string;
 	message: string;
-};
+}
 
 /**
  * Records an error.
@@ -93,7 +93,7 @@ export const report = (
 		if (group.length === 0) continue;
 
 		write('');
-		write(`${level === 'error' ? 'Errors' : 'Warnings'} (${group.length}):`);
+		write(`${level === 'error' ? 'Errors' : 'Warnings'} (${String(group.length)}):`);
 
 		for (const finding of group) {
 			write(`  ${finding.where}`);
@@ -102,7 +102,7 @@ export const report = (
 	}
 
 	write('');
-	write(`${title}: ${errors.length} error(s), ${warnings.length} warning(s).`);
+	write(`${title}: ${String(errors.length)} error(s), ${String(warnings.length)} warning(s).`);
 
 	if (errors.length > 0) return 1;
 	if (options.strict === true && warnings.length > 0) return 1;

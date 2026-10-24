@@ -103,7 +103,7 @@ export const BigInteger: NumericType<BigInteger, number | bigint | string> = {
 		if (exponent < 0n) {
 			throw createError('FULCRO6005', {
 				operation: 'BigInteger.power',
-				received: `${exponent}n`,
+				received: `${String(exponent)}n`,
 			});
 		}
 

@@ -128,7 +128,7 @@ describe('constantOf', () => {
 				'an array with properties besides its elements',
 				(): number[] & { extra: number } => Object.assign([1], { extra: 2 }),
 			],
-			['an object with symbol keys', (): { [x: symbol]: number } => ({ [Symbol('key')]: 1 })],
+			['an object with symbol keys', (): Record<symbol, number> => ({ [Symbol('key')]: 1 })],
 			[
 				"an object whose 'value' is a getter",
 				(): { readonly value: number } => {

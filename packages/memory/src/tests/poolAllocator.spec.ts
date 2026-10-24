@@ -97,7 +97,7 @@ describe('createPoolAllocator', () => {
 		expect(() => createPoolAllocator(48, 2).allocate(requested, alignment)).toThrowError(
 			coded(
 				new RangeError(
-					`FULCRO7010: PoolAllocator.allocate: ${requested} bytes aligned to ${alignment} do not fit a pool block of 48 bytes.`,
+					`FULCRO7010: PoolAllocator.allocate: ${String(requested)} bytes aligned to ${String(alignment)} do not fit a pool block of 48 bytes.`,
 				),
 				{
 					operation: 'PoolAllocator.allocate',

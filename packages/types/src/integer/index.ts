@@ -172,7 +172,8 @@ export interface IntegerType<T> extends BoundedNumericType<T, number | bigint> {
  * @param maximum Largest value.
  * @returns The range, as `[minimum, maximum]`.
  */
-const describeRange = (minimum: bigint, maximum: bigint): string => `[${minimum}, ${maximum}]`;
+const describeRange = (minimum: bigint, maximum: bigint): string =>
+	`[${String(minimum)}, ${String(maximum)}]`;
 
 /**
  * Describes a value for an error message without letting a stray `-0` read as
@@ -182,7 +183,7 @@ const describeRange = (minimum: bigint, maximum: bigint): string => `[${minimum}
  * @returns The value as the caller wrote it.
  */
 const describeValue = (value: unknown): string => {
-	if (typeof value === 'bigint') return `${value}n`;
+	if (typeof value === 'bigint') return `${String(value)}n`;
 	if (Object.is(value, -0)) return '-0';
 
 	return String(value);

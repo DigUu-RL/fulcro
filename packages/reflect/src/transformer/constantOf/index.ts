@@ -343,7 +343,7 @@ const bind = (
 
 	if (known !== undefined) return known;
 
-	const binding = `constant${assembly.bindings.size}_${resolved.name}`;
+	const binding = `constant${String(assembly.bindings.size)}_${resolved.name}`;
 
 	// Reserved before the declaration is proved, so two functions calling each
 	// other each find the other's binding instead of proving forever.

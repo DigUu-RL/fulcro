@@ -29,14 +29,14 @@ let fileNames: string[];
 beforeAll(() => {
 	const body: string = [
 		'const flag = (value: number): number => value;',
-		...Array.from({ length: CALLS }, (_, index) => `flag(${index});`),
+		...Array.from({ length: CALLS }, (_, index) => `flag(${String(index)});`),
 		'',
 	].join('\n');
 
 	const files: Record<string, string> = {};
 
 	for (let index = 0; index < FILES; index++) {
-		files[`src/file${index}.ts`] = body;
+		files[`src/file${String(index)}.ts`] = body;
 	}
 
 	workspace = createWorkspace(files);

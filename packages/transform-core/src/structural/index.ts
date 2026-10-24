@@ -514,14 +514,14 @@ const checkThroughFunction = (
 	}
 
 	const declaration: RecursiveCheck = {
-		name: `check${generation.counter.value++}`,
+		name: `check${String(generation.counter.value++)}`,
 	};
 
 	generation.declared.set(type, declaration);
 
 	// Written against its own parameter rather than against the caller's
 	// expression, because the same body serves every call site.
-	const parameter: string = `r${generation.counter.value++}`;
+	const parameter: string = `r${String(generation.counter.value++)}`;
 
 	const body: typescript.Expression | null = checkForObject(
 		type,
@@ -578,7 +578,7 @@ const checkForObject = (
 
 			if (element === undefined) return null;
 
-			const parameter: string = `e${generation.counter.value++}`;
+			const parameter: string = `e${String(generation.counter.value++)}`;
 
 			const inner: typescript.Expression | null = checkFor(
 				element,

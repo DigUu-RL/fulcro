@@ -80,7 +80,7 @@ describe('the layout of @fulcro/types, read by @fulcro/reflect', () => {
 		['structSize', 32],
 		['structAlignment', 16],
 	])('should emit %s as %i', (binding, bytes) => {
-		expect(emitted).toContain(`export const ${binding} = ${bytes};`);
+		expect(emitted).toContain(`export const ${binding} = ${String(bytes)};`);
 	});
 
 	it('should leave no call to either utility behind', () => {

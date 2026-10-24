@@ -257,10 +257,10 @@ describe('realistic records at volume', () => {
 					pulled++;
 
 					yield {
-						sensorId: `sensor-${index % 500}`,
+						sensorId: `sensor-${String(index % 500)}`,
 						takenAt: new Date(2024, 0, 1 + (index % 365)),
 						celsius: (index % 60) - 10,
-						tags: [`floor-${index % 12}`, index % 2 === 0 ? 'indoor' : 'outdoor'],
+						tags: [`floor-${String(index % 12)}`, index % 2 === 0 ? 'indoor' : 'outdoor'],
 					};
 				}
 			},

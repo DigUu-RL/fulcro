@@ -77,7 +77,7 @@ const placePoint = (digits: string, exponent: number): string => {
  * @returns The value in exponential notation.
  */
 const exponential = (digits: string, adjusted: number): string => {
-	return `${digits[0]}${digits.length > 1 ? `.${digits.slice(1)}` : ''}e${adjusted < 0 ? '-' : '+'}${Math.abs(adjusted)}`;
+	return `${String(digits[0])}${digits.length > 1 ? `.${digits.slice(1)}` : ''}e${adjusted < 0 ? '-' : '+'}${String(Math.abs(adjusted))}`;
 };
 
 /**

@@ -65,6 +65,7 @@ describe('Owned[Symbol.dispose]', () => {
 		}
 
 		expect(() => writing?.get(0)).toThrow(ended('View.get'));
+
 		expect(() => {
 			writing?.set(0, 1);
 		}).toThrow(ended('View.set'));
@@ -129,6 +130,7 @@ describe('Owned[Symbol.dispose]', () => {
 		expect(() => {
 			scores[Symbol.dispose]();
 		}).not.toThrow();
+
 		expect(() => borrow(scores)).toThrow(disposed('borrow'));
 	});
 

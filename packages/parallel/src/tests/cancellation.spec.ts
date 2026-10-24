@@ -18,6 +18,7 @@ describe('a fresh source', () => {
 		expect(token.isCancelled).toBe(false);
 		expect(token.reason).toBeUndefined();
 		expect(token.signal.aborted).toBe(false);
+
 		expect(() => {
 			token.throwIfCancelled();
 		}).not.toThrow();
@@ -226,6 +227,7 @@ describe('values taken off their object', () => {
 		expect(() => {
 			throwIfCancelled();
 		}).toThrow();
+
 		expect(handler).toHaveBeenCalledWith('detached');
 	});
 

@@ -20,7 +20,7 @@ export const parallelCatalog = {
 	FULCRO3003: {
 		kind: Error,
 		message: ({ workers }: { operation: string; workers: number | undefined }) => {
-			return `A pool needs a positive integer worker count, and was given ${workers}.`;
+			return `A pool needs a positive integer worker count, and was given ${String(workers)}.`;
 		},
 	},
 
@@ -44,7 +44,7 @@ export const parallelCatalog = {
 	FULCRO3007: {
 		kind: Error,
 		message: ({ exitCode }: { operation: string; exitCode: number }) => {
-			return `The worker exited with code ${exitCode}.`;
+			return `The worker exited with code ${String(exitCode)}.`;
 		},
 	},
 	FULCRO3008: {
@@ -72,7 +72,7 @@ export const parallelCatalog = {
 	FULCRO3012: {
 		kind: RangeError,
 		message: ({ concurrency }: { operation: string; concurrency: number }) => {
-			return `A task scope needs a positive integer concurrency, or Infinity, and was given ${concurrency}.`;
+			return `A task scope needs a positive integer concurrency, or Infinity, and was given ${String(concurrency)}.`;
 		},
 	},
 	FULCRO3013: {

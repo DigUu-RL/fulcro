@@ -88,7 +88,7 @@ const describeDiagnostic = (diagnostic: typescript.Diagnostic): string => {
 	const file = diagnostic.file as typescript.SourceFile;
 	const { line, character } = file.getLineAndCharacterOfPosition(diagnostic.start ?? 0);
 
-	return `${file.fileName}(${line + 1},${character + 1}): ${String(diagnostic.messageText)}`;
+	return `${file.fileName}(${String(line + 1)},${String(character + 1)}): ${String(diagnostic.messageText)}`;
 };
 
 /**

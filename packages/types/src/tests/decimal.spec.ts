@@ -64,7 +64,7 @@ const referenceRound = (value: Exact, mode: RoundingMode): string => {
 	const digits: string = value.coefficient.toString();
 	const sign: string = value.negative ? '-' : '';
 
-	if (digits.length <= 34) return `${sign}${digits}e${value.exponent}`;
+	if (digits.length <= 34) return `${sign}${digits}e${String(value.exponent)}`;
 
 	const kept: bigint = BigInt(digits.slice(0, 34));
 	const first = digits[34] as string;
@@ -91,7 +91,7 @@ const referenceRound = (value: Exact, mode: RoundingMode): string => {
 			break;
 	}
 
-	return `${sign}${up ? kept + 1n : kept}e${value.exponent + digits.length - 34}`;
+	return `${sign}${String(up ? kept + 1n : kept)}e${String(value.exponent + digits.length - 34)}`;
 };
 
 /**
@@ -133,7 +133,7 @@ const operand = (random: () => number, exponentSpread: number): Exact => {
  * @returns Its literal.
  */
 const literal = (value: Exact): string => {
-	return `${value.negative ? '-' : ''}${value.coefficient}e${value.exponent}`;
+	return `${value.negative ? '-' : ''}${String(value.coefficient)}e${String(value.exponent)}`;
 };
 
 /**
@@ -559,7 +559,7 @@ describe('Decimal', () => {
 				const r: bigint = a % b;
 
 				const expected: string = D(
-					`${r < 0n || (r === 0n && left.negative) ? '-' : ''}${r < 0n ? -r : r}e${base}`,
+					`${r < 0n || (r === 0n && left.negative) ? '-' : ''}${String(r < 0n ? -r : r)}e${String(base)}`,
 				).toString();
 
 				const actual: string = D(literal(left))
@@ -717,7 +717,7 @@ describe('Decimal', () => {
 
 				for (const [actual, expected] of pairs) {
 					if (actual !== expected) {
-						wrong.push(`${value}: ${actual} ≠ ${expected}`);
+						wrong.push(`${String(value)}: ${actual} ≠ ${expected}`);
 					}
 				}
 			}
@@ -759,7 +759,7 @@ describe('Decimal', () => {
 
 		it('should serialise to JSON as a string, and interpolate as its text', () => {
 			expect(JSON.stringify({ price: D('19.99') })).toBe('{"price":"19.99"}');
-			expect(`${D('1.5')}`).toBe('1.5');
+			expect(`${String(D('1.5'))}`).toBe('1.5');
 		});
 	});
 
@@ -842,7 +842,7 @@ describe('Decimal', () => {
 				const actual: string = D(literal(base)).power(D(power), mode).toString();
 
 				if (actual !== expected) {
-					wrong.push(`${literal(base)} ** ${power} (${mode}): ${actual} ≠ ${expected}`);
+					wrong.push(`${literal(base)} ** ${String(power)} (${mode}): ${actual} ≠ ${expected}`);
 				}
 			}
 

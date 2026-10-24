@@ -84,6 +84,7 @@ describe('nameOf', () => {
 
 		expect(nameOf(namedFunction)).toBe('namedFunction');
 		expect(nameOf(() => 1)).toBe('(anonymous)');
+
 		expect(
 			nameOf(() => {
 				new User().save();

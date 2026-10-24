@@ -23,12 +23,12 @@ export type Value = string | string[] | boolean;
  * which, in the words the caller reports.
  *
  */
-export type Frontmatter = {
+export interface Frontmatter {
 	present: boolean;
 	values: Record<string, Value>;
 	order: string[];
 	problems: string[];
-};
+}
 
 /**
  * Strips one layer of matching quotes.
@@ -106,14 +106,14 @@ const scalar = (text: string, key: string): { value: string | boolean; problem: 
 		if (end < 0) {
 			return {
 				value: unquoted(trimmed),
-				problem: `\`${key}\` opens with ${quote} and never closes it, so YAML reads past the end of the block and discards every key in it.`,
+				problem: `\`${key}\` opens with ${String(quote)} and never closes it, so YAML reads past the end of the block and discards every key in it.`,
 			};
 		}
 
 		if (end !== trimmed.length - 1) {
 			return {
 				value: unquoted(trimmed),
-				problem: `\`${key}\` closes its quote before the end of the value, and YAML then discards every key in the block. A ${quote} inside a ${quote}-quoted value is written ${quote}${quote}; \`\\${quote}\` is shell escaping and means nothing here.`,
+				problem: `\`${key}\` closes its quote before the end of the value, and YAML then discards every key in the block. A ${String(quote)} inside a ${String(quote)}-quoted value is written ${String(quote)}${String(quote)}; \`\\${String(quote)}\` is shell escaping and means nothing here.`,
 			};
 		}
 

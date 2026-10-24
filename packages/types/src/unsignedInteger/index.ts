@@ -54,7 +54,7 @@ export const UnsignedInteger = <N extends IntegerWidth>(
 	let descriptor: IntegerType<unknown> | undefined = descriptors.get(width);
 
 	if (descriptor === undefined) {
-		descriptor = createIntegerType(false, width, `UnsignedInteger<${width}>`);
+		descriptor = createIntegerType(false, width, `UnsignedInteger<${String(width)}>`);
 		descriptors.set(width, descriptor);
 	}
 

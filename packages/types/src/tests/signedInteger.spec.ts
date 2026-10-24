@@ -40,7 +40,7 @@ describe('SignedInteger', () => {
 			expect(type.maximum).toBe(carried(width, maximum));
 			expect(type.width).toBe(width);
 			expect(type.signed).toBe(true);
-			expect(type.name).toBe(`SignedInteger<${width}>`);
+			expect(type.name).toBe(`SignedInteger<${String(width)}>`);
 		});
 
 		it('should accept both ends of the range', () => {
@@ -53,7 +53,7 @@ describe('SignedInteger', () => {
 			expect(() => type.from(minimum - 1n)).toThrow(RangeError);
 
 			expect(() => type.from(maximum + 1n)).toThrow(
-				`SignedInteger<${width}>.from: ${maximum + 1n}n is outside [${minimum}, ${maximum}].`,
+				`SignedInteger<${String(width)}>.from: ${String(maximum + 1n)}n is outside [${String(minimum)}, ${String(maximum)}].`,
 			);
 		});
 
@@ -89,7 +89,7 @@ describe('SignedInteger', () => {
 
 			expect(type.add(type.from(carried(width, maximum - 1n)), one)).toBe(type.maximum);
 			expect(type.subtract(type.from(carried(width, minimum + 1n)), one)).toBe(type.minimum);
-			expect(() => type.add(type.maximum, one)).toThrow(`SignedInteger<${width}>.add`);
+			expect(() => type.add(type.maximum, one)).toThrow(`SignedInteger<${String(width)}>.add`);
 			expect(() => type.subtract(type.minimum, one)).toThrow(RangeError);
 		});
 
@@ -116,11 +116,11 @@ describe('SignedInteger', () => {
 
 		it('should refuse a zero divisor, naming the operation', () => {
 			expect(() => type.divide(type.from(1), type.from(0))).toThrow(
-				`SignedInteger<${width}>.divide: division by zero.`,
+				`SignedInteger<${String(width)}>.divide: division by zero.`,
 			);
 
 			expect(() => type.remainder(type.from(1), type.from(0))).toThrow(
-				`SignedInteger<${width}>.remainder: division by zero.`,
+				`SignedInteger<${String(width)}>.remainder: division by zero.`,
 			);
 		});
 
@@ -165,7 +165,7 @@ describe('SignedInteger', () => {
 				expect(type.power(of(-1n), of(maximum))).toBe(carried(width, -1n));
 
 				expect(() => type.power(of(2n), of(BigInt(width - 1)))).toThrow(
-					`SignedInteger<${width}>.power`,
+					`SignedInteger<${String(width)}>.power`,
 				);
 
 				expect(() => type.power(of(2n), of(-1n))).toThrow('expected an exponent of zero or more');
@@ -180,8 +180,12 @@ describe('SignedInteger', () => {
 			it('should step by one, refusing to step past either end', () => {
 				expect(type.increment(of(1n))).toBe(carried(width, 2n));
 				expect(type.decrement(of(1n))).toBe(carried(width, 0n));
-				expect(() => type.increment(type.maximum)).toThrow(`SignedInteger<${width}>.increment`);
-				expect(() => type.decrement(type.minimum)).toThrow(`SignedInteger<${width}>.decrement`);
+				expect(() => type.increment(type.maximum)).toThrow(
+					`SignedInteger<${String(width)}>.increment`,
+				);
+				expect(() => type.decrement(type.minimum)).toThrow(
+					`SignedInteger<${String(width)}>.decrement`,
+				);
 			});
 
 			it('should compare as the operators do', () => {
@@ -214,7 +218,7 @@ describe('SignedInteger', () => {
 				expect(() => type.shiftLeft(of(1n), of(BigInt(width)))).toThrow(RangeError);
 
 				expect(() => type.shiftRight(of(1n), of(-1n))).toThrow(
-					`SignedInteger<${width}>.shiftRight: expected a count from 0 to ${width - 1}`,
+					`SignedInteger<${String(width)}>.shiftRight: expected a count from 0 to ${String(width - 1)}`,
 				);
 			});
 

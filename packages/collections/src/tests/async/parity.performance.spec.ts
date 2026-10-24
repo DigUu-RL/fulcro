@@ -44,8 +44,8 @@ beforeAll(() => {
 			region: ['north', 'south', 'east', 'west'][index % 4] as string,
 			total: (index * 7919) % 50_000,
 			items: [
-				{ sku: `sku-${index % 97}`, quantity: (index % 5) + 1 },
-				{ sku: `sku-${index % 89}`, quantity: (index % 3) + 1 },
+				{ sku: `sku-${String(index % 97)}`, quantity: (index % 5) + 1 },
+				{ sku: `sku-${String(index % 89)}`, quantity: (index % 3) + 1 },
 			],
 		};
 	});

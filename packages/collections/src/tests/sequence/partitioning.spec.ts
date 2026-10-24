@@ -215,7 +215,7 @@ describe('zip', () => {
 	it('should merge position by position', () => {
 		expect(
 			SequenceCollection.from([1, 2, 3])
-				.zip(['a', 'b', 'c'], (n, s) => `${n}${s}`)
+				.zip(['a', 'b', 'c'], (n, s) => `${String(n)}${s}`)
 				.toArray(),
 		).toEqual(['1a', '2b', '3c']);
 	});
@@ -223,7 +223,7 @@ describe('zip', () => {
 	it('should stop at the shorter sequence', () => {
 		expect(
 			SequenceCollection.from([1, 2, 3, 4])
-				.zip(['a', 'b'], (n, s) => `${n}${s}`)
+				.zip(['a', 'b'], (n, s) => `${String(n)}${s}`)
 				.toArray(),
 		).toEqual(['1a', '2b']);
 	});
@@ -232,7 +232,7 @@ describe('zip', () => {
 		const { source, read } = counted([1, 2, 3, 4, 5]);
 
 		SequenceCollection.from(source)
-			.zip(['a', 'b'], (n, s) => `${n}${s}`)
+			.zip(['a', 'b'], (n, s) => `${String(n)}${s}`)
 			.toArray();
 
 		// Three: two paired, and one more that found no partner.

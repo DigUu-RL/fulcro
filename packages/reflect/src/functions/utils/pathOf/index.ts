@@ -40,7 +40,7 @@ const parsePath = (accessor: PathAccessor): string | null => {
 		// A quoted key becomes a dotted segment; a numeric index keeps its
 		// brackets, since `items.0.sku` is not how anyone writes a path.
 		.replace(BRACKET_PATTERN, (_whole, single, double, digits) => {
-			return digits === undefined ? `.${single ?? double}` : `[${digits}]`;
+			return digits === undefined ? `.${String(single ?? double)}` : `[${String(digits)}]`;
 		});
 
 	// The root is dropped. `pathOf(() => user.profile.email)` answers

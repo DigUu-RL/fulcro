@@ -257,22 +257,23 @@ const checkSettings = (root: string): Finding[] => {
 	);
 
 	const permissions: unknown = settings.document?.permissions;
+
 	const denied: unknown =
 		typeof permissions === 'object' && permissions !== null && 'deny' in permissions
 			? permissions.deny
 			: undefined;
 
-	const byCommand: Map<string, Set<string>> = new Map();
+	const byCommand = new Map<string, Set<string>>();
 
 	for (const entry of Array.isArray(denied) ? denied : []) {
-		const permission = permissionOf(`${entry}`);
+		const permission = permissionOf(`${String(entry)}`);
 
 		if (permission === null) {
 			findings.push(
 				error(
 					'permission-shape',
 					`${where} (permissions.deny)`,
-					`\`${entry}\` is not \`Tool(command:*)\`.`,
+					`\`${String(entry)}\` is not \`Tool(command:*)\`.`,
 				),
 			);
 
@@ -338,7 +339,7 @@ const checkRules = (root: string): Finding[] => {
 		);
 	}
 
-	const paragraphs: Map<string, string> = new Map();
+	const paragraphs = new Map<string, string>();
 
 	for (const rule of rulesOf(root)) {
 		const at = `.claude/rules/${rule.file}`;
@@ -416,7 +417,7 @@ const checkRuleFrontmatter = (rule: Rule, at: string, root: string): Finding[] =
 
 	if (value === undefined) return findings;
 
-	const globs = Array.isArray(value) ? value : [`${value}`];
+	const globs = Array.isArray(value) ? value : [`${String(value)}`];
 
 	if (globs.length === 0) {
 		return [
@@ -455,14 +456,14 @@ const checkRuleFrontmatter = (rule: Rule, at: string, root: string): Finding[] =
 const checkRuleFixtures = (root: string): Finding[] => {
 	const findings = [];
 
-	const scoped: Map<string, string[]> = new Map();
+	const scoped = new Map<string, string[]>();
 
 	for (const rule of rulesOf(root)) {
 		const value = rule.frontmatter.values.paths;
 
 		if (value === undefined) continue;
 
-		scoped.set(rule.file, Array.isArray(value) ? value : [`${value}`]);
+		scoped.set(rule.file, Array.isArray(value) ? value : [`${String(value)}`]);
 	}
 
 	const covered = new Set();
@@ -472,7 +473,7 @@ const checkRuleFixtures = (root: string): Finding[] => {
 
 		if (fixture.problem !== null || fixture.document === null) {
 			findings.push(
-				error('fixture-unreadable', where, `Not readable as JSON: ${fixture.problem}.`),
+				error('fixture-unreadable', where, `Not readable as JSON: ${String(fixture.problem)}.`),
 			);
 
 			continue;
@@ -486,7 +487,7 @@ const checkRuleFixtures = (root: string): Finding[] => {
 				error(
 					'fixture-unknown-rule',
 					where,
-					`\`rule\` names \`${named}\`, which is not a path-scoped rule in \`.claude/rules\`.`,
+					`\`rule\` names \`${String(named)}\`, which is not a path-scoped rule in \`.claude/rules\`.`,
 				),
 			);
 
@@ -524,13 +525,13 @@ const checkRuleFixtures = (root: string): Finding[] => {
 			['ignores', ignores],
 		]) {
 			for (const entry of Array.isArray(entries) ? entries : []) {
-				const target = `${entry}`;
+				const target = `${String(entry)}`;
 
 				if (!exists(path.join(root, ...target.split('/')))) {
 					findings.push(
 						error(
 							'fixture-path-missing',
-							`${where} (${key})`,
+							`${where} (${String(key)})`,
 							`\`${target}\` is not in the repository; a glob proved against a file that is not there is proved against nothing.`,
 						),
 					);
@@ -590,7 +591,7 @@ const toolsIn = (value: Value | undefined): string[] | null => {
 	if (value === undefined) return null;
 	if (Array.isArray(value)) return value.map((tool) => tool.trim());
 
-	return `${value}`
+	return `${String(value)}`
 		.split(',')
 		.map((tool) => tool.trim())
 		.filter((tool) => tool !== '');
@@ -648,7 +649,7 @@ const checkAgents = (root: string): Finding[] => {
 				error(
 					'agent-name',
 					`${at} (name)`,
-					`\`name\` is \`${block.values.name ?? ''}\`; it must be \`${expected}\`, because a skill delegates by the file name and Claude Code by \`name\`.`,
+					`\`name\` is \`${String(block.values.name ?? '')}\`; it must be \`${expected}\`, because a skill delegates by the file name and Claude Code by \`name\`.`,
 				),
 			);
 		}

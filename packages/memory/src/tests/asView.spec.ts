@@ -118,7 +118,7 @@ describe('asView over a storage', () => {
 			expect(() => asView(counting(3), start, length)).toThrowError(
 				coded(
 					new RangeError(
-						`FULCRO7014: asView: ${shownLength} values from position ${shownStart} do not fit in a source of 3.`,
+						`FULCRO7014: asView: ${String(shownLength)} values from position ${String(shownStart)} do not fit in a source of 3.`,
 					),
 					{
 						operation: 'asView',

@@ -34,13 +34,13 @@ export const collectionsCatalog = {
 	FULCRO1005: {
 		kind: Error,
 		message: ({ index }: { operation: string; index: number }) => {
-			return `elementAt(${index}) is out of range.`;
+			return `elementAt(${String(index)}) is out of range.`;
 		},
 	},
 	FULCRO1006: {
 		kind: Error,
 		message: ({ size }: { operation: string; size: number }) => {
-			return `chunk(${size}) needs a positive integer: a chunk of no elements would never end the sequence.`;
+			return `chunk(${String(size)}) needs a positive integer: a chunk of no elements would never end the sequence.`;
 		},
 	},
 	FULCRO1007: {
@@ -52,13 +52,13 @@ export const collectionsCatalog = {
 	FULCRO1008: {
 		kind: Error,
 		message: ({ size }: { operation: string; size: number }) => {
-			return `windowed(${size}) needs a positive integer.`;
+			return `windowed(${String(size)}) needs a positive integer.`;
 		},
 	},
 	FULCRO1009: {
 		kind: Error,
 		message: ({ rank }: { operation: string; rank: number }) => {
-			return `percentile(${rank}) takes a rank between 0 and 100.`;
+			return `percentile(${String(rank)}) takes a rank between 0 and 100.`;
 		},
 	},
 	FULCRO1010: {
@@ -95,7 +95,7 @@ export const collectionsCatalog = {
 			found: string;
 			index: number;
 		}) => {
-			return `cast('${expected}') found a ${found} at index ${index}.`;
+			return `cast('${expected}') found a ${found} at index ${String(index)}.`;
 		},
 	},
 	FULCRO1016: {
@@ -107,7 +107,7 @@ export const collectionsCatalog = {
 	FULCRO1017: {
 		kind: Error,
 		message: ({ operation, concurrency }: { operation: string; concurrency: number }) => {
-			return `${operation}() needs a positive integer concurrency, and was given ${concurrency}.`;
+			return `${operation}() needs a positive integer concurrency, and was given ${String(concurrency)}.`;
 		},
 	},
 	FULCRO1018: {

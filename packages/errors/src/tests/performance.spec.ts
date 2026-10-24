@@ -118,7 +118,7 @@ describe('prefixError', () => {
 		let located = inner;
 
 		for (let level = 0; level < ERRORS; level++) {
-			located = prefixError(located, `Level${level}.from: field 'x'`);
+			located = prefixError(located, `Level${String(level)}.from: field 'x'`);
 		}
 
 		expect(templates()).toBe(0);

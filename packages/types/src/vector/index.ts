@@ -144,7 +144,7 @@ export const Vector = <TElement extends ElementDescriptor, R extends number, C e
 			if (elements.length !== count) {
 				throw createError('FULCRO6038', {
 					operation: `${name}.from`,
-					expected: `${count} elements`,
+					expected: `${String(count)} elements`,
 					received: String(elements.length),
 				});
 			}
@@ -158,7 +158,7 @@ export const Vector = <TElement extends ElementDescriptor, R extends number, C e
 					[elements],
 					1,
 					count,
-					(_row, column) => `element ${column}`,
+					(_row, column) => `element ${String(column)}`,
 				),
 				rows,
 				columns,

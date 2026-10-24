@@ -35,7 +35,7 @@ interface Player {
 const playersWithTies = (count: number, distinctScores: number): readonly Player[] => {
 	return Array.from({ length: count }, (_, index) => {
 		return {
-			name: `player-${index}`,
+			name: `player-${String(index)}`,
 			score: index % distinctScores,
 		};
 	});
@@ -461,7 +461,7 @@ describe('a type that contains itself', () => {
 		let deepest: Comment = { id: 100, text: 'bottom', replies: [] };
 
 		for (let level = 99; level >= 0; level--) {
-			deepest = { id: level, text: `level ${level}`, replies: [deepest] };
+			deepest = { id: level, text: `level ${String(level)}`, replies: [deepest] };
 		}
 
 		expect(accepts(deepest)).toBe(true);
@@ -471,7 +471,7 @@ describe('a type that contains itself', () => {
 		let broken: unknown = { id: 100, text: 7, replies: [] };
 
 		for (let level = 99; level >= 0; level--) {
-			broken = { id: level, text: `level ${level}`, replies: [broken] };
+			broken = { id: level, text: `level ${String(level)}`, replies: [broken] };
 		}
 
 		expect(accepts(broken)).toBe(false);

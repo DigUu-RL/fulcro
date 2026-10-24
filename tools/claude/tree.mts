@@ -81,7 +81,7 @@ export const filesUnder = (directory: string, prefix: string = ''): string[] => 
  */
 const UNSEARCHED = new Set(['.git', 'node_modules', 'dist', 'coverage']);
 
-const basenames: Map<string, Set<string>> = new Map();
+const basenames = new Map<string, Set<string>>();
 
 /**
  * Every file name in the repository, without its directory.
@@ -100,7 +100,7 @@ export const basenamesOf = (root: string = repositoryRoot): Set<string> => {
 
 	if (remembered !== undefined) return remembered;
 
-	const found: Set<string> = new Set();
+	const found = new Set<string>();
 
 	const walk = (directory: string): void => {
 		for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
@@ -173,14 +173,14 @@ export const ignoredIn = (root: string, references: string[]): Set<string> => {
  * the orphan the validator reports rather than a skill with a missing field.
  *
  */
-export type Skill = {
+export interface Skill {
 	directory: string;
 	path: string;
 	manifest: string | null;
 	frontmatter: ReturnType<typeof frontmatterOf> | null;
 	lines: number;
 	files: string[];
-};
+}
 
 /**
  * Reads every skill directory.
@@ -221,12 +221,12 @@ export const skillsOf = (root: string = repositoryRoot): Skill[] => {
  * validator reports on both.
  *
  */
-export type Rule = {
+export interface Rule {
 	file: string;
 	path: string;
 	source: string;
 	frontmatter: ReturnType<typeof frontmatterOf>;
-};
+}
 
 /**
  * Reads every rule under `.claude/rules`, index excluded.
@@ -255,12 +255,12 @@ export const rulesOf = (root: string = repositoryRoot): Rule[] => {
  * One rule fixture, as read from `tools/claude/rule-fixtures`.
  *
  */
-export type RuleFixture = {
+export interface RuleFixture {
 	file: string;
 	path: string;
 	document: Record<string, unknown> | null;
 	problem: string | null;
-};
+}
 
 /**
  * Reads every rule fixture.
@@ -288,7 +288,7 @@ export const ruleFixturesOf = (root: string = repositoryRoot): RuleFixture[] => 
 					problem: null,
 				};
 			} catch (failure) {
-				return { file, path: full, document: null, problem: `${failure}` };
+				return { file, path: full, document: null, problem: `${String(failure)}` };
 			}
 		});
 };
@@ -301,12 +301,12 @@ export const ruleFixturesOf = (root: string = repositoryRoot): RuleFixture[] => 
  * a `problem` and an empty document.
  *
  */
-export type Evals = {
+export interface Evals {
 	file: string;
 	path: string;
 	document: Record<string, unknown> | null;
 	problem: string | null;
-};
+}
 
 /**
  * Reads every eval suite.
@@ -338,7 +338,7 @@ export const evalsOf = (root: string = repositoryRoot): Evals[] => {
 					file,
 					path: full,
 					document: null,
-					problem: `${failure}`,
+					problem: `${String(failure)}`,
 				};
 			}
 		});
@@ -381,7 +381,7 @@ export const settingsOf = (
 			path: full,
 			present: true,
 			document: null,
-			problem: `${failure}`,
+			problem: `${String(failure)}`,
 		};
 	}
 };
@@ -406,11 +406,11 @@ export const scriptsOf = (root: string = repositoryRoot): Set<string> => {
  * One subagent as it sits on disk.
  *
  */
-export type Agent = {
+export interface Agent {
 	file: string;
 	path: string;
 	frontmatter: ReturnType<typeof frontmatterOf>;
-};
+}
 
 /**
  * Reads every subagent under `.claude/agents`.

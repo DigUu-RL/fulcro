@@ -92,7 +92,7 @@ const evaluate = (binding: string): unknown => {
 
 	if (match === null) throw new Error(`${binding} was not emitted`);
 
-	return new Function(`return ${match[1]};`)();
+	return new Function(`return ${String(match[1])};`)();
 };
 
 /**

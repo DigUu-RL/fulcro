@@ -56,7 +56,7 @@ export const SignedInteger = <N extends IntegerWidth>(width: N): IntegerType<Sig
 	let descriptor: IntegerType<unknown> | undefined = descriptors.get(width);
 
 	if (descriptor === undefined) {
-		descriptor = createIntegerType(true, width, `SignedInteger<${width}>`);
+		descriptor = createIntegerType(true, width, `SignedInteger<${String(width)}>`);
 		descriptors.set(width, descriptor);
 	}
 

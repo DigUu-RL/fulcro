@@ -115,7 +115,7 @@ describe('pointerTo', () => {
 		expect(() => pointerTo(counting(3), index as number)).toThrowError(
 			coded(
 				new RangeError(
-					`FULCRO7016: pointerTo: position ${shown} is outside 0 to 3, where a pointer into 3 values may point.`,
+					`FULCRO7016: pointerTo: position ${String(shown)} is outside 0 to 3, where a pointer into 3 values may point.`,
 				),
 				{ operation: 'pointerTo', index: shown, length: 3 },
 			),
@@ -203,7 +203,7 @@ describe('Pointer.offset', () => {
 		expect(() => pointerTo(counting(3), 2).offset(delta)).toThrowError(
 			coded(
 				new RangeError(
-					`FULCRO7016: Pointer.offset: position ${shown} is outside 0 to 3, where a pointer into 3 values may point.`,
+					`FULCRO7016: Pointer.offset: position ${String(shown)} is outside 0 to 3, where a pointer into 3 values may point.`,
 				),
 				{ operation: 'Pointer.offset', index: shown, length: 3 },
 			),

@@ -326,7 +326,7 @@ const explainArray = (
 		factory.createBlock([complain(factory, path, 'an array', value)], true),
 	);
 
-	const index = `i${walk.counter.value++}`;
+	const index = `i${String(walk.counter.value++)}`;
 
 	const elementPath: typescript.Expression = factory.createAdd(
 		factory.createAdd(path, factory.createStringLiteral('[')),

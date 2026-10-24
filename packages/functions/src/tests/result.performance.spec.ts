@@ -18,7 +18,7 @@ const RESULTS = 10_000;
 /** Results alternating between the two variants. */
 const mixed = (): Result<number, string>[] => {
 	return [...Array(RESULTS).keys()].map((index) => {
-		return index % 2 === 0 ? success(index) : failure(`failed ${index}`);
+		return index % 2 === 0 ? success(index) : failure(`failed ${String(index)}`);
 	});
 };
 

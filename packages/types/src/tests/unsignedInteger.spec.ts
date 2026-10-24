@@ -39,7 +39,7 @@ describe('UnsignedInteger', () => {
 			expect(type.minimum).toBe(carried(width, 0n));
 			expect(type.maximum).toBe(carried(width, maximum));
 			expect(type.signed).toBe(false);
-			expect(type.name).toBe(`UnsignedInteger<${width}>`);
+			expect(type.name).toBe(`UnsignedInteger<${String(width)}>`);
 		});
 
 		it('should accept both ends and refuse one past either', () => {
@@ -47,7 +47,7 @@ describe('UnsignedInteger', () => {
 			expect(type.from(maximum)).toBe(carried(width, maximum));
 
 			expect(() => type.from(-1)).toThrow(
-				`UnsignedInteger<${width}>.from: -1 is outside [0, ${maximum}].`,
+				`UnsignedInteger<${String(width)}>.from: -1 is outside [0, ${String(maximum)}].`,
 			);
 
 			expect(() => type.from(maximum + 1n)).toThrow(RangeError);
@@ -66,7 +66,7 @@ describe('UnsignedInteger', () => {
 
 		it('should refuse a subtraction below zero', () => {
 			expect(() => type.subtract(type.from(0), type.from(1))).toThrow(
-				`UnsignedInteger<${width}>.subtract: -1${width >= 64 ? 'n' : ''} is outside [0, ${maximum}].`,
+				`UnsignedInteger<${String(width)}>.subtract: -1${width >= 64 ? 'n' : ''} is outside [0, ${String(maximum)}].`,
 			);
 		});
 
@@ -102,7 +102,7 @@ describe('UnsignedInteger', () => {
 
 			it('should negate only zero', () => {
 				expect(type.negate(of(0n))).toBe(carried(width, 0n));
-				expect(() => type.negate(of(1n))).toThrow(`UnsignedInteger<${width}>.negate`);
+				expect(() => type.negate(of(1n))).toThrow(`UnsignedInteger<${String(width)}>.negate`);
 			});
 
 			it('should refuse to step below zero', () => {

@@ -313,7 +313,7 @@ describe('Matrix', () => {
 			expect(() => MatrixOf(DoublePrecisionFloat, rows, 2)).toThrow(
 				coded(
 					new RangeError(
-						`FULCRO6035: Matrix: expected a positive integer number of rows, received ${rows}.`,
+						`FULCRO6035: Matrix: expected a positive integer number of rows, received ${String(rows)}.`,
 					),
 					{ operation: 'Matrix', dimension: 'rows', received: String(rows) },
 				),

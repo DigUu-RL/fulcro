@@ -14,7 +14,7 @@ export const memoryCatalog = {
 	FULCRO7001: {
 		kind: RangeError,
 		message: ({ operation, received }: { operation: string; received: number | string }) => {
-			return `${operation}: expected a length that is a non-negative safe integer, received ${received}.`;
+			return `${operation}: expected a length that is a non-negative safe integer, received ${String(received)}.`;
 		},
 	},
 	FULCRO7002: {
@@ -28,7 +28,7 @@ export const memoryCatalog = {
 			index: number | string;
 			length: number;
 		}) => {
-			return `${operation}: index ${index} is outside a storage of length ${length}.`;
+			return `${operation}: index ${String(index)} is outside a storage of length ${String(length)}.`;
 		},
 	},
 	FULCRO7003: {
@@ -46,13 +46,13 @@ export const memoryCatalog = {
 	FULCRO7005: {
 		kind: RangeError,
 		message: ({ operation, received }: { operation: string; received: number | string }) => {
-			return `${operation}: expected a size in bytes that is a non-negative safe integer, received ${received}.`;
+			return `${operation}: expected a size in bytes that is a non-negative safe integer, received ${String(received)}.`;
 		},
 	},
 	FULCRO7006: {
 		kind: RangeError,
 		message: ({ operation, received }: { operation: string; received: number | string }) => {
-			return `${operation}: expected an alignment that is a positive power of two, received ${received}.`;
+			return `${operation}: expected an alignment that is a positive power of two, received ${String(received)}.`;
 		},
 	},
 	FULCRO7007: {
@@ -70,7 +70,7 @@ export const memoryCatalog = {
 			available: number;
 			capacity: number;
 		}) => {
-			return `${operation}: ${requested} bytes aligned to ${alignment} were requested, but only ${available} of ${capacity} bytes remain.`;
+			return `${operation}: ${String(requested)} bytes aligned to ${String(alignment)} were requested, but only ${String(available)} of ${String(capacity)} bytes remain.`;
 		},
 	},
 	FULCRO7008: {
@@ -84,7 +84,7 @@ export const memoryCatalog = {
 			depth: number;
 			innermost: number;
 		}) => {
-			return `${operation}: frame ${depth} is not the innermost open frame, ${innermost}; frames are allocated from and left in last-in, first-out order.`;
+			return `${operation}: frame ${String(depth)} is not the innermost open frame, ${String(innermost)}; frames are allocated from and left in last-in, first-out order.`;
 		},
 	},
 	FULCRO7009: {
@@ -106,7 +106,7 @@ export const memoryCatalog = {
 			alignment: number;
 			blockSize: number;
 		}) => {
-			return `${operation}: ${requested} bytes aligned to ${alignment} do not fit a pool block of ${blockSize} bytes.`;
+			return `${operation}: ${String(requested)} bytes aligned to ${String(alignment)} do not fit a pool block of ${String(blockSize)} bytes.`;
 		},
 	},
 	FULCRO7011: {
@@ -118,7 +118,7 @@ export const memoryCatalog = {
 	FULCRO7012: {
 		kind: Error,
 		message: ({ operation, depth }: { operation: string; depth: number }) => {
-			return `${operation}: frame ${depth} was already left; enter a new one.`;
+			return `${operation}: frame ${String(depth)} was already left; enter a new one.`;
 		},
 	},
 	FULCRO7013: {
@@ -140,7 +140,7 @@ export const memoryCatalog = {
 			length: number | string;
 			available: number;
 		}) => {
-			return `${operation}: ${length} values from position ${start} do not fit in a source of ${available}.`;
+			return `${operation}: ${String(length)} values from position ${String(start)} do not fit in a source of ${String(available)}.`;
 		},
 	},
 	FULCRO7015: {
@@ -154,7 +154,7 @@ export const memoryCatalog = {
 			index: number;
 			length: number;
 		}) => {
-			return `${operation}: position ${index} is past the end of the array, which now holds ${length} values; it shrank after it was viewed.`;
+			return `${operation}: position ${String(index)} is past the end of the array, which now holds ${String(length)} values; it shrank after it was viewed.`;
 		},
 	},
 	FULCRO7016: {
@@ -168,7 +168,7 @@ export const memoryCatalog = {
 			index: number | string;
 			length: number;
 		}) => {
-			return `${operation}: position ${index} is outside 0 to ${length}, where a pointer into ${length} values may point.`;
+			return `${operation}: position ${String(index)} is outside 0 to ${String(length)}, where a pointer into ${String(length)} values may point.`;
 		},
 	},
 	FULCRO7017: {
@@ -204,7 +204,7 @@ export const memoryCatalog = {
 			start: number;
 			end: number;
 		}) => {
-			return `${operation}: address ${address} is outside ${start} to ${end}, where this pointer may point.`;
+			return `${operation}: address ${String(address)} is outside ${String(start)} to ${String(end)}, where this pointer may point.`;
 		},
 	},
 	FULCRO7020: {
@@ -220,7 +220,7 @@ export const memoryCatalog = {
 			alignment: number;
 			element: string;
 		}) => {
-			return `${operation}: address ${address} is not a multiple of ${alignment}, where a value of ${element} may start.`;
+			return `${operation}: address ${String(address)} is not a multiple of ${String(alignment)}, where a value of ${element} may start.`;
 		},
 	},
 	FULCRO7021: {
@@ -238,7 +238,7 @@ export const memoryCatalog = {
 			element: string;
 			end: number;
 		}) => {
-			return `${operation}: the ${size} bytes of ${element} at address ${address} run past ${end}, the end of where this pointer may read.`;
+			return `${operation}: the ${String(size)} bytes of ${element} at address ${String(address)} run past ${String(end)}, the end of where this pointer may read.`;
 		},
 	},
 	FULCRO7022: {
@@ -274,7 +274,7 @@ export const memoryCatalog = {
 	FULCRO7027: {
 		kind: Error,
 		message: ({ operation, name, line }: { operation: string; name: string; line: number }) => {
-			return `${operation}: '${name}' is used after it was moved at line ${line}; use the owner move returned.`;
+			return `${operation}: '${name}' is used after it was moved at line ${String(line)}; use the owner move returned.`;
 		},
 	},
 	FULCRO7028: {
@@ -292,7 +292,7 @@ export const memoryCatalog = {
 			conflict: string;
 			line: number;
 		}) => {
-			return `${operation}: the borrow '${name}' is used after ${conflict}(${owner}) at line ${line} ended it.`;
+			return `${operation}: the borrow '${name}' is used after ${conflict}(${owner}) at line ${String(line)} ended it.`;
 		},
 	},
 	FULCRO7029: {
@@ -308,7 +308,7 @@ export const memoryCatalog = {
 			owner: string;
 			line: number;
 		}) => {
-			return `${operation}: the borrow '${name}' is used after its owner '${owner}' was moved at line ${line}.`;
+			return `${operation}: the borrow '${name}' is used after its owner '${owner}' was moved at line ${String(line)}.`;
 		},
 	},
 	FULCRO7030: {

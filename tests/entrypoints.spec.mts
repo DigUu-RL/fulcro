@@ -233,9 +233,10 @@ describe.each(PACKAGE_NAMES)('%s, as a consumer sees it', (name) => {
 		for (const field of [manifest.main, manifest.types]) {
 			expect(field).toBeDefined();
 
-			expect(shipped, `${name} declares ${field}, which its tarball does not contain`).toContain(
-				asPackedPath(field as string),
-			);
+			expect(
+				shipped,
+				`${name} declares ${String(field)}, which its tarball does not contain`,
+			).toContain(asPackedPath(field as string));
 		}
 	});
 

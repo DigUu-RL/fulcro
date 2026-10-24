@@ -141,7 +141,7 @@ export const typesCatalog = {
 			offset: number;
 			available: number;
 		}) => {
-			return `${operation}: ${size} bytes at offset ${offset} do not fit in a view of ${available} bytes.`;
+			return `${operation}: ${String(size)} bytes at offset ${String(offset)} do not fit in a view of ${String(available)} bytes.`;
 		},
 	},
 	FULCRO6019: {
@@ -175,7 +175,7 @@ export const typesCatalog = {
 			maximum: number;
 			received: number;
 		}) => {
-			return `${operation}: expected an integer from ${minimum} to ${maximum}, received ${received}.`;
+			return `${operation}: expected an integer from ${String(minimum)} to ${String(maximum)}, received ${String(received)}.`;
 		},
 	},
 	FULCRO6023: {
@@ -199,7 +199,7 @@ export const typesCatalog = {
 	FULCRO6026: {
 		kind: RangeError,
 		message: ({ received }: { operation: string; received: number }) => {
-			return `Decimal.round: expected an integer number of places, received ${received}.`;
+			return `Decimal.round: expected an integer number of places, received ${String(received)}.`;
 		},
 	},
 	FULCRO6027: {
@@ -228,7 +228,7 @@ export const typesCatalog = {
 			maximum: number;
 			received: string;
 		}) => {
-			return `${operation}: expected a count from 0 to ${maximum}, received ${received}.`;
+			return `${operation}: expected a count from 0 to ${String(maximum)}, received ${received}.`;
 		},
 	},
 	FULCRO6030: {

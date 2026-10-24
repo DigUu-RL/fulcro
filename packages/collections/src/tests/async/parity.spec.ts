@@ -462,7 +462,7 @@ describe('zip', () => {
 	it('should merge pairwise and stop at the shorter', async () => {
 		const merged = AsyncSequenceCollection.from(streamOf([1, 2, 3])).zip(
 			['a', 'b'],
-			(number, letter) => `${number}${letter}`,
+			(number, letter) => `${String(number)}${letter}`,
 		);
 
 		expect(await merged.toArray()).toEqual(['1a', '2b']);
@@ -472,7 +472,7 @@ describe('zip', () => {
 		// Both sides are pulled in step, so this finishes.
 		const merged = AsyncSequenceCollection.from(endless()).zip(
 			['a', 'b'],
-			(number, letter) => `${number}${letter}`,
+			(number, letter) => `${String(number)}${letter}`,
 		);
 
 		expect(await merged.toArray()).toEqual(['0a', '1b']);
@@ -481,7 +481,7 @@ describe('zip', () => {
 	it('should zip against another stream', async () => {
 		const merged = AsyncSequenceCollection.from(streamOf([1, 2])).zip(
 			streamOf(['a', 'b']),
-			(number, letter) => `${number}${letter}`,
+			(number, letter) => `${String(number)}${letter}`,
 		);
 
 		expect(await merged.toArray()).toEqual(['1a', '2b']);
@@ -492,7 +492,7 @@ describe('zip', () => {
 			['a'],
 			async (number, letter) => {
 				await Promise.resolve();
-				return `${number}${letter}`;
+				return `${String(number)}${letter}`;
 			},
 		);
 
@@ -590,7 +590,7 @@ describe('the joins', () => {
 				regions,
 				(order) => order.region,
 				(region) => region.name,
-				(order, region) => `${order.id}:${region.manager}`,
+				(order, region) => `${String(order.id)}:${region.manager}`,
 			)
 			.toArray();
 
@@ -599,7 +599,7 @@ describe('the joins', () => {
 				regions,
 				(order) => order.region,
 				(region) => region.name,
-				(order, region) => `${order.id}:${region.manager}`,
+				(order, region) => `${String(order.id)}:${region.manager}`,
 			)
 			.toArray();
 
@@ -612,7 +612,7 @@ describe('the joins', () => {
 				regions,
 				(order) => order.region,
 				(region) => region.name,
-				(order, matches) => `${order.id}:${matches.count()}`,
+				(order, matches) => `${String(order.id)}:${String(matches.count())}`,
 			)
 			.toArray();
 
@@ -621,7 +621,7 @@ describe('the joins', () => {
 				regions,
 				(order) => order.region,
 				(region) => region.name,
-				(order, matches) => `${order.id}:${matches.count()}`,
+				(order, matches) => `${String(order.id)}:${String(matches.count())}`,
 			)
 			.toArray();
 
@@ -645,7 +645,7 @@ describe('the joins', () => {
 				regions,
 				(order) => order.region,
 				(region) => region.name,
-				(order, matches) => `${order.id}:${matches.count()}`,
+				(order, matches) => `${String(order.id)}:${String(matches.count())}`,
 			)
 			.toArray();
 

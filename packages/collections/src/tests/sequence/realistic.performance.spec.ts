@@ -79,7 +79,7 @@ beforeAll(() => {
 			placedAt: new Date(2020, 0, 1 + (index % 1_000)),
 			items: Array.from({ length: ITEMS_PER_ORDER }, (__, line) => {
 				return {
-					sku: `SKU-${(index + line) % 5_000}`,
+					sku: `SKU-${String((index + line) % 5_000)}`,
 					quantity: (line % 4) + 1,
 					unitPrice: ((index + line) % 200) + 0.99,
 				};
@@ -90,7 +90,7 @@ beforeAll(() => {
 	customers = Array.from({ length: CUSTOMERS }, (_, index) => {
 		return {
 			id: index,
-			name: `customer-${index}`,
+			name: `customer-${String(index)}`,
 			region: REGIONS[index % REGIONS.length] as Region,
 		};
 	});
@@ -226,7 +226,7 @@ describe('joining two large collections', () => {
 				customers,
 				(order) => order.customerId,
 				(customer) => customer.id,
-				(order, customer) => `${customer.name}:${order.id}`,
+				(order, customer) => `${customer.name}:${String(order.id)}`,
 			)
 			.count();
 

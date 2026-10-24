@@ -448,7 +448,7 @@ export const createMatrixOperations = <T, R extends number, C extends number>(
 					operation: `${name}.multiply`,
 					left: describeShape(element.name, rows, columns),
 					right: describeShape(element.name, shape.rows, shape.columns),
-					expected: `${shape.columns === 1 ? 'a vector' : 'a matrix'} with ${columns} rows`,
+					expected: `${shape.columns === 1 ? 'a vector' : 'a matrix'} with ${String(columns)} rows`,
 				});
 			}
 
@@ -539,7 +539,7 @@ export const convertElements = <T>(
 	if (rows.length !== rowCount) {
 		throw createError('FULCRO6038', {
 			operation,
-			expected: `${rowCount} rows`,
+			expected: `${String(rowCount)} rows`,
 			received: String(rows.length),
 		});
 	}
@@ -559,7 +559,7 @@ export const convertElements = <T>(
 		if (items.length !== columnCount) {
 			throw createError('FULCRO6038', {
 				operation,
-				expected: `${columnCount} elements in row ${row}`,
+				expected: `${String(columnCount)} elements in row ${String(row)}`,
 				received: String(items.length),
 			});
 		}
@@ -630,7 +630,7 @@ export const Matrix = <TElement extends ElementDescriptor, R extends number, C e
 					source,
 					rows,
 					columns,
-					(row, column) => `row ${row}, column ${column}`,
+					(row, column) => `row ${String(row)}, column ${String(column)}`,
 				),
 				rows,
 				columns,

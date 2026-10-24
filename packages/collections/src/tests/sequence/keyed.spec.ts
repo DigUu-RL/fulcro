@@ -145,7 +145,7 @@ describe('groupJoin', () => {
 				users,
 				(team) => team,
 				(user) => user.team,
-				(team, members) => `${team}:${members.count()}`,
+				(team, members) => `${team}:${String(members.count())}`,
 			)
 			.toArray();
 

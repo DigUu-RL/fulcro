@@ -19,7 +19,7 @@
  */
 const SPECIAL = /[.+^${}()|[\]\\]/g;
 
-const compiled: Map<string, RegExp> = new Map();
+const compiled = new Map<string, RegExp>();
 
 /**
  * Compiles one glob into the expression that decides it.
