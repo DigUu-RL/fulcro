@@ -114,6 +114,7 @@ const operand = (random: () => number, exponentSpread: number): Exact => {
 	// drawn far more often than chance would.
 	if (random() < 0.2) digits = '9'.repeat(length);
 	if (random() < 0.2) digits = `1${'0'.repeat(length - 1)}`;
+
 	if (random() < 0.2) {
 		digits = `${digits.slice(0, Math.max(1, length - 3))}500`.slice(0, length);
 	}
@@ -143,8 +144,10 @@ const literal = (value: Exact): string =>
  */
 const exactSum = (left: Exact, right: Exact): Exact => {
 	const exponent: number = Math.min(left.exponent, right.exponent);
+
 	const signed = (value: Exact): bigint =>
 		(value.negative ? -1n : 1n) * value.coefficient * 10n ** BigInt(value.exponent - exponent);
+
 	const sum: bigint = signed(left) + signed(right);
 
 	return { negative: sum < 0n, coefficient: sum < 0n ? -sum : sum, exponent };
@@ -197,6 +200,7 @@ describe('Decimal', () => {
 			const ones = '1234567890123456789012345678901234';
 
 			expect(D(`${ones}.5`).toString()).toBe('1.234567890123456789012345678901234e+33');
+
 			expect(D(`${ones.slice(0, 33)}5.5`).toString()).toBe(
 				'1.234567890123456789012345678901236e+33',
 			);
@@ -222,6 +226,7 @@ describe('Decimal', () => {
 			expect(D('9.999999999999999999999999999999999e6144').toString()).toBe(
 				'9.999999999999999999999999999999999e+6144',
 			);
+
 			expect(D('1e6145').toString()).toBe('Infinity');
 			expect(D('1e-6176').toString()).toBe('1e-6176');
 			expect(D('1e-6177').toString()).toBe('0');
@@ -272,14 +277,17 @@ describe('Decimal', () => {
 			const half = D('0.5');
 
 			expect(nines.add(half).toString()).toBe('1e+34');
+
 			expect(nines.add(half, 'truncate').toString()).toBe(
 				'9.999999999999999999999999999999999e+33',
 			);
+
 			expect(
 				D(`${'9'.repeat(33)}8`)
 					.add(half)
 					.toString(),
 			).toBe('9.999999999999999999999999999999998e+33');
+
 			expect(
 				D(`${'9'.repeat(33)}8`)
 					.add(half, 'halfAwayFromZero')
@@ -292,13 +300,17 @@ describe('Decimal', () => {
 			const tiny = D('1e-6000');
 
 			expect(large.add(tiny).toString()).toBe('1e+6000');
+
 			expect(large.add(tiny, 'ceiling').toString()).toBe(
 				'1.000000000000000000000000000000001e+6000',
 			);
+
 			expect(large.subtract(tiny).toString()).toBe('1e+6000');
+
 			expect(large.subtract(tiny, 'truncate').toString()).toBe(
 				'9.999999999999999999999999999999999e+5999',
 			);
+
 			expect(large.negate().subtract(tiny, 'floor').toString()).toBe(
 				'-1.000000000000000000000000000000001e+6000',
 			);
@@ -329,6 +341,7 @@ describe('Decimal', () => {
 				if (sum.coefficient === 0n) continue;
 
 				const expected: string = D(referenceRound(sum, mode)).toString();
+
 				const actual: string = D(literal(left))
 					.add(D(literal(right)), mode)
 					.toString();
@@ -364,6 +377,7 @@ describe('Decimal', () => {
 			expect(largest.add(place).toString()).toBe('Infinity');
 			expect(largest.add(place, 'truncate').toString()).toBe(largest.toString());
 			expect(largest.add(place, 'floor').toString()).toBe(largest.toString());
+
 			expect(largest.negate().subtract(place, 'ceiling').toString()).toBe(
 				largest.negate().toString(),
 			);
@@ -384,6 +398,7 @@ describe('Decimal', () => {
 				const left: Exact = operand(random, 60);
 				const right: Exact = operand(random, 60);
 				const mode = MODES[index % MODES.length] as RoundingMode;
+
 				const product: Exact = {
 					negative: left.negative !== right.negative,
 					coefficient: left.coefficient * right.coefficient,
@@ -391,6 +406,7 @@ describe('Decimal', () => {
 				};
 
 				const expected: string = D(referenceRound(product, mode)).toString();
+
 				const actual: string = D(literal(left))
 					.multiply(D(literal(right)), mode)
 					.toString();
@@ -405,9 +421,11 @@ describe('Decimal', () => {
 
 		it('should overflow and underflow at the ends of the format', () => {
 			expect(D('1e6144').multiply(D('10')).toString()).toBe('Infinity');
+
 			expect(D('1e6144').multiply(D('10'), 'truncate').toString()).toBe(
 				'9.999999999999999999999999999999999e+6144',
 			);
+
 			expect(D('1e-6176').multiply(D('0.1')).toString()).toBe('0');
 			expect(D('-1e-6176').multiply(D('0.5')).toString()).toBe('-0');
 			expect(D('-1e-6176').multiply(D('0.5'), 'floor').toString()).toBe('-1e-6176');
@@ -449,8 +467,10 @@ describe('Decimal', () => {
 					const quotient: string = D(literal(left))
 						.divide(D(literal(right)), mode)
 						.toExponential(33);
+
 					const [mantissa = '', power] = quotient.split('e');
 					const digits: string = mantissa.replace('.', '');
+
 					const q: Exact = {
 						negative: false,
 						coefficient: BigInt(digits),
@@ -460,12 +480,15 @@ describe('Decimal', () => {
 					// Scale everything to integers at a common exponent and
 					// compare q × right with left, exactly.
 					const base: number = Math.min(q.exponent + right.exponent, left.exponent);
+
 					const scale = (value: bigint, exponent: number): bigint =>
 						value * 10n ** BigInt(exponent - base);
+
 					const product: bigint = scale(
 						q.coefficient * right.coefficient,
 						q.exponent + right.exponent,
 					);
+
 					const target: bigint = scale(left.coefficient, left.exponent);
 					const unit: bigint = scale(right.coefficient, q.exponent + right.exponent);
 
@@ -521,15 +544,19 @@ describe('Decimal', () => {
 				const left: Exact = operand(random, 30);
 				const right: Exact = operand(random, 30);
 				const base: number = Math.min(left.exponent, right.exponent);
+
 				const a: bigint =
 					(left.negative ? -1n : 1n) * left.coefficient * 10n ** BigInt(left.exponent - base);
+
 				const b: bigint =
 					(right.negative ? -1n : 1n) * right.coefficient * 10n ** BigInt(right.exponent - base);
+
 				const r: bigint = a % b;
 
 				const expected: string = D(
 					`${r < 0n || (r === 0n && left.negative) ? '-' : ''}${r < 0n ? -r : r}e${base}`,
 				).toString();
+
 				const actual: string = D(literal(left))
 					.remainder(D(literal(right)))
 					.toString();
@@ -571,9 +598,11 @@ describe('Decimal', () => {
 
 		it('should refuse places that are not an integer, and an unknown mode', () => {
 			expect(() => D('1').round(1.5)).toThrow(RangeError);
+
 			expect(() => D('1').round(2, 'halfUp' as RoundingMode)).toThrow(
 				'Decimal.round: expected a rounding mode of ceiling, floor, truncate, halfEven, halfAwayFromZero, received "halfUp".',
 			);
+
 			expect(() => D('1').add(D('1'), 'up' as RoundingMode)).toThrow(RangeError);
 		});
 	});
@@ -715,6 +744,7 @@ describe('Decimal', () => {
 
 		it('should format for a locale without passing through a number', () => {
 			expect(D('1234567.891').toLocaleString('pt-BR')).toBe('1.234.567,891');
+
 			expect(
 				D('12345678901234567890.12').toLocaleString('en-US', {
 					maximumFractionDigits: 2,
@@ -740,9 +770,11 @@ describe('Decimal', () => {
 			expect(D('1e40').toBigInt()).toBe(10n ** 40n);
 			expect(D('-12').toBigInt()).toBe(-12n);
 			expect(D('-0').toBigInt()).toBe(0n);
+
 			expect(() => D('1.5').toBigInt()).toThrow(
 				'Decimal.toBigInt: expected an integer, received 1.5.',
 			);
+
 			expect(() => D('Infinity').toBigInt()).toThrow(RangeError);
 		});
 
@@ -781,6 +813,7 @@ describe('Decimal', () => {
 			expect(() => D(2).power(D('1.5'))).toThrow(
 				'Decimal.power: expected an integer exponent, received 1.5.',
 			);
+
 			expect(() => D(2).power(D('Infinity'))).toThrow(RangeError);
 			expect(() => D(2).power(D('NaN'))).toThrow(RangeError);
 		});
@@ -793,6 +826,7 @@ describe('Decimal', () => {
 				const base: Exact = operand(random, 20);
 				const power: number = Math.floor(random() * 9);
 				const mode = MODES[index % MODES.length] as RoundingMode;
+
 				const exact: Exact = {
 					negative: base.negative && power % 2 === 1,
 					coefficient: base.coefficient ** BigInt(power),
@@ -840,6 +874,7 @@ describe('Decimal', () => {
 				readonly size: 16;
 				readonly alignment: 16;
 			}>();
+
 			expect('~layout' in D('1')).toBe(false);
 		});
 

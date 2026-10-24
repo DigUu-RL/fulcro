@@ -104,7 +104,7 @@ describe('spawn', () => {
 			const sibling = scope.spawn(controlledWork<number>().work);
 
 			const task = scope.spawn(() => Promise.reject(thrown));
-			const settled: Result<unknown, unknown> = await task.settled;
+			const settled: Result<unknown> = await task.settled;
 			const failure: unknown = settled.isFailure() ? settled.error : undefined;
 
 			expect(isFulcroError(failure, 'FULCRO3013')).toBe(true);
@@ -306,7 +306,9 @@ describe('the first failure', () => {
 		scope.spawn(
 			(token) =>
 				new Promise((_resolve, reject) => {
-					token.onCancelled(() => reject(new Error('answering the cancel')));
+					token.onCancelled(() => {
+						reject(new Error('answering the cancel'));
+					});
 				}),
 		);
 
@@ -591,7 +593,7 @@ describe('types', () => {
 	it('should be awaitable as its value, and settle as a Result', () => {
 		expectTypeOf<Awaited<Task<number>>>().toEqualTypeOf<number>();
 
-		expectTypeOf<Task<number>['settled']>().toEqualTypeOf<Promise<Result<number, unknown>>>();
+		expectTypeOf<Task<number>['settled']>().toEqualTypeOf<Promise<Result<number>>>();
 	});
 
 	it('should be async disposable, so await using ends it', () => {

@@ -66,6 +66,7 @@ describe('createStackAllocator', () => {
 
 			throw new Error('leaving early');
 		}).toThrowError('leaving early');
+
 		expect(inside?.isLive()).toBe(false);
 		expect(stack.allocate(64, 8).isLive()).toBe(true);
 	});
@@ -99,7 +100,10 @@ describe('createStackAllocator', () => {
 				},
 			),
 		);
-		expect(() => outer[Symbol.dispose]()).toThrowError(
+
+		expect(() => {
+			outer[Symbol.dispose]();
+		}).toThrowError(
 			coded(
 				new Error(
 					'FULCRO7008: StackAllocator.enter()[Symbol.dispose]: frame 1 is not the innermost open frame, 2; frames are allocated from and left in last-in, first-out order.',
@@ -111,6 +115,7 @@ describe('createStackAllocator', () => {
 				},
 			),
 		);
+
 		expect(() => stack.allocate(8, 8)).toThrowError(
 			coded(
 				new Error(
@@ -171,6 +176,7 @@ describe('createStackAllocator', () => {
 				},
 			),
 		);
+
 		expect(stack.allocate(29, 1).bytes.byteOffset).toBe(3);
 	});
 

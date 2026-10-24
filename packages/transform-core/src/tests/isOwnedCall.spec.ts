@@ -59,6 +59,7 @@ const callIn = (name: string): typescript.CallExpression => {
 	const source = program.getSourceFile(
 		path.join(workspace.root, 'src', name).split(path.sep).join('/'),
 	) as typescript.SourceFile;
+
 	const statement = source.statements[1] as typescript.ExpressionStatement;
 
 	return statement.expression as typescript.CallExpression;

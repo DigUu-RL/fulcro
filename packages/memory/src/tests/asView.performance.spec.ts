@@ -64,7 +64,9 @@ describe('asView, counted', () => {
 		const view: View<number> = asView(storage, 0, 10);
 
 		expect(() => view.get(10)).toThrowError(RangeError);
-		expect(() => view.set(-1, 0)).toThrowError(RangeError);
+		expect(() => {
+			view.set(-1, 0);
+		}).toThrowError(RangeError);
 		expect(counts).toEqual({ reads: 0, writes: 0 });
 	});
 

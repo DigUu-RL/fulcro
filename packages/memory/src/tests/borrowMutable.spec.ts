@@ -26,6 +26,7 @@ import { coded } from './coded';
 describe('borrowMutable', () => {
 	it('should write the owned storage itself', () => {
 		const values: number[] = [0, 0, 0];
+
 		const owner: Owned<number> = own((): Storage<number> => ({
 			length: 3,
 			get: (index: number): number => values[index] as number,
@@ -33,6 +34,7 @@ describe('borrowMutable', () => {
 				values[index] = value;
 			},
 		}));
+
 		const scores: MutableBorrow<number> = borrowMutable(owner);
 
 		scores.set(1, 42);

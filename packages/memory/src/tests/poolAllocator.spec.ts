@@ -25,6 +25,7 @@ describe('createPoolAllocator', () => {
 
 	it('should take blocks back in any order', () => {
 		const pool: PoolAllocator = createPoolAllocator(16, 3);
+
 		const [first, second, third] = [0, 1, 2].map(() => pool.allocate(16, 16)) as [
 			Allocation & Disposable,
 			Allocation & Disposable,
@@ -114,7 +115,9 @@ describe('createPoolAllocator', () => {
 		const otherPool: Allocation = createPoolAllocator(16, 2).allocate(16, 8);
 
 		for (const allocation of [elsewhere, otherPool]) {
-			expect(() => pool.deallocate(allocation)).toThrowError(
+			expect(() => {
+				pool.deallocate(allocation);
+			}).toThrowError(
 				coded(
 					new Error(
 						'FULCRO7011: PoolAllocator.deallocate: the allocation was not made by this allocator.',
@@ -133,7 +136,9 @@ describe('createPoolAllocator', () => {
 
 		const second: Allocation = pool.allocate(16, 8);
 
-		expect(() => pool.deallocate(first)).toThrowError(
+		expect(() => {
+			pool.deallocate(first);
+		}).toThrowError(
 			coded(
 				new Error(
 					'FULCRO7009: PoolAllocator.deallocate: the memory was released by its allocator, and may already hold other values.',
@@ -141,6 +146,7 @@ describe('createPoolAllocator', () => {
 				{ operation: 'PoolAllocator.deallocate' },
 			),
 		);
+
 		expect(second.isLive()).toBe(true);
 	});
 
@@ -153,6 +159,7 @@ describe('createPoolAllocator', () => {
 				{ operation: 'createPoolAllocator', received: -1 },
 			),
 		);
+
 		expect(() => createPoolAllocator(8, 1.5)).toThrowError(
 			coded(
 				new RangeError(
@@ -227,7 +234,9 @@ describe('createPoolAllocator', () => {
 
 		message[Symbol.dispose]();
 
-		expect(() => pool.deallocate(message)).toThrow(expect.objectContaining({ code: 'FULCRO7009' }));
+		expect(() => {
+			pool.deallocate(message);
+		}).toThrow(expect.objectContaining({ code: 'FULCRO7009' }));
 	});
 
 	it('should be an allocator with a deallocate, and not a domain', () => {

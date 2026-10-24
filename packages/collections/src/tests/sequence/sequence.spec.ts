@@ -84,6 +84,7 @@ describe('SequenceCollection Unit Tests', () => {
 
 	it('should count sized sources without traversing them', () => {
 		const set = new Set([1, 2, 3]);
+
 		const map = new Map([
 			['a', 1],
 			['b', 2],
@@ -115,12 +116,14 @@ describe('SequenceCollection Unit Tests', () => {
 		expect(numbers.skip(3).count()).toBe(1);
 		expect(numbers.skip(99).count()).toBe(0);
 		expect(numbers.orderBy((n) => n).count()).toBe(4);
+
 		expect(
 			numbers
 				.select((n) => n)
 				.take(2)
 				.count(),
 		).toBe(2);
+
 		expect(traversals).toBe(0);
 	});
 
@@ -169,10 +172,12 @@ describe('SequenceCollection Unit Tests', () => {
 
 		expect(grouped.length).toBe(2);
 		expect(grouped[0]?.key).toBe('A');
+
 		expect(grouped[0]?.toArray()).toEqual([
 			{ category: 'A', val: 1 },
 			{ category: 'A', val: 3 },
 		]);
+
 		expect(grouped[1]?.key).toBe('B');
 	});
 
@@ -232,8 +237,10 @@ describe('SequenceCollection Unit Tests', () => {
 			(i) => i.id,
 			(i) => i.val,
 		);
+
 		expect(map.get('x')).toBe(100);
 		expect(map.get('y')).toBe(200);
+
 		expect(() => items.toMap((i) => 'same-key')).toThrow(
 			'An item with the same key has already been added.',
 		);
@@ -255,6 +262,7 @@ describe('SequenceCollection Unit Tests', () => {
 			{ id: 1, name: 'A' },
 			{ id: 2, name: 'B' },
 		]);
+
 		const right = [
 			{ fk: 1, score: 100 },
 			{ fk: 1, score: 90 },

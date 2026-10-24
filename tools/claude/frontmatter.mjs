@@ -61,6 +61,7 @@ const closingQuote = (text) => {
 		}
 
 		if (text[at] !== quote) continue;
+
 		if (quote === "'" && text[at + 1] === "'") {
 			at += 1;
 			continue;

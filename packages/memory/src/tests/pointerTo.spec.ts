@@ -27,6 +27,7 @@ const Point = struct('Point', {
 	x: SinglePrecisionFloat,
 	y: SinglePrecisionFloat,
 });
+
 type Point = Struct<typeof Point>;
 
 /**
@@ -84,6 +85,7 @@ describe('pointerTo', () => {
 		const end: Pointer<number> = pointerTo(counting(3), 3);
 
 		expect(end.index).toBe(3);
+
 		expect(() => end.get()).toThrowError(
 			coded(new RangeError('FULCRO7002: Pointer.get: index 3 is outside a storage of length 3.'), {
 				operation: 'Pointer.get',
@@ -91,7 +93,10 @@ describe('pointerTo', () => {
 				length: 3,
 			}),
 		);
-		expect(() => end.set(0)).toThrowError(
+
+		expect(() => {
+			end.set(0);
+		}).toThrowError(
 			coded(new RangeError('FULCRO7002: Pointer.set: index 3 is outside a storage of length 3.'), {
 				operation: 'Pointer.set',
 				index: 3,
@@ -132,6 +137,7 @@ describe('pointerTo', () => {
 		expect(() =>
 			pointerTo(pointerTo(counting(2), 0) as unknown as Storage<number>, 0),
 		).toThrowError(expected);
+
 		expect(() => pointerTo(referenceTo(0) as unknown as Storage<number>, 0)).toThrowError(expected);
 	});
 

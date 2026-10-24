@@ -48,6 +48,7 @@ const pair = Pair.from([
 	[1, 2, 3],
 	[4, 5, 6],
 ]);
+
 const tall = Tall.from([
 	[7, 8],
 	[9, 10],
@@ -222,6 +223,7 @@ describe('Matrix', () => {
 					]),
 				),
 			).toBe(true);
+
 			expect(Pair.equals(pair, Pair.negate(pair))).toBe(false);
 		});
 
@@ -243,6 +245,7 @@ describe('Matrix', () => {
 				readonly size: 48;
 				readonly alignment: 4;
 			}>();
+
 			expectTypeOf<Matrix<Decimal, 4, 4>['~layout']>().toEqualTypeOf<{
 				readonly size: 256;
 				readonly alignment: 16;
@@ -255,6 +258,7 @@ describe('Matrix', () => {
 
 		it('should be a field of a struct, laid out as its type declares', () => {
 			const Transform = MatrixOf(SinglePrecisionFloat, 3, 4);
+
 			const Placed = struct('Placed', {
 				tag: UnsignedInteger(8),
 				transform: Transform,
@@ -265,17 +269,20 @@ describe('Matrix', () => {
 				size: 48,
 				alignment: 4,
 			});
+
 			expectTypeOf(Placed.layout.fields.transform.size).toEqualTypeOf<48>();
 		});
 
 		it('should write its elements into bytes and read them back', () => {
 			const Placed = struct('Placed', { transform: Pair });
+
 			const value = Placed.from({
 				transform: [
 					[1, 2, 3],
 					[4, 5, 6],
 				],
 			});
+
 			const view = new DataView(new ArrayBuffer(Placed.layout.size));
 
 			Placed.write(view, 0, value);
@@ -339,6 +346,7 @@ describe('Matrix', () => {
 					},
 				),
 			);
+
 			expect(() =>
 				Pair.from([
 					[1, 2, 3],
@@ -476,6 +484,7 @@ const compileRejected = (packageName: string): string => {
 
 describe.each(COMPILERS)('Matrix shapes at compile time, on %s', (_label, name) => {
 	const report: string = compileRejected(name);
+
 	const lines: number[] = [
 		...new Set(
 			[...report.matchAll(/rejected\.fixture\.ts[:(](\d+)/g)].map((match) => Number(match[1])),
@@ -484,10 +493,13 @@ describe.each(COMPILERS)('Matrix shapes at compile time, on %s', (_label, name) 
 
 	it('should refuse a product whose shapes do not meet, quoting why', () => {
 		expect(lines).toContain(22);
+
 		expect(report).toContain(
 			'Cannot multiply Matrix<T, 3, 4> by Vector<T, 2, 1>. Expected a vector with 4 rows.',
 		);
+
 		expect(lines).toContain(25);
+
 		expect(report).toContain(
 			'Cannot multiply Matrix<T, 3, 4> by Matrix<T, 3, 4>. Expected a matrix with 4 rows.',
 		);

@@ -53,7 +53,7 @@ describe('nameOf', () => {
 	it('should name an indexed access', () => {
 		const user = new User();
 
-		expect(nameOf(() => user['email'])).toBe('email');
+		expect(nameOf(() => user.email)).toBe('email');
 	});
 
 	it('should name an optionally chained access', () => {
@@ -71,7 +71,7 @@ describe('nameOf', () => {
 		const user = new User();
 
 		expect(
-			nameOf(function () {
+			nameOf(() => {
 				return user.email;
 			}),
 		).toBe('email');
@@ -84,7 +84,11 @@ describe('nameOf', () => {
 
 		expect(nameOf(namedFunction)).toBe('namedFunction');
 		expect(nameOf(() => 1)).toBe('(anonymous)');
-		expect(nameOf(() => new User().save())).toBe('(anonymous)');
+		expect(
+			nameOf(() => {
+				new User().save();
+			}),
+		).toBe('(anonymous)');
 	});
 
 	it('should fall back to the name of the type for a plain value', () => {

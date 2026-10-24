@@ -136,6 +136,7 @@ describe('asReadOnlyView', () => {
 
 	it('should refuse every access once the allocator released its memory', () => {
 		const arena = createArenaAllocator(64);
+
 		const view: ReadOnlyView<number> = asReadOnlyView(
 			allocate(
 				{
@@ -188,9 +189,11 @@ describe('asReadOnlyView types', () => {
 
 		expectTypeOf(asReadOnlyView(levels)).toEqualTypeOf<ReadOnlyView<string>>();
 		expectTypeOf(asReadOnlyView(counting(1))).toEqualTypeOf<ReadOnlyView<number>>();
+
 		expectTypeOf(asReadOnlyView(asView(counting(1)).readOnly())).toEqualTypeOf<
 			ReadOnlyView<number>
 		>();
+
 		expectTypeOf(asReadOnlyView(referenceTo(true))).toEqualTypeOf<ReadOnlyView<boolean>>();
 	});
 

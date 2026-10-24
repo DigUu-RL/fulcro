@@ -70,6 +70,7 @@ describe('ComplexNumber', () => {
 			expect(Complex.is({ real: 3, imaginary: 4 })).toBe(false);
 			expect(Complex.is(Object.freeze({ real: 3 }))).toBe(false);
 			expect(Complex.is(Object.freeze({ real: 3, imaginary: 4, other: 0 }))).toBe(false);
+
 			expect(
 				ComplexNumberOf(SinglePrecisionFloat).is(Complex.from({ real: 0.1, imaginary: 0 })),
 			).toBe(false);
@@ -99,6 +100,7 @@ describe('ComplexNumber', () => {
 				real: 1,
 				imaginary: 2,
 			});
+
 			expect(Complex.divide(Complex.from({ real: 1, imaginary: 1 }), Complex.from(2))).toEqual({
 				real: 0.5,
 				imaginary: 0.5,
@@ -112,6 +114,7 @@ describe('ComplexNumber', () => {
 
 			expect(quotient.real).toBeNaN();
 			expect(quotient.imaginary).toBeNaN();
+
 			expect(() =>
 				ComplexNumberOf(SignedInteger(32)).divide(
 					ComplexNumberOf(SignedInteger(32)).from(1),
@@ -122,6 +125,7 @@ describe('ComplexNumber', () => {
 
 		it('should conjugate and scale', () => {
 			expect(Complex.conjugate(value)).toEqual({ real: 3, imaginary: -4 });
+
 			expect(Complex.scale(value, DoublePrecisionFloat.from(2))).toEqual({
 				real: 6,
 				imaginary: 8,
@@ -131,6 +135,7 @@ describe('ComplexNumber', () => {
 		it('should be exact over fractions', () => {
 			const Ratio = Fraction(SignedInteger(32));
 			const Exact = ComplexNumberOf(Ratio);
+
 			const third = Exact.from({
 				real: { numerator: 1, denominator: 3 } as never,
 				imaginary: 0 as never,
@@ -154,6 +159,7 @@ describe('ComplexNumber', () => {
 				readonly size: 8;
 				readonly alignment: 4;
 			}>();
+
 			expectTypeOf<ComplexNumber<BigInteger>>().not.toMatchTypeOf<Layout<number, number>>();
 		});
 
@@ -195,6 +201,7 @@ describe('ComplexNumber', () => {
 					},
 				),
 			);
+
 			expect(() => Complex.from({ real: 1, imaginary: 0, other: 2 } as never)).toThrow(
 				coded(
 					new TypeError(

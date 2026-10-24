@@ -49,6 +49,7 @@ const compile = (fileName: string): Compiled => {
 	const fixture: string = path.resolve(HERE, fileName);
 	const reflect = require('@fulcro/reflect/transformer').default as TransformerEntry;
 	const collections = require('@fulcro/collections/transformer').default as TransformerEntry;
+
 	const program: ts.Program = ts.createProgram([fixture], {
 		target: ts.ScriptTarget.ES2022,
 		module: ts.ModuleKind.ESNext,
@@ -57,6 +58,7 @@ const compile = (fileName: string): Compiled => {
 		noEmitOnError: false,
 		skipLibCheck: true,
 	});
+
 	const errors: readonly ts.Diagnostic[] = ts
 		.getPreEmitDiagnostics(program, program.getSourceFile(fixture))
 		.filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error);
@@ -68,9 +70,11 @@ const compile = (fileName: string): Compiled => {
 	}
 
 	const refused: ts.Diagnostic[] = [];
+
 	const extras = {
 		addDiagnostic: (diagnostic: ts.Diagnostic) => refused.push(diagnostic),
 	};
+
 	let emitted = '';
 
 	program.emit(
@@ -138,6 +142,7 @@ describe('the mathematics types and constantOf across the package boundary', () 
 		};
 
 		expect(holderLayout).toEqual(Holder.layout);
+
 		expect(holderLayout).toMatchObject({
 			size: 52,
 			alignment: 4,
@@ -160,6 +165,7 @@ describe('the mathematics types and constantOf across the package boundary', () 
 		expect(String(refusal.messageText)).toContain(
 			"'Matrix' is only declared in a declaration file, whose value the compiler cannot see",
 		);
+
 		expect(file.text.split(/\r?\n/)[line]).toContain('constantOf(');
 	});
 });

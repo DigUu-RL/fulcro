@@ -21,6 +21,7 @@ const nativeBigInt: BigIntConstructor = globalThis.BigInt;
 
 beforeEach(() => {
 	conversions = 0;
+
 	globalThis.BigInt = new Proxy(nativeBigInt, {
 		apply: (target, receiver, argumentsList) => {
 			conversions++;

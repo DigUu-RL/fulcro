@@ -52,6 +52,7 @@ describe('tryCatch', () => {
 		expect(result.error).not.toBeNull();
 		expect(result.error).toBeInstanceOf(Error);
 		expect((result.error as Error).cause).toBe(thrown);
+
 		expect(result.error).toMatchObject({
 			code: 'FULCRO2001',
 			message: `FULCRO2001: Operation rejected with ${String(thrown)}`,
@@ -71,6 +72,7 @@ describe('tryCatch', () => {
 
 	it('should return a result that tells its variant by method', async () => {
 		const succeeded = await tryCatch(async () => 1);
+
 		const failed = await tryCatch(async () => {
 			throw new Error('x');
 		});

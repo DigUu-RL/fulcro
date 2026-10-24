@@ -28,7 +28,7 @@ const parsePath = (accessor: PathAccessor): string | null => {
 		.replace(/[;\s}]+$/, '')
 		.trim();
 
-	const matched: RegExpMatchArray | null = source.match(PATH_PATTERN);
+	const matched: RegExpMatchArray | null = PATH_PATTERN.exec(source);
 
 	if (matched === null) return null;
 

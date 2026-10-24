@@ -83,6 +83,7 @@ describe('createPoolAllocator, counted', () => {
 		const marked: number = taken.filter(
 			(allocation) => new Uint8Array(allocation.bytes.buffer)[allocation.bytes.byteOffset] === 0xaa,
 		).length;
+
 		const again = new Set(
 			Array.from({ length: BLOCKS }, () => pool.allocate(64, 8).bytes.byteOffset),
 		);

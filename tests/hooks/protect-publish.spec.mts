@@ -60,6 +60,7 @@ describe('publishing', () => {
 describe('merging', () => {
 	it('refuses landing a pull request', () => {
 		expect(review({ command: 'gh pr merge 12 --squash' })).not.toBeNull();
+
 		expect(
 			review({
 				command: '"C:\\Program Files\\GitHub CLI\\gh.exe" pr merge 12',

@@ -31,12 +31,15 @@ export interface WithFieldLayout {
 	readonly '~layout': {
 		readonly size: number;
 		readonly alignment: number;
-		readonly fields: {
-			readonly [field: string]: {
-				readonly size: number;
-				readonly alignment: number;
-			};
-		};
+		readonly fields: Readonly<
+			Record<
+				string,
+				{
+					readonly size: number;
+					readonly alignment: number;
+				}
+			>
+		>;
 	};
 }
 
@@ -56,7 +59,7 @@ export type FieldOf<T extends WithFieldLayout> = keyof T['~layout']['fields'] & 
  *
  * @template T Type whose layout is described.
  */
-export type TypeLayout<T extends WithLayout> = {
+export interface TypeLayout<T extends WithLayout> {
 	readonly size: T['~layout']['size'];
 	readonly alignment: T['~layout']['alignment'];
 	readonly fields: T['~layout'] extends {
@@ -70,7 +73,7 @@ export type TypeLayout<T extends WithLayout> = {
 				};
 			}
 		: Record<never, never>;
-};
+}
 
 /**
  * The error every layout utility throws when a call reached runtime.

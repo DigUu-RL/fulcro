@@ -86,6 +86,7 @@ describe('typeOf', () => {
 		expect(typeOf(() => 1).typeId).toBe('function');
 		expect(typeOf(async () => 1).typeId).toBe('async-function');
 		expect(typeOf(function* (): Generator<number> {}).typeId).toBe('generator-function');
+
 		expect(typeOf(async function* (): AsyncGenerator<number> {}).typeId).toBe(
 			'async-generator-function',
 		);

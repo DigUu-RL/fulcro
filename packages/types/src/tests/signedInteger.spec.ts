@@ -50,6 +50,7 @@ describe('SignedInteger', () => {
 		it('should refuse one past either end, naming the range', () => {
 			expect(() => type.from(maximum + 1n)).toThrow(RangeError);
 			expect(() => type.from(minimum - 1n)).toThrow(RangeError);
+
 			expect(() => type.from(maximum + 1n)).toThrow(
 				`SignedInteger<${width}>.from: ${maximum + 1n}n is outside [${minimum}, ${maximum}].`,
 			);
@@ -116,6 +117,7 @@ describe('SignedInteger', () => {
 			expect(() => type.divide(type.from(1), type.from(0))).toThrow(
 				`SignedInteger<${width}>.divide: division by zero.`,
 			);
+
 			expect(() => type.remainder(type.from(1), type.from(0))).toThrow(
 				`SignedInteger<${width}>.remainder: division by zero.`,
 			);
@@ -160,9 +162,11 @@ describe('SignedInteger', () => {
 				expect(type.power(of(-2n), of(3n))).toBe(carried(width, -8n));
 				expect(type.power(of(5n), of(0n))).toBe(carried(width, 1n));
 				expect(type.power(of(-1n), of(maximum))).toBe(carried(width, -1n));
+
 				expect(() => type.power(of(2n), of(BigInt(width - 1)))).toThrow(
 					`SignedInteger<${width}>.power`,
 				);
+
 				expect(() => type.power(of(2n), of(-1n))).toThrow('expected an exponent of zero or more');
 			});
 
@@ -207,6 +211,7 @@ describe('SignedInteger', () => {
 
 			it('should refuse a shift count outside the width', () => {
 				expect(() => type.shiftLeft(of(1n), of(BigInt(width)))).toThrow(RangeError);
+
 				expect(() => type.shiftRight(of(1n), of(-1n))).toThrow(
 					`SignedInteger<${width}>.shiftRight: expected a count from 0 to ${width - 1}`,
 				);

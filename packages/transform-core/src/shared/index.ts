@@ -204,6 +204,7 @@ const packageNameIn = (directory: string): string | null => {
 
 	const parent: string = path.dirname(directory);
 	const declared: string | null | undefined = manifestNameIn(directory);
+
 	const found: string | null =
 		declared !== undefined ? declared : parent === directory ? null : packageNameIn(parent);
 

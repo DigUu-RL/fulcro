@@ -116,6 +116,7 @@ export const mapConcurrent = <T, R>(
 			})();
 
 			running.add(task);
+
 			void task.then(() => {
 				running.delete(task);
 			});

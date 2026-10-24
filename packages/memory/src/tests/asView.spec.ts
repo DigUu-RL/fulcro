@@ -29,6 +29,7 @@ const Point = struct('Point', {
 	x: SinglePrecisionFloat,
 	y: SinglePrecisionFloat,
 });
+
 type Point = Struct<typeof Point>;
 
 /**
@@ -158,6 +159,7 @@ describe('asView over an array', () => {
 		names.length = 2;
 
 		expect(view.get(0)).toBe('b');
+
 		expect(() => view.get(1)).toThrowError(
 			coded(
 				new RangeError(
@@ -166,7 +168,10 @@ describe('asView over an array', () => {
 				{ operation: 'View.get', index: 2, length: 2 },
 			),
 		);
-		expect(() => view.set(1, 'z')).toThrowError(
+
+		expect(() => {
+			view.set(1, 'z');
+		}).toThrowError(
 			coded(
 				new RangeError(
 					'FULCRO7015: View.set: position 2 is past the end of the array, which now holds 2 values; it shrank after it was viewed.',
@@ -174,6 +179,7 @@ describe('asView over an array', () => {
 				{ operation: 'View.set', index: 2, length: 2 },
 			),
 		);
+
 		expect(names).toEqual(['a', 'b']);
 	});
 });
@@ -207,6 +213,7 @@ describe('asView over a pointer or a reference', () => {
 				{ operation: 'asView', start: 3, length: 3, available: 5 },
 			),
 		);
+
 		expect(() => asView(pointerTo(counting(2), 2))).toThrowError(RangeError);
 	});
 
@@ -223,6 +230,7 @@ describe('asView over a pointer or a reference', () => {
 
 	it('should observe a reference written outside the package', () => {
 		let held = 'a';
+
 		const view: View<string> = asView({
 			get: () => held,
 			set: (value: string) => {
@@ -304,7 +312,10 @@ describe('View<T>', () => {
 				{ operation: 'View.get', index, length: 2 },
 			),
 		);
-		expect(() => view.set(index, 0)).toThrowError(
+
+		expect(() => {
+			view.set(index, 0);
+		}).toThrowError(
 			coded(
 				new RangeError(`FULCRO7002: View.set: index ${shown} is outside a storage of length 2.`),
 				{ operation: 'View.set', index, length: 2 },
@@ -345,7 +356,10 @@ describe('View<T>', () => {
 				{ operation: 'Storage.get' },
 			),
 		);
-		expect(() => view.set(0, Point.from({ x: 2, y: 2 }))).toThrowError(
+
+		expect(() => {
+			view.set(0, Point.from({ x: 2, y: 2 }));
+		}).toThrowError(
 			coded(
 				new Error(
 					'FULCRO7009: Storage.set: the memory was released by its allocator, and may already hold other values.',
@@ -382,6 +396,7 @@ describe('View.subview', () => {
 				{ operation: 'View.subview', start: 2, length: 3, available: 4 },
 			),
 		);
+
 		expect(() => view.subview(5)).toThrowError(RangeError);
 		expect(() => view.subview(-1)).toThrowError(RangeError);
 	});

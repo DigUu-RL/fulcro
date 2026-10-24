@@ -39,6 +39,7 @@ const Vector3 = struct('Vector3', {
 	y: SinglePrecisionFloat,
 	z: SinglePrecisionFloat,
 });
+
 type Vector3 = Struct<typeof Vector3>;
 
 /** Declared smallest first, so that placement by alignment has to reorder it. */
@@ -135,6 +136,7 @@ describe('struct', () => {
 					};
 				}
 			>();
+
 			expectTypeOf<Struct<typeof Mixed>['~layout']>().toEqualTypeOf<
 				{ readonly size: 16; readonly alignment: 8 } & {
 					readonly fields: {
@@ -144,6 +146,7 @@ describe('struct', () => {
 					};
 				}
 			>();
+
 			expectTypeOf<Struct<typeof Outer>['~layout']>().toEqualTypeOf<
 				{ readonly size: 8; readonly alignment: 4 } & {
 					readonly fields: {
@@ -152,7 +155,9 @@ describe('struct', () => {
 					};
 				}
 			>();
+
 			expectTypeOf<Struct<typeof Wide>['~layout']['size' | 'alignment']>().toEqualTypeOf<32 | 16>();
+
 			expectTypeOf<Struct<typeof Large>['~layout']['size' | 'alignment']>().toEqualTypeOf<
 				1040 | 16
 			>();
@@ -170,6 +175,7 @@ describe('struct', () => {
 				weight: { offset: 0, size: 8, alignment: 8 },
 				count: { offset: 8, size: 2, alignment: 2 },
 			});
+
 			expect(Vector3.layout.fields.x.offset).toBe(0);
 			expect(Vector3.layout.fields.y.offset).toBe(4);
 			expect(Vector3.layout.fields.z.offset).toBe(8);
@@ -208,6 +214,7 @@ describe('struct', () => {
 					{ operation: 'struct', name: 'Account', field: 'balance' },
 				),
 			);
+
 			expect(() => struct('Loose', { value: { is: () => true } } as never)).toThrow(TypeError);
 		});
 
@@ -218,6 +225,7 @@ describe('struct', () => {
 					name: 'Empty',
 				}),
 			);
+
 			expect(() => struct('', { x: SinglePrecisionFloat })).toThrow(TypeError);
 			expect(() => struct('Indexed', { 0: SinglePrecisionFloat })).toThrow(TypeError);
 			expect(() => struct('Layout', { '~layout': SinglePrecisionFloat })).toThrow(TypeError);
@@ -258,14 +266,17 @@ describe('struct', () => {
 			}
 
 			expect(caught).toBeInstanceOf(RangeError);
+
 			expect((caught as Error).message).toBe(
 				"FULCRO6031: Mixed.from: field 'flag': UnsignedInteger<8>.from: 256 is outside [0, 255].",
 			);
+
 			expect((caught as Error).cause).toBeInstanceOf(RangeError);
 
 			// The field is where it happened, not what happened: the code stays the
 			// one the field's own conversion raised, on the outer error and the cause.
 			expect(caught).toMatchObject({ code: 'FULCRO6031' });
+
 			expect((caught as Error).cause).toMatchObject({
 				code: 'FULCRO6031',
 				message: 'FULCRO6031: UnsignedInteger<8>.from: 256 is outside [0, 255].',
@@ -279,12 +290,14 @@ describe('struct', () => {
 					field: 'z',
 				}),
 			);
+
 			expect(() => Vector3.from({ x: 1, y: 2, z: 3, w: 4 } as never)).toThrowError(
 				coded(
 					new TypeError("FULCRO6020: Vector3.from: 'w' is not a field; the fields are x, y, z."),
 					{ operation: 'Vector3.from', key: 'w', fields: 'x, y, z' },
 				),
 			);
+
 			expect(() => Vector3.from(null as never)).toThrowError(
 				coded(new TypeError('FULCRO6019: Vector3.from: expected an object, received null.'), {
 					operation: 'Vector3.from',
@@ -311,6 +324,7 @@ describe('struct', () => {
 			expect(a === b).toBe(false);
 			expect(Vector3.equals(a, b)).toBe(true);
 			expect(Vector3.equals(a, Vector3.from({ x: 1, y: 2, z: 4 }))).toBe(false);
+
 			expect(
 				Vector3.equals(Vector3.from({ x: 0, y: 0, z: 0 }), Vector3.from({ x: -0, y: 0, z: 0 })),
 			).toBe(true);
@@ -345,6 +359,7 @@ describe('struct', () => {
 				},
 			},
 		);
+
 		type Point = Struct<typeof Point>;
 
 		it('should give every value its methods, with this as the value', () => {
@@ -365,6 +380,7 @@ describe('struct', () => {
 
 		it('should keep a nested struct its own methods', () => {
 			const Segment = struct('Segment', { start: Point, end: Point });
+
 			const segment = Segment.from({
 				start: { x: 0, y: 0 },
 				end: { x: 3, y: 4 },
@@ -420,11 +436,13 @@ describe('struct', () => {
 						};
 					}
 			>();
+
 			expect(Object.getPrototypeOf(Vector3.from({ x: 1, y: 2, z: 3 }))).toBe(Object.prototype);
 		});
 
 		it('should not let a method change the value', () => {
 			const point = Point.from({ x: 1, y: 2 });
+
 			const Mutating = struct(
 				'Mutating',
 				{ x: SinglePrecisionFloat },
@@ -435,7 +453,10 @@ describe('struct', () => {
 				},
 			);
 
-			expect(() => Mutating.from({ x: 1 }).reset()).toThrow(TypeError);
+			expect(() => {
+				Mutating.from({ x: 1 }).reset();
+			}).toThrow(TypeError);
+
 			expect(() => {
 				(point as { length: unknown }).length = null;
 			}).toThrow(TypeError);
@@ -452,9 +473,11 @@ describe('struct', () => {
 					{ operation: 'struct', name: 'Clash', method: 'x' },
 				),
 			);
+
 			expect(() => struct('Indexed', { x: SinglePrecisionFloat }, { 0: () => 1 })).toThrow(
 				TypeError,
 			);
+
 			expect(() => struct('Layout', { x: SinglePrecisionFloat }, { '~layout': () => 1 })).toThrow(
 				TypeError,
 			);
@@ -474,6 +497,7 @@ describe('struct', () => {
 					},
 				),
 			);
+
 			expect(() => struct('Null', { x: SinglePrecisionFloat }, null as never)).toThrowError(
 				coded(
 					new TypeError('FULCRO6008: struct Null: expected an object of methods, received null.'),
@@ -503,6 +527,7 @@ describe('struct', () => {
 					},
 				},
 			);
+
 			type Counter = Struct<typeof Counter>;
 
 			const next: Counter = Counter.from({ value: 1 }).next();
@@ -639,7 +664,9 @@ describe('struct', () => {
 			const view = new DataView(bytes.buffer);
 			const value = Vector3.from({ x: 1, y: 2, z: 3 });
 
-			expect(() => Vector3.write(view, 4, value)).toThrowError(
+			expect(() => {
+				Vector3.write(view, 4, value);
+			}).toThrowError(
 				coded(
 					new RangeError(
 						'FULCRO6018: Vector3.write: 12 bytes at offset 4 do not fit in a view of 12 bytes.',
@@ -652,6 +679,7 @@ describe('struct', () => {
 					},
 				),
 			);
+
 			expect([...bytes].every((byte) => byte === 0)).toBe(true);
 			expect(() => Vector3.read(view, -1)).toThrow(RangeError);
 			expect(() => Vector3.read(view, 0.5)).toThrow(RangeError);

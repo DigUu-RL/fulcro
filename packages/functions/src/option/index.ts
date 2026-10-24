@@ -170,7 +170,7 @@ export const some = <T>(value: T): Some<T> => createVariant(SOME, { value });
  * result goes.
  * @returns The absent value.
  */
-export const none = <T = never>(): None<T> => ABSENT as None<T>;
+export const none = <T = never>(): None<T> => ABSENT;
 
 /**
  * Turns a nullable value into an option: `null` and `undefined` are absent,

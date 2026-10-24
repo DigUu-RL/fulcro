@@ -63,6 +63,7 @@ describe('SinglePrecisionFloat', () => {
 		expect(SinglePrecisionFloat.subtract(b, a)).toBe(Math.fround(b - a));
 		expect(SinglePrecisionFloat.multiply(a, b)).toBe(Math.fround(a * b));
 		expect(SinglePrecisionFloat.divide(a, b)).toBe(0.5);
+
 		expect(
 			SinglePrecisionFloat.remainder(SinglePrecisionFloat.from(7.5), SinglePrecisionFloat.from(2)),
 		).toBe(1.5);
@@ -72,6 +73,7 @@ describe('SinglePrecisionFloat', () => {
 		expect(SinglePrecisionFloat.maximum).toBe(3.4028234663852886e38);
 		expect(SinglePrecisionFloat.minimum).toBe(-3.4028234663852886e38);
 		expect(SinglePrecisionFloat.is(SinglePrecisionFloat.maximum)).toBe(true);
+
 		expect(SinglePrecisionFloat.increment(SinglePrecisionFloat.maximum)).toBe(
 			SinglePrecisionFloat.maximum,
 		);
@@ -90,6 +92,7 @@ describe('SinglePrecisionFloat', () => {
 
 	it('should be its own type, not a double precision one', () => {
 		expectTypeOf(SinglePrecisionFloat.from(1)).toEqualTypeOf<SinglePrecisionFloat>();
+
 		expectTypeOf<SinglePrecisionFloat>().not.toMatchTypeOf<
 			import('@/src/doublePrecisionFloat').DoublePrecisionFloat
 		>();

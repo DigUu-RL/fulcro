@@ -26,6 +26,7 @@ const Point = struct('Point', {
 	x: SinglePrecisionFloat,
 	y: SinglePrecisionFloat,
 });
+
 type Point = Struct<typeof Point>;
 
 /** Sixteen bytes, seven of them padding: a neighbour written carelessly shows. */
@@ -86,6 +87,7 @@ describe('createFixedBufferStorage', () => {
 				},
 			},
 		);
+
 		const vectors = createFixedBufferStorage(Vector, 2);
 
 		vectors.set(1, Vector.from({ x: 3, y: 4 }));
@@ -97,6 +99,7 @@ describe('createFixedBufferStorage', () => {
 	it('should hold nested structs and decimals', () => {
 		const Price = struct('Price', { amount: Decimal, at: Point });
 		const prices = createFixedBufferStorage(Price, 2);
+
 		const price = Price.from({
 			amount: Decimal.from('19.99'),
 			at: Point.from({ x: 1, y: 1 }),
@@ -113,12 +116,15 @@ describe('createFixedBufferStorage', () => {
 
 		points.set(0, Point.from({ x: 5, y: 5 }));
 
-		expect(() => points.set(0, impostor)).toThrowError(
+		expect(() => {
+			points.set(0, impostor);
+		}).toThrowError(
 			coded(
 				new TypeError('FULCRO7004: FixedBufferStorage.set: the value is not a value of Point.'),
 				{ operation: 'FixedBufferStorage.set', element: 'Point' },
 			),
 		);
+
 		expect(points.get(0).x).toBe(5);
 	});
 
@@ -160,6 +166,7 @@ describe('createFixedBufferStorage', () => {
 		expectTypeOf(createFixedBufferStorage(Point, 1)).toEqualTypeOf<Storage<Point>>();
 		expectTypeOf(createFixedBufferStorage(Point, 1).set).parameter(1).toEqualTypeOf<Point>();
 		expectTypeOf<{ x: number; y: number }>().not.toMatchTypeOf<Point>();
+
 		expectTypeOf<typeof SinglePrecisionFloat>().not.toMatchTypeOf<
 			Parameters<typeof createFixedBufferStorage>[0]
 		>();

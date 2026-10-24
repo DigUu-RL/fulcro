@@ -83,6 +83,7 @@ describe('failure', () => {
 describe('Result', () => {
 	it('should run only the branch of its own variant', () => {
 		const ran: string[] = [];
+
 		const cases = {
 			success: (): void => void ran.push('success'),
 			failure: (): void => void ran.push('failure'),

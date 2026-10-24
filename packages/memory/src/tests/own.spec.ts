@@ -38,6 +38,7 @@ describe('own', () => {
 
 	it('should own a storage written outside the package', () => {
 		const values: number[] = [3, 4];
+
 		const outside: Storage<number> = {
 			length: 2,
 			get: (index: number): number => values[index] as number,
@@ -45,6 +46,7 @@ describe('own', () => {
 				values[index] = value;
 			},
 		};
+
 		const owner: Owned<number> = own(() => outside);
 
 		borrowMutable(owner).set(0, 9);
@@ -118,6 +120,7 @@ describe('own', () => {
 				},
 			),
 		);
+
 		expect(() => own(() => null as never)).toThrow(
 			expect.objectContaining({
 				code: 'FULCRO7017',

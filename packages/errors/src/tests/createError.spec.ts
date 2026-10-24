@@ -99,6 +99,7 @@ describe('createError', () => {
 			index: 12,
 			length: 10,
 		});
+
 		expect(error.details.index).toBe(12);
 	});
 
@@ -135,6 +136,7 @@ describe('createError', () => {
 			operation: 'tryCatch',
 			thrown: null,
 		});
+
 		const fromUndefined = createError('FULCRO2001', {
 			operation: 'tryCatch',
 			thrown: undefined,

@@ -175,7 +175,7 @@ export interface Sequence<T> extends Iterable<T> {
 	 *
 	 * @returns A new array holding every element of the sequence.
 	 */
-	toArray(): Array<T>;
+	toArray(): T[];
 
 	/**
 	 * Removes the duplicated elements of the sequence using reference or value

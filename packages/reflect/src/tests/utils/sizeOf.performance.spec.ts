@@ -15,9 +15,9 @@ import { sizeOf } from '@/src/functions/utils/sizeOf';
 /** How many calls each loop makes. */
 const CALLS = 100_000;
 
-type Wide = {
+interface Wide {
 	readonly '~layout': { readonly size: 16; readonly alignment: 16 };
-};
+}
 
 /**
  * Times a loop.

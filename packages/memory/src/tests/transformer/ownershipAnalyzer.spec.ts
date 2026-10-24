@@ -135,6 +135,7 @@ describe('ownership rules at compile time', () => {
 		const start: number = first?.start ?? -1;
 
 		expect(rejected.source.text.slice(start, start + 'owner'.length)).toBe('owner');
+
 		expect(first?.messageText).toBe(
 			"FULCRO7027: move: 'owner' is used after it was moved at line 17; use the owner move returned.",
 		);
@@ -146,6 +147,7 @@ describe('ownership rules at compile time', () => {
 		expect(messages).toContain(
 			"FULCRO7028: borrow: the borrow 'reading' is used after borrowMutable(owner) at line 40 ended it.",
 		);
+
 		expect(messages).toContain(
 			"FULCRO7029: borrow: the borrow 'reading' is used after its owner 'owner' was moved at line 67.",
 		);

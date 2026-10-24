@@ -64,7 +64,9 @@ const bytesOf = (allocation: Allocation): number[] =>
 const roundTrip = (allocator: Allocator, values: number[]): number[] => {
 	const { bytes } = allocator.allocate(values.length * 8, 8);
 
-	values.forEach((value, index) => bytes.setFloat64(index * 8, value));
+	values.forEach((value, index) => {
+		bytes.setFloat64(index * 8, value);
+	});
 
 	return values.map((_, index) => bytes.getFloat64(index * 8));
 };

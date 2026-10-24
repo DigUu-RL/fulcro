@@ -113,6 +113,7 @@ describe('the ranges', () => {
 		const digits: string[] = Object.values(PACKAGE_RANGES);
 
 		expect(new Set(digits).size).toBe(digits.length);
+
 		expect(PACKAGE_RANGES).toEqual({
 			collections: '1',
 			functions: '2',

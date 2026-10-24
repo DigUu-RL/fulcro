@@ -102,6 +102,7 @@ describe('struct', () => {
 
 	it('should count a nested struct as its own fields, and a 128-bit field as two halves', () => {
 		const { view, accesses } = countingView(Tagged.layout.size);
+
 		const value = Tagged.from({
 			tag: 1,
 			position: { x: 1, y: 2, z: 3 },
@@ -170,6 +171,7 @@ describe('struct', () => {
 				},
 			},
 		);
+
 		const view = new DataView(new ArrayBuffer(Point.layout.size));
 		const prototypes = new Set<object>();
 		let ownFunctions = 0;
@@ -202,6 +204,7 @@ describe('struct', () => {
 				},
 			},
 		);
+
 		const { view, accesses } = countingView(Point.layout.size);
 
 		Point.write(view, 0, Point.from({ x: 3, y: 4 }));
@@ -233,7 +236,10 @@ describe('struct', () => {
 			view.setFloat32(offset + 4, value.y, true);
 			view.setFloat32(offset + 8, value.z, true);
 		});
-		const described: number = timed((offset) => Vector3.write(view, offset, value));
+
+		const described: number = timed((offset) => {
+			Vector3.write(view, offset, value);
+		});
 
 		expect(described).toBeLessThan(baseline * 25);
 	});

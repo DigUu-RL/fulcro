@@ -79,6 +79,7 @@ describe('optionOf', () => {
 describe('Option', () => {
 	it('should run only the branch of its own variant', () => {
 		const ran: string[] = [];
+
 		const cases = {
 			some: (): void => void ran.push('some'),
 			none: (): void => void ran.push('none'),

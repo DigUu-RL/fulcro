@@ -118,6 +118,7 @@ describe('runs', () => {
 
 	it('is not thrown off by flags sitting between the words', () => {
 		expect(runs(invocationOf(['git', 'push', '--force', 'origin']), ['git', 'push'])).toBe(true);
+
 		expect(
 			runs(invocationOf(['npm', 'run', '--silent', 'release']), ['npm', 'run', 'release']),
 		).toBe(true);
@@ -186,9 +187,11 @@ describe('deletionTargets', () => {
 	it('reports the targets of a recursive deletion, whatever spells it', () => {
 		expect(deletionTargets(invocationOf(['rm', '-rf', 'dist']))).toEqual(['dist']);
 		expect(deletionTargets(invocationOf(['rm', '-r', '-f', 'a', 'b']))).toEqual(['a', 'b']);
+
 		expect(deletionTargets(invocationOf(['Remove-Item', '-Recurse', '-Force', 'dist']))).toEqual([
 			'dist',
 		]);
+
 		expect(deletionTargets(invocationOf(['rmdir', '/s', '/q', 'dist']))).toEqual(['dist']);
 	});
 

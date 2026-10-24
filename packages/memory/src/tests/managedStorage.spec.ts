@@ -43,6 +43,7 @@ describe('createManagedStorage', () => {
 		const handlers: Storage<(() => number) | undefined> = createManagedStorage<
 			(() => number) | undefined
 		>(2, undefined);
+
 		const handler = (): number => 42;
 
 		handlers.set(1, handler);

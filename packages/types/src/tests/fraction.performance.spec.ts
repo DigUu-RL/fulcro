@@ -51,6 +51,7 @@ describe('Fraction', () => {
 	it('should grow its cost linearly with the index of the worst case', () => {
 		const Exact = Fraction(BigInteger);
 		const remainder = vi.spyOn(BigInteger, 'remainder');
+
 		const counts: number[] = [100, 200, 400].map((index) => {
 			const [smaller, larger] = fibonacci(index);
 

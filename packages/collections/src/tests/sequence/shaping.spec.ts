@@ -140,6 +140,7 @@ describe('ofType', () => {
 
 	it('should stay deferred until something reads it', () => {
 		let pulled = 0;
+
 		const source = {
 			*[Symbol.iterator](): Iterator<unknown> {
 				for (const value of ['a', 1]) {
@@ -286,6 +287,7 @@ describe('ofType and cast, written as a type', () => {
 		const admins: unknown[] = [new Admin('root')];
 
 		expect(SequenceCollection.from(strings).cast<string>().toArray()).toEqual(['a', 'b']);
+
 		expect(
 			SequenceCollection.from(admins)
 				.cast<Admin>()
@@ -307,9 +309,7 @@ describe('ofType and cast, written as a type', () => {
 	});
 
 	it('should refuse an index signature', () => {
-		interface Settings {
-			readonly [key: string]: string;
-		}
+		type Settings = Readonly<Record<string, string>>;
 
 		// Arbitrary keys leave no fixed set of properties to check, and a check
 		// over no properties would accept any object at all.
@@ -323,11 +323,10 @@ describe('ofType and cast, written as a type', () => {
 	it('should refuse before reading anything', () => {
 		// A wiring error, not a data error: there is nothing to gain by letting
 		// the chain be built and failing on the first read instead.
-		interface Settings {
-			readonly [key: string]: string;
-		}
+		type Settings = Readonly<Record<string, string>>;
 
 		let pulled = 0;
+
 		const source = {
 			*[Symbol.iterator](): Iterator<unknown> {
 				pulled++;

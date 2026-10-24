@@ -73,6 +73,7 @@ describe('what the transformer leaves behind', () => {
 				}),
 			}),
 		);
+
 		const resolved: number = timed(() => layoutOf<Pair>());
 
 		expect(resolved).toBeLessThan(baseline * 25);

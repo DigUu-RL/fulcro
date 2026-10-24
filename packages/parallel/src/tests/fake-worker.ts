@@ -195,7 +195,11 @@ export const createFakeWorkers = (options: FakeOptions = {}): FakeWorkers => {
 				inFlight++;
 				peak = Math.max(peak, inFlight);
 
-				if (options.auto === true) queueMicrotask(() => complete(incoming.id));
+				if (options.auto === true) {
+					queueMicrotask(() => {
+						complete(incoming.id);
+					});
+				}
 			},
 
 			listen: (handler: Handler): (() => void) => {

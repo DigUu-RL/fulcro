@@ -21,6 +21,7 @@ let emitted = '';
 
 beforeAll(() => {
 	const fixture: string = path.resolve(__dirname, 'layout.sample.ts');
+
 	const program: ts.Program = ts.createProgram([fixture], {
 		target: ts.ScriptTarget.ES2022,
 		module: ts.ModuleKind.ESNext,

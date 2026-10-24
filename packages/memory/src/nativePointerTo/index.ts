@@ -186,7 +186,7 @@ const createNativePointer = <T>(
 		},
 
 		at,
-	}) as NativePointer<T>;
+	});
 };
 
 /**
@@ -265,6 +265,7 @@ export function nativePointerTo<T>(
 ): NativePointer<T> {
 	if (isLinearMemory(target)) {
 		const element = third as AlignedElement<T>;
+
 		const region: Region = {
 			memory: target,
 			bytes: () => bytesOf(target),
@@ -289,6 +290,7 @@ export function nativePointerTo<T>(
 	const element = second as AlignedElement<T>;
 	const { buffer, byteOffset, byteLength } = target.bytes;
 	const memory: LinearMemory = openLinearMemory('nativePointerTo', buffer as ArrayBuffer);
+
 	const region: Region = {
 		memory,
 		bytes: () => bytesOf(memory),

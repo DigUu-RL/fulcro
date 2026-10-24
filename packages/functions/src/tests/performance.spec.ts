@@ -155,6 +155,7 @@ describe('tryCatch', () => {
 		// The shape is fixed: two properties, whatever happened. The methods
 		// are inherited, not carried by every outcome.
 		const succeeded = await tryCatch(async () => 1);
+
 		const failed = await tryCatch(async () => {
 			throw new Error('x');
 		});

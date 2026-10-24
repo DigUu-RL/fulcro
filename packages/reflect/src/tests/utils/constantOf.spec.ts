@@ -94,6 +94,7 @@ describe('constantOf', () => {
 
 		it('should infer the type of the value', () => {
 			expectTypeOf(evaluateAtRuntime(() => [1, 2])).toEqualTypeOf<number[]>();
+
 			expectTypeOf(evaluateAtRuntime(() => ({ a: 'b' }))).toEqualTypeOf<{
 				a: string;
 			}>();

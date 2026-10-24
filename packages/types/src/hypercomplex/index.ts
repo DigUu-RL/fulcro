@@ -146,11 +146,13 @@ export const createHypercomplexType = <T, TValue, TSource, TComponents>(
 ): HypercomplexType<T, TValue, TSource, TComponents> => {
 	const element: ElementType<T> = elementOf<T>(elementDescriptor, family);
 	const name: string = describeType(family, element.name);
+
 	const { make, convert, isRecord, register } = createComponentRecord<T, TValue>(
 		components,
 		element,
 		elementDescriptor,
 	);
+
 	const count: number = components.length;
 
 	let zero: T | undefined;

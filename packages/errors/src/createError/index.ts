@@ -56,7 +56,7 @@ type WithoutDetails = {
 // Fails to compile, naming the code, when a template takes no details.
 const everyTemplateTakesDetails: [WithoutDetails] extends [never] ? true : WithoutDetails = true;
 
-void everyTemplateTakesDetails;
+everyTemplateTakesDetails;
 
 /**
  * Creates the error a code names, ready to be thrown.

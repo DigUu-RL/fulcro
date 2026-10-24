@@ -63,7 +63,7 @@ describe('concat', () => {
 		// concatenated with plus a traversal of the generator.
 		expect(SequenceCollection.from([1, 2]).concat([3, 4, 5]).count()).toBe(5);
 		expect(read()).toBe(0);
-		void source;
+		source;
 	});
 });
 
@@ -80,6 +80,7 @@ describe('takeWhile', () => {
 		const taken = SequenceCollection.from([1, 2, 9, 1])
 			.takeWhile((v) => v < 3)
 			.toArray();
+
 		const filtered = SequenceCollection.from([1, 2, 9, 1])
 			.where((v) => v < 3)
 			.toArray();

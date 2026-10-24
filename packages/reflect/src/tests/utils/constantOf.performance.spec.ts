@@ -36,6 +36,7 @@ let scriptsEvaluated = 0;
 // transformer suites are given; a test body does not.
 beforeAll(() => {
 	const fixture: string = path.resolve(__dirname, '../transformer/constantOf.sample.ts');
+
 	const program: ts.Program = ts.createProgram([fixture], {
 		target: ts.ScriptTarget.ES2022,
 		module: ts.ModuleKind.ESNext,
@@ -43,9 +44,11 @@ beforeAll(() => {
 		strict: true,
 		skipLibCheck: true,
 	});
+
 	const transform = transformer(program, {}, { addDiagnostic: () => undefined });
 
 	vi.mocked(vm.runInContext).mockClear();
+
 	program.emit(program.getSourceFile(fixture), () => undefined, undefined, false, {
 		before: [transform],
 	});
@@ -80,6 +83,7 @@ describe('constantOf', () => {
 		 */
 		const readsFor = (length: number): number => {
 			let reads = 0;
+
 			const observed = Array.from(
 				{ length },
 				(_item, index) =>

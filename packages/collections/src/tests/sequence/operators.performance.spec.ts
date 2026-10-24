@@ -200,6 +200,7 @@ describe('single traversal', () => {
 		numbers()
 			.distinctBy(counted((value) => value))
 			.toArray();
+
 		expect(projections).toBe(VOLUME);
 
 		projections = 0;

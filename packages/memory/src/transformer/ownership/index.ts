@@ -119,6 +119,7 @@ const createRules = (
 			const named: string | null = typescript.isIdentifier(call.expression)
 				? call.expression.text
 				: null;
+
 			const found: Operation | undefined = OPERATIONS.find(
 				(operation) => operation === named && isOwnedCall(call, checker, TARGETS[operation]),
 			);
@@ -150,6 +151,7 @@ const createRules = (
 		call: typescript.CallExpression,
 	): { name: string; symbol: typescript.Symbol } | null => {
 		const [first] = call.arguments;
+
 		const argument: typescript.Expression | undefined =
 			first === undefined ? undefined : unwrap(first);
 

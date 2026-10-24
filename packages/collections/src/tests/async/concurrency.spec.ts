@@ -250,6 +250,7 @@ describe('whereAwait', () => {
 describe('forEachAwait', () => {
 	it('should run every action, several at a time', async () => {
 		const seen: number[] = [];
+
 		const { tracked, peak } = watched(async (value: number) => {
 			await turns(4);
 			seen.push(value);

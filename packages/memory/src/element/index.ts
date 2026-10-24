@@ -72,6 +72,7 @@ const missingPart = (element: unknown): string | undefined => {
 	const layout = candidate.layout as { size?: unknown } | null | undefined;
 
 	if (typeof candidate.name !== 'string') return 'name';
+
 	if (
 		typeof layout !== 'object' ||
 		layout === null ||

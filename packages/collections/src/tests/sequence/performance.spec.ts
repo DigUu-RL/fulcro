@@ -343,10 +343,12 @@ describe('SequenceCollection Performance', () => {
 			const numbers = SequenceCollection.from([...Array(LARGE_VOLUME).keys()]);
 
 			const startedAt = performance.now();
+
 			const total = numbers
 				.select((n) => n)
 				.take(500)
 				.count();
+
 			const elapsed = performance.now() - startedAt;
 
 			expect(total).toBe(500);
@@ -357,10 +359,12 @@ describe('SequenceCollection Performance', () => {
 			const numbers = SequenceCollection.from([...Array(LARGE_VOLUME).keys()]);
 
 			const startedAt = performance.now();
+
 			const result = numbers
 				.where((n) => n % 2 === 0)
 				.select((n) => n * 2)
 				.toArray();
+
 			const elapsed = performance.now() - startedAt;
 
 			expect(result.length).toBe(LARGE_VOLUME / 2);
@@ -372,6 +376,7 @@ describe('SequenceCollection Performance', () => {
 				id: n,
 				key: (n * 7919) % LARGE_VOLUME,
 			}));
+
 			const numbers = SequenceCollection.from(source);
 
 			const startedAt = performance.now();

@@ -745,7 +745,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 					// Only nullish results are dropped. `0`, `''` and `false` are
 					// answers like any other.
 					if (projected !== null && projected !== undefined) {
-						yield projected as NonNullable<R>;
+						yield projected;
 					}
 				}
 			},
@@ -781,7 +781,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 				// not change how many of those there are.
 				for await (const result of projected) {
 					if (result !== null && result !== undefined) {
-						yield result as NonNullable<R>;
+						yield result;
 					}
 				}
 			},
@@ -1145,7 +1145,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 			throw createError('FULCRO1020', { operation: 'single' });
 		}
 
-		return only as T;
+		return only;
 	}
 
 	/**
@@ -1162,7 +1162,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 			'singleOrNull',
 		);
 
-		return only === NOT_FOUND ? null : (only as T);
+		return only === NOT_FOUND ? null : only;
 	}
 
 	/**
@@ -1196,11 +1196,10 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	): Promise<boolean> {
 		// Walked in step and stopped at the first difference, rather than reading
 		// either side to the end to find out.
-		const other = (
+		const other =
 			Symbol.asyncIterator in Object(second)
 				? (second as AsyncIterable<T>)[Symbol.asyncIterator]()
-				: (second as Iterable<T>)[Symbol.iterator]()
-		) as AsyncIterator<T> | Iterator<T>;
+				: (second as Iterable<T>)[Symbol.iterator]();
 
 		for await (const item of this.source) {
 			AsyncSequenceCollection.checkAborted(options);
@@ -1397,14 +1396,14 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 
 			const value: number = await AsyncSequenceCollection.valueOf(item, selector);
 
-			if (best === NOT_FOUND || wins(value, best as number)) best = value;
+			if (best === NOT_FOUND || wins(value, best)) best = value;
 		}
 
 		if (best === NOT_FOUND) {
 			throw createError('FULCRO1019', { operation: operator });
 		}
 
-		return best as number;
+		return best;
 	}
 
 	/**
@@ -1438,7 +1437,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 
 			const key: K = await keySelector(item);
 
-			if (bestKey === NOT_FOUND || wins(key, bestKey as K)) {
+			if (bestKey === NOT_FOUND || wins(key, bestKey)) {
 				best = item;
 				bestKey = key;
 			}
@@ -1448,7 +1447,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 			throw createError('FULCRO1019', { operation: operator });
 		}
 
-		return best as V;
+		return best;
 	}
 
 	/**
@@ -1651,7 +1650,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 				let previous: T | typeof NOT_FOUND = NOT_FOUND;
 
 				for await (const item of source) {
-					if (previous !== NOT_FOUND) yield [previous as T, item];
+					if (previous !== NOT_FOUND) yield [previous, item];
 
 					previous = item;
 				}
@@ -1773,13 +1772,13 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 						continue;
 					}
 
-					yield createGroup(currentKey as K, run);
+					yield createGroup(currentKey, run);
 
 					currentKey = key;
 					run = [item];
 				}
 
-				if (currentKey !== NOT_FOUND) yield createGroup(currentKey as K, run);
+				if (currentKey !== NOT_FOUND) yield createGroup(currentKey, run);
 			},
 		});
 	}
@@ -1803,11 +1802,10 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 			async *[Symbol.asyncIterator](): AsyncIterator<R> {
 				// Pulled in step rather than one side being read first, which is what
 				// lets an endless source be zipped with a finite one.
-				const other = (
+				const other =
 					Symbol.asyncIterator in Object(second)
 						? (second as AsyncIterable<S>)[Symbol.asyncIterator]()
-						: (second as Iterable<S>)[Symbol.iterator]()
-				) as AsyncIterator<S> | Iterator<S>;
+						: (second as Iterable<S>)[Symbol.iterator]();
 
 				for await (const item of source) {
 					const next = await other.next();

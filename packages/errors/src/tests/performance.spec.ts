@@ -112,6 +112,7 @@ describe('prefixError', () => {
 			operation: 'Point.from',
 			field: 'y',
 		});
+
 		const templates = spyOnEveryTemplate();
 
 		let located = inner;

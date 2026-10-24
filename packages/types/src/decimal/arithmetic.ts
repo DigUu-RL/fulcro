@@ -403,6 +403,7 @@ export const powerParts = (base: DecimalParts, power: bigint, mode: RoundingMode
 	if (base.kind === 'infinity') {
 		return positive ? infinity(negative) : zero(negative);
 	}
+
 	if (isZero(base)) return positive ? zero(negative) : infinity(negative);
 
 	if (base.coefficient === 1n && base.exponent === 0) {

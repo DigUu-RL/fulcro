@@ -89,6 +89,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 */
 	protected constructor(source: Iterable<T>, countResolver?: () => number | null) {
 		this.source = source;
+
 		this.countResolver =
 			countResolver ?? ((): number | null => SequenceCollection.resolveKnownCount(source));
 	}
@@ -131,7 +132,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 *
 	 * @returns An iterator over the elements of the sequence.
 	 */
-	[Symbol.iterator](): Iterator<T, any, any> {
+	[Symbol.iterator](): Iterator<T> {
 		return this.source[Symbol.iterator]();
 	}
 
@@ -188,7 +189,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 	): Sequence<T> {
 		const instance = new SequenceCollection<T>(source, countResolver);
 
-		return SequenceCollection.createIndexedProxy(instance) as Sequence<T>;
+		return SequenceCollection.createIndexedProxy(instance);
 	}
 
 	/**
@@ -727,6 +728,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 		if (counter === 0) {
 			throw createError('FULCRO1001', { operation: 'average' });
 		}
+
 		return total / counter;
 	}
 
@@ -1677,6 +1679,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 
 		for (const item of this.source) {
 			const key: K = keySelector(item);
+
 			const value: R =
 				elementSelector === undefined ? (item as unknown as R) : elementSelector(item);
 
@@ -2119,7 +2122,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 						// answers like any other, and a projection that meant to
 						// discard them has to say so.
 						if (projected !== null && projected !== undefined) {
-							yield projected as NonNullable<R>;
+							yield projected;
 						}
 					}
 				},

@@ -119,6 +119,7 @@ export class OrderedSequenceCollection<T>
 		});
 
 		const sorted: T[] = new Array<T>(length);
+
 		for (let index = 0; index < length; index++) {
 			sorted[index] = elements[positions[index] as number] as T;
 		}

@@ -252,6 +252,7 @@ export const createPool = <T, R>(
 									const reply = message as Outgoing;
 
 									if (reply.kind === 'ready') resolve();
+
 									if (reply.kind === 'broken') {
 										reject(errorFrom(reply, 'FULCRO3004'));
 									}

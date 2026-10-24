@@ -311,7 +311,7 @@ export interface Task<T> extends PromiseLike<T> {
 	 * with what the work threw — or with the reason, when the task was called
 	 * off.
 	 */
-	readonly settled: Promise<Result<T, unknown>>;
+	readonly settled: Promise<Result<T>>;
 
 	/** Says when this task has been called off, by itself or by its scope. */
 	readonly token: CancellationToken;

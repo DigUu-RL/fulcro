@@ -140,6 +140,7 @@ describe('nativePointerTo, counted', () => {
 
 	it('should ask an allocation whether it is live once per access', () => {
 		let livenessChecks = 0;
+
 		const allocation: Allocation = {
 			bytes: new DataView(new ArrayBuffer(16)),
 			isLive: (): boolean => {
@@ -148,6 +149,7 @@ describe('nativePointerTo, counted', () => {
 				return true;
 			},
 		};
+
 		const pointer: NativePointer<Sample> = nativePointerTo(allocation, counted);
 
 		for (let index = 0; index < VOLUME; index++) pointer.set(sample);

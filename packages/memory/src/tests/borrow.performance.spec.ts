@@ -78,6 +78,7 @@ describe('borrow, counted', () => {
 	it('should ask once per access whether allocated memory is live', () => {
 		const Sample = struct('Sample', { value: DoublePrecisionFloat });
 		let livenessChecks = 0;
+
 		const allocator: Allocator = {
 			allocate: (size: number): Allocation => ({
 				bytes: new DataView(new ArrayBuffer(size)),
@@ -88,6 +89,7 @@ describe('borrow, counted', () => {
 				},
 			}),
 		};
+
 		const values: Borrowed<Struct<typeof Sample>> = borrow(
 			own(() => allocate(Sample, VOLUME, allocator)),
 		);

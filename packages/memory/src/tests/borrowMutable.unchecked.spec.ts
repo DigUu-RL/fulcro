@@ -34,7 +34,9 @@ describe('borrowMutable, unchecked', () => {
 		const first = borrowMutable(owner);
 		const second = borrowMutable(owner);
 
-		expect(() => first.set(0, 1)).toThrow(ended('View.set'));
+		expect(() => {
+			first.set(0, 1);
+		}).toThrow(ended('View.set'));
 		expect(() => first.get(0)).toThrow(ended('View.get'));
 
 		second.set(0, 2);
@@ -48,7 +50,9 @@ describe('borrowMutable, unchecked', () => {
 
 		borrow(owner);
 
-		expect(() => writing.set(1, 1)).toThrow(ended('View.set'));
+		expect(() => {
+			writing.set(1, 1);
+		}).toThrow(ended('View.set'));
 	});
 
 	it('should end what was made from it as well', () => {
@@ -60,9 +64,13 @@ describe('borrowMutable, unchecked', () => {
 
 		borrowMutable(owner);
 
-		expect(() => subview.set(0, 1)).toThrow(ended('View.set'));
+		expect(() => {
+			subview.set(0, 1);
+		}).toThrow(ended('View.set'));
 		expect(() => readOnly.get(0)).toThrow(ended('ReadOnlyView.get'));
-		expect(() => viewed.set(0, 1)).toThrow(expect.objectContaining({ code: 'FULCRO7024' }));
+		expect(() => {
+			viewed.set(0, 1);
+		}).toThrow(expect.objectContaining({ code: 'FULCRO7024' }));
 	});
 
 	it('should leave the values written before it ended in place', () => {
@@ -72,7 +80,9 @@ describe('borrowMutable, unchecked', () => {
 		writing.set(0, 9);
 		borrow(owner);
 
-		expect(() => writing.set(0, 1)).toThrow(ended('View.set'));
+		expect(() => {
+			writing.set(0, 1);
+		}).toThrow(ended('View.set'));
 		expect(borrow(owner).get(0)).toBe(9);
 	});
 });

@@ -38,9 +38,11 @@ describe('layoutOf over the structs of @fulcro/types', () => {
 			const descriptor = compiled.exports[name] as Described;
 
 			expect(layouts[name]).toEqual(descriptor.layout);
+
 			expect(Object.keys((layouts[name] as Described['layout']).fields)).toEqual(
 				Object.keys(descriptor.layout.fields),
 			);
+
 			expect(Object.isFrozen(layouts[name])).toBe(true);
 		},
 	);

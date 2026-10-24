@@ -146,10 +146,13 @@ describe('the plugins on one file', () => {
 			path.dirname(fileURLToPath(import.meta.url)),
 			'coexistence.rejected.sample.ts',
 		);
+
 		const reflect = require('@fulcro/reflect/transformer').default as (
 			program: ts.Program,
 		) => ts.TransformerFactory<ts.SourceFile>;
+
 		const memory = require('@fulcro/memory/transformer').default as typeof reflect;
+
 		const program: ts.Program = ts.createProgram([rejected], {
 			target: ts.ScriptTarget.ES2022,
 			module: ts.ModuleKind.ESNext,

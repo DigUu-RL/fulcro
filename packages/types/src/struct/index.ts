@@ -14,12 +14,10 @@ interface FieldDescriptor {
 }
 
 /** The fields of a struct, by name, in declaration order. */
-type StructFields = { readonly [field: string]: FieldDescriptor };
+type StructFields = Readonly<Record<string, FieldDescriptor>>;
 
 /** The methods of a struct, by name. */
-type StructMethods = {
-	readonly [method: string]: (...parameters: never[]) => unknown;
-};
+type StructMethods = Readonly<Record<string, (...parameters: never[]) => unknown>>;
 
 /** What a struct declared without methods has: none. */
 type NoMethods = Record<never, never>;

@@ -97,6 +97,7 @@ describe('the settings', () => {
 		const fixture = configured();
 
 		hook(fixture, 'protect-publish');
+
 		fixture.write(
 			'.claude/settings.json',
 			settings(
@@ -163,6 +164,7 @@ describe('the permission list beside the hooks', () => {
 		const fixture = configured();
 
 		hook(fixture, 'protect-publish');
+
 		fixture.write(
 			'.claude/settings.json',
 			settings(['.claude/hooks/protect-publish.mjs'], ['Write(dist/**)']),
@@ -175,6 +177,7 @@ describe('the permission list beside the hooks', () => {
 		const fixture = configured();
 
 		hook(fixture, 'protect-publish');
+
 		fixture.write(
 			'.claude/settings.json',
 			settings(['.claude/hooks/protect-publish.mjs'], ['git push']),
@@ -187,6 +190,7 @@ describe('the permission list beside the hooks', () => {
 		const fixture = configured();
 
 		hook(fixture, 'protect-publish');
+
 		fixture.write(
 			'.claude/settings.json',
 			settings(['.claude/hooks/protect-publish.mjs'], ['Bash(npm publish:*)']),
@@ -270,6 +274,7 @@ const ruled = (rules: string[] = []): Tree => {
 
 	hook(fixture, 'protect-publish');
 	fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mjs']));
+
 	fixture.write(
 		'.claude/rules/README.md',
 		`# Rules\n\n${rules.map((file) => `- \`${file}\``).join('\n')}\n`,
@@ -299,6 +304,7 @@ describe('the frontmatter of a rule', () => {
 		rule(fixture, 'collections-performance.md', 'paths:\n  - packages/collections/src/**/*.ts');
 		fixture.write('packages/collections/src/index.ts', 'export {};\n');
 		fixture.write('packages/parallel/src/index.ts', 'export {};\n');
+
 		fixture.write(
 			'tools/claude/rule-fixtures/collections-performance.fixture.json',
 			JSON.stringify({
@@ -338,6 +344,7 @@ describe('the frontmatter of a rule', () => {
 
 	it('warns when two rules say the same thing word for word', () => {
 		const fixture = ruled(['general.md', 'git.md']);
+
 		const paragraph =
 			'A name that has to be decoded is a name the next reader guesses at, and the guess is wrong exactly where it matters.';
 
@@ -345,6 +352,7 @@ describe('the frontmatter of a rule', () => {
 			'.claude/rules/general.md',
 			`# General\n\n**Scope:** everywhere\n\n${paragraph}\n`,
 		);
+
 		fixture.write('.claude/rules/git.md', `# Git\n\n**Scope:** everywhere\n\n${paragraph}\n`);
 
 		expect(rules(fixture.root, 'warning')).toEqual(['rule-duplicate']);
@@ -441,6 +449,7 @@ describe('the fixtures behind a path-scoped rule', () => {
 		const fixture = ruled(['git.md']);
 
 		rule(fixture, 'git.md');
+
 		fixture.write(
 			'tools/claude/rule-fixtures/git.fixture.json',
 			JSON.stringify({ rule: 'git.md', loads: [] }),

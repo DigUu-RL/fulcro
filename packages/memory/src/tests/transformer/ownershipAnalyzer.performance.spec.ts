@@ -40,6 +40,7 @@ const IMPORTS =
  */
 const questionsFor = (text: string): { questions: number; refused: number } => {
 	const fileName: string = path.resolve(__dirname, 'counted.virtual.ts').split(path.sep).join('/');
+
 	const options: ts.CompilerOptions = {
 		target: ts.ScriptTarget.ES2022,
 		module: ts.ModuleKind.ESNext,
@@ -47,6 +48,7 @@ const questionsFor = (text: string): { questions: number; refused: number } => {
 		strict: true,
 		skipLibCheck: true,
 	};
+
 	const host: ts.CompilerHost = ts.createCompilerHost(options);
 	const { getSourceFile, fileExists, readFile } = host;
 
@@ -54,6 +56,7 @@ const questionsFor = (text: string): { questions: number; refused: number } => {
 		name === fileName
 			? ts.createSourceFile(name, text, ts.ScriptTarget.ES2022, true)
 			: getSourceFile(name, ...rest);
+
 	host.fileExists = (name) => name === fileName || fileExists(name);
 	host.readFile = (name) => (name === fileName ? text : readFile(name));
 
@@ -77,10 +80,12 @@ const questionsFor = (text: string): { questions: number; refused: number } => {
 				: value;
 		},
 	});
+
 	const counted: ts.Program = new Proxy(program, {
 		get: (target, key, receiver) =>
 			key === 'getTypeChecker' ? () => counting : Reflect.get(target, key, receiver),
 	});
+
 	let refused = 0;
 
 	ts.transform(program.getSourceFile(fileName) as ts.SourceFile, [

@@ -46,6 +46,7 @@ const Point = struct('Point', {
 	x: SinglePrecisionFloat,
 	y: SinglePrecisionFloat,
 });
+
 type Point = Struct<typeof Point>;
 
 const Particle = struct('Particle', { position: Point, velocity: Point });
@@ -241,7 +242,10 @@ describe('nativePointerTo a memory', () => {
 				},
 			),
 		);
-		expect(() => end.set(Sample.from({ value: 1 }))).toThrowError(
+
+		expect(() => {
+			end.set(Sample.from({ value: 1 }));
+		}).toThrowError(
 			expect.objectContaining({
 				code: 'FULCRO7021',
 				details: expect.objectContaining({ operation: 'NativePointer.set' }),
@@ -285,12 +289,14 @@ describe('nativePointerTo a memory', () => {
 				},
 			),
 		);
+
 		expect(() => nativePointerTo(memory, 0, Sample).at(4)).toThrowError(
 			expect.objectContaining({
 				code: 'FULCRO7020',
 				details: expect.objectContaining({ operation: 'NativePointer.at' }),
 			}),
 		);
+
 		expect(nativePointerTo(memory, 0, Sample).at(4, Point).address).toBe(4);
 	});
 
@@ -310,9 +316,9 @@ describe('nativePointerTo a memory', () => {
 	it('should refuse a value of another type', () => {
 		const { memory } = memoryOf(16);
 
-		expect(() =>
-			nativePointerTo(memory, 0, Sample).set(Point.from({ x: 1, y: 1 }) as unknown as Sample),
-		).toThrowError(
+		expect(() => {
+			nativePointerTo(memory, 0, Sample).set(Point.from({ x: 1, y: 1 }) as unknown as Sample);
+		}).toThrowError(
 			coded(new TypeError('FULCRO7004: NativePointer.set: the value is not a value of Sample.'), {
 				operation: 'NativePointer.set',
 				element: 'Sample',
@@ -322,6 +328,7 @@ describe('nativePointerTo a memory', () => {
 
 	it('should refuse an element type without a layout alignment', () => {
 		const { memory } = memoryOf(16);
+
 		const unaligned = {
 			name: 'Unaligned',
 			layout: { size: 4 },
@@ -338,6 +345,7 @@ describe('nativePointerTo a memory', () => {
 				{ operation: 'nativePointerTo', received: 'undefined' },
 			),
 		);
+
 		expect(() => nativePointerTo(memory, 0, {} as unknown as typeof Sample)).toThrowError(
 			expect.objectContaining({ code: 'FULCRO7003' }),
 		);
@@ -405,6 +413,7 @@ describe('nativePointerTo a WebAssembly memory', () => {
 
 	it('should write into the grown memory, not the buffer it replaced', () => {
 		const module = instantiateRecordingModule();
+
 		const pointer: NativePointer<Sample> = nativePointerTo(
 			createLinearMemory(module.memory),
 			8,
@@ -464,6 +473,7 @@ describe('nativePointerTo an allocation', () => {
 
 			expect(pointer.address).toBe(address);
 			expect(pointer.memory.byteLength).toBe(memoryLength);
+
 			expect(bytesOf(allocation.bytes.buffer as ArrayBuffer, address, address + 16)).toEqual([
 				0,
 				0,
@@ -499,6 +509,7 @@ describe('nativePointerTo an allocation', () => {
 		expect(touchedIn(buffer, 0, 64)).toEqual([
 			8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
 		]);
+
 		expect(bytesOf(buffer, 8, 24)).toEqual([...ONE_AND_A_HALF, ...ONE_AND_A_HALF]);
 	});
 
@@ -510,6 +521,7 @@ describe('nativePointerTo an allocation', () => {
 		const pointer: NativePointer<Sample> = nativePointerTo(allocator.allocate(16, 8), Sample);
 
 		expect(pointer.at(16).address).toBe(24);
+
 		expect(() => pointer.at(24)).toThrowError(
 			coded(
 				new RangeError(
@@ -518,12 +530,14 @@ describe('nativePointerTo an allocation', () => {
 				{ operation: 'NativePointer.at', address: 32, start: 8, end: 24 },
 			),
 		);
+
 		expect(() => pointer.at(-8)).toThrowError(
 			expect.objectContaining({
 				code: 'FULCRO7019',
 				details: expect.objectContaining({ address: 0, start: 8 }),
 			}),
 		);
+
 		expect(() => pointer.at(16).get()).toThrowError(
 			expect.objectContaining({ code: 'FULCRO7021' }),
 		);
@@ -546,7 +560,9 @@ describe('nativePointerTo an allocation', () => {
 			);
 
 		expect(() => pointer.get()).toThrowError(released('NativePointer.get'));
-		expect(() => second.set(Sample.from({ value: 1 }))).toThrowError(released('NativePointer.set'));
+		expect(() => {
+			second.set(Sample.from({ value: 1 }));
+		}).toThrowError(released('NativePointer.set'));
 	});
 
 	it('should refuse an allocation that does not start where the type may', () => {
@@ -610,9 +626,11 @@ describe('nativePointerTo types', () => {
 		const pointer = nativePointerTo(memory, 0, Sample);
 
 		expectTypeOf(pointer).toEqualTypeOf<NativePointer<Sample>>();
+
 		expectTypeOf(nativePointerTo(createManagedAllocator().allocate(8, 8), Sample)).toEqualTypeOf<
 			NativePointer<Sample>
 		>();
+
 		expectTypeOf(pointer.at(8)).toEqualTypeOf<NativePointer<Sample>>();
 		expectTypeOf(pointer.at(0, Point)).toEqualTypeOf<NativePointer<Point>>();
 		expectTypeOf<NativePointer<Sample>>().toExtend<MemoryReference<Sample>>();

@@ -32,6 +32,7 @@ const Particle = struct('Particle', {
 	x: SinglePrecisionFloat,
 	y: SinglePrecisionFloat,
 });
+
 type Particle = Struct<typeof Particle>;
 
 /** Sixteen bytes aligned to eight: misplacing it shows. */
@@ -124,6 +125,7 @@ describe('allocate', () => {
 		// The pool takes back one allocation, so the one `allocate` asked it for
 		// is kept on the way through.
 		const leases: Allocation[] = [];
+
 		const recordingPool: Allocator = {
 			allocate: (size: number, alignment: number): Allocation => {
 				const allocation: Allocation = pool.allocate(size, alignment);
@@ -155,7 +157,10 @@ describe('allocate', () => {
 					{ operation: 'Storage.get' },
 				),
 			);
-			expect(() => particles.set(0, Particle.from({ x: 1, y: 1 }))).toThrowError(
+
+			expect(() => {
+				particles.set(0, Particle.from({ x: 1, y: 1 }));
+			}).toThrowError(
 				coded(
 					new Error(
 						'FULCRO7009: Storage.set: the memory was released by its allocator, and may already hold other values.',
@@ -191,7 +196,9 @@ describe('allocate', () => {
 	it('should refuse a value its element type does not recognise', () => {
 		const particles = allocate(Particle, 1, createManagedAllocator());
 
-		expect(() => particles.set(0, { x: 1, y: 1 } as unknown as Particle)).toThrowError(
+		expect(() => {
+			particles.set(0, { x: 1, y: 1 } as unknown as Particle);
+		}).toThrowError(
 			coded(new TypeError('FULCRO7004: Storage.set: the value is not a value of Particle.'), {
 				operation: 'Storage.set',
 				element: 'Particle',
@@ -229,6 +236,7 @@ describe('allocate', () => {
 				{ operation: 'allocate', missing: 'read' },
 			),
 		);
+
 		expect(requests).toEqual([]);
 	});
 
@@ -240,6 +248,7 @@ describe('allocate', () => {
 		'should refuse an element whose alignment is %s, before asking for memory',
 		(alignment, shown) => {
 			const { allocator, requests } = createLedgerAllocator();
+
 			const element = {
 				...Particle,
 				layout: { size: Particle.layout.size, alignment },
@@ -256,6 +265,7 @@ describe('allocate', () => {
 					},
 				),
 			);
+
 			expect(requests).toEqual([]);
 		},
 	);
@@ -271,6 +281,7 @@ describe('allocate', () => {
 				{ operation: 'allocate', received: -1 },
 			),
 		);
+
 		expect(requests).toEqual([]);
 	});
 
@@ -295,9 +306,11 @@ describe('allocate', () => {
 		expectTypeOf(allocate(Particle, 1, createManagedAllocator())).toEqualTypeOf<
 			Storage<Particle>
 		>();
+
 		expectTypeOf(allocate(Particle, 1, createManagedAllocator()).set)
 			.parameter(1)
 			.toEqualTypeOf<Particle>();
+
 		expectTypeOf(createStackAllocator(8).enter()).toMatchTypeOf<Parameters<typeof allocate>[2]>();
 	});
 });

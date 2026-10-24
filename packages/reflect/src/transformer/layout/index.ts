@@ -139,6 +139,7 @@ export const readLayout = (
 	if (size === null || alignment === null) return null;
 
 	const members: readonly typescript.Type[] = layout.isUnion() ? layout.types : [layout];
+
 	const listsFields: boolean = members.some(
 		(member) => checker.getPropertyOfType(member, 'fields') !== undefined,
 	);

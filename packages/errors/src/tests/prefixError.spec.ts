@@ -27,6 +27,7 @@ describe('prefixError', () => {
 			operation: 'Decimal.from',
 			received: '"1.2.3"',
 		});
+
 		const located = prefixError(inner, "Price.from: field 'amount'");
 
 		expect(located.code).toBe('FULCRO6023');
@@ -39,6 +40,7 @@ describe('prefixError', () => {
 			operation: 'Point.from',
 			field: 'y',
 		});
+
 		const located = prefixError(inner, "Segment.from: field 'end'");
 
 		expect(located.details).toBe(inner.details);
@@ -50,6 +52,7 @@ describe('prefixError', () => {
 			operation: 'Point.from',
 			field: 'y',
 		});
+
 		const located = prefixError(inner, "Segment.from: field 'end'");
 
 		expect(located.cause).toBe(inner);
@@ -61,12 +64,14 @@ describe('prefixError', () => {
 			operation: 'Point.from',
 			field: 'y',
 		});
+
 		const middle = prefixError(inner, "Segment.from: field 'end'");
 		const outer = prefixError(middle, "Path.from: field 'last'");
 
 		expect(outer.message).toBe(
 			"FULCRO6021: Path.from: field 'last': Segment.from: field 'end': Point.from: missing field 'y'.",
 		);
+
 		expect(outer.code).toBe('FULCRO6021');
 		expect(outer.details).toBe(inner.details);
 	});

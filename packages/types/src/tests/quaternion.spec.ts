@@ -99,6 +99,7 @@ describe('Quaternion', () => {
 			expect(Rotation.add(q, one)).toEqual({ w: 2, x: 2, y: 3, z: 4 });
 			expect(Rotation.subtract(q, one)).toEqual({ w: 0, x: 2, y: 3, z: 4 });
 			expect(Rotation.negate(q)).toEqual({ w: -1, x: -2, y: -3, z: -4 });
+
 			expect(Rotation.scale(q, DoublePrecisionFloat.from(2))).toEqual({
 				w: 2,
 				x: 4,

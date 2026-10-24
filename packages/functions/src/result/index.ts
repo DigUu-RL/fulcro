@@ -152,7 +152,7 @@ const FAILURE = variantPrototype({
 	isSuccess: (): boolean => false,
 	isFailure: (): boolean => true,
 
-	handle<R>(this: Failure<unknown, unknown>, cases: ResultCases<unknown, unknown, R>): R {
+	handle<R>(this: Failure<unknown>, cases: ResultCases<unknown, unknown, R>): R {
 		return cases.failure(this.error);
 	},
 });

@@ -53,6 +53,7 @@ describe('HalfPrecisionFloat', () => {
 			{ length: 1_000 },
 			(_, index) => (index + 1) * 2 ** -24,
 		);
+
 		const large: readonly number[] = Array.from({ length: 1_000 }, (_, index) => 60_000 + index);
 
 		const smallCost: number = timed(small, HalfPrecisionFloat.from);

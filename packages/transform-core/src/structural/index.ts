@@ -355,7 +355,7 @@ const isValueInScope = (name: string, generation: Generation): boolean => {
 
 	return !(resolved.declarations ?? []).some((declaration) => {
 		if (typescript.isImportSpecifier(declaration)) {
-			return declaration.isTypeOnly || declaration.parent.parent.isTypeOnly === true;
+			return declaration.isTypeOnly || declaration.parent.parent.isTypeOnly;
 		}
 
 		if (typescript.isImportClause(declaration)) return declaration.isTypeOnly;

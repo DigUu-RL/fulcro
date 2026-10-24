@@ -20,6 +20,7 @@ describe('emitted output beside its source', () => {
 
 	it('reports it whichever way the path is spelled', () => {
 		expect(review({ file_path: 'packages\\collections\\src\\index.js' })).not.toBeNull();
+
 		expect(
 			review({
 				file_path: 'C:/Users/Rodrigo/projects/fulcro/packages/functions/src/try-catch.js',

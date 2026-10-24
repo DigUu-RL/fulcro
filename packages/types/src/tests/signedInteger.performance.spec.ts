@@ -28,6 +28,7 @@ const nativeBigInt: BigIntConstructor = globalThis.BigInt;
 
 beforeEach(() => {
 	conversions = 0;
+
 	globalThis.BigInt = new Proxy(nativeBigInt, {
 		apply: (target, receiver, argumentsList) => {
 			conversions++;
@@ -104,6 +105,7 @@ describe('SignedInteger<64>, carried by a bigint', () => {
 		const baseline: number = timed(() => {
 			sink += (left as bigint) + (right as bigint);
 		});
+
 		const checked: number = timed(() => {
 			sink += type.add(left, right);
 		});

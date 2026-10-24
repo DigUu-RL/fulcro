@@ -44,6 +44,7 @@ export const requireDigits = (operation: string, digits: number, minimum: number
  */
 const specialText = (parts: DecimalParts): string | null => {
 	if (parts.kind === 'nan') return 'NaN';
+
 	if (parts.kind === 'infinity') {
 		return parts.negative ? '-Infinity' : 'Infinity';
 	}
@@ -134,6 +135,7 @@ export const formatFixed = (
 
 	const digits: string = scaled.toString().padStart(fractionDigits + 1, '0');
 	const point: number = digits.length - fractionDigits;
+
 	const text: string =
 		fractionDigits === 0 ? digits : `${digits.slice(0, point)}.${digits.slice(point)}`;
 

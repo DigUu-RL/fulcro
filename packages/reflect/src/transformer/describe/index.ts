@@ -220,6 +220,7 @@ export const pathsOfType = (
 				type: checker.typeToString(current),
 				optional: soFar,
 			});
+
 			return;
 		}
 
@@ -231,6 +232,7 @@ export const pathsOfType = (
 				type: checker.typeToString(single),
 				optional: soFar,
 			});
+
 			return;
 		}
 
@@ -254,6 +256,7 @@ export const pathsOfType = (
 				type: checker.typeToString(single),
 				optional: soFar,
 			});
+
 			return;
 		}
 
@@ -267,6 +270,7 @@ export const pathsOfType = (
 				type: checker.typeToString(single),
 				optional: soFar,
 			});
+
 			return;
 		}
 

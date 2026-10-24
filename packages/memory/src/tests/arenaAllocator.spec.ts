@@ -94,6 +94,7 @@ describe('createArenaAllocator', () => {
 
 			throw new Error('leaving early');
 		}).toThrowError('leaving early');
+
 		expect(made?.isLive()).toBe(false);
 	});
 

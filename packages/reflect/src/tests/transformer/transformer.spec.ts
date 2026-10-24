@@ -142,9 +142,9 @@ describe('defaultOf at compile time', () => {
 	 * @returns The emitted expression, with its whitespace collapsed.
 	 */
 	const emittedValueOf = (binding: string): string => {
-		const match: RegExpMatchArray | null = emitted.match(
-			new RegExp(`export const ${binding} = ([\\s\\S]*?);\\n`),
-		);
+		const match: RegExpMatchArray | null = new RegExp(
+			`export const ${binding} = ([\\s\\S]*?);\\n`,
+		).exec(emitted);
 
 		if (match === null) throw new Error(`${binding} was not emitted`);
 

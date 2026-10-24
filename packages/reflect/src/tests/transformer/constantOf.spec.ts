@@ -46,11 +46,13 @@ const compile = (fileName: string): Compiled => {
 	const fixture: string = path.resolve(__dirname, fileName);
 	const program: ts.Program = ts.createProgram([fixture], COMPILER_OPTIONS);
 	const refused: ts.Diagnostic[] = [];
+
 	const transform = transformer(
 		program,
 		{ projectRoot: PROJECT_ROOT },
 		{ addDiagnostic: (diagnostic) => refused.push(diagnostic) },
 	);
+
 	let emitted = '';
 
 	program.emit(
@@ -84,8 +86,8 @@ beforeAll(() => {
  * @returns The value the expression produces.
  */
 const evaluate = (binding: string): unknown => {
-	const match: RegExpMatchArray | null = accepted.emitted.match(
-		new RegExp(`export const ${binding} = (.*);\\r?\\n`),
+	const match: RegExpMatchArray | null = new RegExp(`export const ${binding} = (.*);\\r?\\n`).exec(
+		accepted.emitted,
 	);
 
 	if (match === null) throw new Error(`${binding} was not emitted`);
@@ -128,6 +130,7 @@ const refusalOf = (binding: string): string => {
 		rejected.refused.length === 0
 			? -1
 			: (rejected.refused[0]?.file as ts.SourceFile).text.indexOf(`export const ${binding} =`);
+
 	const found: ts.Diagnostic | undefined = rejected.refused.find(
 		(diagnostic) =>
 			declaration >= 0 &&
@@ -220,12 +223,14 @@ describe('constantOf at compile time', () => {
 	describe('what it refuses', () => {
 		it('should refuse every call of the fixture, and write none of them', () => {
 			expect(rejected.refused).toHaveLength(10);
+
 			expect(
 				rejected.refused.every(
 					(diagnostic) =>
 						diagnostic.category === ts.DiagnosticCategory.Error && diagnostic.source === 'fulcro',
 				),
 			).toBe(true);
+
 			expect(rejected.emitted.match(/constantOf\(/g)).toHaveLength(10);
 		});
 
@@ -309,9 +314,11 @@ describe('constantOf at compile time', () => {
 			}
 
 			expect(thrown).toBeInstanceOf(Error);
+
 			expect((thrown as Error).message).toMatch(
 				/^FULCRO5003: The Fulcro transformer refused calls it could not answer at compile time:\n/,
 			);
+
 			expect((thrown as Error).message.match(/FULCRO401\d/g)).toHaveLength(10);
 		});
 	});

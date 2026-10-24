@@ -63,7 +63,9 @@ describe('Owned[Symbol.dispose]', () => {
 		}
 
 		expect(() => writing?.get(0)).toThrow(ended('View.get'));
-		expect(() => writing?.set(0, 1)).toThrow(ended('View.set'));
+		expect(() => {
+			writing?.set(0, 1);
+		}).toThrow(ended('View.set'));
 	});
 
 	it('should end what was cut from a borrow as well', () => {
@@ -122,7 +124,9 @@ describe('Owned[Symbol.dispose]', () => {
 
 		scores[Symbol.dispose]();
 
-		expect(() => scores[Symbol.dispose]()).not.toThrow();
+		expect(() => {
+			scores[Symbol.dispose]();
+		}).not.toThrow();
 		expect(() => borrow(scores)).toThrow(disposed('borrow'));
 	});
 
@@ -155,7 +159,7 @@ describe('Owned[Symbol.dispose]', () => {
 		}
 
 		expect(() => reading?.get(0)).toThrow(ended('ReadOnlyView.get'));
-		expect(() => borrow(kept as Owned<number>)).toThrow(disposed('borrow'));
+		expect(() => borrow(kept)).toThrow(disposed('borrow'));
 	});
 
 	it('should end with the frame its memory came from, in one scope', () => {

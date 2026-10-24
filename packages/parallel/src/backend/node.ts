@@ -25,12 +25,16 @@ export const spawnWorker: SpawnWorker = (url: URL): WorkerHandle => {
 		},
 
 		listen: (handler): (() => void) => {
-			const onMessage = (message: unknown): void => handler(message);
+			const onMessage = (message: unknown): void => {
+				handler(message);
+			};
 
 			// A worker that fails to load, or dies, arrives here rather than as a
 			// message — and has to reach the pool, or a run waiting on it would
 			// hang instead of rejecting.
-			const onError = (failure: Error): void => handler(undefined, failure);
+			const onError = (failure: Error): void => {
+				handler(undefined, failure);
+			};
 
 			const onExit = (code: number): void => {
 				if (code !== 0) {

@@ -494,7 +494,7 @@ export const createMatrixOperations = <T, R extends number, C extends number>(
 	 *
 	 * @param descriptor The descriptor, matrix or vector.
 	 */
-	const register = (descriptor: object): void =>
+	const register = (descriptor: object): void => {
 		registerRepeatedCodec(
 			descriptor,
 			elementDescriptor,
@@ -503,6 +503,7 @@ export const createMatrixOperations = <T, R extends number, C extends number>(
 			(value) => value as readonly unknown[],
 			(left, right) => operations.equals(left as Value, right as Value),
 		);
+	};
 
 	return { name, operations, element, requireShape, register };
 };

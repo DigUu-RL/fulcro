@@ -122,6 +122,7 @@ describe('createFixedBufferAllocator', () => {
 		expectTypeOf(
 			createFixedBufferAllocator(new ArrayBuffer(8)),
 		).toEqualTypeOf<FixedBufferAllocator>();
+
 		expectTypeOf<FixedBufferAllocator>().toMatchTypeOf<AllocationDomain>();
 	});
 });

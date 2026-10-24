@@ -51,7 +51,7 @@ const flagging: FileAnalyzer = {
 	analyze: (sourceFile, context): void => {
 		const statement = sourceFile.statements[1];
 
-		if (statement === undefined || !statement.getText().includes('flag(')) {
+		if (!statement?.getText().includes('flag(')) {
 			return;
 		}
 

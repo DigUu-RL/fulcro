@@ -205,6 +205,7 @@ const checkSettings = (root) => {
 	}
 
 	const directory = path.join(root, '.claude', 'hooks');
+
 	const modules = exists(directory)
 		? fs.readdirSync(directory).filter((file) => file.endsWith('.mjs'))
 		: [];
@@ -344,7 +345,7 @@ const checkRules = (root) => {
 			);
 		}
 
-		if (!/\*\*Scope:\*\*/.test(rule.source)) {
+		if (!rule.source.includes('**Scope:**')) {
 			findings.push(warning('rule-scope', at, 'States no scope; a rule says where it applies.'));
 		}
 

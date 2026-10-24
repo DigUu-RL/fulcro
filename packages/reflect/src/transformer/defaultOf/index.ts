@@ -85,6 +85,7 @@ const buildDefaultExpression = (
 
 	// A literal type admits exactly one value, which is therefore its default.
 	if (type.isStringLiteral()) return factory.createStringLiteral(type.value);
+
 	if (type.isNumberLiteral()) {
 		return type.value < 0
 			? factory.createPrefixUnaryExpression(

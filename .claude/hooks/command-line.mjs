@@ -170,6 +170,7 @@ export const invocationOf = (tokens) => {
 
 	while (index < tokens.length) {
 		const token = tokens[index];
+
 		const skippable =
 			PREFIXES.has(nameOf(token)) ||
 			token.startsWith('-') ||

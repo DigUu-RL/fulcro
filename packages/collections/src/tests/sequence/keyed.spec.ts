@@ -215,6 +215,7 @@ describe('toLookup', () => {
 				.toLookup((u) => u.id)
 				.get(1),
 		).toHaveLength(2);
+
 		expect(() => SequenceCollection.from(users).toMap((u) => u.id)).toThrow();
 	});
 });

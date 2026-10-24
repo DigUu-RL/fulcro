@@ -80,6 +80,7 @@ export const openLinearMemory = (
 		// A view made without a length follows a resizable buffer as it resizes,
 		// so one view serves for the whole life of the memory.
 		const view = new DataView(backing);
+
 		const memory: LinearMemory = Object.freeze({
 			get byteLength(): number {
 				return backing.byteLength;

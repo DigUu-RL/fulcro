@@ -109,6 +109,7 @@ describe('layoutOf', () => {
 				};
 			};
 		}>();
+
 		expectTypeOf<TypeLayout<Half>['fields']>().toEqualTypeOf<Record<never, never>>();
 	});
 

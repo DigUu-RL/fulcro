@@ -124,10 +124,12 @@ export const createPoolAllocator = (blockSize: number, blockCount: number): Pool
 			}
 
 			const start: number = block * blockSize;
+
 			const lease: Lease = {
 				block,
 				generation: generations[block] as number,
 			};
+
 			const isLive = (): boolean => generations[block] === lease.generation;
 
 			new Uint8Array(buffer, start, size).fill(0);

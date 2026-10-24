@@ -116,6 +116,7 @@ describe('the frontmatter', () => {
 			'exports-audit',
 			'name: exports-audit\ndescription: Audits the exports maps. Use when a surface changed: before a release.',
 		);
+
 		fixture.skill(
 			'entry-audit',
 			'name: entry-audit\ndescription: Counts the # of entry points. Use before a release.',
@@ -242,6 +243,7 @@ describe('path scoping', () => {
 		const fixture = tree();
 
 		fixture.write('packages/collections/package.json', '{}\n');
+
 		fixture.skill(
 			'exports-audit',
 			`${WELL_FORMED}\npaths: [packages/*/src/**, libraries/*/src/**]`,
@@ -292,12 +294,12 @@ describe('size', () => {
 	it('warns past the guidance and not before it', () => {
 		const fixture = tree();
 
-		fixture.skill('exports-audit', WELL_FORMED, `${'A line.\n'.repeat(400)}`);
+		fixture.skill('exports-audit', WELL_FORMED, 'A line.\n'.repeat(400));
 		expect(rules(fixture.root, 'warning')).not.toContain('size');
 
 		const long = tree();
 
-		long.skill('exports-audit', WELL_FORMED, `${'A line.\n'.repeat(600)}`);
+		long.skill('exports-audit', WELL_FORMED, 'A line.\n'.repeat(600));
 		expect(rules(long.root, 'warning')).toContain('size');
 	});
 });
@@ -373,6 +375,7 @@ describe('the eval suites', () => {
 		const fixture = tree();
 
 		fixture.skill('exports-audit', WELL_FORMED);
+
 		fixture.write(
 			'tools/claude/skill-evals/exports-audit.eval.json',
 			suite([

@@ -39,6 +39,7 @@ export const compileStructs = (): CompiledStructs => {
 	const reflect = require('@fulcro/reflect/transformer').default as (
 		program: ts.Program,
 	) => ts.TransformerFactory<ts.SourceFile>;
+
 	const collections = require('@fulcro/collections/transformer').default as typeof reflect;
 
 	const program: ts.Program = ts.createProgram([FIXTURE], {
@@ -81,6 +82,7 @@ export const compileStructs = (): CompiledStructs => {
 			module: ts.ModuleKind.CommonJS,
 		},
 	}).outputText;
+
 	const module = { exports: {} as Record<string, unknown> };
 
 	new Function('require', 'module', 'exports', runnable)(require, module, module.exports);

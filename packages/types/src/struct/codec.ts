@@ -71,6 +71,7 @@ const integer128Codec = (descriptor: IntegerType<unknown>): FieldCodec => ({
 	alignment: 16,
 	read: (view, offset) => {
 		const low: bigint = view.getBigUint64(offset, true);
+
 		const high: bigint = descriptor.signed
 			? view.getBigInt64(offset + 8, true)
 			: view.getBigUint64(offset + 8, true);
@@ -105,8 +106,9 @@ const integerCodec = (descriptor: IntegerType<unknown>): FieldCodec => {
 				size,
 				alignment: size,
 				read: (view, offset) => (signed ? view.getInt8(offset) : view.getUint8(offset)),
-				write: (view, offset, value) =>
-					signed ? view.setInt8(offset, value as number) : view.setUint8(offset, value as number),
+				write: (view, offset, value) => {
+					signed ? view.setInt8(offset, value as number) : view.setUint8(offset, value as number);
+				},
 				equals,
 			};
 		case 16:
@@ -115,10 +117,11 @@ const integerCodec = (descriptor: IntegerType<unknown>): FieldCodec => {
 				alignment: size,
 				read: (view, offset) =>
 					signed ? view.getInt16(offset, true) : view.getUint16(offset, true),
-				write: (view, offset, value) =>
+				write: (view, offset, value) => {
 					signed
 						? view.setInt16(offset, value as number, true)
-						: view.setUint16(offset, value as number, true),
+						: view.setUint16(offset, value as number, true);
+				},
 				equals,
 			};
 		case 32:
@@ -127,10 +130,11 @@ const integerCodec = (descriptor: IntegerType<unknown>): FieldCodec => {
 				alignment: size,
 				read: (view, offset) =>
 					signed ? view.getInt32(offset, true) : view.getUint32(offset, true),
-				write: (view, offset, value) =>
+				write: (view, offset, value) => {
 					signed
 						? view.setInt32(offset, value as number, true)
-						: view.setUint32(offset, value as number, true),
+						: view.setUint32(offset, value as number, true);
+				},
 				equals,
 			};
 		default:
@@ -139,10 +143,11 @@ const integerCodec = (descriptor: IntegerType<unknown>): FieldCodec => {
 				alignment: size,
 				read: (view, offset) =>
 					signed ? view.getBigInt64(offset, true) : view.getBigUint64(offset, true),
-				write: (view, offset, value) =>
+				write: (view, offset, value) => {
 					signed
 						? view.setBigInt64(offset, value as bigint, true)
-						: view.setBigUint64(offset, value as bigint, true),
+						: view.setBigUint64(offset, value as bigint, true);
+				},
 				equals,
 			};
 	}
@@ -172,6 +177,7 @@ const encodeHalf = (value: number): number => {
 	const magnitude: number = Math.abs(value);
 
 	if (magnitude === Infinity) return sign | 0x7c00;
+
 	if (magnitude < 2 ** HALF_MINIMUM_NORMAL_EXPONENT) {
 		return sign | (magnitude / HALF_SUBNORMAL_SPACING);
 	}
@@ -211,7 +217,9 @@ const floatCodecs = new Map<object, FieldCodec>([
 			size: 2,
 			alignment: 2,
 			read: (view, offset) => decodeHalf(view.getUint16(offset, true)),
-			write: (view, offset, value) => view.setUint16(offset, encodeHalf(value as number), true),
+			write: (view, offset, value) => {
+				view.setUint16(offset, encodeHalf(value as number), true);
+			},
 			equals: (left, right) =>
 				HalfPrecisionFloat.equals(left as HalfPrecisionFloat, right as HalfPrecisionFloat),
 		},
@@ -222,7 +230,9 @@ const floatCodecs = new Map<object, FieldCodec>([
 			size: 4,
 			alignment: 4,
 			read: (view, offset) => view.getFloat32(offset, true),
-			write: (view, offset, value) => view.setFloat32(offset, value as number, true),
+			write: (view, offset, value) => {
+				view.setFloat32(offset, value as number, true);
+			},
 			equals: (left, right) =>
 				SinglePrecisionFloat.equals(left as SinglePrecisionFloat, right as SinglePrecisionFloat),
 		},
@@ -233,7 +243,9 @@ const floatCodecs = new Map<object, FieldCodec>([
 			size: 8,
 			alignment: 8,
 			read: (view, offset) => view.getFloat64(offset, true),
-			write: (view, offset, value) => view.setFloat64(offset, value as number, true),
+			write: (view, offset, value) => {
+				view.setFloat64(offset, value as number, true);
+			},
 			equals: (left, right) =>
 				DoublePrecisionFloat.equals(left as DoublePrecisionFloat, right as DoublePrecisionFloat),
 		},
@@ -272,6 +284,7 @@ const encodeDecimal = (parts: DecimalParts): bigint => {
 	const sign: bigint = parts.negative ? 1n << 127n : 0n;
 
 	if (parts.kind === 'nan') return 0x7c00_0000_0000_0000n << HALF_WIDTH;
+
 	if (parts.kind === 'infinity') {
 		return sign | (0x7800_0000_0000_0000n << HALF_WIDTH);
 	}
@@ -315,6 +328,7 @@ const decodeDecimal = (bits: bigint): DecimalParts => {
 		((bits >> 125n) & 0x3n) === 0x3n ? 0n : bits & ((1n << DECIMAL_COEFFICIENT_BITS) - 1n);
 
 	if (coefficient >= DECIMAL_COEFFICIENT_LIMIT) coefficient = 0n;
+
 	if (coefficient === 0n) {
 		return { kind: 'finite', negative, coefficient: 0n, exponent: 0 };
 	}

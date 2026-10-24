@@ -23,6 +23,7 @@ const Point = struct('Point', {
 	x: SinglePrecisionFloat,
 	y: SinglePrecisionFloat,
 });
+
 type Point = Struct<typeof Point>;
 
 const origin: Point = Point.from({ x: 0, y: 0 });
@@ -117,13 +118,16 @@ describe.each(STRATEGIES)('%s, as a Storage<T>', (name, create) => {
 	it('should refuse to set outside, and leave every value as it was', () => {
 		const points: Storage<Point> = create(2);
 
-		expect(() => points.set(2, Point.from({ x: 1, y: 1 }))).toThrowError(
+		expect(() => {
+			points.set(2, Point.from({ x: 1, y: 1 }));
+		}).toThrowError(
 			coded(new RangeError(`FULCRO7002: ${name}.set: index 2 is outside a storage of length 2.`), {
 				operation: `${name}.set`,
 				index: 2,
 				length: 2,
 			}),
 		);
+
 		expect(sumOfX(points)).toBe(0);
 	});
 

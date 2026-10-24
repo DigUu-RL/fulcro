@@ -19,7 +19,7 @@ export const targetHasLength = (source: unknown): source is { readonly length: n
 		typeof source === 'object' &&
 		source !== null &&
 		'length' in source &&
-		typeof (source as { length: unknown }).length === 'number'
+		typeof source.length === 'number'
 	);
 };
 
@@ -36,7 +36,7 @@ export const targetHasSize = (source: unknown): source is { readonly size: numbe
 		typeof source === 'object' &&
 		source !== null &&
 		'size' in source &&
-		typeof (source as { size: unknown }).size === 'number'
+		typeof source.size === 'number'
 	);
 };
 

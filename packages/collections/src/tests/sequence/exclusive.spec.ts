@@ -31,6 +31,7 @@ describe('memoize', () => {
 
 	it('should run the projections of its chain only once', () => {
 		let calls = 0;
+
 		const query = SequenceCollection.from([1, 2, 3])
 			.select((value) => {
 				calls++;
@@ -47,6 +48,7 @@ describe('memoize', () => {
 
 	it('should read nothing until something asks', () => {
 		let pulled = 0;
+
 		const source = {
 			*[Symbol.iterator](): Iterator<number> {
 				for (const value of [1, 2, 3]) {
@@ -66,6 +68,7 @@ describe('memoize', () => {
 
 	it('should pull each element once across interleaved traversals', () => {
 		let pulled = 0;
+
 		const source = {
 			*[Symbol.iterator](): Iterator<number> {
 				for (const value of [1, 2, 3]) {
@@ -253,6 +256,7 @@ describe('groupAdjacent', () => {
 				.groupAdjacent((letter) => letter)
 				.count(),
 		).toBe(3);
+
 		expect(
 			SequenceCollection.from(source)
 				.groupBy((letter) => letter)

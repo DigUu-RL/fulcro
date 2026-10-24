@@ -91,8 +91,8 @@ beforeAll(() => {
  * @returns The value the expression produces.
  */
 const evaluate = (binding: string): unknown => {
-	const match: RegExpMatchArray | null = accepted.emitted.match(
-		new RegExp(`export const ${binding} = (.*);\\r?\\n`),
+	const match: RegExpMatchArray | null = new RegExp(`export const ${binding} = (.*);\\r?\\n`).exec(
+		accepted.emitted,
 	);
 
 	if (match === null) throw new Error(`${binding} was not emitted`);

@@ -88,6 +88,7 @@ const numberLiteral = (factory: typescript.NodeFactory, value: number): typescri
 
 	if (Number.isNaN(value)) return division(0);
 	if (value === Infinity) return division(1);
+
 	if (value === -Infinity) {
 		return factory.createPrefixUnaryExpression(typescript.SyntaxKind.MinusToken, division(1));
 	}
@@ -118,6 +119,7 @@ export const constantLiteral = (
 			return factory.createStringLiteral(value);
 		case 'boolean':
 			return value ? factory.createTrue() : factory.createFalse();
+
 		case 'bigint': {
 			const magnitude: typescript.Expression = factory.createBigIntLiteral(
 				`${value < 0n ? -value : value}n`,
@@ -127,6 +129,7 @@ export const constantLiteral = (
 				? factory.createPrefixUnaryExpression(typescript.SyntaxKind.MinusToken, magnitude)
 				: magnitude;
 		}
+
 		case 'undefined':
 			return factory.createVoidZero();
 	}

@@ -124,7 +124,7 @@ export const createComponentRecord = <T, TValue>(
 		Object.keys(value).length === keys.length &&
 		keys.every((key) => Object.hasOwn(value, key) && element.is(value[key]));
 
-	const register = (descriptor: object, equals: (left: TValue, right: TValue) => boolean): void =>
+	const register = (descriptor: object, equals: (left: TValue, right: TValue) => boolean): void => {
 		registerRepeatedCodec(
 			descriptor,
 			elementDescriptor,
@@ -133,6 +133,7 @@ export const createComponentRecord = <T, TValue>(
 			(value) => keys.map((key) => (value as Record<string, unknown>)[key]),
 			(left, right) => equals(left as TValue, right as TValue),
 		);
+	};
 
 	return { make, convert, isRecord, register };
 };

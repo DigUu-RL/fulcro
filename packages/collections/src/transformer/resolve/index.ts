@@ -107,7 +107,7 @@ const isValueInScope = (
 	// declaration itself has to be checked.
 	return !declarations.some((declaration) => {
 		if (typescript.isImportSpecifier(declaration)) {
-			return declaration.isTypeOnly || declaration.parent.parent.isTypeOnly === true;
+			return declaration.isTypeOnly || declaration.parent.parent.isTypeOnly;
 		}
 
 		if (typescript.isImportClause(declaration)) return declaration.isTypeOnly;

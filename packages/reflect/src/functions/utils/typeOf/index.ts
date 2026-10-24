@@ -405,7 +405,7 @@ const resolveTypeId = (value: unknown): TypeId => {
 		case 'function':
 			return resolveCallableId(value as () => unknown);
 		default:
-			return resolveObjectId(value as object);
+			return resolveObjectId(value);
 	}
 };
 

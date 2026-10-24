@@ -21,6 +21,7 @@ const Sample = struct('Sample', {
 	value: DoublePrecisionFloat,
 	channel: UnsignedInteger(8),
 });
+
 type Sample = Struct<typeof Sample>;
 
 /** Enough values for a per-element cost to separate from a constant one. */

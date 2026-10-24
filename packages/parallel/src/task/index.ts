@@ -28,7 +28,7 @@ const asFailure = (thrown: unknown): NonNullable<unknown> =>
 	thrown ??
 	createError('FULCRO3013', {
 		operation: 'spawn',
-		thrown: thrown as null | undefined,
+		thrown: thrown,
 	});
 
 /**
@@ -150,7 +150,7 @@ export const createTaskScope = (options: TaskScopeOptions = {}): TaskScope => {
 		// Reading the outcome as a `Result` is also what handles it, so a task
 		// nobody awaits is never an unhandled rejection. Its failure is not lost:
 		// the scope holds it for `join` and for disposal.
-		const outcomeAsResult: Promise<Result<T, unknown>> = tryCatch<T>(outcome);
+		const outcomeAsResult: Promise<Result<T>> = tryCatch<T>(outcome);
 
 		/**
 		 * Ends the task, releasing its hold on the scope's cancellation.

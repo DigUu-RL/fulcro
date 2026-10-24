@@ -115,6 +115,7 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 	elementOf<T>(integer, 'Fraction');
 
 	const name: string = describeType('Fraction', integer.name);
+
 	const { make, convert, isRecord, register } = createComponentRecord<T, Value>(
 		PARTS,
 		integer,
@@ -206,6 +207,7 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 	): Value => {
 		const first: T = greatestCommonDivisor(left, rightDenominator);
 		const second: T = greatestCommonDivisor(right, leftDenominator);
+
 		const over = (value: T, divisor: T): T =>
 			integer.equals(divisor, zero) || integer.equals(divisor, one)
 				? value

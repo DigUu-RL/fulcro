@@ -231,6 +231,7 @@ describe.each(PACKAGE_NAMES)('%s, as a consumer sees it', (name) => {
 
 		for (const field of [manifest.main, manifest.types]) {
 			expect(field).toBeDefined();
+
 			expect(shipped, `${name} declares ${field}, which its tarball does not contain`).toContain(
 				asPackedPath(field as string),
 			);
@@ -347,6 +348,7 @@ describe('@fulcro/reflect', () => {
 
 		expect(table).toEqual([1, 4, 9]);
 		expect(Object.isFrozen(table)).toBe(true);
+
 		expect(() => constantOf(() => new Map() as never)).toThrow(
 			expect.objectContaining({ code: 'FULCRO4011' }),
 		);
@@ -360,7 +362,8 @@ describe('@fulcro/reflect', () => {
 		expect(() => sizeOf()).toThrow('only exists at compile time');
 		expect(() => alignOf()).toThrow('only exists at compile time');
 		expect(() => layoutOf()).toThrow('only exists at compile time');
-		expect(() => offsetOf('x' as never)).toThrow(
+
+		expect(() => offsetOf('x')).toThrow(
 			expect.objectContaining({
 				code: 'FULCRO4009',
 				message: expect.stringContaining('offsetOf<T>("x")'),
@@ -405,6 +408,7 @@ describe('@fulcro/types', () => {
 
 		const Transform = Matrix(DoublePrecisionFloat, 2, 3);
 		const Point = Vector(DoublePrecisionFloat, 3, 1);
+
 		const moved = Transform.multiply(
 			Transform.from([
 				[1, 0, 5],
@@ -449,6 +453,7 @@ describe('@fulcro/types', () => {
 				},
 			},
 		);
+
 		const view = new DataView(new ArrayBuffer(Point.layout.size));
 
 		Point.write(view, 0, Point.from({ x: 3, y: 4 }));
@@ -464,6 +469,7 @@ describe('@fulcro/types', () => {
 			mass: SinglePrecisionFloat,
 			charge: UnsignedInteger(8),
 		});
+
 		const view = new DataView(new ArrayBuffer(Particle.layout.size));
 		const value = Particle.from({ mass: 0.5, charge: 3 });
 
@@ -477,6 +483,7 @@ describe('@fulcro/types', () => {
 				charge: { offset: 4, size: 1, alignment: 1 },
 			},
 		});
+
 		expect(Particle.equals(Particle.read(view, 0), value)).toBe(true);
 	});
 
@@ -589,6 +596,7 @@ describe('@fulcro/errors', () => {
 
 	it('should create a coded error through the published entry point', async () => {
 		const { createError, FulcroError, isFulcroError } = await import('@fulcro/errors');
+
 		const error = createError('FULCRO6021', {
 			operation: 'Vector3.from',
 			field: 'x',
@@ -618,6 +626,7 @@ describe('@fulcro/errors', () => {
 		expect(caught).toBeInstanceOf(FulcroError);
 		expect(caught).toBeInstanceOf(RangeError);
 		expect(isFulcroError(caught, 'FULCRO6031')).toBe(true);
+
 		expect((caught as { details: unknown }).details).toEqual({
 			operation: 'SignedInteger<8>.from',
 			received: '300',
@@ -803,6 +812,7 @@ describe('@fulcro/memory', () => {
 		const second = move(first);
 
 		expect(borrow(second).get(1)).toBe(7);
+
 		expect(() => borrow(first)).toThrow(
 			expect.objectContaining({
 				code: 'FULCRO7023',
@@ -834,12 +844,14 @@ describe('@fulcro/memory', () => {
 		}
 
 		expect(() => reading?.get(0)).toThrow(expect.objectContaining({ code: 'FULCRO7024' }));
-		expect(() => borrow(owner as NonNullable<typeof owner>)).toThrow(
+
+		expect(() => borrow(owner)).toThrow(
 			expect.objectContaining({
 				code: 'FULCRO7030',
 				details: { operation: 'borrow' },
 			}),
 		);
+
 		expect([block?.isLive(), fixedBlock?.isLive()]).toEqual([false, false]);
 		expect(pool.allocate(16, 8).isLive()).toBe(true);
 	});
@@ -847,12 +859,14 @@ describe('@fulcro/memory', () => {
 	it('should write a field of a published struct at its bytes through a native pointer, and refuse it once released', async () => {
 		const { createArenaAllocator, createLinearMemory, nativePointerTo } =
 			await import('@fulcro/memory');
+
 		const { SinglePrecisionFloat, struct } = await import('@fulcro/types');
 
 		const Point = struct('Point', {
 			x: SinglePrecisionFloat,
 			y: SinglePrecisionFloat,
 		});
+
 		const Particle = struct('Particle', { position: Point, velocity: Point });
 
 		// Without the transformers, the velocity still sits at bytes 8–15 of a
@@ -864,6 +878,7 @@ describe('@fulcro/memory', () => {
 		velocity.set(Point.from({ x: 3, y: -4 }));
 
 		expect([raw.getFloat32(16, true), raw.getFloat32(20, true)]).toEqual([3, -4]);
+
 		expect(
 			Array.from(new Uint8Array(buffer)).flatMap((byte, address) => (byte === 0 ? [] : [address])),
 		).toEqual([18, 19, 22, 23]);
@@ -889,6 +904,7 @@ describe('@fulcro/memory', () => {
 			x: SinglePrecisionFloat,
 			y: SinglePrecisionFloat,
 		});
+
 		const stack = createStackAllocator(64);
 		const frame = stack.enter();
 		const particles = allocate(Particle, 2, frame);
@@ -915,6 +931,7 @@ describe('@fulcro/memory', () => {
 			x: SinglePrecisionFloat,
 			y: SinglePrecisionFloat,
 		});
+
 		const points = createFixedBufferStorage(Point, 2);
 		const names = createManagedStorage(2, '');
 
@@ -939,6 +956,7 @@ describe('@fulcro/memory', () => {
 		expect('set' in asReadOnlyView(middle)).toBe(false);
 		expect('set' in middle.readOnly()).toBe(false);
 		expect(asView(referenceTo(5)).get(0)).toBe(5);
+
 		expect(() => middle.subview(1, 2)).toThrow(
 			expect.objectContaining({
 				code: 'FULCRO7014',
@@ -1040,6 +1058,7 @@ describe('@fulcro/memory/transformer', () => {
 		const { manifest } = manifestOf('@fulcro/memory');
 
 		expect(manifest.peerDependencies).toEqual({ typescript: '>=5.3.3 <7' });
+
 		expect(readFileSync(resolve('@fulcro/memory'), 'utf8')).not.toMatch(
 			/require\(["'][^"']*(transformer|typescript)/,
 		);

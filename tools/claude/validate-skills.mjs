@@ -303,7 +303,7 @@ const checkFrontmatter = (skill, where, names) => {
 	const findings = [];
 	const block = skill.frontmatter;
 
-	if (block === null || !block.present) {
+	if (!block?.present) {
 		return [error('frontmatter-missing', where, 'There is no frontmatter block.')];
 	}
 

@@ -169,15 +169,19 @@ describe('topBy', () => {
 		// A window scanned linearly instead of kept as a heap would show up here
 		// as the larger window costing a hundred times the smaller.
 		conversions = 0;
+
 		SequenceCollection.from(orders)
 			.topBy((order) => countingKey(order.total), 1)
 			.toArray();
+
 		const forOne: number = conversions;
 
 		conversions = 0;
+
 		SequenceCollection.from(orders)
 			.topBy((order) => countingKey(order.total), 1_000)
 			.toArray();
+
 		const forThousand: number = conversions;
 
 		expect(forThousand).toBeLessThan(forOne * 3);

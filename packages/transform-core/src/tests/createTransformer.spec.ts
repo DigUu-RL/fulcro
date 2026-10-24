@@ -38,6 +38,7 @@ beforeAll(() => {
 		target: typescript.ScriptTarget.ES2022,
 		strict: true,
 	});
+
 	fixture = program.getSourceFile(fileName.split(path.sep).join('/')) as typescript.SourceFile;
 });
 
@@ -106,6 +107,7 @@ const run = (
 			addDiagnostic === undefined ? {} : { addDiagnostic },
 		),
 	]);
+
 	const printed: string = typescript
 		.createPrinter()
 		.printFile(result.transformed[0] as typescript.SourceFile);
@@ -159,12 +161,14 @@ describe('createTransformer with analyzers', () => {
 
 	it('should hand the analyzer the file as written when another transformer ran first', () => {
 		const seen: typescript.SourceFile[] = [];
+
 		const recording: FileAnalyzer = {
 			functionNames: ['flag'],
 			analyze: (sourceFile): void => {
 				seen.push(sourceFile);
 			},
 		};
+
 		const result = typescript.transform(fixture, [
 			createTransformer([renaming])(program),
 			createTransformer([], [recording])(program),

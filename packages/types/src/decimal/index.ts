@@ -117,12 +117,14 @@ export class Decimal {
 	static from = (value: Decimal | string | number | bigint): Decimal => {
 		if (value instanceof Decimal) return value;
 		if (typeof value === 'string') return new Decimal(parseDecimal(value));
+
 		if (typeof value === 'bigint') {
 			return new Decimal(parseDecimal(value.toString()));
 		}
 
 		if (typeof value === 'number') {
 			if (Number.isNaN(value)) return new Decimal(NOT_A_NUMBER);
+
 			if (value === Infinity || value === -Infinity) {
 				return new Decimal(infinity(value < 0));
 			}

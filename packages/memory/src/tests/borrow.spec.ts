@@ -64,6 +64,7 @@ describe('borrow', () => {
 		expect('set' in values).toBe(false);
 		expect(Object.isFrozen(values)).toBe(true);
 		expect(asReadOnlyView(values, 1).get(0)).toBe(1);
+
 		// A pointer can write, so it is refused over a borrow that cannot.
 		expect(() => pointerTo(values as never, 1)).toThrow(
 			expect.objectContaining({ code: 'FULCRO7017' }),

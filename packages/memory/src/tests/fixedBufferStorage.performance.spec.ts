@@ -20,6 +20,7 @@ const Sample = struct('Sample', {
 	value: DoublePrecisionFloat,
 	channel: UnsignedInteger(8),
 });
+
 type Sample = Struct<typeof Sample>;
 
 /** Enough values for a per-element cost to separate from a constant one. */
@@ -87,7 +88,9 @@ describe('createFixedBufferStorage, counted', () => {
 	it('should touch nothing when an index is refused', () => {
 		const samples: Storage<Sample> = createFixedBufferStorage(counted, VOLUME);
 
-		expect(() => samples.set(VOLUME, sample)).toThrowError(RangeError);
+		expect(() => {
+			samples.set(VOLUME, sample);
+		}).toThrowError(RangeError);
 		expect(() => samples.get(-1)).toThrowError(RangeError);
 		expect([reads, writes, recognitions]).toEqual([0, 0, 0]);
 	});

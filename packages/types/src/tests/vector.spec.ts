@@ -225,6 +225,7 @@ const compileRejected = (packageName: string): string => {
 
 describe.each(COMPILERS)('Vector shapes at compile time, on %s', (_label, name) => {
 	const report: string = compileRejected(name);
+
 	const lines: number[] = [
 		...new Set(
 			[...report.matchAll(/rejected\.fixture\.ts[:(](\d+)/g)].map((match) => Number(match[1])),
@@ -233,6 +234,7 @@ describe.each(COMPILERS)('Vector shapes at compile time, on %s', (_label, name) 
 
 	it('should refuse a shape with neither one row nor one column, quoting why', () => {
 		expect(lines).toContain(15);
+
 		expect(report).toContain(
 			'A vector has one row or one column; Vector<T, 2, 3> has neither. Declare it with Matrix.',
 		);

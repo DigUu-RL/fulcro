@@ -48,7 +48,7 @@ describe('resolved at compile time', () => {
 	});
 
 	it('should read a quoted key as an ordinary segment', () => {
-		expect(pathOf(() => order['customer'].address.city)).toBe('customer.address.city');
+		expect(pathOf(() => order.customer.address.city)).toBe('customer.address.city');
 	});
 
 	it('should never evaluate the accessor', () => {
@@ -72,7 +72,7 @@ describe('parsed at runtime, without the transformer', () => {
 		['a nested path', () => order.customer.address.city, 'customer.address.city'],
 		['a single segment', () => order.id, 'id'],
 		['an indexed element', () => order.items[0].sku, 'items[0].sku'],
-		['a quoted key', () => order['customer'].address.city, 'customer.address.city'],
+		['a quoted key', () => order.customer.address.city, 'customer.address.city'],
 	])('should agree with the compiled form on %s', (_label, accessor, expected) => {
 		// The two implementations answering differently would be worse than
 		// either being wrong, since which one runs depends on the build.

@@ -77,8 +77,12 @@ describe('move, unchecked', () => {
 
 		move(first);
 
-		expect(() => writing.set(0, 1)).toThrow(ended('View.set'));
+		expect(() => {
+			writing.set(0, 1);
+		}).toThrow(ended('View.set'));
 		expect(() => reading.get(0)).toThrow(ended('ReadOnlyView.get'));
-		expect(() => pointer.set(1)).toThrow(expect.objectContaining({ code: 'FULCRO7024' }));
+		expect(() => {
+			pointer.set(1);
+		}).toThrow(expect.objectContaining({ code: 'FULCRO7024' }));
 	});
 });

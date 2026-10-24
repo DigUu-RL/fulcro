@@ -46,6 +46,7 @@ const resolveKind = (
 
 	if (type.isUnion()) return 'union';
 	if (type.isIntersection()) return 'intersection';
+
 	if (type.isLiteral() || (flags & typescript.TypeFlags.BooleanLiteral) !== 0) {
 		return 'literal';
 	}

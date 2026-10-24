@@ -86,6 +86,7 @@ describe('createLinearMemory types', () => {
 		expectTypeOf(createLinearMemory)
 			.parameter(0)
 			.toEqualTypeOf<ArrayBuffer | { readonly buffer: ArrayBuffer }>();
+
 		expectTypeOf(createLinearMemory(new ArrayBuffer(8))).toEqualTypeOf<LinearMemory>();
 	});
 });

@@ -415,6 +415,7 @@ export const walkFlow = <TFacts>(
 			return loop(initialized, (each, own) => {
 				const tested: Path<TFacts> =
 					node.condition === undefined ? each : expression(node.condition, each);
+
 				const ran: Path<TFacts> = statement(node.statement, tested, own);
 				const continued: Path<TFacts> = mergeAll(ran, own.continues.splice(0));
 
@@ -446,15 +447,18 @@ export const walkFlow = <TFacts>(
 
 		if (typescript.isSwitchStatement(node)) {
 			const tested: Path<TFacts> = expression(node.expression, path);
+
 			const own: Jumps<TFacts> = {
 				breaks: [],
 				continues: jumps?.continues ?? [],
 			};
+
 			let falling: Path<TFacts> = unreachable();
 			let hasDefault = false;
 
 			for (const clause of node.caseBlock.clauses) {
 				const entered: Path<TFacts> = merge(fork(tested), falling);
+
 				const matched: Path<TFacts> = typescript.isCaseClause(clause)
 					? expression(clause.expression, entered)
 					: entered;
@@ -468,6 +472,7 @@ export const walkFlow = <TFacts>(
 
 		if (typescript.isTryStatement(node)) {
 			const tried: Path<TFacts> = statement(node.tryBlock, fork(path), jumps);
+
 			const caught: Path<TFacts> =
 				node.catchClause === undefined
 					? tried

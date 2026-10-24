@@ -30,6 +30,7 @@ describe('FulcroError', () => {
 
 	it('should not recognise an error nobody registered', () => {
 		expect(new RangeError('plain') instanceof FulcroError).toBe(false);
+
 		expect(
 			Object.assign(new Error('FULCRO9999: text'), {
 				code: 'FULCRO9999',

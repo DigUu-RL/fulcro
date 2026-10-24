@@ -77,10 +77,12 @@ describe('Fraction', () => {
 	describe('arithmetic', () => {
 		it('should add and subtract over the least common denominator', () => {
 			expect(Ratio.add(ratio(1, 6), ratio(1, 4))).toEqual(ratio(5, 12));
+
 			expect(Ratio.add(ratio(1, 3), ratio(2, 3))).toEqual({
 				numerator: 1,
 				denominator: 1,
 			});
+
 			expect(Ratio.subtract(ratio(1, 4), ratio(1, 2))).toEqual(ratio(-1, 4));
 		});
 
@@ -156,6 +158,7 @@ describe('Fraction', () => {
 				readonly size: 8;
 				readonly alignment: 4;
 			}>();
+
 			expectTypeOf<Fraction<BigInteger>>().not.toMatchTypeOf<Layout<number, number>>();
 		});
 
@@ -163,6 +166,7 @@ describe('Fraction', () => {
 			const Scale = struct('Scale', {
 				factor: FractionOf(UnsignedInteger(16)),
 			});
+
 			const view = new DataView(new ArrayBuffer(Scale.layout.size));
 			const value = Scale.from({ factor: { numerator: 3, denominator: 4 } });
 

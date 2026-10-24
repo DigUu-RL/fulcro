@@ -214,6 +214,7 @@ const prove = (
 		if (typescript.isIdentifier(current) && isValueReference(current, node)) {
 			const shorthand: boolean =
 				typescript.isShorthandPropertyAssignment(current.parent) && current.parent.name === current;
+
 			const symbol: typescript.Symbol | undefined = shorthand
 				? checker.getShorthandAssignmentValueSymbol(current.parent)
 				: checker.getSymbolAtLocation(current);
@@ -298,8 +299,10 @@ const bind = (
 	assembly: Assembly,
 ): string | Failure => {
 	const { checker } = context;
+
 	const resolved: typescript.Symbol =
 		(symbol.flags & typescript.SymbolFlags.Alias) !== 0 ? checker.getAliasedSymbol(symbol) : symbol;
+
 	const declarations: readonly typescript.Declaration[] = resolved.declarations ?? [];
 
 	// `undefined` is the one built-in the checker gives a symbol with no

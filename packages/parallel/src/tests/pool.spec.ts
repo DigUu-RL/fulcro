@@ -342,6 +342,7 @@ describe('the codes a failure carries', () => {
 		const failure = await failureOf(poolFor<number, number>('notAFunction').map([1]));
 
 		expect(failure).toMatchObject({ code: 'FULCRO3001' });
+
 		expect(failure.message).toMatch(
 			/^FULCRO3001: .+ has no callable export named "notAFunction"\.$/,
 		);
@@ -351,6 +352,7 @@ describe('the codes a failure carries', () => {
 		const failure = await failureOf(poolFor<number, number>('notAFunction').map([1]));
 
 		expect(isFulcroError(failure, 'FULCRO3001')).toBe(true);
+
 		expect(failure).toMatchObject({
 			details: {
 				operation: 'initialize',
@@ -821,10 +823,12 @@ describe('closing', () => {
 		expect(first.error).toMatchObject({
 			message: expect.stringMatching(/exited/i),
 		});
+
 		expect(second.error).toMatchObject({
 			code: 'FULCRO3010',
 			details: { operation: 'map' },
 		});
+
 		expect(fake.spawned()).toBe(2);
 	});
 

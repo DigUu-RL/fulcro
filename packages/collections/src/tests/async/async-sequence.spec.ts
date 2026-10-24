@@ -143,6 +143,7 @@ describe('laziness and back pressure', () => {
 				.takeWhile((value) => value < 3)
 				.toArray(),
 		).toEqual([1, 2]);
+
 		expect(pulled()).toBe(3);
 	});
 });
