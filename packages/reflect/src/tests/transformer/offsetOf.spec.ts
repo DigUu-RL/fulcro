@@ -3,7 +3,7 @@ import * as path from 'node:path';
 import * as ts from 'typescript';
 import { beforeAll, describe, expect, it } from 'vitest';
 
-import transformer from '@/transformer';
+import transformer from '@/src/transformer';
 
 /**
  * Transformer suite for `offsetOf`.

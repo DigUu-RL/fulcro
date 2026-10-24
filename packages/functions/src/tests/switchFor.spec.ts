@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { switchFor } from '@/switchFor';
+import { switchFor } from '@/src/switchFor';
 
 /** Numeric enum, whose first member is `0` — a falsy key. */
 enum Status {

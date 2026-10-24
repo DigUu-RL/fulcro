@@ -2,7 +2,8 @@ import typescript from 'typescript';
 
 import { createError } from '@fulcro/errors';
 
-import { AnalysisContext, CallRewriter, FileAnalyzer, isOwnedCall, RewriteContext } from '@/shared';
+import type { AnalysisContext, CallRewriter, FileAnalyzer, RewriteContext } from '@/src/shared';
+import { isOwnedCall } from '@/src/shared';
 
 /**
  * Composition root shared by every Fulcro transformer.

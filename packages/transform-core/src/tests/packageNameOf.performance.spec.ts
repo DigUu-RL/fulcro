@@ -3,7 +3,7 @@ import * as path from 'node:path';
 import typescript from 'typescript';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { packageNameOf } from '@/shared';
+import { packageNameOf } from '@/src/shared';
 
 import { createWorkspace } from './workspace';
 

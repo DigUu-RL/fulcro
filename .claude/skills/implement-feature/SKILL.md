@@ -229,7 +229,7 @@ What may not change:
   output are their own commits (`.claude/rules/git.md`), and in this skill they
   are their own turn.
 - **`dist/`, or a file beside a source.** If a `.js` or `.d.ts` appears under
-  `packages/*/src/`, the `rootDir`/`outDir` pair is the bug —
+  `packages/*/src/`, the build configuration is the bug —
   `.claude/rules/build-output.md`, and do not delete the file and move on.
 
 Run the narrow command after each step rather than the full pass:

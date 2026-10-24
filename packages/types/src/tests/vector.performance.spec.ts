@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { DoublePrecisionFloat } from '@/doublePrecisionFloat';
-import { Vector } from '@/vector';
+import { DoublePrecisionFloat } from '@/src/doublePrecisionFloat';
+import { Vector } from '@/src/vector';
 
 /**
  * Performance suite for `Vector`.

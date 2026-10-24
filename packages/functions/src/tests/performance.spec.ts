@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { switchFor } from '@/switchFor';
-import { tryCatch } from '@/tryCatch';
+import { switchFor } from '@/src/switchFor';
+import { tryCatch } from '@/src/tryCatch';
 
 /**
  * Performance suite.

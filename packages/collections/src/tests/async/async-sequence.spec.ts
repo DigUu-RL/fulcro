@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { AsyncSequenceCollection } from '@/collections/async';
+import { AsyncSequenceCollection } from '@/src/collections/async';
 
 /**
  * A source that produces over time and reports how far it has been pulled.

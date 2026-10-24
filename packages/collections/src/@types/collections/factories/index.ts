@@ -1,5 +1,5 @@
-import { Group } from '@/@types/collections/group';
-import { OrderedSequence, SortCriterion } from '@/@types/collections/ordered';
+import type { Group } from '@/src/@types/collections/group';
+import type { OrderedSequence, SortCriterion } from '@/src/@types/collections/ordered';
 
 /**
  * Builds a {@link Group} instance.

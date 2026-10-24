@@ -1,9 +1,9 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { DoublePrecisionFloat } from '@/doublePrecisionFloat';
-import { type Quaternion, Quaternion as QuaternionOf } from '@/quaternion';
-import { SinglePrecisionFloat } from '@/singlePrecisionFloat';
-import { struct } from '@/struct';
+import { DoublePrecisionFloat } from '@/src/doublePrecisionFloat';
+import { type Quaternion, Quaternion as QuaternionOf } from '@/src/quaternion';
+import type { SinglePrecisionFloat } from '@/src/singlePrecisionFloat';
+import { struct } from '@/src/struct';
 
 /**
  * Behaviour suite for `Quaternion`.

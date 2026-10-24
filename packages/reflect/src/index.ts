@@ -8,4 +8,4 @@
  * compile time, turning what the runtime can only guess — and, for
  * `defaultOf`, cannot answer at all — into an emitted literal.
  */
-export * from '@/functions/utils';
+export * from '@/src/functions/utils';

@@ -1,4 +1,4 @@
-import {
+import type {
 	AsyncAccumulator,
 	AsyncAction,
 	AsyncOptionalSelector,
@@ -11,9 +11,9 @@ import {
 	TerminalOptions,
 	TypeNames,
 	TypeTest,
-} from '@/@types';
-import { Group } from '@/@types/collections/group';
-import { Sequence } from '@/@types/collections/sequence';
+} from '@/src/@types';
+import type { Group } from '@/src/@types/collections/group';
+import type { Sequence } from '@/src/@types/collections/sequence';
 
 /**
  * A lazily evaluated sequence whose elements are not all available yet.

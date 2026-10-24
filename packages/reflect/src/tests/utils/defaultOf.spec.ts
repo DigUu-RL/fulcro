@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { defaultOf } from '@/functions/utils/defaultOf';
+import { defaultOf } from '@/src/functions/utils/defaultOf';
 
 /** Shape exercising nesting, optionality and collections at once. */
 interface Order {

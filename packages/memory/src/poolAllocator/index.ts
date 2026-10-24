@@ -1,8 +1,8 @@
 import { createError } from '@fulcro/errors';
 
-import type { Allocation, Allocator } from '@/allocator';
-import { requireRequest, requireSize } from '@/allocator/requireRequest';
-import { requireLength } from '@/storage/requireLength';
+import type { Allocation, Allocator } from '@/src/allocator';
+import { requireRequest, requireSize } from '@/src/allocator/requireRequest';
+import { requireLength } from '@/src/storage/requireLength';
 
 /**
  * An allocator of blocks of one size, each returned on its own, in any order.

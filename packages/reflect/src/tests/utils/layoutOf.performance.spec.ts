@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { layoutOf } from '@/functions/utils/layoutOf';
+import { layoutOf } from '@/src/functions/utils/layoutOf';
 
 /**
  * Performance suite for `layoutOf`.

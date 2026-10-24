@@ -213,14 +213,15 @@ whose version did not move because nothing in it shipped.
 
 ## 13. `dist` output
 
-**Reads.** Each package's `dist/` after check 2, each `tsconfig.json` for its
-`rootDir` and `outDir` pair, and `git status --short` for emitted extensions
-under `packages/*/src/`.
+**Reads.** Each package's `dist/` after check 2, its `tsdown.config.ts` for
+`outDir` and its `tsconfig.build.json` for `rootDir`, and `git status --short`
+for emitted extensions under `packages/*/src/`.
 
 **A blocking failure** is a `.js`, `.mjs`, `.d.ts` or `.d.mts` beside a `.ts` in
-`src/`. `.claude/rules/build-output.md` is the whole story: the `rootDir`/`outDir`
-pair is the bug, the file is not deleted, and the test runner resolving the stale
-copy in preference to the source is why this fails hours later as a broken import.
+`src/`. `.claude/rules/build-output.md` is the whole story: the build
+configuration is the bug, the file is not deleted, and the test runner resolving
+the stale copy in preference to the source is why this fails hours later as a
+broken import.
 
 The one exception is tracked and deliberate: `packages/*/src/**/fixtures/*.{js,mjs}`
 are source, because `@fulcro/parallel` loads a worker task module from disk at

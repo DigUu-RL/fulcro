@@ -3,8 +3,8 @@ import * as path from 'node:path';
 import typescript from 'typescript';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import type { CallRewriter, FileAnalyzer } from '@/shared';
-import { createTransformer } from '@/transformer';
+import type { CallRewriter, FileAnalyzer } from '@/src/shared';
+import { createTransformer } from '@/src/transformer';
 
 import { createWorkspace } from './workspace';
 

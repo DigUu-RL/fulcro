@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { catalog } from '@/catalog';
-import { createError } from '@/createError';
-import { isFulcroError } from '@/isFulcroError';
-import { prefixError } from '@/prefixError';
+import { catalog } from '@/src/catalog';
+import { createError } from '@/src/createError';
+import { isFulcroError } from '@/src/isFulcroError';
+import { prefixError } from '@/src/prefixError';
 
 /**
  * Performance suite.

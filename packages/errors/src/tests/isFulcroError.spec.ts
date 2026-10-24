@@ -1,9 +1,9 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { createError } from '@/createError';
-import { FulcroError } from '@/fulcroError';
-import { isFulcroError } from '@/isFulcroError';
-import { prefixError } from '@/prefixError';
+import { createError } from '@/src/createError';
+import type { FulcroError } from '@/src/fulcroError';
+import { isFulcroError } from '@/src/isFulcroError';
+import { prefixError } from '@/src/prefixError';
 
 /**
  * Behaviour suite for `isFulcroError`.

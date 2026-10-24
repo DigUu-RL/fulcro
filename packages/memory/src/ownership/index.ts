@@ -1,8 +1,8 @@
 import { createError } from '@fulcro/errors';
 
-import type { Owned } from '@/owned';
-import { type Source, storageSource } from '@/source';
-import type { Storage } from '@/storage';
+import type { Owned } from '@/src/owned';
+import { type Source, storageSource } from '@/src/source';
+import type { Storage } from '@/src/storage';
 
 /**
  * What one owned storage, its current owner and its borrows share.

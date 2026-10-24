@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { createLinearMemory, type LinearMemory } from '@/linearMemory';
+import { createLinearMemory, type LinearMemory } from '@/src/linearMemory';
 
 import { countedMemory } from './countedMemory';
 import { watchBuffers } from './watchBuffers';

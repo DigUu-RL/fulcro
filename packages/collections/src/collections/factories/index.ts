@@ -1,12 +1,12 @@
 import { createError } from '@fulcro/errors';
 
-import {
+import type {
 	CollectionFactories,
 	GroupFactory,
 	OrderedSequenceFactory,
-} from '@/@types/collections/factories';
-import { Group } from '@/@types/collections/group';
-import { OrderedSequence, SortCriterion } from '@/@types/collections/ordered';
+} from '@/src/@types/collections/factories';
+import type { Group } from '@/src/@types/collections/group';
+import type { OrderedSequence, SortCriterion } from '@/src/@types/collections/ordered';
 
 /**
  * Registry holding the concrete collection factories.

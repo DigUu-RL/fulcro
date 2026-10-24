@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { AsyncSequenceCollection } from '@/collections/async';
-import { SequenceCollection } from '@/collections/sequence';
+import { AsyncSequenceCollection } from '@/src/collections/async';
+import { SequenceCollection } from '@/src/collections/sequence';
 
 /**
  * Behavior suite for the operators brought over from the synchronous

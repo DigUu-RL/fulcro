@@ -5,8 +5,9 @@ import typescript from 'typescript';
 
 import { createError } from '@fulcro/errors';
 
-import { CallRewriter, FileAnalyzer } from '@/shared';
-import { createTransformer, TransformerOptions } from '@/transformer';
+import type { CallRewriter, FileAnalyzer } from '@/src/shared';
+import type { TransformerOptions } from '@/src/transformer';
+import { createTransformer } from '@/src/transformer';
 
 /**
  * Type checking core shared by every bundler integration.
@@ -18,8 +19,7 @@ import { createTransformer, TransformerOptions } from '@/transformer';
  * transforms each file itself.
  *
  * Nothing here knows about any bundler: the adapters built on top only have to
- * call {@link createFileTransformer} and hand back what it returns. Kept as
- * CommonJS as well, because the compiler plugin loads it through `require`.
+ * call {@link createFileTransformer} and hand back what it returns.
  */
 
 /** Extensions carrying TypeScript this core is responsible for. */

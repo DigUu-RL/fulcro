@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { createWaitingQueue, type Waiting } from '@/task/queue.js';
+import { createWaitingQueue, type Waiting } from '@/src/task/queue.js';
 
 /**
  * What the waiting queue keeps, counted.

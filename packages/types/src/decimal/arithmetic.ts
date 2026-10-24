@@ -1,4 +1,4 @@
-import type { RoundingMode } from '@/roundingMode';
+import type { RoundingMode } from '@/src/roundingMode';
 
 import {
 	adjustedExponent,

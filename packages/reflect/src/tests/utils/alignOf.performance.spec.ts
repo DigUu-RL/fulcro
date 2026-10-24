@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { alignOf } from '@/functions/utils/alignOf';
+import { alignOf } from '@/src/functions/utils/alignOf';
 
 /**
  * Performance suite for `alignOf`.

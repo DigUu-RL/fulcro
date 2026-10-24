@@ -9,8 +9,8 @@ import {
 	UnsignedInteger,
 } from '@fulcro/types';
 
-import { createFixedBufferStorage } from '@/fixedBufferStorage';
-import type { Storage } from '@/storage';
+import { createFixedBufferStorage } from '@/src/fixedBufferStorage';
+import type { Storage } from '@/src/storage';
 
 import { coded } from './coded';
 

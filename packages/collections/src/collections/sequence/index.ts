@@ -1,4 +1,4 @@
-import { bootstrapCollections } from '@/collections/factories/bootstrap';
+import { bootstrapCollections } from '@/src/collections/factories/bootstrap';
 
 /**
  * Public entry point of the base sequence collection.
@@ -9,4 +9,4 @@ import { bootstrapCollections } from '@/collections/factories/bootstrap';
  */
 bootstrapCollections();
 
-export { SequenceCollection } from '@/collections/sequence/sequence.collection';
+export { SequenceCollection } from '@/src/collections/sequence/sequence.collection';

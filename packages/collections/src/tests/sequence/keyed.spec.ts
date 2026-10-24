@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { SequenceCollection } from '@/collections/sequence';
+import { SequenceCollection } from '@/src/collections/sequence';
 
 /** Shape with a key worth selecting on and a payload worth keeping. */
 interface User {

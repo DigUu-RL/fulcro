@@ -1,4 +1,4 @@
-import { type FieldOf, unresolvedLayout, type WithFieldLayout } from '@/functions/utils/layout';
+import { type FieldOf, unresolvedLayout, type WithFieldLayout } from '@/src/functions/utils/layout';
 
 /**
  * Where a field of a struct sits, in bytes from the start of the struct.

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { Allocation } from '@/allocator';
-import { createStackAllocator, type StackAllocator } from '@/stackAllocator';
+import type { Allocation } from '@/src/allocator';
+import { createStackAllocator, type StackAllocator } from '@/src/stackAllocator';
 
 import { watchBuffers } from './watchBuffers';
 

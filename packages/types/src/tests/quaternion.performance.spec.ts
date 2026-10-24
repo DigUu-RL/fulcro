@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { DoublePrecisionFloat } from '@/doublePrecisionFloat';
-import { Quaternion } from '@/quaternion';
+import { DoublePrecisionFloat } from '@/src/doublePrecisionFloat';
+import { Quaternion } from '@/src/quaternion';
 
 /**
  * Performance suite for `Quaternion`.

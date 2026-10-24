@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { none, type Option, optionOf, some } from '@/option';
+import { none, type Option, optionOf, some } from '@/src/option';
 
 /**
  * Performance suite.

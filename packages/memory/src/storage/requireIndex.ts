@@ -1,6 +1,6 @@
 import { createError } from '@fulcro/errors';
 
-import { describeValue } from '@/storage/describeValue';
+import { describeValue } from '@/src/storage/describeValue';
 
 /**
  * Refuses an index outside a storage, before anything is read or written.

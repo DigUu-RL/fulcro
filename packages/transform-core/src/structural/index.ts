@@ -1,7 +1,7 @@
 import typescript from 'typescript';
 
-import { RewriteContext } from '@/shared';
-import { buildExplainer } from '@/structural/explain';
+import type { RewriteContext } from '@/src/shared';
+import { buildExplainer } from '@/src/structural/explain';
 
 /**
  * Writing out the checks a type implies.

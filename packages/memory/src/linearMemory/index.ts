@@ -1,6 +1,6 @@
 import { createError } from '@fulcro/errors';
 
-import { describeBuffer } from '@/storage/describeBuffer';
+import { describeBuffer } from '@/src/storage/describeBuffer';
 
 /**
  * One contiguous block of bytes, in which an address is a byte offset: address

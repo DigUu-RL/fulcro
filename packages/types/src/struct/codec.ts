@@ -1,13 +1,13 @@
-import { Decimal } from '@/decimal';
-import { formatDecimal } from '@/decimal/format';
-import { parseDecimal } from '@/decimal/parse';
-import { type DecimalParts, powerOfTen } from '@/decimal/parts';
-import { DoublePrecisionFloat } from '@/doublePrecisionFloat';
-import { HalfPrecisionFloat } from '@/halfPrecisionFloat';
-import type { IntegerType, IntegerWidth } from '@/integer';
-import { SignedInteger } from '@/signedInteger';
-import { SinglePrecisionFloat } from '@/singlePrecisionFloat';
-import { UnsignedInteger } from '@/unsignedInteger';
+import { Decimal } from '@/src/decimal';
+import { formatDecimal } from '@/src/decimal/format';
+import { parseDecimal } from '@/src/decimal/parse';
+import { type DecimalParts, powerOfTen } from '@/src/decimal/parts';
+import { DoublePrecisionFloat } from '@/src/doublePrecisionFloat';
+import { HalfPrecisionFloat } from '@/src/halfPrecisionFloat';
+import type { IntegerType, IntegerWidth } from '@/src/integer';
+import { SignedInteger } from '@/src/signedInteger';
+import { SinglePrecisionFloat } from '@/src/singlePrecisionFloat';
+import { UnsignedInteger } from '@/src/unsignedInteger';
 
 /**
  * How a field of a struct is laid out in bytes, and how it is compared.

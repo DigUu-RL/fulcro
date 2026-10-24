@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { asReadOnlyView } from '@/asReadOnlyView';
-import { borrow } from '@/borrow';
-import { borrowMutable } from '@/borrowMutable';
-import { createManagedStorage } from '@/managedStorage';
-import { move } from '@/move';
-import { own } from '@/own';
-import type { Owned } from '@/owned';
-import { pointerTo } from '@/pointerTo';
+import { asReadOnlyView } from '@/src/asReadOnlyView';
+import { borrow } from '@/src/borrow';
+import { borrowMutable } from '@/src/borrowMutable';
+import { createManagedStorage } from '@/src/managedStorage';
+import { move } from '@/src/move';
+import { own } from '@/src/own';
+import type { Owned } from '@/src/owned';
+import { pointerTo } from '@/src/pointerTo';
 
 import { coded } from './coded';
 

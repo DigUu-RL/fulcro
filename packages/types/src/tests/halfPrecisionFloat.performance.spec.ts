@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { HalfPrecisionFloat } from '@/halfPrecisionFloat';
+import { HalfPrecisionFloat } from '@/src/halfPrecisionFloat';
 
 /**
  * Performance suite for `HalfPrecisionFloat`.

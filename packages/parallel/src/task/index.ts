@@ -1,16 +1,16 @@
 import { createError } from '@fulcro/errors';
 import { type Result, tryCatch } from '@fulcro/functions';
 
-import {
+import type {
 	CancellationSource,
 	CancellationToken,
 	Task,
 	TaskScope,
 	TaskScopeOptions,
 	TaskWork,
-} from '@/@types/index.js';
-import { createCancellationSource } from '@/cancellation/index.js';
-import { createWaitingQueue, type Waiting, type WaitingQueue } from '@/task/queue.js';
+} from '@/src/@types/index.js';
+import { createCancellationSource } from '@/src/cancellation/index.js';
+import { createWaitingQueue, type Waiting, type WaitingQueue } from '@/src/task/queue.js';
 
 /**
  * What a task rejects with, made safe to hold as a failure.

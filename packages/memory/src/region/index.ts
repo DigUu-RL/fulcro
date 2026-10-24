@@ -1,7 +1,7 @@
-import { requirePart } from '@/region/requirePart';
-import type { Source } from '@/source';
-import { requireIndex } from '@/storage/requireIndex';
-import type { ReadOnlyView, View } from '@/view';
+import { requirePart } from '@/src/region/requirePart';
+import type { Source } from '@/src/source';
+import { requireIndex } from '@/src/storage/requireIndex';
+import type { ReadOnlyView, View } from '@/src/view';
 
 /**
  * Builds a read-only view of `length` values of a source, from `start`.

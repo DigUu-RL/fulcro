@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { asReadOnlyView } from '@/asReadOnlyView';
-import type { ReadOnlyView } from '@/view';
+import { asReadOnlyView } from '@/src/asReadOnlyView';
+import type { ReadOnlyView } from '@/src/view';
 
 import { countedArray, countedStorage } from './countedSource';
 

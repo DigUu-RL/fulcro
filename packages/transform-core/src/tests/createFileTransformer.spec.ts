@@ -3,8 +3,8 @@ import * as path from 'node:path';
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { createFileTransformer } from '@/program';
-import type { CallRewriter, FileAnalyzer } from '@/shared';
+import { createFileTransformer } from '@/src/program';
+import type { CallRewriter, FileAnalyzer } from '@/src/shared';
 
 import { createWorkspace } from './workspace';
 

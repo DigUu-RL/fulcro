@@ -1,4 +1,4 @@
-import type { Source } from '@/source';
+import type { Source } from '@/src/source';
 
 /** Where a pointer points: its source, and its position in it. */
 export interface PointerPosition<T> {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { as } from '@/functions/utils/as';
+import { as } from '@/src/functions/utils/as';
 
 /**
  * Behaviour suite for `as`.

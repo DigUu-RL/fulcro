@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { is } from '@/functions/utils/is';
+import { is } from '@/src/functions/utils/is';
 
 /**
  * Behaviour suite for `is`.

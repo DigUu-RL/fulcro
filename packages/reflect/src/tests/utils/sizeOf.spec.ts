@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import type { WithLayout } from '@/functions/utils/layout';
-import { sizeOf } from '@/functions/utils/sizeOf';
+import type { WithLayout } from '@/src/functions/utils/layout';
+import { sizeOf } from '@/src/functions/utils/sizeOf';
 
 /**
  * Behaviour suite for `sizeOf`.

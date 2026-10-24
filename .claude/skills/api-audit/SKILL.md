@@ -162,12 +162,13 @@ the ones a test would.
    in `dist/` after the build. A `types` condition pointing at a missing `.d.ts`
    is a consumer whose editor shows `any` and whose suite stays green —
    `.claude/rules/release.md` names this as the failure to look for.
-2. Each condition's extension matches what it is: `./unplugin` resolves to
-   `.d.mts`/`.mjs` in the packages that ship it that way, and a `.d.ts` served
-   under an ESM condition is a resolution failure on the consumer's side.
+2. Each condition's extension matches what it is. Every package is
+   `"type": "module"` and ships `.js` with `.d.ts`; a `.cjs`, `.mjs` or
+   `.d.mts` appearing in `exports` is a build configuration that drifted from
+   `fixedExtension: false`, and a resolution surprise on the consumer's side.
 3. Nothing resolves outside `dist/`. A target beside the source is
-   `.claude/rules/build-output.md`'s failure, and the bug is the
-   `rootDir`/`outDir` pair rather than the file.
+   `.claude/rules/build-output.md`'s failure, and the bug is the build
+   configuration rather than the file.
 4. `./package.json` is still exported. Tooling reads it and its removal breaks
    consumers who never imported anything.
 

@@ -2,8 +2,8 @@ import { getEventListeners } from 'node:events';
 
 import { describe, expect, it } from 'vitest';
 
-import { type CancellationSource } from '@/@types/index.js';
-import { createCancellationSource } from '@/cancellation/index.js';
+import { type CancellationSource } from '@/src/@types/index.js';
+import { createCancellationSource } from '@/src/cancellation/index.js';
 
 /**
  * What a cancellation costs, counted rather than timed.

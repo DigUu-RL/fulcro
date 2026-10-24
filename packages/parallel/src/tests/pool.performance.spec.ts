@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { type WorkerPool } from '@/@types/index.js';
-import { createPool } from '@/pool/index.js';
+import { type WorkerPool } from '@/src/@types/index.js';
+import { createPool } from '@/src/pool/index.js';
 
 import { createFakeWorkers, type FakeWorkers, NOWHERE } from './fake-worker.js';
 

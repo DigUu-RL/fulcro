@@ -313,7 +313,8 @@ Plus `npm install`, which links the workspace and writes the lockfile,
 - `.claude/rules/general.md` — single responsibility, and abstraction after the
   second case.
 - `.claude/rules/api-design.md` — why the barrel ships empty.
-- `.claude/rules/build-output.md` — the `rootDir`/`outDir` pair.
+- `.claude/rules/build-output.md` — where the build writes, and why never
+  beside the source.
 - `.claude/rules/release.md` and `protected-operations.md` — the first publish.
 - `.changeset/README.md` — the `fixed` group, and why a new package is not in
   it.

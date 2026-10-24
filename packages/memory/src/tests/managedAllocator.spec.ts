@@ -1,7 +1,7 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import type { Allocation, Allocator } from '@/allocator';
-import { createManagedAllocator } from '@/managedAllocator';
+import type { Allocation, Allocator } from '@/src/allocator';
+import { createManagedAllocator } from '@/src/managedAllocator';
 
 /**
  * Behaviour suite for `createManagedAllocator`.

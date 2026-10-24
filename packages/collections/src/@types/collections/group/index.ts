@@ -1,4 +1,4 @@
-import { Sequence } from '@/@types/collections/sequence';
+import type { Sequence } from '@/src/@types/collections/sequence';
 
 /**
  * A sequence of elements sharing the same key, as produced by

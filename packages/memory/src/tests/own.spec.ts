@@ -1,11 +1,11 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { borrow } from '@/borrow';
-import { borrowMutable } from '@/borrowMutable';
-import { createManagedStorage } from '@/managedStorage';
-import { own } from '@/own';
-import type { Owned } from '@/owned';
-import type { Storage } from '@/storage';
+import { borrow } from '@/src/borrow';
+import { borrowMutable } from '@/src/borrowMutable';
+import { createManagedStorage } from '@/src/managedStorage';
+import { own } from '@/src/own';
+import type { Owned } from '@/src/owned';
+import type { Storage } from '@/src/storage';
 
 import { coded } from './coded';
 

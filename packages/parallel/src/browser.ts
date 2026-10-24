@@ -6,9 +6,9 @@
  * bundler resolving this file pulls in the platform `Worker` and never sees
  * `node:worker_threads`.
  */
-import { PoolOptions, WorkerPool } from '@/@types/index.js';
-import { spawnWorker } from '@/backend/browser.js';
-import { createPool } from '@/pool/index.js';
+import type { PoolOptions, WorkerPool } from '@/src/@types/index.js';
+import { spawnWorker } from '@/src/backend/browser.js';
+import { createPool } from '@/src/pool/index.js';
 
 export type {
 	CancellationSource,
@@ -21,9 +21,9 @@ export type {
 	TaskSource,
 	TaskWork,
 	WorkerPool,
-} from '@/@types/index.js';
-export { createCancellationSource } from '@/cancellation/index.js';
-export { createTaskScope } from '@/task/index.js';
+} from '@/src/@types/index.js';
+export { createCancellationSource } from '@/src/cancellation/index.js';
+export { createTaskScope } from '@/src/task/index.js';
 
 /** The script the workers run, resolved relative to this module. */
 const WORKER_URL = new URL('./worker/entry.js', import.meta.url);

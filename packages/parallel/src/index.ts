@@ -7,9 +7,9 @@
  * `exports` map picks between them, so a browser bundle never contains a
  * reference to a Node built-in and nothing has to be marked external.
  */
-import { PoolOptions, WorkerPool } from '@/@types/index.js';
-import { spawnWorker } from '@/backend/node.js';
-import { createPool } from '@/pool/index.js';
+import type { PoolOptions, WorkerPool } from '@/src/@types/index.js';
+import { spawnWorker } from '@/src/backend/node.js';
+import { createPool } from '@/src/pool/index.js';
 
 export type {
 	CancellationSource,
@@ -22,9 +22,9 @@ export type {
 	TaskSource,
 	TaskWork,
 	WorkerPool,
-} from '@/@types/index.js';
-export { createCancellationSource } from '@/cancellation/index.js';
-export { createTaskScope } from '@/task/index.js';
+} from '@/src/@types/index.js';
+export { createCancellationSource } from '@/src/cancellation/index.js';
+export { createTaskScope } from '@/src/task/index.js';
 
 /** The script the workers run, resolved relative to this module. */
 const WORKER_URL = new URL('./worker/entry.js', import.meta.url);

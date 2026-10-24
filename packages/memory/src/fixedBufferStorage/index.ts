@@ -1,7 +1,7 @@
-import { createByteStorage } from '@/byteStorage';
-import { type FixedLayoutElement, requireElement } from '@/element';
-import type { Storage } from '@/storage';
-import { requireLength } from '@/storage/requireLength';
+import { createByteStorage } from '@/src/byteStorage';
+import { type FixedLayoutElement, requireElement } from '@/src/element';
+import type { Storage } from '@/src/storage';
+import { requireLength } from '@/src/storage/requireLength';
 
 /**
  * Creates a storage held in one buffer of fixed size: every value stored as

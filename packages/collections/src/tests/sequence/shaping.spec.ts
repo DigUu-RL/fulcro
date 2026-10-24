@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { SequenceCollection } from '@/collections/sequence';
+import { SequenceCollection } from '@/src/collections/sequence';
 
 /**
  * Behaviour suite for the operators that shape a sequence rather than reduce

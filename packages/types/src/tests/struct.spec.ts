@@ -1,14 +1,14 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { BigInteger } from '@/bigInteger';
-import { Decimal } from '@/decimal';
-import { DoublePrecisionFloat } from '@/doublePrecisionFloat';
-import { HalfPrecisionFloat } from '@/halfPrecisionFloat';
-import type { Layout } from '@/layout';
-import { SignedInteger } from '@/signedInteger';
-import { SinglePrecisionFloat } from '@/singlePrecisionFloat';
-import { type Struct, struct } from '@/struct';
-import { UnsignedInteger } from '@/unsignedInteger';
+import { BigInteger } from '@/src/bigInteger';
+import { Decimal } from '@/src/decimal';
+import { DoublePrecisionFloat } from '@/src/doublePrecisionFloat';
+import { HalfPrecisionFloat } from '@/src/halfPrecisionFloat';
+import type { Layout } from '@/src/layout';
+import { SignedInteger } from '@/src/signedInteger';
+import { SinglePrecisionFloat } from '@/src/singlePrecisionFloat';
+import { type Struct, struct } from '@/src/struct';
+import { UnsignedInteger } from '@/src/unsignedInteger';
 
 /**
  * Behaviour suite for `struct`.

@@ -1,4 +1,4 @@
-import {
+import type {
 	Accumulator,
 	Action,
 	Constructor,
@@ -10,9 +10,9 @@ import {
 	TypeNames,
 	TypeTest,
 	TypeToken,
-} from '@/@types';
-import { Group } from '@/@types/collections/group';
-import { OrderedSequence } from '@/@types/collections/ordered';
+} from '@/src/@types';
+import type { Group } from '@/src/@types/collections/group';
+import type { OrderedSequence } from '@/src/@types/collections/ordered';
 
 /**
  * A lazily evaluated sequence of elements exposing the query operators.

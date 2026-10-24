@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { UnsignedInteger } from '@/unsignedInteger';
+import { UnsignedInteger } from '@/src/unsignedInteger';
 
 /**
  * Performance suite for `UnsignedInteger`.

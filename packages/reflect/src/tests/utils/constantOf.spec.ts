@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { constantOf } from '@/functions/utils/constantOf';
+import { constantOf } from '@/src/functions/utils/constantOf';
 
 /**
  * Behaviour suite for `constantOf` at runtime: the fallback a consumer gets

@@ -1,10 +1,11 @@
 import * as path from 'node:path';
 
-import typescript from 'typescript';
+import type typescript from 'typescript';
 
-import { CallRewriter, RewriteContext } from '@fulcro/transform-core';
+import type { CallRewriter, RewriteContext } from '@fulcro/transform-core';
 
-import { Resolution, resolveTypeToken } from '@/transformer/resolve';
+import type { Resolution } from '@/src/transformer/resolve';
+import { resolveTypeToken } from '@/src/transformer/resolve';
 
 /**
  * Rewriters of `ofType` and `cast`.

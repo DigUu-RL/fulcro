@@ -1,6 +1,7 @@
+import type { TransformerUnplugin } from '@fulcro/transform-core/unplugin';
 import { createTransformerUnplugin } from '@fulcro/transform-core/unplugin';
 
-import { REWRITERS } from '@/transformer/index.js';
+import { REWRITERS } from '@/src/transformer/index.js';
 
 /**
  * Bundler plugin resolving `ofType<T>()` and `cast<T>()` at build time.
@@ -26,22 +27,22 @@ const plugins = createTransformerUnplugin(REWRITERS, 'fulcro-collections');
 export type { PluginOptions } from '@fulcro/transform-core/unplugin';
 
 /** The factory itself, for a bundler not covered below. */
-export const unpluginFactory = plugins.unpluginFactory;
+export const unpluginFactory: TransformerUnplugin['unpluginFactory'] = plugins.unpluginFactory;
 
 /** Adapter for Vite, which is also what vitest runs on. */
-export const vite = plugins.vite;
+export const vite: TransformerUnplugin['vite'] = plugins.vite;
 
 /** Adapter for Rollup. */
-export const rollup = plugins.rollup;
+export const rollup: TransformerUnplugin['rollup'] = plugins.rollup;
 
 /** Adapter for Webpack. */
-export const webpack = plugins.webpack;
+export const webpack: TransformerUnplugin['webpack'] = plugins.webpack;
 
 /** Adapter for Rspack. */
-export const rspack = plugins.rspack;
+export const rspack: TransformerUnplugin['rspack'] = plugins.rspack;
 
 /** Adapter for esbuild. */
-export const esbuild = plugins.esbuild;
+export const esbuild: TransformerUnplugin['esbuild'] = plugins.esbuild;
 
 /** Adapter for Farm. */
-export const farm = plugins.farm;
+export const farm: TransformerUnplugin['farm'] = plugins.farm;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { alignOf } from '@/functions/utils/alignOf';
-import type { WithLayout } from '@/functions/utils/layout';
+import { alignOf } from '@/src/functions/utils/alignOf';
+import type { WithLayout } from '@/src/functions/utils/layout';
 
 /**
  * Behaviour suite for `alignOf`.

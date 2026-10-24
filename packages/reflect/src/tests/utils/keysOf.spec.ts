@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { keysOf } from '@/functions/utils/keysOf';
+import { keysOf } from '@/src/functions/utils/keysOf';
 
 /**
  * Behaviour suite for `keysOf`.

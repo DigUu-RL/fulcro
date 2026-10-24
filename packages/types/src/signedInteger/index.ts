@@ -1,12 +1,12 @@
-import type { Branded } from '@/brand';
+import type { Branded } from '@/src/brand';
 import {
 	type ByteSize,
 	createIntegerType,
 	type IntegerRepresentation,
 	type IntegerType,
 	type IntegerWidth,
-} from '@/integer';
-import type { Layout } from '@/layout';
+} from '@/src/integer';
+import type { Layout } from '@/src/layout';
 
 /**
  * A two's complement integer of `N` bits: from -2^(N-1) to 2^(N-1) - 1.

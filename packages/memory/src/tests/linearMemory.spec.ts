@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { createLinearMemory, type LinearMemory } from '@/linearMemory';
+import { createLinearMemory, type LinearMemory } from '@/src/linearMemory';
 
 import { coded } from './coded';
 import { instantiateRecordingModule, webAssembly } from './recordingModule';

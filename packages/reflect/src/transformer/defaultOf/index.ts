@@ -1,12 +1,7 @@
 import typescript from 'typescript';
 
-import {
-	CallRewriter,
-	IDENTIFIER_PATTERN,
-	isTupleType,
-	RewriteContext,
-	utilityModuleSegment,
-} from '@fulcro/transform-core';
+import type { CallRewriter, RewriteContext } from '@fulcro/transform-core';
+import { IDENTIFIER_PATTERN, isTupleType, utilityModuleSegment } from '@fulcro/transform-core';
 
 /**
  * Rewriter of `defaultOf`.

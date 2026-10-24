@@ -1,5 +1,5 @@
-import { Selector } from '@/@types';
-import { Sequence } from '@/@types/collections/sequence';
+import type { Selector } from '@/src/@types';
+import type { Sequence } from '@/src/@types/collections/sequence';
 
 /**
  * A single sorting criterion of an {@link OrderedSequence}.

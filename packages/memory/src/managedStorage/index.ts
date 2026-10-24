@@ -1,6 +1,6 @@
-import type { Storage } from '@/storage';
-import { requireIndex } from '@/storage/requireIndex';
-import { requireLength } from '@/storage/requireLength';
+import type { Storage } from '@/src/storage';
+import { requireIndex } from '@/src/storage/requireIndex';
+import { requireLength } from '@/src/storage/requireLength';
 
 /**
  * Creates a storage held in memory the JavaScript engine manages: an ordinary

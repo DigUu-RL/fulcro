@@ -10,8 +10,8 @@ import {
 	utilityModuleSegment,
 } from '@fulcro/transform-core';
 
-import { describeUnwritable } from '@/functions/utils/constantOf';
-import { constantLiteral } from '@/transformer/literal';
+import { describeUnwritable } from '@/src/functions/utils/constantOf';
+import { constantLiteral } from '@/src/transformer/literal';
 
 /**
  * Compile-time evaluation of `constantOf`.

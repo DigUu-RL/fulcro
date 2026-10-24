@@ -1,4 +1,4 @@
-import type { ElementType } from '@/element';
+import type { ElementType } from '@/src/element';
 
 /**
  * Arithmetic over lists of components, one element type throughout.

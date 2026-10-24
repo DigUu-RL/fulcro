@@ -1,5 +1,5 @@
-import { ErrorKind } from '@/definition';
-import { isFulcroError } from '@/isFulcroError';
+import type { ErrorKind } from '@/src/definition';
+import { isFulcroError } from '@/src/isFulcroError';
 
 /**
  * Places an error in the context it was raised from, keeping its code, its

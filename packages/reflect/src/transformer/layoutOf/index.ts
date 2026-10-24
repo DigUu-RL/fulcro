@@ -1,7 +1,7 @@
 import { type CallRewriter, utilityModuleSegment } from '@fulcro/transform-core';
 
-import { type ReadLayout, readLayout } from '@/transformer/layout';
-import { frozenObject } from '@/transformer/literal';
+import { type ReadLayout, readLayout } from '@/src/transformer/layout';
+import { frozenObject } from '@/src/transformer/literal';
 
 /**
  * Rewriter of `layoutOf`.

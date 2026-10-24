@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { Decimal } from '@/decimal';
+import { Decimal } from '@/src/decimal';
 
 /**
  * Performance suite for `Decimal`.

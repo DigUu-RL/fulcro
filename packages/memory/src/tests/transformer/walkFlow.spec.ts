@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { walkFlow } from '@/transformer/flow';
+import { walkFlow } from '@/src/transformer/flow';
 
 import { parse, recordingRules } from './recordingRules';
 

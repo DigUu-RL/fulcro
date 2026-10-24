@@ -1,9 +1,9 @@
 import { createError } from '@fulcro/errors';
 
-import type { Allocation, AllocationDomain } from '@/allocator';
-import { requireRequest } from '@/allocator/requireRequest';
-import { bump, type BumpRegion, remaining } from '@/bump';
-import { describeBuffer } from '@/storage/describeBuffer';
+import type { Allocation, AllocationDomain } from '@/src/allocator';
+import { requireRequest } from '@/src/allocator/requireRequest';
+import { bump, type BumpRegion, remaining } from '@/src/bump';
+import { describeBuffer } from '@/src/storage/describeBuffer';
 
 /**
  * An allocator over a buffer the caller supplied, handed out front to back and

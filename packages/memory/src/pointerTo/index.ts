@@ -1,12 +1,12 @@
 import { createError } from '@fulcro/errors';
 
-import type { Pointer } from '@/pointer';
-import type { Source } from '@/source';
-import { type PointerPosition, pointerPositions } from '@/source/pointerPositions';
-import { resolveSource } from '@/source/resolveSource';
-import type { Storage } from '@/storage';
-import { describeValue } from '@/storage/describeValue';
-import { requireIndex } from '@/storage/requireIndex';
+import type { Pointer } from '@/src/pointer';
+import type { Source } from '@/src/source';
+import { type PointerPosition, pointerPositions } from '@/src/source/pointerPositions';
+import { resolveSource } from '@/src/source/resolveSource';
+import type { Storage } from '@/src/storage';
+import { describeValue } from '@/src/storage/describeValue';
+import { requireIndex } from '@/src/storage/requireIndex';
 
 /**
  * Refuses a position a pointer into `length` values cannot take.

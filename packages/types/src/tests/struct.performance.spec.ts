@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { SinglePrecisionFloat } from '@/singlePrecisionFloat';
-import { struct } from '@/struct';
-import { UnsignedInteger } from '@/unsignedInteger';
+import { SinglePrecisionFloat } from '@/src/singlePrecisionFloat';
+import { struct } from '@/src/struct';
+import { UnsignedInteger } from '@/src/unsignedInteger';
 
 /**
  * Performance suite for `struct`.

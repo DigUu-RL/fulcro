@@ -1,7 +1,7 @@
 import { createError } from '@fulcro/errors';
 
-import { BigInteger } from '@/bigInteger';
-import { createComponentRecord } from '@/components';
+import { BigInteger } from '@/src/bigInteger';
+import { createComponentRecord } from '@/src/components';
 import {
 	describeKind,
 	describeType,
@@ -10,10 +10,10 @@ import {
 	type RepeatedLayout,
 	type SourceOf,
 	type ValueOf,
-} from '@/element';
-import type { IntegerType } from '@/integer';
-import type { NumericType } from '@/numericType';
-import type { Multiply } from '@/struct/arithmetic';
+} from '@/src/element';
+import type { IntegerType } from '@/src/integer';
+import type { NumericType } from '@/src/numericType';
+import type { Multiply } from '@/src/struct/arithmetic';
 
 /**
  * An exact rational number: a numerator over a denominator, both of the

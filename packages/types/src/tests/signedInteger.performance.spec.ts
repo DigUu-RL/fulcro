@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { SignedInteger } from '@/signedInteger';
+import { SignedInteger } from '@/src/signedInteger';
 
 /**
  * Performance suite for `SignedInteger`.

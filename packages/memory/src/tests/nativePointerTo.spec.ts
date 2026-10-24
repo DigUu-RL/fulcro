@@ -8,16 +8,16 @@ import {
 	UnsignedInteger,
 } from '@fulcro/types';
 
-import type { Allocation, Allocator } from '@/allocator';
-import { createArenaAllocator } from '@/arenaAllocator';
-import { createFixedBufferAllocator } from '@/fixedBufferAllocator';
-import { createLinearMemory, type LinearMemory } from '@/linearMemory';
-import { createManagedAllocator } from '@/managedAllocator';
-import type { MemoryReference } from '@/memoryReference';
-import type { NativePointer } from '@/nativePointer';
-import { nativePointerTo } from '@/nativePointerTo';
-import { createPoolAllocator } from '@/poolAllocator';
-import { createStackAllocator } from '@/stackAllocator';
+import type { Allocation, Allocator } from '@/src/allocator';
+import { createArenaAllocator } from '@/src/arenaAllocator';
+import { createFixedBufferAllocator } from '@/src/fixedBufferAllocator';
+import { createLinearMemory, type LinearMemory } from '@/src/linearMemory';
+import { createManagedAllocator } from '@/src/managedAllocator';
+import type { MemoryReference } from '@/src/memoryReference';
+import type { NativePointer } from '@/src/nativePointer';
+import { nativePointerTo } from '@/src/nativePointerTo';
+import { createPoolAllocator } from '@/src/poolAllocator';
+import { createStackAllocator } from '@/src/stackAllocator';
 
 import { coded } from './coded';
 import { instantiateRecordingModule } from './recordingModule';

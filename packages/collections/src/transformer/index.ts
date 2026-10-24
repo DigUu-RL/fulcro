@@ -4,7 +4,7 @@ import {
 	type TransformerFactory,
 } from '@fulcro/transform-core';
 
-import { castRewriter, ofTypeRewriter } from '@/transformer/narrowing';
+import { castRewriter, ofTypeRewriter } from '@/src/transformer/narrowing';
 
 export type { TransformerOptions } from '@fulcro/transform-core';
 

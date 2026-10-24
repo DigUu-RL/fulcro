@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { asView } from '@/asView';
-import type { View } from '@/view';
+import { asView } from '@/src/asView';
+import type { View } from '@/src/view';
 
 import { countedArray, countedStorage } from './countedSource';
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { createManagedStorage } from '@/managedStorage';
-import type { Storage } from '@/storage';
+import { createManagedStorage } from '@/src/managedStorage';
+import type { Storage } from '@/src/storage';
 
 /**
  * Performance suite for `createManagedStorage`.

@@ -54,9 +54,18 @@ Run from the repository root. These are the scripts that exist today — read
 | `npm run validate:claude`                 | Structural validation of the `.claude` tree                                 |
 | `npm run changeset`                       | Records a version bump for a shipped change                                 |
 
-Each package builds with
-`tsc -p tsconfig.build.json && node ../../tools/build/rewrite-aliases.mjs`: the
-second step turns the `@/…` imports `tsc` leaves in `dist` into relative paths.
+Every package is an ES module built by `tsdown` from its `tsdown.config.ts`,
+one output file per source module, with `tsconfig.build.json` for the
+declarations. `tsc` only type-checks: `tsconfig.base.json` sets `noEmit`. The
+configuration follows midnight-indigo-ui's to the letter, with two deliberate
+exceptions: `erasableSyntaxOnly` stays off, because the packages support their
+consumers' enums, and `lib` is `ES2024`, for `Promise.withResolvers` and
+resizable `ArrayBuffer`s. Imports go through the `@/` alias, which is the
+package root (`@/src/...`).
+
+Node 22.12 is the floor: a compiler plugin loader that still calls `require`
+reaches a transformer through Node's `require` of an ES module, which needs it,
+and which is also why nothing may use a top-level `await`.
 
 `npm test` builds first on purpose: the harness loads the transformers from
 `dist`, and the entry point suite runs entirely against built output.
@@ -64,8 +73,8 @@ second step turns the `@/…` imports `tsc` leaves in `dist` into relative paths
 ## Build output
 
 Built output goes to each package's `dist/` and never beside its source. A
-`.js` or `.d.ts` appearing next to a `.ts` in `src/` is a misconfigured
-`outDir`, not something to commit.
+`.js` or `.d.ts` appearing next to a `.ts` in `src/` is a misconfigured build,
+not something to commit.
 
 ## Branches and releases
 

@@ -1,12 +1,12 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { BigInteger } from '@/bigInteger';
-import { type Fraction, Fraction as FractionOf } from '@/fraction';
-import type { Layout } from '@/layout';
-import { SignedInteger } from '@/signedInteger';
-import { SinglePrecisionFloat } from '@/singlePrecisionFloat';
-import { struct } from '@/struct';
-import { UnsignedInteger } from '@/unsignedInteger';
+import { BigInteger } from '@/src/bigInteger';
+import { type Fraction, Fraction as FractionOf } from '@/src/fraction';
+import type { Layout } from '@/src/layout';
+import { SignedInteger } from '@/src/signedInteger';
+import { SinglePrecisionFloat } from '@/src/singlePrecisionFloat';
+import { struct } from '@/src/struct';
+import { UnsignedInteger } from '@/src/unsignedInteger';
 
 /**
  * Behaviour suite for `Fraction`.

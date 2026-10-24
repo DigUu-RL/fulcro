@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest';
 
 import { DoublePrecisionFloat, type Struct, struct } from '@fulcro/types';
 
-import { allocate } from '@/allocate';
-import type { Allocation, Allocator } from '@/allocator';
-import { borrow } from '@/borrow';
-import type { Borrowed } from '@/borrowed';
-import { own } from '@/own';
-import type { Owned } from '@/owned';
-import type { ReadOnlyView } from '@/view';
+import { allocate } from '@/src/allocate';
+import type { Allocation, Allocator } from '@/src/allocator';
+import { borrow } from '@/src/borrow';
+import type { Borrowed } from '@/src/borrowed';
+import { own } from '@/src/own';
+import type { Owned } from '@/src/owned';
+import type { ReadOnlyView } from '@/src/view';
 
 import { countedStorage } from './countedSource';
 

@@ -1,4 +1,4 @@
-import { DetailsShape } from '@/definition';
+import type { DetailsShape } from '@/src/definition';
 
 /**
  * Details any code's template accepts: `operation` set, and every other field

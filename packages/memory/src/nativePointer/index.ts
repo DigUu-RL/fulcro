@@ -1,6 +1,6 @@
-import type { AlignedElement } from '@/element';
-import type { LinearMemory } from '@/linearMemory';
-import type { MemoryReference } from '@/memoryReference';
+import type { AlignedElement } from '@/src/element';
+import type { LinearMemory } from '@/src/linearMemory';
+import type { MemoryReference } from '@/src/memoryReference';
 
 /**
  * A byte address inside a {@link LinearMemory}, and the type of the value

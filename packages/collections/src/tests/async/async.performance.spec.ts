@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { AsyncSequenceCollection } from '@/collections/async';
+import { AsyncSequenceCollection } from '@/src/collections/async';
 
 /**
  * Performance suite for the asynchronous sequence and its concurrent

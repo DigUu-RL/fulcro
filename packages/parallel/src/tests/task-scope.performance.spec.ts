@@ -2,8 +2,8 @@ import { getEventListeners } from 'node:events';
 
 import { describe, expect, it } from 'vitest';
 
-import { type TaskWork } from '@/@types/index.js';
-import { createTaskScope } from '@/task/index.js';
+import { type TaskWork } from '@/src/@types/index.js';
+import { createTaskScope } from '@/src/task/index.js';
 
 import { flush } from './controlled-work.js';
 

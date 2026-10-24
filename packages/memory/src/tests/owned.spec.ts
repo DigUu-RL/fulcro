@@ -2,17 +2,17 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import { SinglePrecisionFloat, type Struct, struct } from '@fulcro/types';
 
-import { allocate } from '@/allocate';
-import { borrow } from '@/borrow';
-import type { Borrowed } from '@/borrowed';
-import { borrowMutable } from '@/borrowMutable';
-import { createManagedStorage } from '@/managedStorage';
-import { move } from '@/move';
-import type { MutableBorrow } from '@/mutableBorrow';
-import { own } from '@/own';
-import type { Owned } from '@/owned';
-import { pointerTo } from '@/pointerTo';
-import { createStackAllocator } from '@/stackAllocator';
+import { allocate } from '@/src/allocate';
+import { borrow } from '@/src/borrow';
+import type { Borrowed } from '@/src/borrowed';
+import { borrowMutable } from '@/src/borrowMutable';
+import { createManagedStorage } from '@/src/managedStorage';
+import { move } from '@/src/move';
+import type { MutableBorrow } from '@/src/mutableBorrow';
+import { own } from '@/src/own';
+import type { Owned } from '@/src/owned';
+import { pointerTo } from '@/src/pointerTo';
+import { createStackAllocator } from '@/src/stackAllocator';
 
 import { coded } from './coded';
 

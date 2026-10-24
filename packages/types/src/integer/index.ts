@@ -1,6 +1,6 @@
 import { createError } from '@fulcro/errors';
 
-import type { BoundedNumericType } from '@/numericType';
+import type { BoundedNumericType } from '@/src/numericType';
 
 /**
  * Machinery shared by `SignedInteger` and `UnsignedInteger`.

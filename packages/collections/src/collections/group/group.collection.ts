@@ -1,5 +1,5 @@
-import { Group } from '@/@types/collections/group';
-import { SequenceCollection } from '@/collections/sequence/sequence.collection';
+import type { Group } from '@/src/@types/collections/group';
+import { SequenceCollection } from '@/src/collections/sequence/sequence.collection';
 
 /**
  * Implementation of {@link Group}: a sequence of elements sharing the same key.

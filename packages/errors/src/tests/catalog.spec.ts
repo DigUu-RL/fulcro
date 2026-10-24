@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
-import { catalog } from '@/catalog';
-import { collectionsCatalog } from '@/catalog/collections';
-import { functionsCatalog } from '@/catalog/functions';
-import { memoryCatalog } from '@/catalog/memory';
-import { parallelCatalog } from '@/catalog/parallel';
-import { reflectCatalog } from '@/catalog/reflect';
-import { transformCoreCatalog } from '@/catalog/transform-core';
-import { typesCatalog } from '@/catalog/types';
-import { ErrorDefinition } from '@/definition';
-import { sampleDetails } from '@/tests/sampleDetails';
+import { catalog } from '@/src/catalog';
+import { collectionsCatalog } from '@/src/catalog/collections';
+import { functionsCatalog } from '@/src/catalog/functions';
+import { memoryCatalog } from '@/src/catalog/memory';
+import { parallelCatalog } from '@/src/catalog/parallel';
+import { reflectCatalog } from '@/src/catalog/reflect';
+import { transformCoreCatalog } from '@/src/catalog/transform-core';
+import { typesCatalog } from '@/src/catalog/types';
+import type { ErrorDefinition } from '@/src/definition';
+import { sampleDetails } from '@/src/tests/sampleDetails';
 
 /**
  * Behaviour suite for the catalog.

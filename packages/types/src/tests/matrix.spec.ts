@@ -3,18 +3,18 @@ import * as path from 'node:path';
 
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { BigInteger } from '@/bigInteger';
-import { ComplexNumber } from '@/complexNumber';
-import { Decimal } from '@/decimal';
-import { DoublePrecisionFloat } from '@/doublePrecisionFloat';
-import type { Layout } from '@/layout';
-import { type Matrix, Matrix as MatrixOf } from '@/matrix';
-import { Quaternion } from '@/quaternion';
-import { SignedInteger } from '@/signedInteger';
-import { SinglePrecisionFloat } from '@/singlePrecisionFloat';
-import { struct } from '@/struct';
-import { UnsignedInteger } from '@/unsignedInteger';
-import { Vector } from '@/vector';
+import { BigInteger } from '@/src/bigInteger';
+import { ComplexNumber } from '@/src/complexNumber';
+import { Decimal } from '@/src/decimal';
+import { DoublePrecisionFloat } from '@/src/doublePrecisionFloat';
+import type { Layout } from '@/src/layout';
+import { type Matrix, Matrix as MatrixOf } from '@/src/matrix';
+import { Quaternion } from '@/src/quaternion';
+import { SignedInteger } from '@/src/signedInteger';
+import { SinglePrecisionFloat } from '@/src/singlePrecisionFloat';
+import { struct } from '@/src/struct';
+import { UnsignedInteger } from '@/src/unsignedInteger';
+import { Vector } from '@/src/vector';
 
 /**
  * Behaviour suite for `Matrix`.

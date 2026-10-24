@@ -1,4 +1,4 @@
-import { RangeCatalog } from '@/definition';
+import type { RangeCatalog } from '@/src/definition';
 
 /**
  * The errors of `@fulcro/transform-core`, `FULCRO5xxx`.

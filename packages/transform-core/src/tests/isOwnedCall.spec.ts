@@ -3,7 +3,7 @@ import * as path from 'node:path';
 import typescript from 'typescript';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { type CallTarget, isOwnedCall } from '@/shared';
+import { type CallTarget, isOwnedCall } from '@/src/shared';
 
 import { createWorkspace } from './workspace';
 

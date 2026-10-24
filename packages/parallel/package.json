@@ -35,7 +35,7 @@
 		"@fulcro/functions": "^2.1.0"
 	},
 	"engines": {
-		"node": ">=22"
+		"node": ">=22.12"
 	},
 	"publishConfig": {
 		"access": "public"
@@ -50,8 +50,8 @@
 		"url": "https://github.com/DigUu-RL/fulcro/issues"
 	},
 	"scripts": {
-		"build": "tsc -p tsconfig.build.json && node ../../tools/build/rewrite-aliases.mjs",
-		"typecheck": "tsc --noEmit -p tsconfig.json",
+		"build": "tsdown",
+		"typecheck": "tsc -p tsconfig.json",
 		"prepublishOnly": "npm run build"
 	}
 }

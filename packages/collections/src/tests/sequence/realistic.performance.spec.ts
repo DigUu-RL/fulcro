@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 
-import { SequenceCollection } from '@/collections/sequence';
+import { SequenceCollection } from '@/src/collections/sequence';
 
 /**
  * Performance suite over a realistic dataset.

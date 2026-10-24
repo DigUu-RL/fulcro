@@ -1,6 +1,6 @@
 import { createError } from '@fulcro/errors';
 
-import {
+import type {
 	AsyncAccumulator,
 	AsyncAction,
 	AsyncOptionalSelector,
@@ -15,11 +15,11 @@ import {
 	TypeNames,
 	TypeTest,
 	TypeToken,
-} from '@/@types';
-import { AsyncSequence } from '@/@types/collections/async';
-import { Group } from '@/@types/collections/group';
-import { Sequence } from '@/@types/collections/sequence';
-import { createGroup } from '@/collections/factories';
+} from '@/src/@types';
+import type { AsyncSequence } from '@/src/@types/collections/async';
+import type { Group } from '@/src/@types/collections/group';
+import type { Sequence } from '@/src/@types/collections/sequence';
+import { createGroup } from '@/src/collections/factories';
 // Imported through the barrel rather than the class file, because loading it is
 // what registers the factories `createGroup` resolves through.
 //
@@ -29,10 +29,10 @@ import { createGroup } from '@/collections/factories';
 // are both already in hand and nothing about them is waiting. The cost is that
 // a bundle importing only `@fulcro/collections/async` now carries the
 // synchronous sequence as well.
-import { SequenceCollection } from '@/collections/sequence';
-import { assertConcurrency, mapConcurrent } from '@/functions/concurrency';
-import { TopWindow } from '@/functions/ranking';
-import { describeExpected, describeType, resolveTypeTest } from '@/functions/types';
+import { SequenceCollection } from '@/src/collections/sequence';
+import { assertConcurrency, mapConcurrent } from '@/src/functions/concurrency';
+import { TopWindow } from '@/src/functions/ranking';
+import { describeExpected, describeType, resolveTypeTest } from '@/src/functions/types';
 
 /**
  * Marks the absence of an element, so that one which is itself `null` or

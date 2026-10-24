@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { Allocator } from '@/allocator';
-import { createManagedAllocator } from '@/managedAllocator';
+import type { Allocator } from '@/src/allocator';
+import { createManagedAllocator } from '@/src/managedAllocator';
 
 import { watchBuffers } from './watchBuffers';
 

@@ -1,16 +1,16 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { asView } from '@/asView';
-import { borrow } from '@/borrow';
-import type { Borrowed } from '@/borrowed';
-import { borrowMutable } from '@/borrowMutable';
-import { createManagedStorage } from '@/managedStorage';
-import type { MutableBorrow } from '@/mutableBorrow';
-import { own } from '@/own';
-import type { Owned } from '@/owned';
-import { pointerTo } from '@/pointerTo';
-import type { Storage } from '@/storage';
-import type { View } from '@/view';
+import { asView } from '@/src/asView';
+import { borrow } from '@/src/borrow';
+import type { Borrowed } from '@/src/borrowed';
+import { borrowMutable } from '@/src/borrowMutable';
+import { createManagedStorage } from '@/src/managedStorage';
+import type { MutableBorrow } from '@/src/mutableBorrow';
+import { own } from '@/src/own';
+import type { Owned } from '@/src/owned';
+import { pointerTo } from '@/src/pointerTo';
+import type { Storage } from '@/src/storage';
+import type { View } from '@/src/view';
 
 import { coded } from './coded';
 

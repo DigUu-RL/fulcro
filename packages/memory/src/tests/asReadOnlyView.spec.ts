@@ -1,14 +1,14 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { allocate } from '@/allocate';
-import { createArenaAllocator } from '@/arenaAllocator';
-import { asReadOnlyView } from '@/asReadOnlyView';
-import { asView } from '@/asView';
-import { createManagedStorage } from '@/managedStorage';
-import { pointerTo } from '@/pointerTo';
-import { referenceTo } from '@/referenceTo';
-import type { Storage } from '@/storage';
-import type { ReadOnlyView, View } from '@/view';
+import { allocate } from '@/src/allocate';
+import { createArenaAllocator } from '@/src/arenaAllocator';
+import { asReadOnlyView } from '@/src/asReadOnlyView';
+import { asView } from '@/src/asView';
+import { createManagedStorage } from '@/src/managedStorage';
+import { pointerTo } from '@/src/pointerTo';
+import { referenceTo } from '@/src/referenceTo';
+import type { Storage } from '@/src/storage';
+import type { ReadOnlyView, View } from '@/src/view';
 
 import { coded } from './coded';
 

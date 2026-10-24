@@ -1,6 +1,6 @@
 import { createError } from '@fulcro/errors';
 
-import { AsyncSelector, ConcurrencyOptions } from '@/@types';
+import type { AsyncSelector, ConcurrencyOptions } from '@/src/@types';
 
 /**
  * The bounded concurrency every `Await` operator is built on.

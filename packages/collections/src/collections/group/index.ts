@@ -1,4 +1,4 @@
-import { bootstrapCollections } from '@/collections/factories/bootstrap';
+import { bootstrapCollections } from '@/src/collections/factories/bootstrap';
 
 /**
  * Public entry point of the group collection.
@@ -9,4 +9,4 @@ import { bootstrapCollections } from '@/collections/factories/bootstrap';
  */
 bootstrapCollections();
 
-export { GroupCollection } from '@/collections/group/group.collection';
+export { GroupCollection } from '@/src/collections/group/group.collection';

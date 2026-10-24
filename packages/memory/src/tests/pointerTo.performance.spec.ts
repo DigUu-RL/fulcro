@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { asView } from '@/asView';
-import type { Pointer } from '@/pointer';
-import { pointerTo } from '@/pointerTo';
+import { asView } from '@/src/asView';
+import type { Pointer } from '@/src/pointer';
+import { pointerTo } from '@/src/pointerTo';
 
 import { countedArray, countedStorage } from './countedSource';
 

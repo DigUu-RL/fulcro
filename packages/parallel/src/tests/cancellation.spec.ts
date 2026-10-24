@@ -1,7 +1,7 @@
 import { describe, expect, expectTypeOf, it, vi } from 'vitest';
 
-import { type CancellationSource, type CancellationToken } from '@/@types/index.js';
-import { createCancellationSource } from '@/cancellation/index.js';
+import { type CancellationSource, type CancellationToken } from '@/src/@types/index.js';
+import { createCancellationSource } from '@/src/cancellation/index.js';
 
 /**
  * Cancellation source suite.

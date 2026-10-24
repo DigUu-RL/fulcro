@@ -1,7 +1,7 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import type { IntegerType } from '@/integer';
-import { SignedInteger } from '@/signedInteger';
+import type { IntegerType } from '@/src/integer';
+import { SignedInteger } from '@/src/signedInteger';
 
 /**
  * Behaviour suite for `SignedInteger`.

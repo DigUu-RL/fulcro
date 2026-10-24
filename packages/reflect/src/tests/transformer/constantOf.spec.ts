@@ -3,8 +3,8 @@ import * as path from 'node:path';
 import * as ts from 'typescript';
 import { beforeAll, describe, expect, it } from 'vitest';
 
-import { constantOf } from '@/functions/utils/constantOf';
-import transformer from '@/transformer';
+import { constantOf } from '@/src/functions/utils/constantOf';
+import transformer from '@/src/transformer';
 
 /**
  * Transformer suite for `constantOf`.

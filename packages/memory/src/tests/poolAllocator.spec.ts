@@ -1,8 +1,8 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import type { Allocation, Allocator } from '@/allocator';
-import { createManagedAllocator } from '@/managedAllocator';
-import { createPoolAllocator, type PoolAllocator } from '@/poolAllocator';
+import type { Allocation, Allocator } from '@/src/allocator';
+import { createManagedAllocator } from '@/src/managedAllocator';
+import { createPoolAllocator, type PoolAllocator } from '@/src/poolAllocator';
 
 import { coded } from './coded';
 

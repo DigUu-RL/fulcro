@@ -1,14 +1,14 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { BigInteger } from '@/bigInteger';
-import { type ComplexNumber, ComplexNumber as ComplexNumberOf } from '@/complexNumber';
-import { Decimal } from '@/decimal';
-import { DoublePrecisionFloat } from '@/doublePrecisionFloat';
-import { Fraction } from '@/fraction';
-import type { Layout } from '@/layout';
-import { SignedInteger } from '@/signedInteger';
-import { SinglePrecisionFloat } from '@/singlePrecisionFloat';
-import { struct } from '@/struct';
+import type { BigInteger } from '@/src/bigInteger';
+import { type ComplexNumber, ComplexNumber as ComplexNumberOf } from '@/src/complexNumber';
+import { Decimal } from '@/src/decimal';
+import { DoublePrecisionFloat } from '@/src/doublePrecisionFloat';
+import { Fraction } from '@/src/fraction';
+import type { Layout } from '@/src/layout';
+import { SignedInteger } from '@/src/signedInteger';
+import { SinglePrecisionFloat } from '@/src/singlePrecisionFloat';
+import { struct } from '@/src/struct';
 
 /**
  * Behaviour suite for `ComplexNumber`.

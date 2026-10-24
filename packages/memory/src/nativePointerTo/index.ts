@@ -1,12 +1,12 @@
 import { createError } from '@fulcro/errors';
 
-import type { Allocation } from '@/allocator';
-import { requireAlignment } from '@/allocator/requireRequest';
-import { type AlignedElement, requireElement } from '@/element';
-import { bytesOf, isLinearMemory, type LinearMemory, openLinearMemory } from '@/linearMemory';
-import type { NativePointer } from '@/nativePointer';
-import { describeBuffer } from '@/storage/describeBuffer';
-import { describeValue } from '@/storage/describeValue';
+import type { Allocation } from '@/src/allocator';
+import { requireAlignment } from '@/src/allocator/requireRequest';
+import { type AlignedElement, requireElement } from '@/src/element';
+import { bytesOf, isLinearMemory, type LinearMemory, openLinearMemory } from '@/src/linearMemory';
+import type { NativePointer } from '@/src/nativePointer';
+import { describeBuffer } from '@/src/storage/describeBuffer';
+import { describeValue } from '@/src/storage/describeValue';
 
 /**
  * Where the pointers made by one call may point, and every pointer moved from

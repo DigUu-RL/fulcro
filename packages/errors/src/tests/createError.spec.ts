@@ -1,9 +1,10 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { catalog } from '@/catalog';
-import { createError, DetailsOf, ErrorCode } from '@/createError';
-import { ErrorDefinition } from '@/definition';
-import { sampleDetails } from '@/tests/sampleDetails';
+import { catalog } from '@/src/catalog';
+import type { DetailsOf, ErrorCode } from '@/src/createError';
+import { createError } from '@/src/createError';
+import type { ErrorDefinition } from '@/src/definition';
+import { sampleDetails } from '@/src/tests/sampleDetails';
 
 /**
  * Behaviour suite for `createError`.

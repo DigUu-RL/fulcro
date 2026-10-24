@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { HalfPrecisionFloat } from '@/halfPrecisionFloat';
+import { HalfPrecisionFloat } from '@/src/halfPrecisionFloat';
 
 /**
  * Behaviour suite for `HalfPrecisionFloat`.
@@ -168,7 +168,7 @@ describe('HalfPrecisionFloat', () => {
 		expectTypeOf(HalfPrecisionFloat.from(1)).toEqualTypeOf<HalfPrecisionFloat>();
 		expectTypeOf<HalfPrecisionFloat>().toMatchTypeOf<number>();
 		expectTypeOf<HalfPrecisionFloat>().not.toMatchTypeOf<
-			import('@/singlePrecisionFloat').SinglePrecisionFloat
+			import('@/src/singlePrecisionFloat').SinglePrecisionFloat
 		>();
 	});
 });

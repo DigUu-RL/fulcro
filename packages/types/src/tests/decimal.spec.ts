@@ -1,7 +1,7 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { Decimal } from '@/decimal';
-import type { RoundingMode } from '@/roundingMode';
+import { Decimal } from '@/src/decimal';
+import type { RoundingMode } from '@/src/roundingMode';
 
 /**
  * Behaviour suite for `Decimal`.

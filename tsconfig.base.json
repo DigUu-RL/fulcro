@@ -1,26 +1,28 @@
 {
+	"$schema": "https://json.schemastore.org/tsconfig",
 	"compilerOptions": {
-		"target": "es2024",
-		"module": "node16",
-		"moduleResolution": "node16",
-		"lib": ["ES2024"],
+		"target": "ES2022",
+		"lib": ["ES2024", "DOM", "DOM.Iterable"],
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
+		"moduleDetection": "force",
+		"jsx": "react-jsx",
+		"types": [],
+
 		"strict": true,
 		"exactOptionalPropertyTypes": true,
 		"noUncheckedIndexedAccess": true,
+		"noImplicitOverride": true,
+		"noImplicitReturns": true,
 		"noFallthroughCasesInSwitch": true,
 		"useUnknownInCatchVariables": true,
-		"moduleDetection": "force",
+
 		"isolatedModules": true,
+		"verbatimModuleSyntax": true,
 		"resolveJsonModule": true,
-		"esModuleInterop": true,
-		"skipLibCheck": true,
 		"forceConsistentCasingInFileNames": true,
-		"noImplicitAny": true,
-		"noImplicitReturns": true,
-		"noImplicitOverride": true,
-		"noImplicitThis": true,
-		"importHelpers": false,
-		"declaration": true,
-		"types": ["node"]
+		"skipLibCheck": true,
+
+		"noEmit": true
 	}
 }

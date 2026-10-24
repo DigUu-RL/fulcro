@@ -373,15 +373,9 @@ describe('@fulcro/types', () => {
 	it('should expose one value per numeric and mathematics type, and struct', async () => {
 		const entry = await import('@fulcro/types');
 
-		// The package is CommonJS, and Node's interop adds these to the
-		// namespace of an `import`; they are not names the package exports.
-		const interop: readonly string[] = ['__esModule', 'default', 'module.exports'];
-
-		expect(
-			Object.keys(entry)
-				.filter((key) => !interop.includes(key))
-				.sort(),
-		).toEqual([
+		// An ES module's namespace holds exactly what it exports, so the list
+		// is compared whole.
+		expect(Object.keys(entry).sort()).toEqual([
 			'BigInteger',
 			'ComplexNumber',
 			'Decimal',
@@ -584,14 +578,13 @@ describe('@fulcro/errors', () => {
 	it('should expose its functions and FulcroError, and nothing of the catalog', async () => {
 		const entry = await import('@fulcro/errors');
 
-		// The package is CommonJS; see `@fulcro/types` above for these.
-		const interop: readonly string[] = ['__esModule', 'default', 'module.exports'];
-
-		expect(
-			Object.keys(entry)
-				.filter((key) => !interop.includes(key))
-				.sort(),
-		).toEqual(['FulcroError', 'createError', 'isFulcroError', 'prefixError']);
+		// An ES module's namespace holds exactly what it exports.
+		expect(Object.keys(entry).sort()).toEqual([
+			'FulcroError',
+			'createError',
+			'isFulcroError',
+			'prefixError',
+		]);
 	});
 
 	it('should create a coded error through the published entry point', async () => {
@@ -632,7 +625,7 @@ describe('@fulcro/errors', () => {
 		});
 	});
 
-	it("should reach a consumer through another package's CommonJS build", async () => {
+	it("should reach a consumer through @fulcro/types' build", async () => {
 		const { SignedInteger } = await import('@fulcro/types');
 		const Int32 = SignedInteger(32);
 
@@ -644,9 +637,9 @@ describe('@fulcro/errors', () => {
 		);
 	});
 
-	it("should reach a consumer through another package's ES module build", async () => {
-		// `@fulcro/parallel` is an ES module importing this CommonJS package by
-		// name, which only works if Node can see the named exports statically.
+	it("should reach a consumer through @fulcro/parallel's build", async () => {
+		// `@fulcro/parallel` imports this package by name, so the error has to
+		// survive the hop between two built packages.
 		const { createWorkerPool } = await import('@fulcro/parallel');
 
 		expect(() =>

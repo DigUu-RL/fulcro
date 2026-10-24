@@ -1,7 +1,7 @@
 import { createError } from '@fulcro/errors';
 
-import type { Branded } from '@/brand';
-import type { NumericType } from '@/numericType';
+import type { Branded } from '@/src/brand';
+import type { NumericType } from '@/src/numericType';
 
 /**
  * An integer of any size.

@@ -5,7 +5,7 @@ import { afterEach, describe, expect, expectTypeOf, it } from 'vitest';
 import { isFulcroError } from '@fulcro/errors';
 import { createWorkerPool, type WorkerPool } from '@fulcro/parallel';
 
-import { createPool } from '@/pool/index.js';
+import { createPool } from '@/src/pool/index.js';
 
 import { createFakeWorkers, type FakeWorkers, NOWHERE, until } from './fake-worker.js';
 

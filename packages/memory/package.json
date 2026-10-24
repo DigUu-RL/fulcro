@@ -2,6 +2,7 @@
 	"name": "@fulcro/memory",
 	"version": "0.1.0",
 	"description": "Where a value's bytes live and who may reach them: storage, allocation and access to memory regions.",
+	"type": "module",
 	"keywords": [
 		"memory",
 		"storage",
@@ -23,8 +24,8 @@
 			"default": "./dist/transformer/index.js"
 		},
 		"./unplugin": {
-			"types": "./dist/unplugin/index.d.mts",
-			"default": "./dist/unplugin/index.mjs"
+			"types": "./dist/unplugin/index.d.ts",
+			"default": "./dist/unplugin/index.js"
 		},
 		"./package.json": "./package.json"
 	},
@@ -48,7 +49,7 @@
 		}
 	},
 	"engines": {
-		"node": ">=22"
+		"node": ">=22.12"
 	},
 	"publishConfig": {
 		"access": "public"
@@ -63,8 +64,8 @@
 		"url": "https://github.com/DigUu-RL/fulcro/issues"
 	},
 	"scripts": {
-		"build": "tsc -p tsconfig.build.json && node ../../tools/build/rewrite-aliases.mjs",
-		"typecheck": "tsc --noEmit -p tsconfig.json",
+		"build": "tsdown",
+		"typecheck": "tsc -p tsconfig.json",
 		"prepublishOnly": "npm run build"
 	}
 }

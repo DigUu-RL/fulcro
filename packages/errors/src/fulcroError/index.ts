@@ -1,5 +1,5 @@
-import type { DetailsOf, ErrorCode } from '@/createError';
-import { isFulcroError } from '@/isFulcroError';
+import type { DetailsOf, ErrorCode } from '@/src/createError';
+import { isFulcroError } from '@/src/isFulcroError';
 
 /**
  * An error thrown by a `@fulcro` package: its code, and the details its

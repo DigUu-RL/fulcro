@@ -2,7 +2,7 @@ import typescript from 'typescript';
 
 import { type CallRewriter, utilityModuleSegment } from '@fulcro/transform-core';
 
-import { type PlacedField, readLayout } from '@/transformer/layout';
+import { type PlacedField, readLayout } from '@/src/transformer/layout';
 
 /**
  * Rewriter of `offsetOf`.

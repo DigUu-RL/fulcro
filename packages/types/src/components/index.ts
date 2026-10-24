@@ -1,7 +1,7 @@
 import { createError, prefixError } from '@fulcro/errors';
 
-import type { ElementType } from '@/element';
-import { registerRepeatedCodec } from '@/struct/codec';
+import type { ElementType } from '@/src/element';
+import { registerRepeatedCodec } from '@/src/struct/codec';
 
 /**
  * Machinery shared by the types whose values are a few named components of one

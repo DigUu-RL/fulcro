@@ -1,7 +1,7 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import type { Allocation, AllocationDomain } from '@/allocator';
-import { createStackAllocator, type StackAllocator } from '@/stackAllocator';
+import type { Allocation, AllocationDomain } from '@/src/allocator';
+import { createStackAllocator, type StackAllocator } from '@/src/stackAllocator';
 
 import { coded } from './coded';
 

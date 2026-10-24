@@ -2,10 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DoublePrecisionFloat, type Struct, struct } from '@fulcro/types';
 
-import type { Allocation } from '@/allocator';
-import { createLinearMemory, type LinearMemory } from '@/linearMemory';
-import type { NativePointer } from '@/nativePointer';
-import { nativePointerTo } from '@/nativePointerTo';
+import type { Allocation } from '@/src/allocator';
+import { createLinearMemory, type LinearMemory } from '@/src/linearMemory';
+import type { NativePointer } from '@/src/nativePointer';
+import { nativePointerTo } from '@/src/nativePointerTo';
 
 import { countedMemory } from './countedMemory';
 import { watchBuffers } from './watchBuffers';

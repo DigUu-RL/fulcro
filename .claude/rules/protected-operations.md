@@ -17,8 +17,8 @@ Two guards run before every `Bash` and `PowerShell` call:
 A third, `post-edit-check.mjs`, runs after a write and only reports: emitted
 output written beside its source, which `.gitignore` hides and the test runner
 turns into a broken import hours later. See `build-output.md`. It never fixes
-and never deletes — the fix is the tsconfig, and removing the file would hide
-the bug the report exists to expose.
+and never deletes — the fix is the build configuration, and removing the file
+would hide the bug the report exists to expose.
 
 ## Why these, and not a longer list
 

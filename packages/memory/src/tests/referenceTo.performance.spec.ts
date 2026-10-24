@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import type { MemoryReference } from '@/memoryReference';
-import { referenceTo } from '@/referenceTo';
+import type { MemoryReference } from '@/src/memoryReference';
+import { referenceTo } from '@/src/referenceTo';
 
 /**
  * Performance suite for `referenceTo`.

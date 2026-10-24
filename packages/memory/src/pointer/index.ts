@@ -1,4 +1,4 @@
-import type { MemoryReference } from '@/memoryReference';
+import type { MemoryReference } from '@/src/memoryReference';
 
 /**
  * One position inside a storage or an array: where a single value is.

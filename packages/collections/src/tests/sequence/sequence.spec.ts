@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { SequenceCollection } from '@/collections/sequence';
+import { SequenceCollection } from '@/src/collections/sequence';
 
 describe('SequenceCollection Unit Tests', () => {
 	it('should allow accessing items by index (Proxy)', () => {

@@ -1,4 +1,4 @@
-import type { Storage } from '@/storage';
+import type { Storage } from '@/src/storage';
 
 /** How often a counted source was read and written. */
 export interface SourceCounts {

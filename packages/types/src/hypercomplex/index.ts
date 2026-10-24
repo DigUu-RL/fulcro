@@ -1,4 +1,4 @@
-import { createComponentRecord } from '@/components';
+import { createComponentRecord } from '@/src/components';
 import {
 	addEach,
 	divideEach,
@@ -7,8 +7,8 @@ import {
 	scaleEach,
 	subtractEach,
 	sumOfProducts,
-} from '@/componentwise';
-import { describeType, elementOf, type ElementType } from '@/element';
+} from '@/src/componentwise';
+import { describeType, elementOf, type ElementType } from '@/src/element';
 
 /**
  * The descriptor of a hypercomplex number type — a real part and some

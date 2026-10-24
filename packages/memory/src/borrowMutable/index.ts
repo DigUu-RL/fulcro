@@ -1,13 +1,13 @@
-import type { MutableBorrow } from '@/mutableBorrow';
-import type { Owned } from '@/owned';
+import type { MutableBorrow } from '@/src/mutableBorrow';
+import type { Owned } from '@/src/owned';
 import {
 	borrowedSource,
 	endBorrows,
 	type Ownership,
 	recordBorrow,
 	requireOwnership,
-} from '@/ownership';
-import { createView } from '@/region';
+} from '@/src/ownership';
+import { createView } from '@/src/region';
 
 /**
  * Lends the values of an owner for writing, and for nothing else at the same

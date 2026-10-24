@@ -1,4 +1,4 @@
-import { unresolvedLayout, type WithLayout } from '@/functions/utils/layout';
+import { unresolvedLayout, type WithLayout } from '@/src/functions/utils/layout';
 
 /**
  * The size of a type in memory, in bytes, as the type declares it.

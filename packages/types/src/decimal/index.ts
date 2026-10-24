@@ -1,6 +1,6 @@
 import { createError } from '@fulcro/errors';
 
-import { requireRoundingMode, type RoundingMode } from '@/roundingMode';
+import { requireRoundingMode, type RoundingMode } from '@/src/roundingMode';
 
 import {
 	addParts,

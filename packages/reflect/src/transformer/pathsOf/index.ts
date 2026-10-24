@@ -1,8 +1,10 @@
-import typescript from 'typescript';
+import type typescript from 'typescript';
 
-import { CallRewriter, RewriteContext, utilityModuleSegment } from '@fulcro/transform-core';
+import type { CallRewriter, RewriteContext } from '@fulcro/transform-core';
+import { utilityModuleSegment } from '@fulcro/transform-core';
 
-import { Path, pathsOfType } from '@/transformer/describe';
+import type { Path } from '@/src/transformer/describe';
+import { pathsOfType } from '@/src/transformer/describe';
 
 /**
  * Rewriter of `pathsOf`.

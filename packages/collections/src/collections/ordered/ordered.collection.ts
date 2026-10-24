@@ -1,7 +1,7 @@
-import { Predicate, Selector } from '@/@types';
-import { OrderedSequence, SortCriterion } from '@/@types/collections/ordered';
-import { Sequence } from '@/@types/collections/sequence';
-import { SequenceCollection } from '@/collections/sequence/sequence.collection';
+import type { Predicate, Selector } from '@/src/@types';
+import type { OrderedSequence, SortCriterion } from '@/src/@types/collections/ordered';
+import type { Sequence } from '@/src/@types/collections/sequence';
+import { SequenceCollection } from '@/src/collections/sequence/sequence.collection';
 
 /**
  * Implementation of {@link OrderedSequence}: a sequence carrying its sorting

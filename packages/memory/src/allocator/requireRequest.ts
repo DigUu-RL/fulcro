@@ -1,6 +1,6 @@
 import { createError } from '@fulcro/errors';
 
-import { describeValue } from '@/storage/describeValue';
+import { describeValue } from '@/src/storage/describeValue';
 
 /**
  * Refuses a byte count an allocator cannot be created with or asked for.

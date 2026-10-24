@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { BigInteger } from '@/bigInteger';
+import { BigInteger } from '@/src/bigInteger';
 
 /** Behaviour suite for `BigInteger`. */
 

@@ -2,14 +2,11 @@ import * as path from 'node:path';
 
 import typescript from 'typescript';
 
-import {
-	CallRewriter,
-	isTupleType,
-	RewriteContext,
-	utilityModuleSegment,
-} from '@fulcro/transform-core';
+import type { CallRewriter, RewriteContext } from '@fulcro/transform-core';
+import { isTupleType, utilityModuleSegment } from '@fulcro/transform-core';
 
-import { Member, membersOfType } from '@/transformer/describe';
+import type { Member } from '@/src/transformer/describe';
+import { membersOfType } from '@/src/transformer/describe';
 
 /**
  * Rewriter of `typeOf`.

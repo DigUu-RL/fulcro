@@ -1,8 +1,8 @@
 import { createError } from '@fulcro/errors';
 
-import type { Owned } from '@/owned';
-import { claimStorage, createOwned, createOwnership, isBorrow } from '@/ownership';
-import type { Storage } from '@/storage';
+import type { Owned } from '@/src/owned';
+import { claimStorage, createOwned, createOwnership, isBorrow } from '@/src/ownership';
+import type { Storage } from '@/src/storage';
 
 /**
  * Tells whether a value has the shape of a storage that can be written.

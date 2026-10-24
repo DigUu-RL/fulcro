@@ -1,6 +1,6 @@
 import { type CallRewriter, utilityModuleSegment } from '@fulcro/transform-core';
 
-import { readLayoutMember } from '@/transformer/layout';
+import { readLayoutMember } from '@/src/transformer/layout';
 
 /**
  * Rewriter of `alignOf`.

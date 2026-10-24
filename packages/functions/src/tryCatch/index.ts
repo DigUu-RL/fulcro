@@ -1,6 +1,6 @@
 import { createError } from '@fulcro/errors';
 
-import { failure, type Result, success } from '@/result';
+import { failure, type Result, success } from '@/src/result';
 
 /**
  * Something a thrown value can be stored as without defeating the discriminant.

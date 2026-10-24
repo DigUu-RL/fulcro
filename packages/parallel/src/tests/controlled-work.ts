@@ -1,4 +1,4 @@
-import { type CancellationToken, type TaskWork } from '@/@types/index.js';
+import { type CancellationToken, type TaskWork } from '@/src/@types/index.js';
 
 /**
  * Work the test finishes by hand.

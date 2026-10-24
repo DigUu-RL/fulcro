@@ -5,9 +5,9 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 import { isFulcroError } from '@fulcro/errors';
 import { type Result } from '@fulcro/functions';
 
-import { type Task, type TaskScope } from '@/@types/index.js';
-import { createCancellationSource } from '@/cancellation/index.js';
-import { createTaskScope } from '@/task/index.js';
+import { type Task, type TaskScope } from '@/src/@types/index.js';
+import { createCancellationSource } from '@/src/cancellation/index.js';
+import { createTaskScope } from '@/src/task/index.js';
 
 import { controlledWork, flush } from './controlled-work.js';
 

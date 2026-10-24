@@ -1,7 +1,7 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import type { TypeLayout, WithLayout } from '@/functions/utils/layout';
-import { layoutOf } from '@/functions/utils/layoutOf';
+import type { TypeLayout, WithLayout } from '@/src/functions/utils/layout';
+import { layoutOf } from '@/src/functions/utils/layoutOf';
 
 /**
  * Behaviour suite for `layoutOf`.

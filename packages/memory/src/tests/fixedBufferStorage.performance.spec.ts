@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { DoublePrecisionFloat, type Struct, struct, UnsignedInteger } from '@fulcro/types';
 
-import { createFixedBufferStorage } from '@/fixedBufferStorage';
-import type { Storage } from '@/storage';
+import { createFixedBufferStorage } from '@/src/fixedBufferStorage';
+import type { Storage } from '@/src/storage';
 
 /**
  * Performance suite for `createFixedBufferStorage`.

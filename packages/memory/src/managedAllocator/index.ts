@@ -1,5 +1,5 @@
-import type { Allocation, Allocator } from '@/allocator';
-import { requireRequest } from '@/allocator/requireRequest';
+import type { Allocation, Allocator } from '@/src/allocator';
+import { requireRequest } from '@/src/allocator/requireRequest';
 
 /** Answers that memory the garbage collector owns is live while it is held. */
 const always = (): boolean => true;

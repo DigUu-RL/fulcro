@@ -1,6 +1,7 @@
-import { Catalog, catalog } from '@/catalog';
-import { DetailsShape, ErrorDefinition } from '@/definition';
-import type { FulcroError } from '@/fulcroError';
+import type { Catalog } from '@/src/catalog';
+import { catalog } from '@/src/catalog';
+import type { DetailsShape, ErrorDefinition } from '@/src/definition';
+import type { FulcroError } from '@/src/fulcroError';
 
 /**
  * Every code a `@fulcro` package can throw, `FULCRO` followed by four digits.

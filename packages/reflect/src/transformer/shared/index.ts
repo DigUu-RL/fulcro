@@ -1,11 +1,7 @@
 import typescript from 'typescript';
 
-import {
-	buildStructuralTest,
-	CallRewriter,
-	RewriteContext,
-	utilityModuleSegment,
-} from '@fulcro/transform-core';
+import type { CallRewriter, RewriteContext } from '@fulcro/transform-core';
+import { buildStructuralTest, utilityModuleSegment } from '@fulcro/transform-core';
 
 /**
  * The rewrite `is` and `as` share.

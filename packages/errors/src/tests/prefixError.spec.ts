@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { createError } from '@/createError';
-import { prefixError } from '@/prefixError';
+import { createError } from '@/src/createError';
+import { prefixError } from '@/src/prefixError';
 
 /**
  * Behaviour suite for `prefixError`.

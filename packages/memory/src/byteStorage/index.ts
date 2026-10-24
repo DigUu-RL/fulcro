@@ -1,9 +1,9 @@
 import { createError } from '@fulcro/errors';
 
-import type { Allocation } from '@/allocator';
-import type { FixedLayoutElement } from '@/element';
-import type { Storage } from '@/storage';
-import { requireIndex } from '@/storage/requireIndex';
+import type { Allocation } from '@/src/allocator';
+import type { FixedLayoutElement } from '@/src/element';
+import type { Storage } from '@/src/storage';
+import { requireIndex } from '@/src/storage/requireIndex';
 
 /** How the storage's two operations are named in an error message. */
 interface OperationNames {

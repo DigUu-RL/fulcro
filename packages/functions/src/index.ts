@@ -13,7 +13,7 @@ export {
 	optionOf,
 	type Some,
 	some,
-} from '@/option';
+} from '@/src/option';
 export {
 	type Failure,
 	failure,
@@ -21,6 +21,6 @@ export {
 	type ResultCases,
 	type Success,
 	success,
-} from '@/result';
-export { type ExhaustiveCases, type SwitchCase, switchFor } from '@/switchFor';
-export { tryCatch } from '@/tryCatch';
+} from '@/src/result';
+export { type ExhaustiveCases, type SwitchCase, switchFor } from '@/src/switchFor';
+export { tryCatch } from '@/src/tryCatch';

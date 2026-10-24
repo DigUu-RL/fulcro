@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { DoublePrecisionFloat } from '@/doublePrecisionFloat';
-import { Matrix } from '@/matrix';
-import { struct } from '@/struct';
+import { DoublePrecisionFloat } from '@/src/doublePrecisionFloat';
+import { Matrix } from '@/src/matrix';
+import { struct } from '@/src/struct';
 
 /**
  * Performance suite for `Matrix`.

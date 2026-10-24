@@ -1,6 +1,6 @@
 import * as ts from 'typescript';
 
-import type { FlowRules } from '@/transformer/flow';
+import type { FlowRules } from '@/src/transformer/flow';
 
 /** What the recording rules saw, in the order the walk met it. */
 export interface Recording {

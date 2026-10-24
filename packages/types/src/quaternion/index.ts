@@ -5,9 +5,13 @@ import {
 	type RepeatedLayout,
 	type SourceOf,
 	type ValueOf,
-} from '@/element';
-import { createHypercomplexType, type HypercomplexType, type ProductRule } from '@/hypercomplex';
-import type { Multiply } from '@/struct/arithmetic';
+} from '@/src/element';
+import {
+	createHypercomplexType,
+	type HypercomplexType,
+	type ProductRule,
+} from '@/src/hypercomplex';
+import type { Multiply } from '@/src/struct/arithmetic';
 
 /**
  * A quaternion w + xi + yj + zk whose four components are of `T`.

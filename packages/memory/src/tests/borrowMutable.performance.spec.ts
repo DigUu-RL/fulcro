@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { borrowMutable } from '@/borrowMutable';
-import type { MutableBorrow } from '@/mutableBorrow';
-import { own } from '@/own';
-import type { Owned } from '@/owned';
+import { borrowMutable } from '@/src/borrowMutable';
+import type { MutableBorrow } from '@/src/mutableBorrow';
+import { own } from '@/src/own';
+import type { Owned } from '@/src/owned';
 
 import { countedStorage } from './countedSource';
 

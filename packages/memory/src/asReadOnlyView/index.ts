@@ -1,9 +1,9 @@
-import type { MemoryReference } from '@/memoryReference';
-import type { Pointer } from '@/pointer';
-import { createReadOnlyView } from '@/region';
-import { cutRegion } from '@/region/cutRegion';
-import type { Storage } from '@/storage';
-import type { ReadOnlyView } from '@/view';
+import type { MemoryReference } from '@/src/memoryReference';
+import type { Pointer } from '@/src/pointer';
+import { createReadOnlyView } from '@/src/region';
+import { cutRegion } from '@/src/region/cutRegion';
+import type { Storage } from '@/src/storage';
+import type { ReadOnlyView } from '@/src/view';
 
 /**
  * Observes a region of a storage, a view or an array without the right to

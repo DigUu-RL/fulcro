@@ -1,4 +1,4 @@
-import { createVariant, variantPrototype } from '@/variant';
+import { createVariant, variantPrototype } from '@/src/variant';
 
 /**
  * One branch per variant of a {@link Result}, as {@link ResultMethods.handle}

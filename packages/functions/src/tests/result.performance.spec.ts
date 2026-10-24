@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { failure, type Result, success } from '@/result';
+import { failure, type Result, success } from '@/src/result';
 
 /**
  * Performance suite.

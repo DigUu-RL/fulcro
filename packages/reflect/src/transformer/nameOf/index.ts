@@ -1,6 +1,7 @@
 import typescript from 'typescript';
 
-import { CallRewriter, RewriteContext, utilityModuleSegment } from '@fulcro/transform-core';
+import type { CallRewriter, RewriteContext } from '@fulcro/transform-core';
+import { utilityModuleSegment } from '@fulcro/transform-core';
 
 /**
  * Rewriter of `nameOf`.

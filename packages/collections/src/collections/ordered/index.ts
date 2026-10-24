@@ -1,4 +1,4 @@
-import { bootstrapCollections } from '@/collections/factories/bootstrap';
+import { bootstrapCollections } from '@/src/collections/factories/bootstrap';
 
 /**
  * Public entry point of the ordered collection.
@@ -9,4 +9,4 @@ import { bootstrapCollections } from '@/collections/factories/bootstrap';
  */
 bootstrapCollections();
 
-export { OrderedSequenceCollection } from '@/collections/ordered/ordered.collection';
+export { OrderedSequenceCollection } from '@/src/collections/ordered/ordered.collection';

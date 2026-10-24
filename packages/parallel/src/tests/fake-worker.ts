@@ -1,4 +1,4 @@
-import { SpawnWorker, WorkerHandle } from '@/@types/index.js';
+import type { SpawnWorker, WorkerHandle } from '@/src/@types/index.js';
 
 /**
  * Workers the test drives by hand.

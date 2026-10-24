@@ -1,4 +1,4 @@
-import type { MemoryReference } from '@/memoryReference';
+import type { MemoryReference } from '@/src/memoryReference';
 
 /**
  * Makes a reference to a value of its own: one place that can be read and

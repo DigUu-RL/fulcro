@@ -1,4 +1,4 @@
-import { CancellationSource, CancellationToken } from '@/@types/index.js';
+import type { CancellationSource, CancellationToken } from '@/src/@types/index.js';
 
 /** What a registration returns when there is nothing left to remove. */
 const NOTHING_TO_RELEASE: Disposable = Object.freeze({

@@ -1,9 +1,9 @@
-import type { Allocation, Allocator } from '@/allocator';
-import { requireAlignment } from '@/allocator/requireRequest';
-import { createByteStorage } from '@/byteStorage';
-import { type AlignedElement, requireElement } from '@/element';
-import type { Storage } from '@/storage';
-import { requireLength } from '@/storage/requireLength';
+import type { Allocation, Allocator } from '@/src/allocator';
+import { requireAlignment } from '@/src/allocator/requireRequest';
+import { createByteStorage } from '@/src/byteStorage';
+import { type AlignedElement, requireElement } from '@/src/element';
+import type { Storage } from '@/src/storage';
+import { requireLength } from '@/src/storage/requireLength';
 
 /**
  * Allocates a storage of values from the allocator the caller chose.

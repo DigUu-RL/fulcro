@@ -1,6 +1,6 @@
 import { createError } from '@fulcro/errors';
 
-import {
+import type {
 	Accumulator,
 	Action,
 	Constructor,
@@ -12,14 +12,14 @@ import {
 	TypeNames,
 	TypeTest,
 	TypeToken,
-} from '@/@types';
-import { Group } from '@/@types/collections/group';
-import { OrderedSequence } from '@/@types/collections/ordered';
-import { Sequence } from '@/@types/collections/sequence';
-import { createGroup, createOrderedSequence } from '@/collections/factories';
-import { isIndexKey, resolveDeclaredCount } from '@/functions/collections';
-import { TopWindow } from '@/functions/ranking';
-import { describeExpected, describeType, resolveTypeTest } from '@/functions/types';
+} from '@/src/@types';
+import type { Group } from '@/src/@types/collections/group';
+import type { OrderedSequence } from '@/src/@types/collections/ordered';
+import type { Sequence } from '@/src/@types/collections/sequence';
+import { createGroup, createOrderedSequence } from '@/src/collections/factories';
+import { isIndexKey, resolveDeclaredCount } from '@/src/functions/collections';
+import { TopWindow } from '@/src/functions/ranking';
+import { describeExpected, describeType, resolveTypeTest } from '@/src/functions/types';
 
 /**
  * Cardinality resolver of the operators whose result depends on the data, such

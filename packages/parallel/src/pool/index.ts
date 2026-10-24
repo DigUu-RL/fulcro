@@ -1,6 +1,12 @@
 import { createError, type DetailsOf, type ErrorCode } from '@fulcro/errors';
 
-import { PoolOptions, RunOptions, SpawnWorker, WorkerHandle, WorkerPool } from '@/@types/index.js';
+import type {
+	PoolOptions,
+	RunOptions,
+	SpawnWorker,
+	WorkerHandle,
+	WorkerPool,
+} from '@/src/@types/index.js';
 
 /**
  * The pool, with the one platform-specific piece handed in.

@@ -1,14 +1,14 @@
 import { createError } from '@fulcro/errors';
 
-import { sumOfProducts } from '@/componentwise';
-import { describeKind, type ElementDescriptor, type SourceOf, type ValueOf } from '@/element';
+import { sumOfProducts } from '@/src/componentwise';
+import { describeKind, type ElementDescriptor, type SourceOf, type ValueOf } from '@/src/element';
 import {
 	convertElements,
 	createMatrixOperations,
 	createValue,
 	type Matrix,
 	type MatrixOperations,
-} from '@/matrix';
+} from '@/src/matrix';
 
 /**
  * A vector: a matrix with one row or one column.

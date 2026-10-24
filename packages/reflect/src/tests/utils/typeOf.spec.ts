@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { typeOf } from '@/functions/utils/typeOf';
+import { typeOf } from '@/src/functions/utils/typeOf';
 
 /** Class instance, which the native `typeof` reports as a plain object. */
 class User {

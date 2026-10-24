@@ -1,8 +1,8 @@
 import { createError, prefixError } from '@fulcro/errors';
 
-import type { Layout } from '@/layout';
-import type { Add, LargestAlignment, RoundUp } from '@/struct/arithmetic';
-import { codecOf, type FieldCodec, registerCodec } from '@/struct/codec';
+import type { Layout } from '@/src/layout';
+import type { Add, LargestAlignment, RoundUp } from '@/src/struct/arithmetic';
+import { codecOf, type FieldCodec, registerCodec } from '@/src/struct/codec';
 
 /**
  * What a field of a struct may be declared with: the descriptor of a type that

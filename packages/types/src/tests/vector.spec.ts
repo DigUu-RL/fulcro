@@ -3,11 +3,11 @@ import * as path from 'node:path';
 
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { DoublePrecisionFloat } from '@/doublePrecisionFloat';
-import { Matrix } from '@/matrix';
-import { SignedInteger } from '@/signedInteger';
-import { SinglePrecisionFloat } from '@/singlePrecisionFloat';
-import { type Vector, Vector as VectorOf } from '@/vector';
+import { DoublePrecisionFloat } from '@/src/doublePrecisionFloat';
+import { Matrix } from '@/src/matrix';
+import { SignedInteger } from '@/src/signedInteger';
+import { SinglePrecisionFloat } from '@/src/singlePrecisionFloat';
+import { type Vector, Vector as VectorOf } from '@/src/vector';
 
 /**
  * Behaviour suite for `Vector`.

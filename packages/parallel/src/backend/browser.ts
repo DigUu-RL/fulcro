@@ -1,6 +1,6 @@
 import { createError } from '@fulcro/errors';
 
-import { SpawnWorker, WorkerHandle } from '@/@types/index.js';
+import type { SpawnWorker, WorkerHandle } from '@/src/@types/index.js';
 
 /**
  * Starts workers with the platform `Worker`.

@@ -38,6 +38,10 @@ throws without it because a default it cannot compute would be a lie. `nameOf`
 and `typeOf` degrade, and every operator in `@fulcro/collections` works
 untouched.
 
+Every package is an **ES module** and needs **Node 22.12 or later**. A compiler
+plugin loader that still calls `require` reaches the transformers anyway,
+through Node's `require` of an ES module, which is what sets that floor.
+
 **What the plugin buys in `@fulcro/collections` is worth knowing about**, since
 it is easy to miss under "sequences": `cast<T>()` becomes a validator for
 untrusted data derived from the type you already wrote.
@@ -266,7 +270,7 @@ hand.
 
 ## Emitted output never belongs beside a source
 
-A build misconfigured on its `rootDir` drops `.js` and `.d.ts` files right next
+A misconfigured build drops `.js` and `.d.ts` files right next
 to the `.ts` they came from. The test runner then resolves the stale copy in
 preference to the source, and the failure reads as a broken import rather than
 as stale output. `.gitignore` blocks those paths; if imports start failing for

@@ -1,6 +1,6 @@
 import { createError } from '@fulcro/errors';
 
-import { describeValue } from '@/storage/describeValue';
+import { describeValue } from '@/src/storage/describeValue';
 
 /**
  * A position or a count as an error detail: the number when it is one — a

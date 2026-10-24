@@ -2,9 +2,9 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { DoublePrecisionFloat, type Struct, struct, UnsignedInteger } from '@fulcro/types';
 
-import { allocate } from '@/allocate';
-import type { Allocation, Allocator } from '@/allocator';
-import type { Storage } from '@/storage';
+import { allocate } from '@/src/allocate';
+import type { Allocation, Allocator } from '@/src/allocator';
+import type { Storage } from '@/src/storage';
 
 /**
  * Performance suite for `allocate`.

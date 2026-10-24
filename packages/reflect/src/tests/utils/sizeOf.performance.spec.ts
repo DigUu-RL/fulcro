@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { sizeOf } from '@/functions/utils/sizeOf';
+import { sizeOf } from '@/src/functions/utils/sizeOf';
 
 /**
  * Performance suite for `sizeOf`.

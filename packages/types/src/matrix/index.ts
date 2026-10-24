@@ -7,7 +7,7 @@ import {
 	scaleEach,
 	subtractEach,
 	sumOfProducts,
-} from '@/componentwise';
+} from '@/src/componentwise';
 import {
 	describeKind,
 	describeType,
@@ -18,9 +18,9 @@ import {
 	type RepeatedLayout,
 	type SourceOf,
 	type ValueOf,
-} from '@/element';
-import type { Multiply } from '@/struct/arithmetic';
-import { registerRepeatedCodec } from '@/struct/codec';
+} from '@/src/element';
+import type { Multiply } from '@/src/struct/arithmetic';
+import { registerRepeatedCodec } from '@/src/struct/codec';
 
 /**
  * A matrix of `R` rows and `C` columns of `T`.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { SequenceCollection } from '@/collections/sequence';
+import { SequenceCollection } from '@/src/collections/sequence';
 
 /**
  * A single-pass source, of the kind that silently yields nothing the second

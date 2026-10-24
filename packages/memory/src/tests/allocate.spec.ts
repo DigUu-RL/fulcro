@@ -8,14 +8,14 @@ import {
 	UnsignedInteger,
 } from '@fulcro/types';
 
-import { allocate } from '@/allocate';
-import type { Allocation, Allocator } from '@/allocator';
-import { createArenaAllocator } from '@/arenaAllocator';
-import { createFixedBufferAllocator } from '@/fixedBufferAllocator';
-import { createManagedAllocator } from '@/managedAllocator';
-import { createPoolAllocator } from '@/poolAllocator';
-import { createStackAllocator } from '@/stackAllocator';
-import type { Storage } from '@/storage';
+import { allocate } from '@/src/allocate';
+import type { Allocation, Allocator } from '@/src/allocator';
+import { createArenaAllocator } from '@/src/arenaAllocator';
+import { createFixedBufferAllocator } from '@/src/fixedBufferAllocator';
+import { createManagedAllocator } from '@/src/managedAllocator';
+import { createPoolAllocator } from '@/src/poolAllocator';
+import { createStackAllocator } from '@/src/stackAllocator';
+import type { Storage } from '@/src/storage';
 
 import { coded } from './coded';
 

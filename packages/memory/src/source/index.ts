@@ -1,7 +1,7 @@
 import { createError } from '@fulcro/errors';
 
-import type { MemoryReference } from '@/memoryReference';
-import type { Storage } from '@/storage';
+import type { MemoryReference } from '@/src/memoryReference';
+import type { Storage } from '@/src/storage';
 
 /**
  * What a view or a pointer reads and writes through, whatever it was made

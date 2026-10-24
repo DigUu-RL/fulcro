@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { type PathAccessor, pathOf } from '@/functions/utils/pathOf';
+import { type PathAccessor, pathOf } from '@/src/functions/utils/pathOf';
 
 /**
  * Behaviour suite for `pathOf`.

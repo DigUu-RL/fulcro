@@ -1,12 +1,11 @@
 {
 	"extends": "../../tsconfig.base.json",
 	"compilerOptions": {
-		"rootDir": "./src",
-		"outDir": "./dist",
+		"types": ["node"],
 		"paths": {
-			"@/*": ["./src/*"]
+			"@/*": ["./*"]
 		}
 	},
-	"include": ["src/**/*"],
+	"include": ["src", "tsdown.config.ts"],
 	"exclude": ["src/tests/**/*.fixture.ts"]
 }

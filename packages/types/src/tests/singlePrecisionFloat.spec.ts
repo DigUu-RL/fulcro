@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { SinglePrecisionFloat } from '@/singlePrecisionFloat';
+import { SinglePrecisionFloat } from '@/src/singlePrecisionFloat';
 
 /**
  * Behaviour suite for `SinglePrecisionFloat`.
@@ -91,7 +91,7 @@ describe('SinglePrecisionFloat', () => {
 	it('should be its own type, not a double precision one', () => {
 		expectTypeOf(SinglePrecisionFloat.from(1)).toEqualTypeOf<SinglePrecisionFloat>();
 		expectTypeOf<SinglePrecisionFloat>().not.toMatchTypeOf<
-			import('@/doublePrecisionFloat').DoublePrecisionFloat
+			import('@/src/doublePrecisionFloat').DoublePrecisionFloat
 		>();
 	});
 });

@@ -1,4 +1,12 @@
 {
-	"extends": "./tsconfig.json",
-	"exclude": ["src/tests/**/*"]
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"rootDir": "src",
+		"types": ["node"],
+		"paths": {
+			"@/*": ["./*"]
+		}
+	},
+	"include": ["src"],
+	"exclude": ["src/tests"]
 }

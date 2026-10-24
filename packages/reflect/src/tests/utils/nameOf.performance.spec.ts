@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { nameOf } from '@/functions/utils/nameOf';
+import { nameOf } from '@/src/functions/utils/nameOf';
 
 /**
  * Performance suite for `nameOf`.

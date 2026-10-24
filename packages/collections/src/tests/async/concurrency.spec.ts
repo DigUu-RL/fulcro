@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { AsyncSequenceCollection } from '@/collections/async';
+import { AsyncSequenceCollection } from '@/src/collections/async';
 
 /**
  * Wraps a projection so the test can see how many ran at once.

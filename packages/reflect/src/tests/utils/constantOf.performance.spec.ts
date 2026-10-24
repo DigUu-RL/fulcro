@@ -4,8 +4,8 @@ import * as vm from 'node:vm';
 import * as ts from 'typescript';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { constantOf } from '@/functions/utils/constantOf';
-import transformer from '@/transformer';
+import { constantOf } from '@/src/functions/utils/constantOf';
+import transformer from '@/src/transformer';
 
 /**
  * Performance suite for `constantOf`.

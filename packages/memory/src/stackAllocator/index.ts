@@ -1,8 +1,8 @@
 import { createError } from '@fulcro/errors';
 
-import type { Allocation, AllocationDomain, Allocator } from '@/allocator';
-import { requireRequest, requireSize } from '@/allocator/requireRequest';
-import { bump, type BumpRegion, remaining } from '@/bump';
+import type { Allocation, AllocationDomain, Allocator } from '@/src/allocator';
+import { requireRequest, requireSize } from '@/src/allocator/requireRequest';
+import { bump, type BumpRegion, remaining } from '@/src/bump';
 
 /**
  * An allocator over one buffer, released in frames, last in first out.

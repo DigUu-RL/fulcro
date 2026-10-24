@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { type Result } from '@/result';
-import { tryCatch } from '@/tryCatch';
+import { type Result } from '@/src/result';
+import { tryCatch } from '@/src/tryCatch';
 
 describe('tryCatch', () => {
 	it('should report a produced value as a success', async () => {

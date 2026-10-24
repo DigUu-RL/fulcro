@@ -2,7 +2,7 @@ import * as path from 'node:path';
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { packageNameOf } from '@/shared';
+import { packageNameOf } from '@/src/shared';
 
 import { createWorkspace } from './workspace';
 

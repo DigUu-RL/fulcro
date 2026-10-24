@@ -4,8 +4,8 @@ import {
 	createFileTransformer,
 	type FileTransformer,
 	type TransformCoreOptions,
-} from '@/program/index.js';
-import { type CallRewriter, type FileAnalyzer } from '@/shared/index.js';
+} from '@/src/program/index.js';
+import { type CallRewriter, type FileAnalyzer } from '@/src/shared/index.js';
 
 /**
  * Bundler adapters for the Fulcro transformers.
@@ -20,9 +20,10 @@ import { type CallRewriter, type FileAnalyzer } from '@/shared/index.js';
  * `@fulcro/collections` each publish a plugin of their own without either
  * having to know the other exists.
  *
- * Emitted as an ES module because `unplugin` ships as one. The core stays
- * CommonJS, since the compiler plugin loads it through `require`, and an ES
- * module importing CommonJS is the direction that works.
+ * Every package here is an ES module. A compiler plugin loader that still calls
+ * `require` reaches this through Node's `require` of an ES module, which is why
+ * the packages need Node 22.12 or later and why nothing in them may use a
+ * top-level `await`.
  */
 
 /** Options accepted by every adapter. */

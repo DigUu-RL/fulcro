@@ -10,7 +10,7 @@ import {
 	isOwnedCall,
 } from '@fulcro/transform-core';
 
-import { type FlowRules, walkFlow } from '@/transformer/flow';
+import { type FlowRules, walkFlow } from '@/src/transformer/flow';
 
 /**
  * Refuses, when the code is compiled, what `move`, `borrow` and

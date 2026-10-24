@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { BigInteger } from '@/bigInteger';
-import { Fraction } from '@/fraction';
+import { BigInteger } from '@/src/bigInteger';
+import { Fraction } from '@/src/fraction';
 
 /**
  * Performance suite for `Fraction`.

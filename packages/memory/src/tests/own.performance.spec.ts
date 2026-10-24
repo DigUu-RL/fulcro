@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { own } from '@/own';
-import type { Owned } from '@/owned';
+import { own } from '@/src/own';
+import type { Owned } from '@/src/owned';
 
 import { countedStorage } from './countedSource';
 

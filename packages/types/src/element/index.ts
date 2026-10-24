@@ -1,7 +1,7 @@
 import { createError } from '@fulcro/errors';
 
-import { Decimal } from '@/decimal';
-import type { Layout } from '@/layout';
+import { Decimal } from '@/src/decimal';
+import type { Layout } from '@/src/layout';
 
 /**
  * What the mathematics types ask of the type their components are made of.

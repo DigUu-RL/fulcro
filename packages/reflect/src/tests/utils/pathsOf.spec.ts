@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { pathsOf } from '@/functions/utils/pathsOf';
+import { pathsOf } from '@/src/functions/utils/pathsOf';
 
 /**
  * Behaviour suite for `pathsOf`.

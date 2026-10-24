@@ -1,6 +1,6 @@
 import { createError } from '@fulcro/errors';
 
-import { Predicate, TypeNames, TypeTest, TypeToken } from '@/@types';
+import type { Predicate, TypeNames, TypeTest, TypeToken } from '@/src/@types';
 
 /**
  * What `ofType` and `cast` do with the token they are given.

@@ -1,6 +1,6 @@
-import type { Allocation, AllocationDomain } from '@/allocator';
-import { requireRequest, requireSize } from '@/allocator/requireRequest';
-import { bump, type BumpRegion } from '@/bump';
+import type { Allocation, AllocationDomain } from '@/src/allocator';
+import { requireRequest, requireSize } from '@/src/allocator/requireRequest';
+import { bump, type BumpRegion } from '@/src/bump';
 
 /**
  * An allocator that hands memory out front to back and takes all of it back

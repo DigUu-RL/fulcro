@@ -1,5 +1,5 @@
-import { SinglePrecisionFloat } from '@/singlePrecisionFloat';
-import { Vector } from '@/vector';
+import { SinglePrecisionFloat } from '@/src/singlePrecisionFloat';
+import { Vector } from '@/src/vector';
 
 // Each line the compiler has to refuse is followed by a comment saying why; the
 // suite asserts the refusals land on exactly those lines, and nowhere else.

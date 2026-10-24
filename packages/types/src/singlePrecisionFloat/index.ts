@@ -1,7 +1,7 @@
-import type { Branded } from '@/brand';
-import { createFloatType } from '@/float';
-import type { Layout } from '@/layout';
-import type { BoundedNumericType } from '@/numericType';
+import type { Branded } from '@/src/brand';
+import { createFloatType } from '@/src/float';
+import type { Layout } from '@/src/layout';
+import type { BoundedNumericType } from '@/src/numericType';
 
 /**
  * An IEEE 754 binary32 value: 24 bits of precision, 8 of exponent.

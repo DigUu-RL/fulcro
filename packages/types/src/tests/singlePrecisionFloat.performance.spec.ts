@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { SinglePrecisionFloat } from '@/singlePrecisionFloat';
+import { SinglePrecisionFloat } from '@/src/singlePrecisionFloat';
 
 /**
  * Performance suite for `SinglePrecisionFloat`.

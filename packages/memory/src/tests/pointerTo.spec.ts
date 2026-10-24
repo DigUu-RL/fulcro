@@ -2,16 +2,16 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import { SinglePrecisionFloat, type Struct, struct } from '@fulcro/types';
 
-import { allocate } from '@/allocate';
-import { createArenaAllocator } from '@/arenaAllocator';
-import { asView } from '@/asView';
-import { createFixedBufferStorage } from '@/fixedBufferStorage';
-import { createManagedStorage } from '@/managedStorage';
-import type { MemoryReference } from '@/memoryReference';
-import type { Pointer } from '@/pointer';
-import { pointerTo } from '@/pointerTo';
-import { referenceTo } from '@/referenceTo';
-import type { Storage } from '@/storage';
+import { allocate } from '@/src/allocate';
+import { createArenaAllocator } from '@/src/arenaAllocator';
+import { asView } from '@/src/asView';
+import { createFixedBufferStorage } from '@/src/fixedBufferStorage';
+import { createManagedStorage } from '@/src/managedStorage';
+import type { MemoryReference } from '@/src/memoryReference';
+import type { Pointer } from '@/src/pointer';
+import { pointerTo } from '@/src/pointerTo';
+import { referenceTo } from '@/src/referenceTo';
+import type { Storage } from '@/src/storage';
 
 import { coded } from './coded';
 
