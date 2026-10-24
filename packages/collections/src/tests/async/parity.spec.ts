@@ -86,10 +86,10 @@ const ORDERS: readonly Order[] = Array.from({ length: 200 }, (_, index) => {
 
 describe('the numeric terminals', () => {
 	it.each([
-		['sum', (o: Order): number => o.total],
-		['average', (o: Order): number => o.total],
-		['min', (o: Order): number => o.total],
-		['max', (o: Order): number => o.total],
+		['sum', (order: Order): number => order.total],
+		['average', (order: Order): number => order.total],
+		['min', (order: Order): number => order.total],
+		['max', (order: Order): number => order.total],
 	])('should agree with the synchronous %s', async (name, selector) => {
 		type Numeric = 'sum' | 'average' | 'min' | 'max';
 

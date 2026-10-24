@@ -1,5 +1,5 @@
-import * as fs from 'node:fs';
-import * as os from 'node:os';
+import * as fileSystem from 'node:fs';
+import * as operatingSystem from 'node:os';
 import * as path from 'node:path';
 
 /**
@@ -13,21 +13,21 @@ import * as path from 'node:path';
 export const createWorkspace = (
 	files: Readonly<Record<string, string>>,
 ): { root: string; remove: () => void } => {
-	const root: string = fs.realpathSync(
-		fs.mkdtempSync(path.join(os.tmpdir(), 'fulcro-transform-core-')),
+	const root: string = fileSystem.realpathSync(
+		fileSystem.mkdtempSync(path.join(operatingSystem.tmpdir(), 'fulcro-transform-core-')),
 	);
 
 	for (const [relative, content] of Object.entries(files)) {
 		const fileName: string = path.join(root, ...relative.split('/'));
 
-		fs.mkdirSync(path.dirname(fileName), { recursive: true });
-		fs.writeFileSync(fileName, content);
+		fileSystem.mkdirSync(path.dirname(fileName), { recursive: true });
+		fileSystem.writeFileSync(fileName, content);
 	}
 
 	return {
 		root,
 		remove: (): void => {
-			fs.rmSync(root, { recursive: true, force: true });
+			fileSystem.rmSync(root, { recursive: true, force: true });
 		},
 	};
 };

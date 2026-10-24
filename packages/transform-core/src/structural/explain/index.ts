@@ -452,7 +452,7 @@ const explainObject = (
  *
  * @param type Type the call asked for.
  * @param written The type as the consumer wrote it.
- * @param at Node the call sits at, for scope.
+ * @param position Node the call sits at, for scope.
  * @param checker Checker of the program being compiled.
  * @param factory Node factory of the current transformation.
  * @param fallback Builds the yes-or-no check for a type, for what this cannot
@@ -462,12 +462,12 @@ const explainObject = (
 export const buildExplainer = (
 	type: typescript.Type,
 	written: string,
-	at: typescript.Node,
+	position: typescript.Node,
 	checker: typescript.TypeChecker,
 	factory: typescript.NodeFactory,
 	fallback: (type: typescript.Type, value: typescript.Expression) => typescript.Expression | null,
 ): typescript.Expression | null => {
-	const walk: Walk = { checker, factory, at, fallback, counter: { value: 0 } };
+	const walk: Walk = { checker, factory, at: position, fallback, counter: { value: 0 } };
 
 	const parameter = 'v';
 

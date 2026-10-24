@@ -154,7 +154,7 @@ const createNativePointer = <T>(
 	 * @param other Type of the value at the new address, when it changes.
 	 * @returns The pointer there.
 	 */
-	const at = <TOther>(
+	const pointerAt = <TOther>(
 		byteOffset: number,
 		other?: AlignedElement<TOther>,
 	): NativePointer<TOther> => {
@@ -188,7 +188,7 @@ const createNativePointer = <T>(
 			element.write(bytes, address, value);
 		},
 
-		at,
+		at: pointerAt,
 	});
 };
 

@@ -263,13 +263,13 @@ const admitsUndefined = (type: typescript.Type): boolean => {
  *
  * @param type Type being taken apart.
  * @param checker Checker of the program being compiled.
- * @param at Node the lookups happen from.
+ * @param position Node the lookups happen from.
  * @returns The types it refers to.
  */
 const partsOf = (
 	type: typescript.Type,
 	checker: typescript.TypeChecker,
-	at: typescript.Node,
+	position: typescript.Node,
 ): readonly typescript.Type[] => {
 	if (type.isUnionOrIntersection()) return type.types;
 
@@ -292,7 +292,9 @@ const partsOf = (
 		return [];
 	}
 
-	return type.getProperties().map((property) => checker.getTypeOfSymbolAtLocation(property, at));
+	return type
+		.getProperties()
+		.map((property) => checker.getTypeOfSymbolAtLocation(property, position));
 };
 
 /**
@@ -305,13 +307,13 @@ const partsOf = (
  *
  * @param root Type the call asked for.
  * @param checker Checker of the program being compiled.
- * @param at Node the lookups happen from.
+ * @param position Node the lookups happen from.
  * @returns Every type that refers back to itself, directly or through others.
  */
 const findRecursive = (
 	root: typescript.Type,
 	checker: typescript.TypeChecker,
-	at: typescript.Node,
+	position: typescript.Node,
 ): ReadonlySet<typescript.Type> => {
 	const recursive = new Set<typescript.Type>();
 	const finished = new Set<typescript.Type>();
@@ -328,7 +330,7 @@ const findRecursive = (
 
 		path.add(type);
 
-		for (const part of partsOf(type, checker, at)) visit(part);
+		for (const part of partsOf(type, checker, position)) visit(part);
 
 		path.delete(type);
 		finished.add(type);
@@ -768,7 +770,7 @@ const checkForObject = (
  *
  * @param type Type the call asked for.
  * @param written The type as the consumer wrote it, for error messages.
- * @param at Node the call sits at, for scope.
+ * @param position Node the call sits at, for scope.
  * @param context Compilation in progress.
  * @returns The object literal to pass at runtime, or `null` when the type
  * cannot be checked honestly.
@@ -776,7 +778,7 @@ const checkForObject = (
 export const buildStructuralTest = (
 	type: typescript.Type,
 	written: string,
-	at: typescript.Node,
+	position: typescript.Node,
 	context: RewriteContext,
 	options: StructuralOptions = {},
 ): typescript.Expression | null => {
@@ -784,9 +786,9 @@ export const buildStructuralTest = (
 
 	const generation: Generation = {
 		context,
-		at,
+		at: position,
 		open: new Set(),
-		recursive: findRecursive(type, context.checker, at),
+		recursive: findRecursive(type, context.checker, position),
 		declared: new Map(),
 		counter: { value: 0 },
 	};
@@ -810,7 +812,7 @@ export const buildStructuralTest = (
 			? buildExplainer(
 					type,
 					written,
-					at,
+					position,
 					context.checker,
 					factory,
 					// Handed the same yes-or-no builder the fast check uses, so the
@@ -823,7 +825,7 @@ export const buildStructuralTest = (
 							value,
 							{
 								context,
-								at,
+								at: position,
 								open: new Set(),
 								recursive: generation.recursive,
 								declared: new Map(),

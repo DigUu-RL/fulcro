@@ -206,11 +206,11 @@ export const runs = (invocation: Invocation | null, pattern: readonly string[]):
 	let from = 0;
 
 	for (const word of words) {
-		const at = invocation.arguments.indexOf(word, from);
+		const position = invocation.arguments.indexOf(word, from);
 
-		if (at < 0) return false;
+		if (position < 0) return false;
 
-		from = at + 1;
+		from = position + 1;
 	}
 
 	return true;

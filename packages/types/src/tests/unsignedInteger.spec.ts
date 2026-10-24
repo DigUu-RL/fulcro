@@ -98,34 +98,34 @@ describe('UnsignedInteger', () => {
 		'the operations behind the operators, at $width bits',
 		({ width, maximum }) => {
 			const type = UnsignedInteger(width) as IntegerType<number | bigint>;
-			const of = (value: bigint): number | bigint => type.from(carried(width, value));
+			const convert = (value: bigint): number | bigint => type.from(carried(width, value));
 
 			it('should negate only zero', () => {
-				expect(type.negate(of(0n))).toBe(carried(width, 0n));
-				expect(() => type.negate(of(1n))).toThrow(`UnsignedInteger<${String(width)}>.negate`);
+				expect(type.negate(convert(0n))).toBe(carried(width, 0n));
+				expect(() => type.negate(convert(1n))).toThrow(`UnsignedInteger<${String(width)}>.negate`);
 			});
 
 			it('should refuse to step below zero', () => {
-				expect(() => type.decrement(of(0n))).toThrow(RangeError);
-				expect(type.increment(of(0n))).toBe(carried(width, 1n));
+				expect(() => type.decrement(convert(0n))).toThrow(RangeError);
+				expect(type.increment(convert(0n))).toBe(carried(width, 1n));
 			});
 
 			it('should complement and shift over the unsigned bits', () => {
-				expect(type.bitwiseNot(of(0n))).toBe(carried(width, maximum));
-				expect(type.shiftLeft(type.maximum, of(1n))).toBe(carried(width, maximum - 1n));
-				expect(type.shiftRight(type.maximum, of(BigInt(width - 1)))).toBe(carried(width, 1n));
+				expect(type.bitwiseNot(convert(0n))).toBe(carried(width, maximum));
+				expect(type.shiftLeft(type.maximum, convert(1n))).toBe(carried(width, maximum - 1n));
+				expect(type.shiftRight(type.maximum, convert(BigInt(width - 1)))).toBe(carried(width, 1n));
 
-				expect(type.shiftRightLogical(type.maximum, of(1n))).toBe(
-					type.shiftRight(type.maximum, of(1n)),
+				expect(type.shiftRightLogical(type.maximum, convert(1n))).toBe(
+					type.shiftRight(type.maximum, convert(1n)),
 				);
 			});
 
 			it('should raise to a power up to the maximum and refuse past it', () => {
-				expect(type.power(of(2n), of(BigInt(width - 1)))).toBe(
+				expect(type.power(convert(2n), convert(BigInt(width - 1)))).toBe(
 					carried(width, 2n ** BigInt(width - 1)),
 				);
 
-				expect(() => type.power(of(2n), of(BigInt(width)))).toThrow(RangeError);
+				expect(() => type.power(convert(2n), convert(BigInt(width)))).toThrow(RangeError);
 			});
 		},
 	);

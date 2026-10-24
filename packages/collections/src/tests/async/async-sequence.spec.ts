@@ -231,17 +231,17 @@ describe('operators', () => {
 
 describe('terminals', () => {
 	it('should answer the scalar questions', async () => {
-		const of = (): ReturnType<typeof AsyncSequenceCollection.from<number>> => {
+		const convert = (): ReturnType<typeof AsyncSequenceCollection.from<number>> => {
 			return AsyncSequenceCollection.from([1, 2, 3]);
 		};
 
-		expect(await of().count()).toBe(3);
-		expect(await of().any()).toBe(true);
-		expect(await of().all((value) => value > 0)).toBe(true);
-		expect(await of().all((value) => value > 1)).toBe(false);
-		expect(await of().first()).toBe(1);
-		expect(await of().last()).toBe(3);
-		expect(await of().aggregate(0, (total, value) => total + value)).toBe(6);
+		expect(await convert().count()).toBe(3);
+		expect(await convert().any()).toBe(true);
+		expect(await convert().all((value) => value > 0)).toBe(true);
+		expect(await convert().all((value) => value > 1)).toBe(false);
+		expect(await convert().first()).toBe(1);
+		expect(await convert().last()).toBe(3);
+		expect(await convert().aggregate(0, (total, value) => total + value)).toBe(6);
 	});
 
 	it('should report absence rather than throwing, where asked to', async () => {

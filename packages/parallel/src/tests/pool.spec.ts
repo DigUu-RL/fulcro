@@ -161,7 +161,7 @@ describe('running work on workers', () => {
 			collected.push(value);
 		}
 
-		expect([...collected].sort((a, b) => a - b)).toEqual([2, 4, 6]);
+		expect([...collected].sort((left, right) => left - right)).toEqual([2, 4, 6]);
 	});
 
 	it('should feed an async sequence without depending on one', async () => {

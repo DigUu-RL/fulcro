@@ -161,11 +161,11 @@ describe('Matrix', () => {
 		it('should keep the order of elements whose product does not commute', () => {
 			const Rotation = Quaternion(DoublePrecisionFloat);
 			const Single = MatrixOf(Rotation, 1, 1);
-			const i = Single.from([[{ w: 0, x: 1, y: 0, z: 0 }]]);
-			const j = Single.from([[{ w: 0, x: 0, y: 1, z: 0 }]]);
+			const unitI = Single.from([[{ w: 0, x: 1, y: 0, z: 0 }]]);
+			const unitJ = Single.from([[{ w: 0, x: 0, y: 1, z: 0 }]]);
 
-			expect(Single.multiply(i, j)[0]).toEqual({ w: 0, x: 0, y: 0, z: 1 });
-			expect(Single.multiply(j, i)[0]).toEqual({ w: 0, x: 0, y: 0, z: -1 });
+			expect(Single.multiply(unitI, unitJ)[0]).toEqual({ w: 0, x: 0, y: 0, z: 1 });
+			expect(Single.multiply(unitJ, unitI)[0]).toEqual({ w: 0, x: 0, y: 0, z: -1 });
 		});
 
 		it('should transpose', () => {
@@ -207,9 +207,9 @@ describe('Matrix', () => {
 		it('should compute over complex numbers', () => {
 			const Complex = ComplexNumber(DoublePrecisionFloat);
 			const Single = MatrixOf(Complex, 1, 1);
-			const i = Single.from([[{ real: 0, imaginary: 1 }]]);
+			const imaginaryUnit = Single.from([[{ real: 0, imaginary: 1 }]]);
 
-			expect(Single.multiply(i, i)[0]).toEqual({ real: -1, imaginary: 0 });
+			expect(Single.multiply(imaginaryUnit, imaginaryUnit)[0]).toEqual({ real: -1, imaginary: 0 });
 		});
 	});
 

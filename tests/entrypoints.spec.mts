@@ -422,9 +422,9 @@ describe('@fulcro/types', () => {
 		expect([...moved]).toEqual([7, 10]);
 
 		const Complex = ComplexNumber(DoublePrecisionFloat);
-		const i = Complex.from({ real: 0, imaginary: 1 });
+		const item = Complex.from({ real: 0, imaginary: 1 });
 
-		expect(Complex.multiply(i, i)).toEqual({ real: -1, imaginary: 0 });
+		expect(Complex.multiply(item, item)).toEqual({ real: -1, imaginary: 0 });
 
 		const Rotation = Quaternion(DoublePrecisionFloat);
 
@@ -745,7 +745,9 @@ describe('@fulcro/functions', () => {
 	it('should still take the predicate form', async () => {
 		const { switchFor } = await import('@fulcro/functions');
 
-		expect(switchFor(10, [{ when: (n) => n > 5, then: () => 'big' }], () => 'small')).toBe('big');
+		expect(switchFor(10, [{ when: (value) => value > 5, then: () => 'big' }], () => 'small')).toBe(
+			'big',
+		);
 	});
 
 	it('should capture a synchronous throw', async () => {

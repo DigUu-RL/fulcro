@@ -168,7 +168,7 @@ describe('scan', () => {
 	it('should produce nothing for an empty sequence', () => {
 		expect(
 			SequenceCollection.empty<number>()
-				.scan(0, (a) => a)
+				.scan(0, (left) => left)
 				.toArray(),
 		).toEqual([]);
 	});
@@ -297,7 +297,9 @@ describe('median', () => {
 	});
 
 	it('should apply a selector', () => {
-		expect(SequenceCollection.from([{ n: 5 }, { n: 1 }, { n: 3 }]).median((v) => v.n)).toBe(3);
+		expect(SequenceCollection.from([{ n: 5 }, { n: 1 }, { n: 3 }]).median((value) => value.n)).toBe(
+			3,
+		);
 	});
 
 	it('should throw on an empty sequence', () => {
@@ -350,7 +352,9 @@ describe('standardDeviation', () => {
 	});
 
 	it('should apply a selector', () => {
-		expect(SequenceCollection.from([{ n: 3 }, { n: 3 }]).standardDeviation((v) => v.n)).toBe(0);
+		expect(
+			SequenceCollection.from([{ n: 3 }, { n: 3 }]).standardDeviation((value) => value.n),
+		).toBe(0);
 	});
 
 	it('should throw on an empty sequence', () => {

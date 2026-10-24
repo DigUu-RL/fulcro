@@ -171,14 +171,14 @@ const buildDeclaredLiteral = (
  */
 const buildMetadataLiteral = (
 	type: typescript.Type,
-	at: typescript.Node,
+	position: typescript.Node,
 	context: RewriteContext,
 ): typescript.ObjectLiteralExpression => {
 	const { checker, factory } = context;
 
 	const declared: typescript.ObjectLiteralExpression = buildDeclaredLiteral(type, context);
 
-	const members: readonly Member[] = membersOfType(type, checker, at);
+	const members: readonly Member[] = membersOfType(type, checker, position);
 
 	const union: readonly string[] | null = type.isUnion()
 		? type.types.map((member) => checker.typeToString(member))

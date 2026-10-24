@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 
-import * as ts from 'typescript';
+import * as typescript from 'typescript';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import transformer from '@/src/transformer';
@@ -41,32 +41,32 @@ const IMPORTS =
 const questionsFor = (text: string): { questions: number; refused: number } => {
 	const fileName: string = path.resolve(__dirname, 'counted.virtual.ts').split(path.sep).join('/');
 
-	const options: ts.CompilerOptions = {
-		target: ts.ScriptTarget.ES2022,
-		module: ts.ModuleKind.ESNext,
-		moduleResolution: ts.ModuleResolutionKind.Bundler,
+	const options: typescript.CompilerOptions = {
+		target: typescript.ScriptTarget.ES2022,
+		module: typescript.ModuleKind.ESNext,
+		moduleResolution: typescript.ModuleResolutionKind.Bundler,
 		strict: true,
 		skipLibCheck: true,
 	};
 
-	const host: ts.CompilerHost = ts.createCompilerHost(options);
+	const host: typescript.CompilerHost = typescript.createCompilerHost(options);
 	const { getSourceFile, fileExists, readFile } = host;
 
-	host.getSourceFile = (name, ...rest): ts.SourceFile | undefined => {
+	host.getSourceFile = (name, ...rest): typescript.SourceFile | undefined => {
 		return name === fileName
-			? ts.createSourceFile(name, text, ts.ScriptTarget.ES2022, true)
+			? typescript.createSourceFile(name, text, typescript.ScriptTarget.ES2022, true)
 			: getSourceFile(name, ...rest);
 	};
 
 	host.fileExists = (name): boolean => name === fileName || fileExists(name);
 	host.readFile = (name): string | undefined => (name === fileName ? text : readFile(name));
 
-	const program: ts.Program = ts.createProgram([fileName], options, host);
-	const checker: ts.TypeChecker = program.getTypeChecker();
+	const program: typescript.Program = typescript.createProgram([fileName], options, host);
+	const checker: typescript.TypeChecker = program.getTypeChecker();
 	let questions = 0;
 
 	// Built before counting, so the program's own checking is not counted.
-	ts.getPreEmitDiagnostics(program);
+	typescript.getPreEmitDiagnostics(program);
 
 	const counting = new Proxy(checker, {
 		get: (target, key, receiver) => {
@@ -82,19 +82,21 @@ const questionsFor = (text: string): { questions: number; refused: number } => {
 		},
 	});
 
-	const counted: ts.Program = new Proxy(program, {
+	const counted: typescript.Program = new Proxy(program, {
 		get: (target, key, receiver) => {
 			return key === 'getTypeChecker'
-				? (): ts.TypeChecker => counting
+				? (): typescript.TypeChecker => counting
 				: Reflect.get(target, key, receiver);
 		},
 	});
 
 	let refused = 0;
 
-	ts.transform(program.getSourceFile(fileName) as ts.SourceFile, [
-		transformer(counted, undefined, { addDiagnostic: () => refused++ }),
-	]).dispose();
+	typescript
+		.transform(program.getSourceFile(fileName) as typescript.SourceFile, [
+			transformer(counted, undefined, { addDiagnostic: () => refused++ }),
+		])
+		.dispose();
 
 	return { questions, refused };
 };

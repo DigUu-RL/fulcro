@@ -1,4 +1,4 @@
-import * as fs from 'node:fs';
+import * as fileSystem from 'node:fs';
 import * as path from 'node:path';
 
 import typescript from 'typescript';
@@ -140,7 +140,7 @@ export class ProgramHost implements typescript.LanguageServiceHost {
 	 */
 	private matchesDisk(fileName: string, content: string): boolean {
 		try {
-			return fs.readFileSync(fileName, 'utf8') === content;
+			return fileSystem.readFileSync(fileName, 'utf8') === content;
 		} catch {
 			return false;
 		}
@@ -161,9 +161,9 @@ export class ProgramHost implements typescript.LanguageServiceHost {
 			return typescript.ScriptSnapshot.fromString(overlay);
 		}
 
-		if (!fs.existsSync(fileName)) return undefined;
+		if (!fileSystem.existsSync(fileName)) return undefined;
 
-		return typescript.ScriptSnapshot.fromString(fs.readFileSync(fileName, 'utf8'));
+		return typescript.ScriptSnapshot.fromString(fileSystem.readFileSync(fileName, 'utf8'));
 	}
 
 	getCurrentDirectory(): string {

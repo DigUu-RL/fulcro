@@ -1,4 +1,4 @@
-import * as vm from 'node:vm';
+import * as virtualMachine from 'node:vm';
 
 import typescript from 'typescript';
 
@@ -451,17 +451,17 @@ const describeThrown = (thrown: unknown): string => {
  * @returns The value, or the refusal.
  */
 const run = (script: string): Outcome => {
-	const sandbox: vm.Context = vm.createContext(
+	const sandbox: virtualMachine.Context = virtualMachine.createContext(
 		{},
 		{ codeGeneration: { strings: false, wasm: false } },
 	);
 
-	vm.runInContext('delete Math.random;', sandbox);
+	virtualMachine.runInContext('delete Math.random;', sandbox);
 
 	try {
 		return {
 			kind: 'value',
-			value: vm.runInContext(script, sandbox, { timeout: EVALUATION_TIMEOUT }),
+			value: virtualMachine.runInContext(script, sandbox, { timeout: EVALUATION_TIMEOUT }),
 		};
 	} catch (thrown) {
 		return {

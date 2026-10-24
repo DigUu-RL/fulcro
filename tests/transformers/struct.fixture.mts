@@ -2,7 +2,7 @@ import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import ts from 'typescript';
+import typescript from 'typescript';
 
 /**
  * Compiles `struct.sample.ts` with both plugins applied, as a consumer using
@@ -37,29 +37,31 @@ export interface CompiledStructs {
  */
 export const compileStructs = (): CompiledStructs => {
 	const reflect = require('@fulcro/reflect/transformer').default as (
-		program: ts.Program,
-	) => ts.TransformerFactory<ts.SourceFile>;
+		program: typescript.Program,
+	) => typescript.TransformerFactory<typescript.SourceFile>;
 
 	const collections = require('@fulcro/collections/transformer').default as typeof reflect;
 
-	const program: ts.Program = ts.createProgram([FIXTURE], {
-		target: ts.ScriptTarget.ES2022,
-		module: ts.ModuleKind.ESNext,
+	const program: typescript.Program = typescript.createProgram([FIXTURE], {
+		target: typescript.ScriptTarget.ES2022,
+		module: typescript.ModuleKind.ESNext,
 		// `Bundler`, because `Node10` finds a package's main entry but not its
 		// `exports` subpaths, and it only accepts an ES module target.
-		moduleResolution: ts.ModuleResolutionKind.Bundler,
+		moduleResolution: typescript.ModuleResolutionKind.Bundler,
 		strict: true,
 		noEmitOnError: false,
 		skipLibCheck: true,
 	});
 
-	const errors: readonly ts.Diagnostic[] = ts
+	const errors: readonly typescript.Diagnostic[] = typescript
 		.getPreEmitDiagnostics(program, program.getSourceFile(FIXTURE))
-		.filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error);
+		.filter((diagnostic) => diagnostic.category === typescript.DiagnosticCategory.Error);
 
 	if (errors.length > 0) {
 		throw new Error(
-			errors.map((error) => ts.flattenDiagnosticMessageText(error.messageText, '\n')).join('\n'),
+			errors
+				.map((error) => typescript.flattenDiagnosticMessageText(error.messageText, '\n'))
+				.join('\n'),
 		);
 	}
 
@@ -76,10 +78,10 @@ export const compileStructs = (): CompiledStructs => {
 	);
 
 	// Only the module syntax changes here; the transformers have already run.
-	const runnable: string = ts.transpileModule(emitted, {
+	const runnable: string = typescript.transpileModule(emitted, {
 		compilerOptions: {
-			target: ts.ScriptTarget.ES2022,
-			module: ts.ModuleKind.CommonJS,
+			target: typescript.ScriptTarget.ES2022,
+			module: typescript.ModuleKind.CommonJS,
 		},
 	}).outputText;
 

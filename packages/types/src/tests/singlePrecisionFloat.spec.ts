@@ -55,14 +55,14 @@ describe('SinglePrecisionFloat', () => {
 	});
 
 	it('should round each operation back into the format', () => {
-		const a = SinglePrecisionFloat.from(0.1);
-		const b = SinglePrecisionFloat.from(0.2);
+		const left = SinglePrecisionFloat.from(0.1);
+		const right = SinglePrecisionFloat.from(0.2);
 
 		// Left in double precision the sum would be 0.30000000447034836.
-		expect(SinglePrecisionFloat.add(a, b)).toBe(0.30000001192092896);
-		expect(SinglePrecisionFloat.subtract(b, a)).toBe(Math.fround(b - a));
-		expect(SinglePrecisionFloat.multiply(a, b)).toBe(Math.fround(a * b));
-		expect(SinglePrecisionFloat.divide(a, b)).toBe(0.5);
+		expect(SinglePrecisionFloat.add(left, right)).toBe(0.30000001192092896);
+		expect(SinglePrecisionFloat.subtract(right, left)).toBe(Math.fround(right - left));
+		expect(SinglePrecisionFloat.multiply(left, right)).toBe(Math.fround(left * right));
+		expect(SinglePrecisionFloat.divide(left, right)).toBe(0.5);
 
 		expect(
 			SinglePrecisionFloat.remainder(SinglePrecisionFloat.from(7.5), SinglePrecisionFloat.from(2)),

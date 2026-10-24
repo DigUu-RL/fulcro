@@ -1,5 +1,5 @@
-import fs from 'node:fs';
-import os from 'node:os';
+import fileSystem from 'node:fs';
+import operatingSystem from 'node:os';
 import path from 'node:path';
 
 /**
@@ -47,15 +47,15 @@ const roots: string[] = [];
  * @returns The tree.
  */
 export const tree = (scripts: string[] = ['build', 'typecheck']): Tree => {
-	const root = fs.mkdtempSync(path.join(os.tmpdir(), 'fulcro-claude-'));
+	const root = fileSystem.mkdtempSync(path.join(operatingSystem.tmpdir(), 'fulcro-claude-'));
 
 	roots.push(root);
 
 	const write = (relative: string, content: string): void => {
 		const full = path.join(root, ...relative.split('/'));
 
-		fs.mkdirSync(path.dirname(full), { recursive: true });
-		fs.writeFileSync(full, content, 'utf8');
+		fileSystem.mkdirSync(path.dirname(full), { recursive: true });
+		fileSystem.writeFileSync(full, content, 'utf8');
 	};
 
 	write(
@@ -92,6 +92,6 @@ export const discardTrees = (): void => {
 
 		if (root === undefined) continue;
 
-		fs.rmSync(root, { recursive: true, force: true });
+		fileSystem.rmSync(root, { recursive: true, force: true });
 	}
 };

@@ -71,18 +71,18 @@ describe('takeWhile', () => {
 	it('should take the leading matching elements', () => {
 		expect(
 			SequenceCollection.from([1, 2, 3, 1])
-				.takeWhile((v) => v < 3)
+				.takeWhile((value) => value < 3)
 				.toArray(),
 		).toEqual([1, 2]);
 	});
 
 	it('should not look past the first failure, unlike where', () => {
 		const taken = SequenceCollection.from([1, 2, 9, 1])
-			.takeWhile((v) => v < 3)
+			.takeWhile((value) => value < 3)
 			.toArray();
 
 		const filtered = SequenceCollection.from([1, 2, 9, 1])
-			.where((v) => v < 3)
+			.where((value) => value < 3)
 			.toArray();
 
 		expect(taken).toEqual([1, 2]);
@@ -93,7 +93,7 @@ describe('takeWhile', () => {
 		const { source, read } = counted([1, 2, 3, 4, 5]);
 
 		SequenceCollection.from(source)
-			.takeWhile((v) => v < 3)
+			.takeWhile((value) => value < 3)
 			.toArray();
 
 		expect(read()).toBe(3);
@@ -104,7 +104,7 @@ describe('skipWhile', () => {
 	it('should bypass the leading matching elements', () => {
 		expect(
 			SequenceCollection.from([1, 2, 3, 1])
-				.skipWhile((v) => v < 3)
+				.skipWhile((value) => value < 3)
 				.toArray(),
 		).toEqual([3, 1]);
 	});
@@ -113,7 +113,7 @@ describe('skipWhile', () => {
 		// Including elements that would have satisfied the condition.
 		expect(
 			SequenceCollection.from([1, 9, 1, 2])
-				.skipWhile((v) => v < 3)
+				.skipWhile((value) => value < 3)
 				.toArray(),
 		).toEqual([9, 1, 2]);
 	});
@@ -215,7 +215,7 @@ describe('zip', () => {
 	it('should merge position by position', () => {
 		expect(
 			SequenceCollection.from([1, 2, 3])
-				.zip(['a', 'b', 'c'], (n, s) => `${String(n)}${s}`)
+				.zip(['a', 'b', 'c'], (value, text) => `${String(value)}${text}`)
 				.toArray(),
 		).toEqual(['1a', '2b', '3c']);
 	});
@@ -223,7 +223,7 @@ describe('zip', () => {
 	it('should stop at the shorter sequence', () => {
 		expect(
 			SequenceCollection.from([1, 2, 3, 4])
-				.zip(['a', 'b'], (n, s) => `${String(n)}${s}`)
+				.zip(['a', 'b'], (value, text) => `${String(value)}${text}`)
 				.toArray(),
 		).toEqual(['1a', '2b']);
 	});
@@ -232,7 +232,7 @@ describe('zip', () => {
 		const { source, read } = counted([1, 2, 3, 4, 5]);
 
 		SequenceCollection.from(source)
-			.zip(['a', 'b'], (n, s) => `${String(n)}${s}`)
+			.zip(['a', 'b'], (value, text) => `${String(value)}${text}`)
 			.toArray();
 
 		// Three: two paired, and one more that found no partner.
@@ -242,7 +242,7 @@ describe('zip', () => {
 	it('should report the shorter of two known counts', () => {
 		expect(
 			SequenceCollection.from([1, 2, 3, 4])
-				.zip(['a', 'b'], (n) => n)
+				.zip(['a', 'b'], (value) => value)
 				.count(),
 		).toBe(2);
 	});

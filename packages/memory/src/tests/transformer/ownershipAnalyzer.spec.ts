@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 
-import * as ts from 'typescript';
+import * as typescript from 'typescript';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import transformer from '@/src/transformer';
@@ -19,10 +19,10 @@ import transformer from '@/src/transformer';
  */
 
 /** Options every fixture compiles with. */
-const COMPILER_OPTIONS: ts.CompilerOptions = {
-	target: ts.ScriptTarget.ES2022,
-	module: ts.ModuleKind.ESNext,
-	moduleResolution: ts.ModuleResolutionKind.Bundler,
+const COMPILER_OPTIONS: typescript.CompilerOptions = {
+	target: typescript.ScriptTarget.ES2022,
+	module: typescript.ModuleKind.ESNext,
+	moduleResolution: typescript.ModuleResolutionKind.Bundler,
 	strict: true,
 	noEmitOnError: false,
 	skipLibCheck: true,
@@ -30,10 +30,10 @@ const COMPILER_OPTIONS: ts.CompilerOptions = {
 
 /** What compiling one fixture produced. */
 interface Compiled {
-	readonly source: ts.SourceFile;
+	readonly source: typescript.SourceFile;
 	readonly emitted: string;
-	readonly errors: readonly ts.Diagnostic[];
-	readonly refused: readonly ts.Diagnostic[];
+	readonly errors: readonly typescript.Diagnostic[];
+	readonly refused: readonly typescript.Diagnostic[];
 }
 
 /**
@@ -45,11 +45,11 @@ interface Compiled {
  */
 const compile = (...fileNames: string[]): Compiled[] => {
 	const fixtures: string[] = fileNames.map((fileName) => path.resolve(__dirname, fileName));
-	const program: ts.Program = ts.createProgram(fixtures, COMPILER_OPTIONS);
+	const program: typescript.Program = typescript.createProgram(fixtures, COMPILER_OPTIONS);
 
 	return fixtures.map((fixture) => {
-		const source = program.getSourceFile(fixture) as ts.SourceFile;
-		const refused: ts.Diagnostic[] = [];
+		const source = program.getSourceFile(fixture) as typescript.SourceFile;
+		const refused: typescript.Diagnostic[] = [];
 		let emitted = '';
 
 		program.emit(
@@ -68,9 +68,9 @@ const compile = (...fileNames: string[]): Compiled[] => {
 			},
 		);
 
-		const errors: readonly ts.Diagnostic[] = ts
+		const errors: readonly typescript.Diagnostic[] = typescript
 			.getPreEmitDiagnostics(program, source)
-			.filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error);
+			.filter((diagnostic) => diagnostic.category === typescript.DiagnosticCategory.Error);
 
 		return { source, emitted, errors, refused };
 	});
@@ -82,9 +82,9 @@ const compile = (...fileNames: string[]): Compiled[] => {
  * @param diagnostic The diagnostic.
  * @returns `line: FULCROnnnn`, the line counted from 1.
  */
-const located = (diagnostic: ts.Diagnostic): string => {
-	const { line } = ts.getLineAndCharacterOfPosition(
-		diagnostic.file as ts.SourceFile,
+const located = (diagnostic: typescript.Diagnostic): string => {
+	const { line } = typescript.getLineAndCharacterOfPosition(
+		diagnostic.file as typescript.SourceFile,
 		diagnostic.start ?? 0,
 	);
 
@@ -105,7 +105,7 @@ describe('ownership rules at compile time', () => {
 	it('should compile both fixtures without type errors', () => {
 		expect(
 			[...accepted.errors, ...rejected.errors].map((error) => {
-				return ts.flattenDiagnosticMessageText(error.messageText, '\n');
+				return typescript.flattenDiagnosticMessageText(error.messageText, '\n');
 			}),
 		).toEqual([]);
 	});
@@ -113,7 +113,7 @@ describe('ownership rules at compile time', () => {
 	it('should refuse nothing a correct program does', () => {
 		expect(
 			accepted.refused.map((diagnostic) => {
-				return `${located(diagnostic)} ${ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')}`;
+				return `${located(diagnostic)} ${typescript.flattenDiagnosticMessageText(diagnostic.messageText, '\n')}`;
 			}),
 		).toEqual([]);
 	});

@@ -55,7 +55,7 @@ afterEach(() => {
 	globalThis.BigInt = nativeBigInt;
 });
 
-const D = Decimal.from;
+const decimal = Decimal.from;
 
 /**
  * No intermediate may pass this many digits: two thirty-four-digit
@@ -70,23 +70,23 @@ describe('Decimal intermediates', () => {
 		['9.999999999999999999999999999999999e6144', '1e-6176'],
 		['-1e-6176', '1e6144'],
 	])('should add %s and %s without writing out the gap between them', (left, right) => {
-		const a = D(left);
-		const b = D(right);
+		const leftDecimal = decimal(left);
+		const rightDecimal = decimal(right);
 
 		largest = 0;
 
 		for (const mode of ['halfEven', 'ceiling', 'floor', 'truncate'] as const) {
-			a.add(b, mode);
-			a.subtract(b, mode);
-			b.subtract(a, mode);
+			leftDecimal.add(rightDecimal, mode);
+			leftDecimal.subtract(rightDecimal, mode);
+			rightDecimal.subtract(leftDecimal, mode);
 		}
 
 		expect(largest).toBeLessThanOrEqual(INTERMEDIATE_CEILING);
 	});
 
 	it('should multiply and divide across the whole exponent range in bounded digits', () => {
-		const huge = D('9.999999999999999999999999999999999e6144');
-		const tiny = D('1.234567890123456789012345678901234e-6176');
+		const huge = decimal('9.999999999999999999999999999999999e6144');
+		const tiny = decimal('1.234567890123456789012345678901234e-6176');
 
 		largest = 0;
 
@@ -94,27 +94,27 @@ describe('Decimal intermediates', () => {
 		tiny.multiply(tiny);
 		huge.divide(tiny);
 		tiny.divide(huge);
-		D('1').divide(D('3'));
+		decimal('1').divide(decimal('3'));
 
 		expect(largest).toBeLessThanOrEqual(INTERMEDIATE_CEILING);
 	});
 
 	it('should find a remainder across twelve thousand places by reducing the power', () => {
-		const huge = D('9.999999999999999999999999999999999e6144');
-		const tiny = D('7e-6176');
+		const huge = decimal('9.999999999999999999999999999999999e6144');
+		const tiny = decimal('7e-6176');
 
 		largest = 0;
 
-		huge.remainder(D('7'));
+		huge.remainder(decimal('7'));
 		huge.remainder(tiny);
-		D('1e6000').remainder(D('3.3'));
+		decimal('1e6000').remainder(decimal('3.3'));
 
 		expect(largest).toBeLessThanOrEqual(INTERMEDIATE_CEILING);
 	});
 
 	it('should compare values of any exponent in bounded digits', () => {
 		const values = ['1e6144', '1e-6176', '-5e3000', '5.000000000000000000000000000000001e3000'].map(
-			(text) => D(text),
+			(text) => decimal(text),
 		);
 
 		largest = 0;
@@ -127,9 +127,9 @@ describe('Decimal intermediates', () => {
 	it('should round away six thousand places without building their power', () => {
 		largest = 0;
 
-		D('1e-6000').round(2, 'ceiling');
-		D('1.5e-6176').round(0);
-		D('1e6000').round(-6000);
+		decimal('1e-6000').round(2, 'ceiling');
+		decimal('1.5e-6176').round(0);
+		decimal('1e6000').round(-6000);
 
 		expect(largest).toBeLessThanOrEqual(INTERMEDIATE_CEILING);
 	});
@@ -138,15 +138,15 @@ describe('Decimal intermediates', () => {
 		const text = `0.${'3'.repeat(100_000)}`;
 
 		largest = 0;
-		D(text);
+		decimal(text);
 
 		// Thirty-four digits, the rounding digit and the one summarising the rest.
 		expect(largest).toBeLessThanOrEqual(36);
 	});
 
 	it('should print an extreme exponent in exponential notation, not in full', () => {
-		expect(D('1e6000').toString().length).toBeLessThan(10);
-		expect(D('-1.5e-6000').toString().length).toBeLessThan(12);
+		expect(decimal('1e6000').toString().length).toBeLessThan(10);
+		expect(decimal('-1.5e-6000').toString().length).toBeLessThan(12);
 	});
 });
 
@@ -163,7 +163,7 @@ describe('Decimal parsing', () => {
 			const repetitions: number = 2_000_000 / length;
 			const started: number = performance.now();
 
-			for (let index = 0; index < repetitions; index++) D(text);
+			for (let index = 0; index < repetitions; index++) decimal(text);
 
 			return Math.max(performance.now() - started, 1);
 		};

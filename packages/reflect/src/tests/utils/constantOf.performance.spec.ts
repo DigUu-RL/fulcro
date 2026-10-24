@@ -1,7 +1,7 @@
 import * as path from 'node:path';
-import * as vm from 'node:vm';
+import * as virtualMachine from 'node:vm';
 
-import * as ts from 'typescript';
+import * as typescript from 'typescript';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { constantOf } from '@/src/functions/utils/constantOf';
@@ -37,17 +37,17 @@ let scriptsEvaluated = 0;
 beforeAll(() => {
 	const fixture: string = path.resolve(__dirname, '../transformer/constantOf.sample.ts');
 
-	const program: ts.Program = ts.createProgram([fixture], {
-		target: ts.ScriptTarget.ES2022,
-		module: ts.ModuleKind.ESNext,
-		moduleResolution: ts.ModuleResolutionKind.Node10,
+	const program: typescript.Program = typescript.createProgram([fixture], {
+		target: typescript.ScriptTarget.ES2022,
+		module: typescript.ModuleKind.ESNext,
+		moduleResolution: typescript.ModuleResolutionKind.Node10,
 		strict: true,
 		skipLibCheck: true,
 	});
 
 	const transform = transformer(program, {}, { addDiagnostic: () => undefined });
 
-	vi.mocked(vm.runInContext).mockClear();
+	vi.mocked(virtualMachine.runInContext).mockClear();
 
 	program.emit(program.getSourceFile(fixture), () => undefined, undefined, false, {
 		before: [transform],
@@ -56,7 +56,7 @@ beforeAll(() => {
 	// Each evaluation hands the context two scripts: the one removing
 	// `Math.random`, and its own.
 	scriptsEvaluated = vi
-		.mocked(vm.runInContext)
+		.mocked(virtualMachine.runInContext)
 		.mock.calls.filter(([script]) => script !== 'delete Math.random;').length;
 });
 

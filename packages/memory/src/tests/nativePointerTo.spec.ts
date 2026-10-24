@@ -150,13 +150,17 @@ describe('nativePointerTo a memory', () => {
 			}),
 		);
 
-		expect([16, 20, 24, 28].map((at) => raw.getFloat32(at, true))).toEqual([1, 2, 3, 4]);
+		expect([16, 20, 24, 28].map((position) => raw.getFloat32(position, true))).toEqual([
+			1, 2, 3, 4,
+		]);
 
 		velocity.set(Point.from({ x: 0, y: -10 }));
 
 		expect(Particle.layout.fields.velocity.offset).toBe(8);
 		expect(velocity.address).toBe(24);
-		expect([16, 20, 24, 28].map((at) => raw.getFloat32(at, true))).toEqual([1, 2, 0, -10]);
+		expect([16, 20, 24, 28].map((position) => raw.getFloat32(position, true))).toEqual([
+			1, 2, 0, -10,
+		]);
 
 		raw.setFloat32(28, 6.5, true);
 

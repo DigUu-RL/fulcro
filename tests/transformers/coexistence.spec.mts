@@ -2,7 +2,7 @@ import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import ts from 'typescript';
+import typescript from 'typescript';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 /**
@@ -39,33 +39,33 @@ let emitted = '';
  */
 const compileFixture = (): string => {
 	const reflect = require('@fulcro/reflect/transformer')
-		.default as ts.TransformerFactory<ts.SourceFile> extends never
+		.default as typescript.TransformerFactory<typescript.SourceFile> extends never
 		? never
-		: (program: ts.Program) => ts.TransformerFactory<ts.SourceFile>;
+		: (program: typescript.Program) => typescript.TransformerFactory<typescript.SourceFile>;
 
 	const collections = require('@fulcro/collections/transformer').default as typeof reflect;
 
 	const memory = require('@fulcro/memory/transformer').default as typeof reflect;
 
-	const program: ts.Program = ts.createProgram([FIXTURE], {
-		target: ts.ScriptTarget.ES2022,
-		module: ts.ModuleKind.ESNext,
+	const program: typescript.Program = typescript.createProgram([FIXTURE], {
+		target: typescript.ScriptTarget.ES2022,
+		module: typescript.ModuleKind.ESNext,
 		// `Bundler`, because `Node10` finds a package's main entry but not its
 		// `exports` subpaths — and a type the checker cannot see is a call
 		// neither transformer can claim, silently.
-		moduleResolution: ts.ModuleResolutionKind.Bundler,
+		moduleResolution: typescript.ModuleResolutionKind.Bundler,
 		strict: true,
 		noEmitOnError: false,
 		skipLibCheck: true,
 	});
 
-	const errors: readonly ts.Diagnostic[] = ts
+	const errors: readonly typescript.Diagnostic[] = typescript
 		.getPreEmitDiagnostics(program, program.getSourceFile(FIXTURE))
-		.filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error);
+		.filter((diagnostic) => diagnostic.category === typescript.DiagnosticCategory.Error);
 
 	if (errors.length > 0) {
 		throw new Error(
-			ts.formatDiagnostics(errors, {
+			typescript.formatDiagnostics(errors, {
 				getCanonicalFileName: (name) => name,
 				getCurrentDirectory: () => ROOT,
 				getNewLine: () => '\n',
@@ -148,15 +148,15 @@ describe('the plugins on one file', () => {
 		);
 
 		const reflect = require('@fulcro/reflect/transformer').default as (
-			program: ts.Program,
-		) => ts.TransformerFactory<ts.SourceFile>;
+			program: typescript.Program,
+		) => typescript.TransformerFactory<typescript.SourceFile>;
 
 		const memory = require('@fulcro/memory/transformer').default as typeof reflect;
 
-		const program: ts.Program = ts.createProgram([rejected], {
-			target: ts.ScriptTarget.ES2022,
-			module: ts.ModuleKind.ESNext,
-			moduleResolution: ts.ModuleResolutionKind.Bundler,
+		const program: typescript.Program = typescript.createProgram([rejected], {
+			target: typescript.ScriptTarget.ES2022,
+			module: typescript.ModuleKind.ESNext,
+			moduleResolution: typescript.ModuleResolutionKind.Bundler,
 			strict: true,
 			skipLibCheck: true,
 		});

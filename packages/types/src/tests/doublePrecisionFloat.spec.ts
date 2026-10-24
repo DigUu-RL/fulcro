@@ -20,14 +20,14 @@ describe('DoublePrecisionFloat', () => {
 	});
 
 	it('should compute exactly what the operators compute', () => {
-		const a = DoublePrecisionFloat.from(0.1);
-		const b = DoublePrecisionFloat.from(0.2);
+		const left = DoublePrecisionFloat.from(0.1);
+		const right = DoublePrecisionFloat.from(0.2);
 
-		expect(DoublePrecisionFloat.add(a, b)).toBe(0.1 + 0.2);
-		expect(DoublePrecisionFloat.subtract(a, b)).toBe(0.1 - 0.2);
-		expect(DoublePrecisionFloat.multiply(a, b)).toBe(0.1 * 0.2);
-		expect(DoublePrecisionFloat.divide(a, b)).toBe(0.1 / 0.2);
-		expect(DoublePrecisionFloat.remainder(a, b)).toBe(0.1 % 0.2);
+		expect(DoublePrecisionFloat.add(left, right)).toBe(0.1 + 0.2);
+		expect(DoublePrecisionFloat.subtract(left, right)).toBe(0.1 - 0.2);
+		expect(DoublePrecisionFloat.multiply(left, right)).toBe(0.1 * 0.2);
+		expect(DoublePrecisionFloat.divide(left, right)).toBe(0.1 / 0.2);
+		expect(DoublePrecisionFloat.remainder(left, right)).toBe(0.1 % 0.2);
 	});
 
 	it('should report the range of a number, not its smallest positive value', () => {

@@ -2,7 +2,7 @@ import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import ts from 'typescript';
+import typescript from 'typescript';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 /**
@@ -29,25 +29,27 @@ let emitted = '';
 
 beforeAll(() => {
 	const reflect = require('@fulcro/reflect/transformer').default as (
-		program: ts.Program,
-	) => ts.TransformerFactory<ts.SourceFile>;
+		program: typescript.Program,
+	) => typescript.TransformerFactory<typescript.SourceFile>;
 
-	const program: ts.Program = ts.createProgram([FIXTURE], {
-		target: ts.ScriptTarget.ES2022,
-		module: ts.ModuleKind.ESNext,
-		moduleResolution: ts.ModuleResolutionKind.Bundler,
+	const program: typescript.Program = typescript.createProgram([FIXTURE], {
+		target: typescript.ScriptTarget.ES2022,
+		module: typescript.ModuleKind.ESNext,
+		moduleResolution: typescript.ModuleResolutionKind.Bundler,
 		strict: true,
 		noEmitOnError: false,
 		skipLibCheck: true,
 	});
 
-	const errors: readonly ts.Diagnostic[] = ts
+	const errors: readonly typescript.Diagnostic[] = typescript
 		.getPreEmitDiagnostics(program, program.getSourceFile(FIXTURE))
-		.filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error);
+		.filter((diagnostic) => diagnostic.category === typescript.DiagnosticCategory.Error);
 
 	if (errors.length > 0) {
 		throw new Error(
-			errors.map((error) => ts.flattenDiagnosticMessageText(error.messageText, '\n')).join('\n'),
+			errors
+				.map((error) => typescript.flattenDiagnosticMessageText(error.messageText, '\n'))
+				.join('\n'),
 		);
 	}
 

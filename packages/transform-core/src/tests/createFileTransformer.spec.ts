@@ -1,4 +1,4 @@
-import * as fs from 'node:fs';
+import * as fileSystem from 'node:fs';
 import * as path from 'node:path';
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -78,7 +78,7 @@ const transform = (name: string, analyzers: readonly FileAnalyzer[]): string | n
 
 	return createFileTransformer([unused], { root: workspace.root }, analyzers).transform(
 		fileName,
-		fs.readFileSync(fileName, 'utf8'),
+		fileSystem.readFileSync(fileName, 'utf8'),
 	);
 };
 

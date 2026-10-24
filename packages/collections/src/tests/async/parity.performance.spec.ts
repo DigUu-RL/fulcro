@@ -84,27 +84,37 @@ const endless = (): AsyncIterable<number> => {
 
 describe('the terminals read the source once', () => {
 	it.each([
-		['sum', (sequence: AsyncSequenceOf<Order>): Promise<number> => sequence.sum((o) => o.total)],
+		[
+			'sum',
+			(sequence: AsyncSequenceOf<Order>): Promise<number> => sequence.sum((order) => order.total),
+		],
 		[
 			'average',
-			(sequence: AsyncSequenceOf<Order>): Promise<number> => sequence.average((o) => o.total),
+			(sequence: AsyncSequenceOf<Order>): Promise<number> =>
+				sequence.average((order) => order.total),
 		],
-		['min', (sequence: AsyncSequenceOf<Order>): Promise<number> => sequence.min((o) => o.total)],
-		['maxBy', (sequence: AsyncSequenceOf<Order>): Promise<Order> => sequence.maxBy((o) => o.total)],
+		[
+			'min',
+			(sequence: AsyncSequenceOf<Order>): Promise<number> => sequence.min((order) => order.total),
+		],
+		[
+			'maxBy',
+			(sequence: AsyncSequenceOf<Order>): Promise<Order> => sequence.maxBy((order) => order.total),
+		],
 		[
 			'countBy',
 			(sequence: AsyncSequenceOf<Order>): Promise<Map<string, number>> =>
-				sequence.countBy((o) => o.region),
+				sequence.countBy((order) => order.region),
 		],
 		[
 			'toLookup',
 			(sequence: AsyncSequenceOf<Order>): Promise<Map<string, Order[]>> =>
-				sequence.toLookup((o) => o.region),
+				sequence.toLookup((order) => order.region),
 		],
 		[
 			'standardDeviation',
 			(sequence: AsyncSequenceOf<Order>): Promise<number> =>
-				sequence.standardDeviation((o) => o.total),
+				sequence.standardDeviation((order) => order.total),
 		],
 	])('should pull %s elements exactly once each', async (_label, run) => {
 		const { source, pulled } = counted(orders);

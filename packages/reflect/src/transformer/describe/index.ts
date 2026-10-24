@@ -156,13 +156,13 @@ export const keysOfType = (type: typescript.Type): readonly string[] | null => {
  *
  * @param type Type being read.
  * @param checker Checker of the program being compiled.
- * @param at Node the lookups happen from.
+ * @param position Node the lookups happen from.
  * @returns The members, in declaration order.
  */
 export const membersOfType = (
 	type: typescript.Type,
 	checker: typescript.TypeChecker,
-	at: typescript.Node,
+	position: typescript.Node,
 ): readonly Member[] => {
 	if (isLeaf(type) || type.isUnion()) return [];
 
@@ -170,7 +170,7 @@ export const membersOfType = (
 		.getProperties()
 		.filter((property) => isReportable(property.getName()))
 		.map((property) => {
-			const declared: typescript.Type = checker.getTypeOfSymbolAtLocation(property, at);
+			const declared: typescript.Type = checker.getTypeOfSymbolAtLocation(property, position);
 
 			return {
 				name: property.getName(),
@@ -192,13 +192,13 @@ export const membersOfType = (
  *
  * @param type Type being walked.
  * @param checker Checker of the program being compiled.
- * @param at Node the lookups happen from.
+ * @param position Node the lookups happen from.
  * @returns The leaves, or `null` when the type has none to walk to.
  */
 export const pathsOfType = (
 	type: typescript.Type,
 	checker: typescript.TypeChecker,
-	at: typescript.Node,
+	position: typescript.Node,
 ): readonly Path[] | null => {
 	const found: Path[] = [];
 
@@ -279,7 +279,7 @@ export const pathsOfType = (
 		next.add(single);
 
 		for (const property of properties) {
-			const declared: typescript.Type = checker.getTypeOfSymbolAtLocation(property, at);
+			const declared: typescript.Type = checker.getTypeOfSymbolAtLocation(property, position);
 
 			const name: string = property.getName();
 

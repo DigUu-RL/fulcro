@@ -319,12 +319,12 @@ describe('struct', () => {
 		});
 
 		it('should compare by field, as each field type compares', () => {
-			const a = Vector3.from({ x: 1, y: 2, z: 3 });
-			const b = Vector3.from({ x: 1, y: 2, z: 3 });
+			const left = Vector3.from({ x: 1, y: 2, z: 3 });
+			const right = Vector3.from({ x: 1, y: 2, z: 3 });
 
-			expect(a === b).toBe(false);
-			expect(Vector3.equals(a, b)).toBe(true);
-			expect(Vector3.equals(a, Vector3.from({ x: 1, y: 2, z: 4 }))).toBe(false);
+			expect(left === right).toBe(false);
+			expect(Vector3.equals(left, right)).toBe(true);
+			expect(Vector3.equals(left, Vector3.from({ x: 1, y: 2, z: 4 }))).toBe(false);
 
 			expect(
 				Vector3.equals(Vector3.from({ x: 0, y: 0, z: 0 }), Vector3.from({ x: -0, y: 0, z: 0 })),
@@ -392,13 +392,13 @@ describe('struct', () => {
 		});
 
 		it('should share one prototype, and keep only the fields as own keys', () => {
-			const a = Point.from({ x: 1, y: 2 });
-			const b = Point.from({ x: 3, y: 4 });
+			const left = Point.from({ x: 1, y: 2 });
+			const right = Point.from({ x: 3, y: 4 });
 
-			expect(Object.getPrototypeOf(a)).toBe(Object.getPrototypeOf(b));
-			expect(Object.keys(a)).toEqual(['x', 'y']);
-			expect({ ...a }).toEqual({ x: 1, y: 2 });
-			expect(Object.isFrozen(Object.getPrototypeOf(a))).toBe(true);
+			expect(Object.getPrototypeOf(left)).toBe(Object.getPrototypeOf(right));
+			expect(Object.keys(left)).toEqual(['x', 'y']);
+			expect({ ...left }).toEqual({ x: 1, y: 2 });
+			expect(Object.isFrozen(Object.getPrototypeOf(left))).toBe(true);
 		});
 
 		it('should leave the layout, equality and bytes as the fields alone make them', () => {

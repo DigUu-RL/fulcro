@@ -62,12 +62,18 @@ const complexProduct: ProductRule = <T>(
 	right: readonly T[],
 ): T[] => {
 	// A complex number always has its two parts.
-	const [a, b] = left as readonly [T, T];
-	const [c, d] = right as readonly [T, T];
+	const [leftReal, leftImaginary] = left as readonly [T, T];
+	const [rightReal, rightImaginary] = right as readonly [T, T];
 
 	return [
-		element.subtract(element.multiply(a, c), element.multiply(b, d)),
-		element.add(element.multiply(a, d), element.multiply(b, c)),
+		element.subtract(
+			element.multiply(leftReal, rightReal),
+			element.multiply(leftImaginary, rightImaginary),
+		),
+		element.add(
+			element.multiply(leftReal, rightImaginary),
+			element.multiply(leftImaginary, rightReal),
+		),
 	];
 };
 

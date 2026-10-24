@@ -77,7 +77,7 @@ beforeAll(() => {
 			status: STATUSES[index % STATUSES.length] as Status,
 			total: (index % 997) + (index % 13) / 10,
 			placedAt: new Date(2020, 0, 1 + (index % 1_000)),
-			items: Array.from({ length: ITEMS_PER_ORDER }, (__, line) => {
+			items: Array.from({ length: ITEMS_PER_ORDER }, (_slot, line) => {
 				return {
 					sku: `SKU-${String((index + line) % 5_000)}`,
 					quantity: (line % 4) + 1,
@@ -173,7 +173,7 @@ describe('grouping and indexing records', () => {
 
 		expect(keyReads).toBe(ORDERS);
 		expect(byStatus.size).toBe(STATUSES.length);
-		expect([...byStatus.values()].reduce((a, b) => a + b, 0)).toBe(ORDERS);
+		expect([...byStatus.values()].reduce((left, right) => left + right, 0)).toBe(ORDERS);
 	});
 
 	it('should build a lookup over a hundred thousand records within budget', () => {

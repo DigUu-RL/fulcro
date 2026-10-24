@@ -92,7 +92,9 @@ describe('single', () => {
 	});
 
 	it('should throw when nothing matches', () => {
-		expect(() => SequenceCollection.from([1, 2]).single((v) => v > 5)).toThrow(/no element/i);
+		expect(() => SequenceCollection.from([1, 2]).single((value) => value > 5)).toThrow(
+			/no element/i,
+		);
 	});
 
 	it('should throw when more than one matches', () => {
@@ -114,7 +116,7 @@ describe('single', () => {
 
 describe('singleOrNull', () => {
 	it('should return null when nothing matches', () => {
-		expect(SequenceCollection.from([1, 2]).singleOrNull((v) => v > 5)).toBeNull();
+		expect(SequenceCollection.from([1, 2]).singleOrNull((value) => value > 5)).toBeNull();
 	});
 
 	it('should still throw when more than one matches', () => {
@@ -124,7 +126,7 @@ describe('singleOrNull', () => {
 	});
 
 	it('should return the only match', () => {
-		expect(SequenceCollection.from([1, 2, 3]).singleOrNull((v) => v === 3)).toBe(3);
+		expect(SequenceCollection.from([1, 2, 3]).singleOrNull((value) => value === 3)).toBe(3);
 	});
 });
 

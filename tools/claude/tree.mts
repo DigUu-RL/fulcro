@@ -10,7 +10,7 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import fs from 'node:fs';
+import fileSystem from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -35,7 +35,7 @@ export const repositoryRoot = path.resolve(
  * @param target An absolute path.
  * @returns Whether anything is there.
  */
-export const exists = (target: string): boolean => fs.existsSync(target);
+export const exists = (target: string): boolean => fileSystem.existsSync(target);
 
 /**
  * A path as it is written in a report: relative to the root, forward slashes.
@@ -63,7 +63,7 @@ export const filesUnder = (directory: string, prefix: string = ''): string[] => 
 
 	const found: string[] = [];
 
-	for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+	for (const entry of fileSystem.readdirSync(directory, { withFileTypes: true })) {
 		const relative = prefix === '' ? entry.name : `${prefix}/${entry.name}`;
 
 		if (entry.isDirectory()) {
@@ -103,7 +103,7 @@ export const basenamesOf = (root: string = repositoryRoot): Set<string> => {
 	const found = new Set<string>();
 
 	const walk = (directory: string): void => {
-		for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+		for (const entry of fileSystem.readdirSync(directory, { withFileTypes: true })) {
 			if (entry.isDirectory()) {
 				if (UNSEARCHED.has(entry.name)) continue;
 
@@ -193,13 +193,13 @@ export const skillsOf = (root: string = repositoryRoot): Skill[] => {
 
 	if (!exists(base)) return [];
 
-	return fs
+	return fileSystem
 		.readdirSync(base, { withFileTypes: true })
 		.filter((entry) => entry.isDirectory())
 		.map((entry) => {
 			const directory = path.join(base, entry.name);
 			const manifestPath = path.join(directory, 'SKILL.md');
-			const manifest = exists(manifestPath) ? fs.readFileSync(manifestPath, 'utf8') : null;
+			const manifest = exists(manifestPath) ? fileSystem.readFileSync(manifestPath, 'utf8') : null;
 
 			return {
 				directory: entry.name,
@@ -239,13 +239,13 @@ export const rulesOf = (root: string = repositoryRoot): Rule[] => {
 
 	if (!exists(base)) return [];
 
-	return fs
+	return fileSystem
 		.readdirSync(base)
 		.filter((file) => file.endsWith('.md') && file !== 'README.md')
 		.sort()
 		.map((file) => {
 			const full = path.join(base, file);
-			const source = fs.readFileSync(full, 'utf8');
+			const source = fileSystem.readFileSync(full, 'utf8');
 
 			return { file, path: full, source, frontmatter: frontmatterOf(source) };
 		});
@@ -273,7 +273,7 @@ export const ruleFixturesOf = (root: string = repositoryRoot): RuleFixture[] => 
 
 	if (!exists(base)) return [];
 
-	return fs
+	return fileSystem
 		.readdirSync(base)
 		.filter((file) => file.endsWith('.fixture.json'))
 		.sort()
@@ -284,7 +284,7 @@ export const ruleFixturesOf = (root: string = repositoryRoot): RuleFixture[] => 
 				return {
 					file,
 					path: full,
-					document: JSON.parse(fs.readFileSync(full, 'utf8')),
+					document: JSON.parse(fileSystem.readFileSync(full, 'utf8')),
 					problem: null,
 				};
 			} catch (failure) {
@@ -319,7 +319,7 @@ export const evalsOf = (root: string = repositoryRoot): Evals[] => {
 
 	if (!exists(base)) return [];
 
-	return fs
+	return fileSystem
 		.readdirSync(base)
 		.filter((file) => file.endsWith('.eval.json'))
 		.sort()
@@ -330,7 +330,7 @@ export const evalsOf = (root: string = repositoryRoot): Evals[] => {
 				return {
 					file,
 					path: full,
-					document: JSON.parse(fs.readFileSync(full, 'utf8')),
+					document: JSON.parse(fileSystem.readFileSync(full, 'utf8')),
 					problem: null,
 				};
 			} catch (failure) {
@@ -372,7 +372,7 @@ export const settingsOf = (
 			name,
 			path: full,
 			present: true,
-			document: JSON.parse(fs.readFileSync(full, 'utf8')),
+			document: JSON.parse(fileSystem.readFileSync(full, 'utf8')),
 			problem: null,
 		};
 	} catch (failure) {
@@ -397,7 +397,7 @@ export const scriptsOf = (root: string = repositoryRoot): Set<string> => {
 
 	if (!exists(manifest)) return new Set();
 
-	const document = JSON.parse(fs.readFileSync(manifest, 'utf8'));
+	const document = JSON.parse(fileSystem.readFileSync(manifest, 'utf8'));
 
 	return new Set(Object.keys(document.scripts ?? {}));
 };
@@ -426,7 +426,7 @@ export const agentDefinitionsOf = (root: string = repositoryRoot): Agent[] => {
 
 	if (!exists(base)) return [];
 
-	return fs
+	return fileSystem
 		.readdirSync(base)
 		.filter((file) => file.endsWith('.md'))
 		.sort()
@@ -436,7 +436,7 @@ export const agentDefinitionsOf = (root: string = repositoryRoot): Agent[] => {
 			return {
 				file,
 				path: full,
-				frontmatter: frontmatterOf(fs.readFileSync(full, 'utf8')),
+				frontmatter: frontmatterOf(fileSystem.readFileSync(full, 'utf8')),
 			};
 		});
 };

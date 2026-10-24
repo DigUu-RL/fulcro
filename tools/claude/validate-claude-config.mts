@@ -15,7 +15,7 @@
  * notices when one of the two quietly stops being either.
  */
 
-import fs from 'node:fs';
+import fileSystem from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -215,23 +215,31 @@ const checkSettings = (root: string): Finding[] => {
 	const directory = path.join(root, '.claude', 'hooks');
 
 	const modules = exists(directory)
-		? fs.readdirSync(directory).filter((file) => file.endsWith('.mts'))
+		? fileSystem.readdirSync(directory).filter((file) => file.endsWith('.mts'))
 		: [];
 
 	for (const module of modules) {
-		const source = fs.readFileSync(path.join(directory, module), 'utf8');
+		const source = fileSystem.readFileSync(path.join(directory, module), 'utf8');
 		const guard = /export const review\b/.test(source);
-		const at = `.claude/hooks/${module}`;
+		const position = `.claude/hooks/${module}`;
 
 		if (guard && !wired.has(module)) {
 			findings.push(
-				error('hook-unwired', at, 'Exports a guard that no hook in `.claude/settings.json` runs.'),
+				error(
+					'hook-unwired',
+					position,
+					'Exports a guard that no hook in `.claude/settings.json` runs.',
+				),
 			);
 		}
 
 		if (!guard && !LIBRARIES.has(module) && !wired.has(module)) {
 			findings.push(
-				warning('hook-unused', at, 'Neither wired into the settings nor a known library module.'),
+				warning(
+					'hook-unused',
+					position,
+					'Neither wired into the settings nor a known library module.',
+				),
 			);
 		}
 
@@ -244,7 +252,7 @@ const checkSettings = (root: string): Finding[] => {
 		findings.push(
 			error(
 				'hook-untested',
-				at,
+				position,
 				'A guard needs a suite in `tests/hooks/` for what it refuses and for what it keeps allowing.',
 			),
 		);
@@ -331,7 +339,7 @@ const checkRules = (root: string): Finding[] => {
 	if (!exists(directory)) return findings;
 
 	const index = path.join(directory, 'README.md');
-	const listing = exists(index) ? fs.readFileSync(index, 'utf8') : null;
+	const listing = exists(index) ? fileSystem.readFileSync(index, 'utf8') : null;
 
 	if (listing === null) {
 		findings.push(
@@ -342,23 +350,25 @@ const checkRules = (root: string): Finding[] => {
 	const paragraphs = new Map<string, string>();
 
 	for (const rule of rulesOf(root)) {
-		const at = `.claude/rules/${rule.file}`;
+		const position = `.claude/rules/${rule.file}`;
 
 		if (listing !== null && !listing.includes(rule.file)) {
 			findings.push(
 				error(
 					'rule-unlisted',
-					at,
+					position,
 					'Not listed in `.claude/rules/README.md`, which is where a session looks.',
 				),
 			);
 		}
 
 		if (!rule.source.includes('**Scope:**')) {
-			findings.push(warning('rule-scope', at, 'States no scope; a rule says where it applies.'));
+			findings.push(
+				warning('rule-scope', position, 'States no scope; a rule says where it applies.'),
+			);
 		}
 
-		findings.push(...checkRuleFrontmatter(rule, at, root));
+		findings.push(...checkRuleFrontmatter(rule, position, root));
 
 		for (const paragraph of proseParagraphs(rule.frontmatter.body)) {
 			const seen = paragraphs.get(paragraph);
@@ -371,7 +381,7 @@ const checkRules = (root: string): Finding[] => {
 			findings.push(
 				warning(
 					'rule-duplicate',
-					at,
+					position,
 					`Repeats a paragraph of \`${seen}\` word for word; one of the two will be updated and the other will not.`,
 				),
 			);
@@ -385,11 +395,11 @@ const checkRules = (root: string): Finding[] => {
  * Checks the frontmatter of one rule, and the scope it declares.
  *
  * @param rule The rule.
- * @param at The path as a report spells it.
+ * @param position The path as a report spells it.
  * @param root The repository root.
  * @returns What was found.
  */
-const checkRuleFrontmatter = (rule: Rule, at: string, root: string): Finding[] => {
+const checkRuleFrontmatter = (rule: Rule, position: string, root: string): Finding[] => {
 	const findings: Finding[] = [];
 	const block = rule.frontmatter;
 
@@ -398,7 +408,7 @@ const checkRuleFrontmatter = (rule: Rule, at: string, root: string): Finding[] =
 	if (!block.present) return findings;
 
 	for (const problem of block.problems) {
-		findings.push(error('rule-frontmatter-unreadable', at, problem));
+		findings.push(error('rule-frontmatter-unreadable', position, problem));
 	}
 
 	for (const key of block.order) {
@@ -407,7 +417,7 @@ const checkRuleFrontmatter = (rule: Rule, at: string, root: string): Finding[] =
 		findings.push(
 			error(
 				'rule-frontmatter-unknown-key',
-				`${at} (${key})`,
+				`${position} (${key})`,
 				'Not a key a rule takes; an invented key is ignored in silence and the rule loads as if it were never scoped.',
 			),
 		);
@@ -424,7 +434,7 @@ const checkRuleFrontmatter = (rule: Rule, at: string, root: string): Finding[] =
 			...findings,
 			error(
 				'rule-paths-empty',
-				`${at} (paths)`,
+				`${position} (paths)`,
 				'`paths` is empty, which scopes the rule to nothing.',
 			),
 		];
@@ -438,7 +448,7 @@ const checkRuleFrontmatter = (rule: Rule, at: string, root: string): Finding[] =
 		findings.push(
 			error(
 				'rule-paths-missing',
-				`${at} (paths)`,
+				`${position} (paths)`,
 				`\`${glob}\` is scoped to \`${base}\`, which does not exist.`,
 			),
 		);
@@ -612,7 +622,7 @@ const checkAgents = (root: string): Finding[] => {
 	const findings = [];
 
 	for (const agent of agentDefinitionsOf(root)) {
-		const at = `.claude/agents/${agent.file}`;
+		const position = `.claude/agents/${agent.file}`;
 		const expected = agent.file.replace(/\.md$/, '');
 		const block = agent.frontmatter;
 
@@ -620,7 +630,7 @@ const checkAgents = (root: string): Finding[] => {
 			findings.push(
 				error(
 					'agent-frontmatter-missing',
-					at,
+					position,
 					'Has no frontmatter, so Claude Code has no name or description to delegate by.',
 				),
 			);
@@ -629,7 +639,7 @@ const checkAgents = (root: string): Finding[] => {
 		}
 
 		for (const problem of block.problems) {
-			findings.push(error('agent-frontmatter-unreadable', at, problem));
+			findings.push(error('agent-frontmatter-unreadable', position, problem));
 		}
 
 		for (const key of block.order) {
@@ -638,7 +648,7 @@ const checkAgents = (root: string): Finding[] => {
 			findings.push(
 				error(
 					'agent-frontmatter-unknown-key',
-					`${at} (${key})`,
+					`${position} (${key})`,
 					'Not a key this repository reads a subagent by; an invented or misspelt key is ignored in silence.',
 				),
 			);
@@ -648,7 +658,7 @@ const checkAgents = (root: string): Finding[] => {
 			findings.push(
 				error(
 					'agent-name',
-					`${at} (name)`,
+					`${position} (name)`,
 					`\`name\` is \`${String(block.values.name ?? '')}\`; it must be \`${expected}\`, because a skill delegates by the file name and Claude Code by \`name\`.`,
 				),
 			);
@@ -660,7 +670,7 @@ const checkAgents = (root: string): Finding[] => {
 			findings.push(
 				error(
 					'agent-description',
-					`${at} (description)`,
+					`${position} (description)`,
 					'Has no description, which is the only thing Claude Code reads to decide when to delegate.',
 				),
 			);
@@ -672,7 +682,7 @@ const checkAgents = (root: string): Finding[] => {
 			findings.push(
 				error(
 					'agent-tools-undeclared',
-					`${at} (tools)`,
+					`${position} (tools)`,
 					'Declares no `tools`, so it inherits every tool the session has — writing ones included.',
 				),
 			);
@@ -682,7 +692,7 @@ const checkAgents = (root: string): Finding[] => {
 			findings.push(
 				error(
 					'agent-tools-writing',
-					`${at} (tools)`,
+					`${position} (tools)`,
 					`Grants \`${tool}\`. A subagent's edits reach the working tree without passing in front of the session the user is watching; the agents here review and report.`,
 				),
 			);
@@ -692,7 +702,7 @@ const checkAgents = (root: string): Finding[] => {
 			findings.push(
 				error(
 					'agent-body-empty',
-					at,
+					position,
 					'Has no body; the body is the whole of the prompt the agent starts from.',
 				),
 			);
@@ -718,7 +728,7 @@ const checkReferences = (root: string): Finding[] => {
 	const rules = path.join(root, '.claude', 'rules');
 
 	if (exists(rules)) {
-		for (const file of fs.readdirSync(rules).filter((name) => name.endsWith('.md'))) {
+		for (const file of fileSystem.readdirSync(rules).filter((name) => name.endsWith('.md'))) {
 			files.push(path.join(rules, file));
 		}
 	}
@@ -731,7 +741,7 @@ const checkReferences = (root: string): Finding[] => {
 		if (!exists(file)) continue;
 
 		const where = displayed(root, file);
-		const prose = claimingProse(fs.readFileSync(file, 'utf8'));
+		const prose = claimingProse(fileSystem.readFileSync(file, 'utf8'));
 
 		findings.push(...missingReferences(prose, path.dirname(file), root, where));
 	}

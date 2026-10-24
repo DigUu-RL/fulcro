@@ -1063,11 +1063,12 @@ export class SequenceCollection<T> implements Sequence<T> {
 		// Stepped together rather than materialised, so the first difference
 		// ends the comparison and neither side is read past it.
 		for (;;) {
-			const a: IteratorResult<T> = left.next();
-			const b: IteratorResult<T> = right.next();
+			const leftStep: IteratorResult<T> = left.next();
+			const rightStep: IteratorResult<T> = right.next();
 
-			if (a.done === true || b.done === true) return a.done === b.done;
-			if (a.value !== b.value) return false;
+			if (leftStep.done === true || rightStep.done === true)
+				{return leftStep.done === rightStep.done;}
+			if (leftStep.value !== rightStep.value) return false;
 		}
 	}
 
@@ -1338,14 +1339,14 @@ export class SequenceCollection<T> implements Sequence<T> {
 					const right: Iterator<S> = second[Symbol.iterator]();
 
 					for (;;) {
-						const a: IteratorResult<T> = left.next();
-						const b: IteratorResult<S> = right.next();
+						const leftStep: IteratorResult<T> = left.next();
+						const rightStep: IteratorResult<S> = right.next();
 
 						// Whichever runs out first ends it, so the longer sequence
 						// is never pulled past the pairing.
-						if (a.done === true || b.done === true) return;
+						if (leftStep.done === true || rightStep.done === true) return;
 
-						yield resultSelector(a.value, b.value);
+						yield resultSelector(leftStep.value, rightStep.value);
 					}
 				},
 			},

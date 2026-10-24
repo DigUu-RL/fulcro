@@ -34,7 +34,7 @@ const coded = <T extends Error>(error: T, details: Readonly<Record<string, unkno
 };
 
 const Complex = ComplexNumberOf(DoublePrecisionFloat);
-const i = Complex.from({ real: 0, imaginary: 1 });
+const item = Complex.from({ real: 0, imaginary: 1 });
 const value = Complex.from({ real: 3, imaginary: 4 });
 
 describe('ComplexNumber', () => {
@@ -80,13 +80,13 @@ describe('ComplexNumber', () => {
 
 	describe('arithmetic', () => {
 		it('should add, subtract and negate part by part', () => {
-			expect(Complex.add(value, i)).toEqual({ real: 3, imaginary: 5 });
-			expect(Complex.subtract(value, i)).toEqual({ real: 3, imaginary: 3 });
+			expect(Complex.add(value, item)).toEqual({ real: 3, imaginary: 5 });
+			expect(Complex.subtract(value, item)).toEqual({ real: 3, imaginary: 3 });
 			expect(Complex.negate(value)).toEqual({ real: -3, imaginary: -4 });
 		});
 
 		it('should square i into minus one', () => {
-			expect(Complex.multiply(i, i)).toEqual({ real: -1, imaginary: 0 });
+			expect(Complex.multiply(item, item)).toEqual({ real: -1, imaginary: 0 });
 		});
 
 		it('should multiply as (ac − bd) + (ad + bc)i', () => {
@@ -150,7 +150,7 @@ describe('ComplexNumber', () => {
 
 		it('should compare part by part', () => {
 			expect(Complex.equals(value, Complex.from({ real: 3, imaginary: 4 }))).toBe(true);
-			expect(Complex.equals(value, i)).toBe(false);
+			expect(Complex.equals(value, item)).toBe(false);
 		});
 	});
 

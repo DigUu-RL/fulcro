@@ -1,4 +1,4 @@
-import * as ts from 'typescript';
+import * as typescript from 'typescript';
 
 import type { FlowRules } from '@/src/transformer/flow';
 
@@ -44,7 +44,7 @@ export const recordingRules = (): {
 
 				recording.events.push(`call ${callee}`);
 
-				if (callee === 'spend' && argument !== undefined && ts.isIdentifier(argument)) {
+				if (callee === 'spend' && argument !== undefined && typescript.isIdentifier(argument)) {
 					facts.add(argument.text);
 				}
 			},
@@ -65,6 +65,6 @@ export const recordingRules = (): {
  * @param text The source.
  * @returns The file.
  */
-export const parse = (text: string): ts.SourceFile => {
-	return ts.createSourceFile('flow.ts', text, ts.ScriptTarget.ES2022, true);
+export const parse = (text: string): typescript.SourceFile => {
+	return typescript.createSourceFile('flow.ts', text, typescript.ScriptTarget.ES2022, true);
 };

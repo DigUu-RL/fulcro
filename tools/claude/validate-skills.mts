@@ -590,51 +590,55 @@ const checkEvals = (
 	const kinds = new Set<string>();
 
 	for (const [index, entry] of cases.entries()) {
-		const at = `${where} (case ${String(index + 1)})`;
+		const position = `${where} (case ${String(index + 1)})`;
 
 		if (typeof entry !== 'object' || entry === null) {
-			findings.push(error('eval-case-shape', at, 'Not an object.'));
+			findings.push(error('eval-case-shape', position, 'Not an object.'));
 			continue;
 		}
 
 		const { id, kind, prompt, expect } = entry;
 
 		if (typeof id !== 'string' || id === '') {
-			findings.push(error('eval-case-id', at, '`id` is missing.'));
+			findings.push(error('eval-case-id', position, '`id` is missing.'));
 		} else if (ids.has(id)) {
-			findings.push(error('eval-case-id', at, `\`${id}\` is used twice.`));
+			findings.push(error('eval-case-id', position, `\`${id}\` is used twice.`));
 		} else {
 			ids.add(id);
 		}
 
 		if (kind !== 'positive' && kind !== 'negative' && kind !== 'edge') {
 			findings.push(
-				error('eval-case-kind', at, '`kind` is one of `positive`, `negative` or `edge`.'),
+				error('eval-case-kind', position, '`kind` is one of `positive`, `negative` or `edge`.'),
 			);
 		} else {
 			kinds.add(kind);
 		}
 
 		if (typeof prompt !== 'string' || prompt.trim() === '') {
-			findings.push(error('eval-case-prompt', at, '`prompt` is missing.'));
+			findings.push(error('eval-case-prompt', position, '`prompt` is missing.'));
 		}
 
 		if (typeof expect !== 'object' || expect === null) {
-			findings.push(error('eval-case-expect', at, '`expect` is missing.'));
+			findings.push(error('eval-case-expect', position, '`expect` is missing.'));
 			continue;
 		}
 
 		const expectation = expect;
 
 		if (typeof expectation.invokes !== 'boolean') {
-			findings.push(error('eval-case-expect', at, '`expect.invokes` is `true` or `false`.'));
+			findings.push(error('eval-case-expect', position, '`expect.invokes` is `true` or `false`.'));
 		} else if (kind === 'positive' && !expectation.invokes) {
 			findings.push(
-				error('eval-case-expect', at, 'A positive case is one that invokes the skill.'),
+				error('eval-case-expect', position, 'A positive case is one that invokes the skill.'),
 			);
 		} else if (kind === 'negative' && expectation.invokes) {
 			findings.push(
-				error('eval-case-expect', at, 'A negative case is one that does not invoke the skill.'),
+				error(
+					'eval-case-expect',
+					position,
+					'A negative case is one that does not invoke the skill.',
+				),
 			);
 		}
 
@@ -642,14 +646,14 @@ const checkEvals = (
 			findings.push(
 				error(
 					'eval-case-expect',
-					at,
+					position,
 					'`expect.output` says what shape the run has to produce; a case that cannot be judged is not a case.',
 				),
 			);
 		}
 
 		if ('refuses' in expectation && typeof expectation.refuses !== 'string') {
-			findings.push(error('eval-case-expect', at, '`expect.refuses` is a sentence.'));
+			findings.push(error('eval-case-expect', position, '`expect.refuses` is a sentence.'));
 		}
 	}
 

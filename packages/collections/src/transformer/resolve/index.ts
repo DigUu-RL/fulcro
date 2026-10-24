@@ -83,18 +83,18 @@ const classSymbolOf = (type: typescript.Type): typescript.Symbol | null => {
  * or simply not be imported at all.
  *
  * @param name Name being looked up.
- * @param at Node the lookup happens from, for scope.
+ * @param site Node the lookup happens from, for scope.
  * @param checker Checker of the program being compiled.
  * @returns `true` when the name survives into the emitted code as a value.
  */
 const isValueInScope = (
 	name: string,
-	at: typescript.Node,
+	site: typescript.Node,
 	checker: typescript.TypeChecker,
 ): boolean => {
 	const resolved: typescript.Symbol | undefined = checker.resolveName(
 		name,
-		at,
+		site,
 		typescript.SymbolFlags.Value,
 		false,
 	);

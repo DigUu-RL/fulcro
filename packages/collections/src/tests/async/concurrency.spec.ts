@@ -183,7 +183,7 @@ describe('selectAwait', () => {
 			// Thrown at the call rather than on first iteration, so the mistake is
 			// reported where it was made.
 			expect(() => {
-				return AsyncSequenceCollection.from([1]).selectAwait(async (v) => v, {
+				return AsyncSequenceCollection.from([1]).selectAwait(async (value) => value, {
 					concurrency,
 				});
 			}).toThrow(/positive integer concurrency/i);

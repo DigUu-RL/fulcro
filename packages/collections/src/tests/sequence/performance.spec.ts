@@ -73,10 +73,10 @@ describe('SequenceCollection Performance', () => {
 			const numbers = SequenceCollection.from([...Array(VOLUME).keys()]);
 
 			expect(numbers.count()).toBe(VOLUME);
-			expect(numbers.select((n) => n).count()).toBe(VOLUME);
+			expect(numbers.select((value) => value).count()).toBe(VOLUME);
 			expect(numbers.take(10).count()).toBe(10);
 			expect(numbers.skip(10).count()).toBe(VOLUME - 10);
-			expect(numbers.orderBy((n) => n).count()).toBe(VOLUME);
+			expect(numbers.orderBy((value) => value).count()).toBe(VOLUME);
 			expect(visits).toBe(0);
 			expect(projections).toBe(0);
 		});
@@ -86,8 +86,8 @@ describe('SequenceCollection Performance', () => {
 
 			expect(
 				numbers
-					.orderBy(counted((n) => n))
-					.thenByDescending(counted((n) => n % 7))
+					.orderBy(counted((value) => value))
+					.thenByDescending(counted((value) => value % 7))
 					.count(),
 			).toBe(VOLUME);
 
@@ -100,7 +100,7 @@ describe('SequenceCollection Performance', () => {
 
 		it('should skip the sort on the aggregates that ignore order', () => {
 			const numbers = SequenceCollection.from(instrumentedSource(VOLUME));
-			const ordered = numbers.orderBy(counted((n) => n));
+			const ordered = numbers.orderBy(counted((value) => value));
 
 			expect(ordered.any()).toBe(true);
 			expect(ordered.min()).toBe(0);
@@ -113,7 +113,7 @@ describe('SequenceCollection Performance', () => {
 		it('should traverse exactly once when the count depends on the data', () => {
 			const numbers = SequenceCollection.from(instrumentedSource(VOLUME));
 
-			expect(numbers.where((n) => n % 2 === 0).count()).toBe(VOLUME / 2);
+			expect(numbers.where((value) => value % 2 === 0).count()).toBe(VOLUME / 2);
 			expect(visits).toBe(VOLUME);
 		});
 
@@ -142,7 +142,7 @@ describe('SequenceCollection Performance', () => {
 			expect(visits).toBe(1);
 
 			visits = 0;
-			expect(numbers.any((n) => n >= 10)).toBe(true);
+			expect(numbers.any((value) => value >= 10)).toBe(true);
 			expect(visits).toBe(11);
 		});
 
@@ -150,8 +150,8 @@ describe('SequenceCollection Performance', () => {
 			const numbers = SequenceCollection.from(instrumentedSource(VOLUME));
 
 			const result = numbers
-				.where(counted((n) => n % 2 === 0))
-				.select(counted((n) => n * 2))
+				.where(counted((value) => value % 2 === 0))
+				.select(counted((value) => value * 2))
 				.take(3)
 				.toArray();
 
@@ -166,8 +166,8 @@ describe('SequenceCollection Performance', () => {
 			const numbers = SequenceCollection.from(instrumentedSource(VOLUME));
 
 			numbers
-				.where(counted((n) => n % 2 === 0))
-				.select(counted((n) => n * 2))
+				.where(counted((value) => value % 2 === 0))
+				.select(counted((value) => value * 2))
 				.distinct()
 				.skip(10)
 				.take(10);
@@ -182,8 +182,8 @@ describe('SequenceCollection Performance', () => {
 			const numbers = SequenceCollection.from(instrumentedSource(VOLUME));
 
 			numbers
-				.where((n) => n % 3 === 0)
-				.select((n) => n + 1)
+				.where((value) => value % 3 === 0)
+				.select((value) => value + 1)
 				.toArray();
 
 			expect(visits).toBe(VOLUME);
@@ -192,19 +192,19 @@ describe('SequenceCollection Performance', () => {
 		it('should invoke each projection exactly once per element', () => {
 			const numbers = SequenceCollection.from(instrumentedSource(VOLUME));
 
-			numbers.select(counted((n) => n * 2)).toArray();
+			numbers.select(counted((value) => value * 2)).toArray();
 
 			expect(projections).toBe(VOLUME);
 		});
 
 		it('should scale linearly rather than quadratically', () => {
 			const small = SequenceCollection.from(instrumentedSource(1_000));
-			small.select((n) => n).toArray();
+			small.select((value) => value).toArray();
 			const smallVisits = visits;
 
 			visits = 0;
 			const large = SequenceCollection.from(instrumentedSource(2_000));
-			large.select((n) => n).toArray();
+			large.select((value) => value).toArray();
 
 			// Doubling the input may only double the work. A quadratic
 			// implementation would land at four times as much.
@@ -216,7 +216,7 @@ describe('SequenceCollection Performance', () => {
 		it('should extract each sorting key exactly once per element', () => {
 			const numbers = SequenceCollection.from(instrumentedSource(VOLUME));
 
-			numbers.orderBy(counted((n) => -n)).toArray();
+			numbers.orderBy(counted((value) => -value)).toArray();
 
 			// One call per element. Comparing the elements themselves would
 			// call the projection twice per comparison instead, which for this
@@ -229,9 +229,9 @@ describe('SequenceCollection Performance', () => {
 			const numbers = SequenceCollection.from(instrumentedSource(VOLUME));
 
 			numbers
-				.orderBy(counted((n) => n % 100))
-				.thenBy(counted((n) => n % 7))
-				.thenByDescending(counted((n) => n))
+				.orderBy(counted((value) => value % 100))
+				.thenBy(counted((value) => value % 7))
+				.thenByDescending(counted((value) => value))
 				.toArray();
 
 			expect(projections).toBe(VOLUME * 3);
@@ -242,8 +242,8 @@ describe('SequenceCollection Performance', () => {
 			const numbers = SequenceCollection.from(instrumentedSource(VOLUME));
 
 			numbers
-				.orderBy((n) => n % 10)
-				.thenBy((n) => n)
+				.orderBy((value) => value % 10)
+				.thenBy((value) => value)
 				.toArray();
 
 			// A secondary criterion rebuilds one sort over the unsorted origin
@@ -267,7 +267,7 @@ describe('SequenceCollection Performance', () => {
 			const numbers = SequenceCollection.from(source);
 
 			expect(numbers.toArray().length).toBe(VOLUME);
-			expect(numbers.orderBy((n) => -n).toArray()[0]).toBe(VOLUME - 1);
+			expect(numbers.orderBy((value) => -value).toArray()[0]).toBe(VOLUME - 1);
 
 			// Copying memory directly, never one element at a time — the
 			// difference is close to twenty fold on this volume.
@@ -281,7 +281,7 @@ describe('SequenceCollection Performance', () => {
 			const numbers = SequenceCollection.from(source);
 
 			expect(numbers.last()).toBe(VOLUME - 1);
-			expect(numbers.last(counted((n) => n > VOLUME - 4))).toBe(VOLUME - 1);
+			expect(numbers.last(counted((value) => value > VOLUME - 4))).toBe(VOLUME - 1);
 
 			// The unfiltered read touches nothing, and the filtered one stops
 			// at the first match coming from the end.
@@ -315,7 +315,7 @@ describe('SequenceCollection Performance', () => {
 		it('should invoke the grouping projection once per element', () => {
 			const numbers = SequenceCollection.from(instrumentedSource(VOLUME));
 
-			const groups = numbers.groupBy(counted((n) => n % 500)).toArray();
+			const groups = numbers.groupBy(counted((value) => value % 500)).toArray();
 
 			expect(groups.length).toBe(500);
 			expect(projections).toBe(VOLUME);
@@ -328,9 +328,9 @@ describe('SequenceCollection Performance', () => {
 
 			const joined = outer.join(
 				inner,
-				(n) => n,
+				(value) => value,
 				(item) => item.id,
-				(n, item) => n + item.id,
+				(value, item) => value + item.id,
 			);
 
 			expect(joined.count()).toBe(VOLUME);
@@ -347,7 +347,7 @@ describe('SequenceCollection Performance', () => {
 			const startedAt = performance.now();
 
 			const total = numbers
-				.select((n) => n)
+				.select((value) => value)
 				.take(500)
 				.count();
 
@@ -363,8 +363,8 @@ describe('SequenceCollection Performance', () => {
 			const startedAt = performance.now();
 
 			const result = numbers
-				.where((n) => n % 2 === 0)
-				.select((n) => n * 2)
+				.where((value) => value % 2 === 0)
+				.select((value) => value * 2)
 				.toArray();
 
 			const elapsed = performance.now() - startedAt;
@@ -374,10 +374,10 @@ describe('SequenceCollection Performance', () => {
 		});
 
 		it('should sort a million elements within budget', () => {
-			const source = [...Array(LARGE_VOLUME).keys()].map((n) => {
+			const source = [...Array(LARGE_VOLUME).keys()].map((value) => {
 				return {
-					id: n,
-					key: (n * 7919) % LARGE_VOLUME,
+					id: value,
+					key: (value * 7919) % LARGE_VOLUME,
 				};
 			});
 

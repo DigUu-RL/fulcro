@@ -54,20 +54,20 @@ const unquoted = (text: string): string => {
 const closingQuote = (text: string): number => {
 	const quote = text[0];
 
-	for (let at = 1; at < text.length; at += 1) {
-		if (quote === '"' && text[at] === '\\') {
-			at += 1;
+	for (let position = 1; position < text.length; position += 1) {
+		if (quote === '"' && text[position] === '\\') {
+			position += 1;
 			continue;
 		}
 
-		if (text[at] !== quote) continue;
+		if (text[position] !== quote) continue;
 
-		if (quote === "'" && text[at + 1] === "'") {
-			at += 1;
+		if (quote === "'" && text[position + 1] === "'") {
+			position += 1;
 			continue;
 		}
 
-		return at;
+		return position;
 	}
 
 	return -1;

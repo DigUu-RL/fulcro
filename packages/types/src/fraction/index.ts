@@ -144,17 +144,17 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 	 * zeros.
 	 */
 	const greatestCommonDivisor = (left: T, right: T): T => {
-		let a: T = absolute(left);
-		let b: T = absolute(right);
+		let dividend: T = absolute(left);
+		let divisor: T = absolute(right);
 
-		while (!integer.equals(b, zero)) {
-			const remainder: T = integer.remainder(a, b);
+		while (!integer.equals(divisor, zero)) {
+			const remainder: T = integer.remainder(dividend, divisor);
 
-			a = b;
-			b = remainder;
+			dividend = divisor;
+			divisor = remainder;
 		}
 
-		return a;
+		return dividend;
 	};
 
 	/**
@@ -288,10 +288,13 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 			);
 		},
 
-		add: (left, right) => sum(`${name}.add`, left, right, (a, b) => integer.add(a, b)),
+		add: (left, right) =>
+			sum(`${name}.add`, left, right, (leftTerm, rightTerm) => integer.add(leftTerm, rightTerm)),
 
 		subtract: (left, right) => {
-			return sum(`${name}.subtract`, left, right, (a, b) => integer.subtract(a, b));
+			return sum(`${name}.subtract`, left, right, (leftTerm, rightTerm) =>
+				integer.subtract(leftTerm, rightTerm),
+			);
 		},
 
 		multiply: (left, right) => {

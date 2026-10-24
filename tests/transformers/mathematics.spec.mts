@@ -2,7 +2,7 @@ import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import ts from 'typescript';
+import typescript from 'typescript';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 /**
@@ -26,15 +26,15 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 
 /** A transformer as its entry point exports it. */
 type TransformerEntry = (
-	program: ts.Program,
+	program: typescript.Program,
 	options?: object,
-	extras?: { addDiagnostic?: (diagnostic: ts.Diagnostic) => unknown },
-) => ts.TransformerFactory<ts.SourceFile>;
+	extras?: { addDiagnostic?: (diagnostic: typescript.Diagnostic) => unknown },
+) => typescript.TransformerFactory<typescript.SourceFile>;
 
 /** What compiling one fixture produced. */
 interface Compiled {
 	readonly emitted: string;
-	readonly refused: readonly ts.Diagnostic[];
+	readonly refused: readonly typescript.Diagnostic[];
 	readonly exports: Record<string, unknown>;
 }
 
@@ -50,29 +50,31 @@ const compile = (fileName: string): Compiled => {
 	const reflect = require('@fulcro/reflect/transformer').default as TransformerEntry;
 	const collections = require('@fulcro/collections/transformer').default as TransformerEntry;
 
-	const program: ts.Program = ts.createProgram([fixture], {
-		target: ts.ScriptTarget.ES2022,
-		module: ts.ModuleKind.ESNext,
-		moduleResolution: ts.ModuleResolutionKind.Bundler,
+	const program: typescript.Program = typescript.createProgram([fixture], {
+		target: typescript.ScriptTarget.ES2022,
+		module: typescript.ModuleKind.ESNext,
+		moduleResolution: typescript.ModuleResolutionKind.Bundler,
 		strict: true,
 		noEmitOnError: false,
 		skipLibCheck: true,
 	});
 
-	const errors: readonly ts.Diagnostic[] = ts
+	const errors: readonly typescript.Diagnostic[] = typescript
 		.getPreEmitDiagnostics(program, program.getSourceFile(fixture))
-		.filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error);
+		.filter((diagnostic) => diagnostic.category === typescript.DiagnosticCategory.Error);
 
 	if (errors.length > 0) {
 		throw new Error(
-			errors.map((error) => ts.flattenDiagnosticMessageText(error.messageText, '\n')).join('\n'),
+			errors
+				.map((error) => typescript.flattenDiagnosticMessageText(error.messageText, '\n'))
+				.join('\n'),
 		);
 	}
 
-	const refused: ts.Diagnostic[] = [];
+	const refused: typescript.Diagnostic[] = [];
 
 	const extras = {
-		addDiagnostic: (diagnostic: ts.Diagnostic) => refused.push(diagnostic),
+		addDiagnostic: (diagnostic: typescript.Diagnostic) => refused.push(diagnostic),
 	};
 
 	let emitted = '';
@@ -96,10 +98,10 @@ const compile = (fileName: string): Compiled => {
 			'require',
 			'module',
 			'exports',
-			ts.transpileModule(emitted, {
+			typescript.transpileModule(emitted, {
 				compilerOptions: {
-					target: ts.ScriptTarget.ES2022,
-					module: ts.ModuleKind.CommonJS,
+					target: typescript.ScriptTarget.ES2022,
+					module: typescript.ModuleKind.CommonJS,
 				},
 			}).outputText,
 		)(require, module, module.exports);
@@ -158,8 +160,8 @@ describe('the mathematics types and constantOf across the package boundary', () 
 	it('should refuse a constant that calls into another package, at its call', () => {
 		expect(rejected.refused).toHaveLength(1);
 
-		const refusal = rejected.refused[0] as ts.Diagnostic;
-		const file = refusal.file as ts.SourceFile;
+		const refusal = rejected.refused[0] as typescript.Diagnostic;
+		const file = refusal.file as typescript.SourceFile;
 		const { line } = file.getLineAndCharacterOfPosition(refusal.start ?? 0);
 
 		expect(String(refusal.messageText)).toContain(

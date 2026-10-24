@@ -131,7 +131,7 @@ describe('countBy', () => {
 	});
 
 	it('should return an empty map for an empty sequence', () => {
-		expect(SequenceCollection.empty<User>().countBy((u) => u.id).size).toBe(0);
+		expect(SequenceCollection.empty<User>().countBy((user) => user.id).size).toBe(0);
 	});
 });
 
@@ -212,11 +212,11 @@ describe('toLookup', () => {
 	it('should collect a duplicate key rather than reject it, unlike toMap', () => {
 		expect(
 			SequenceCollection.from(users)
-				.toLookup((u) => u.id)
+				.toLookup((user) => user.id)
 				.get(1),
 		).toHaveLength(2);
 
-		expect(() => SequenceCollection.from(users).toMap((u) => u.id)).toThrow();
+		expect(() => SequenceCollection.from(users).toMap((user) => user.id)).toThrow();
 	});
 });
 

@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 
-import * as ts from 'typescript';
+import * as typescript from 'typescript';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import { constantOf } from '@/src/functions/utils/constantOf';
@@ -20,10 +20,10 @@ import transformer from '@/src/transformer';
 const PROJECT_ROOT = path.resolve(__dirname, '../../..');
 
 /** Options every fixture compiles with. */
-const COMPILER_OPTIONS: ts.CompilerOptions = {
-	target: ts.ScriptTarget.ES2022,
-	module: ts.ModuleKind.ESNext,
-	moduleResolution: ts.ModuleResolutionKind.Node10,
+const COMPILER_OPTIONS: typescript.CompilerOptions = {
+	target: typescript.ScriptTarget.ES2022,
+	module: typescript.ModuleKind.ESNext,
+	moduleResolution: typescript.ModuleResolutionKind.Node10,
 	strict: true,
 	noEmitOnError: false,
 	skipLibCheck: true,
@@ -32,7 +32,7 @@ const COMPILER_OPTIONS: ts.CompilerOptions = {
 /** What compiling one fixture produced. */
 interface Compiled {
 	readonly emitted: string;
-	readonly refused: readonly ts.Diagnostic[];
+	readonly refused: readonly typescript.Diagnostic[];
 }
 
 /**
@@ -44,8 +44,8 @@ interface Compiled {
  */
 const compile = (fileName: string): Compiled => {
 	const fixture: string = path.resolve(__dirname, fileName);
-	const program: ts.Program = ts.createProgram([fixture], COMPILER_OPTIONS);
-	const refused: ts.Diagnostic[] = [];
+	const program: typescript.Program = typescript.createProgram([fixture], COMPILER_OPTIONS);
+	const refused: typescript.Diagnostic[] = [];
 
 	const transform = transformer(
 		program,
@@ -115,8 +115,8 @@ const deeplyFrozen = (value: unknown): boolean => {
  * @param diagnostic The diagnostic.
  * @returns The source line.
  */
-const lineOf = (diagnostic: ts.Diagnostic): string => {
-	const file = diagnostic.file as ts.SourceFile;
+const lineOf = (diagnostic: typescript.Diagnostic): string => {
+	const file = diagnostic.file as typescript.SourceFile;
 	const { line } = file.getLineAndCharacterOfPosition(diagnostic.start ?? 0);
 
 	return (file.text.split(/\r?\n/)[line] ?? '').trim();
@@ -132,9 +132,11 @@ const refusalOf = (binding: string): string => {
 	const declaration: number =
 		rejected.refused.length === 0
 			? -1
-			: (rejected.refused[0]?.file as ts.SourceFile).text.indexOf(`export const ${binding} =`);
+			: (rejected.refused[0]?.file as typescript.SourceFile).text.indexOf(
+					`export const ${binding} =`,
+				);
 
-	const found: ts.Diagnostic | undefined = rejected.refused.find((diagnostic) => {
+	const found: typescript.Diagnostic | undefined = rejected.refused.find((diagnostic) => {
 		return (
 			declaration >= 0 &&
 			(diagnostic.start ?? 0) > declaration &&
@@ -231,7 +233,8 @@ describe('constantOf at compile time', () => {
 			expect(
 				rejected.refused.every((diagnostic) => {
 					return (
-						diagnostic.category === ts.DiagnosticCategory.Error && diagnostic.source === 'fulcro'
+						diagnostic.category === typescript.DiagnosticCategory.Error &&
+						diagnostic.source === 'fulcro'
 					);
 				}),
 			).toBe(true);
@@ -305,7 +308,7 @@ describe('constantOf at compile time', () => {
 
 		it('should throw every refusal of a file at once without a place to report them', () => {
 			const fixture: string = path.resolve(__dirname, 'constantOf.rejected.fixture.ts');
-			const program: ts.Program = ts.createProgram([fixture], COMPILER_OPTIONS);
+			const program: typescript.Program = typescript.createProgram([fixture], COMPILER_OPTIONS);
 			const transform = transformer(program, { projectRoot: PROJECT_ROOT });
 
 			let thrown: unknown;
