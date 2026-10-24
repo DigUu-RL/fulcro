@@ -19,7 +19,7 @@
 
 import { pathToFileURL } from 'node:url';
 
-import { guard } from './hook.mjs';
+import { guard } from './hook.mts';
 
 /** Extensions that are emitted output rather than source. */
 const EMITTED = /\.(js|mjs|cjs|d\.ts|d\.mts|d\.cts)$/;
@@ -27,10 +27,10 @@ const EMITTED = /\.(js|mjs|cjs|d\.ts|d\.mts|d\.cts)$/;
 /**
  * Reviews the file an edit has just written.
  *
- * @param {{ file_path?: unknown }} input The `tool_input` of the hook event.
- * @returns {string | null} The reason the write is reported, or `null`.
+ * @param input The `tool_input` of the hook event.
+ * @returns The reason the write is reported, or `null`.
  */
-export const review = (input) => {
+export const review = (input: { readonly file_path?: unknown }): string | null => {
 	if (typeof input.file_path !== 'string') return null;
 
 	// Both separators, not the one this machine happens to use. The rule is
@@ -47,7 +47,7 @@ export const review = (input) => {
 	if (/(^|\/)fixtures\//.test(file)) return null;
 
 	return [
-		`.claude/hooks/post-edit-check.mjs: ${file} is emitted output sitting beside its source.`,
+		`.claude/hooks/post-edit-check.mts: ${file} is emitted output sitting beside its source.`,
 		"If a build wrote it, that package's build configuration is the bug — fix it rather than deleting the file.",
 		'If you wrote it deliberately and it is a fixture, it belongs in a `fixtures/` directory.',
 		'See .claude/rules/build-output.md.',

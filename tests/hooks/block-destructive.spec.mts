@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { review } from '../../.claude/hooks/block-destructive.mjs';
+import { review } from '../../.claude/hooks/block-destructive.mts';
 
 /**
  * The hook that refuses the commands which throw work away.

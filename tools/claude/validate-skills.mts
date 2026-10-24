@@ -20,10 +20,12 @@
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { review as destructive } from '../../.claude/hooks/block-destructive.mjs';
-import { review as protectedOperation } from '../../.claude/hooks/protect-publish.mjs';
+import { review as destructive } from '../../.claude/hooks/block-destructive.mts';
+import { review as protectedOperation } from '../../.claude/hooks/protect-publish.mts';
 
-import { error, report, warning } from './report.mjs';
+import type { Finding } from './report.mts';
+import { error, report, warning } from './report.mts';
+import type { Evals, Skill } from './tree.mts';
 import {
 	agentsOf,
 	basenamesOf,
@@ -34,7 +36,7 @@ import {
 	repositoryRoot,
 	scriptsOf,
 	skillsOf,
-} from './tree.mjs';
+} from './tree.mts';
 
 /**
  * The frontmatter keys a skill may set.
@@ -145,10 +147,10 @@ const EXTENSIONS = /\.(md|mjs|cjs|js|mts|cts|ts|tsx|json|jsonc|ya?ml|toml)$/;
  * command, a good-and-bad pair of descriptions, an invocation naming a skill
  * that does not exist yet and is the whole point of the example.
  *
- * @param {string} body The body of `SKILL.md`.
- * @returns {string} The prose that makes claims about this repository.
+ * @param body The body of `SKILL.md`.
+ * @returns The prose that makes claims about this repository.
  */
-export const claimingProse = (body) => {
+export const claimingProse = (body: string): string => {
 	const kept = [];
 
 	let fenced = false;
@@ -167,7 +169,7 @@ export const claimingProse = (body) => {
 		const heading = /^#{1,6}\s+(.*)$/.exec(line);
 
 		if (heading !== null) {
-			quoting = /examples?\b/i.test(heading[1]);
+			quoting = /examples?\b/i.test(heading[1] ?? '');
 			continue;
 		}
 
@@ -182,10 +184,10 @@ export const claimingProse = (body) => {
 /**
  * The fenced blocks holding commands, as lines.
  *
- * @param {string} body The body of `SKILL.md`.
- * @returns {string[]} One entry per line of every shell fence.
+ * @param body The body of `SKILL.md`.
+ * @returns One entry per line of every shell fence.
  */
-export const commandLines = (body) => {
+export const commandLines = (body: string): string[] => {
 	const lines = [];
 
 	let language = null;
@@ -194,7 +196,7 @@ export const commandLines = (body) => {
 		const fence = /^\s*```(\S*)/.exec(line);
 
 		if (fence !== null) {
-			language = language === null ? fence[1].toLowerCase() : null;
+			language = language === null ? (fence[1] ?? '').toLowerCase() : null;
 			continue;
 		}
 
@@ -211,13 +213,13 @@ export const commandLines = (body) => {
  *
  * Both spellings a skill uses: a Markdown link, and a path in backticks.
  *
- * @param {string} prose The prose to read.
- * @returns {string[]} The references, deduplicated.
+ * @param prose The prose to read.
+ * @returns The references, deduplicated.
  */
-export const referencesIn = (prose) => {
-	const found = new Set();
+export const referencesIn = (prose: string): string[] => {
+	const found = new Set<string>();
 
-	const consider = (candidate) => {
+	const consider = (candidate: string): void => {
 		const reference = candidate.trim();
 
 		if (reference === '') return;
@@ -229,15 +231,15 @@ export const referencesIn = (prose) => {
 		// kind of file, not a reference to one.
 		if (/^\.(d\.)?[a-z]+$/.test(reference)) return;
 
-		found.add(reference.split('#')[0]);
+		found.add(reference.split('#')[0] ?? '');
 	};
 
 	for (const match of prose.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)) {
-		consider(match[1]);
+		consider(match[1] ?? '');
 	}
 
 	for (const match of prose.matchAll(/`([^`\n]+)`/g)) {
-		consider(match[1]);
+		consider(match[1] ?? '');
 	}
 
 	return [...found];
@@ -251,12 +253,12 @@ export const referencesIn = (prose) => {
  * `CLAUDE.md`, all written that way in the prose that names them — is
  * answered by whether a file of that name exists anywhere in the repository.
  *
- * @param {string} reference The reference as written.
- * @param {string} directory The absolute path of the skill directory.
- * @param {string} root The repository root.
- * @returns {boolean} Whether something is there.
+ * @param reference The reference as written.
+ * @param directory The absolute path of the skill directory.
+ * @param root The repository root.
+ * @returns Whether something is there.
  */
-export const resolves = (reference, directory, root) => {
+export const resolves = (reference: string, directory: string, root: string): boolean => {
 	if (exists(path.join(directory, reference))) return true;
 	if (exists(path.join(root, reference))) return true;
 
@@ -266,18 +268,23 @@ export const resolves = (reference, directory, root) => {
 /**
  * The references of a document that point at nothing.
  *
- * Shared with `validate-claude-config.mjs`, because the contract and the rules
+ * Shared with `validate-claude-config.mts`, because the contract and the rules
  * name files the same way a skill does and a reference is broken for the same
  * reason in all three. What git deliberately keeps out of the checkout is not
  * one of them — see `ignoredIn`.
  *
- * @param {string} prose The prose that makes claims about this repository.
- * @param {string} directory The directory the document sits in.
- * @param {string} root The repository root.
- * @param {string} where The path as a report spells it.
- * @returns {import('./report.mjs').Finding[]} One finding per dangling name.
+ * @param prose The prose that makes claims about this repository.
+ * @param directory The directory the document sits in.
+ * @param root The repository root.
+ * @param where The path as a report spells it.
+ * @returns One finding per dangling name.
  */
-export const missingReferences = (prose, directory, root, where) => {
+export const missingReferences = (
+	prose: string,
+	directory: string,
+	root: string,
+	where: string,
+): Finding[] => {
 	const unresolved = referencesIn(prose).filter(
 		(reference) => !resolves(reference, directory, root),
 	);
@@ -298,12 +305,12 @@ export const missingReferences = (prose, directory, root, where) => {
 /**
  * Checks the frontmatter of one skill.
  *
- * @param {import('./tree.mjs').Skill} skill The skill.
- * @param {string} where The path as a report spells it.
- * @param {Map<string, string>} names Names already taken, to the directory.
- * @returns {import('./report.mjs').Finding[]} What was found.
+ * @param skill The skill.
+ * @param where The path as a report spells it.
+ * @param names Names already taken, to the directory.
+ * @returns What was found.
  */
-const checkFrontmatter = (skill, where, names) => {
+const checkFrontmatter = (skill: Skill, where: string, names: Map<string, string>): Finding[] => {
 	const findings = [];
 	const block = skill.frontmatter;
 
@@ -415,12 +422,12 @@ const checkFrontmatter = (skill, where, names) => {
  * a directory that is not there scopes the skill to nothing, and does it
  * without a word.
  *
- * @param {import('./tree.mjs').Skill} skill The skill.
- * @param {string} where The path as a report spells it.
- * @param {string} root The repository root.
- * @returns {import('./report.mjs').Finding[]} What was found.
+ * @param skill The skill.
+ * @param where The path as a report spells it.
+ * @param root The repository root.
+ * @returns What was found.
  */
-const checkPaths = (skill, where, root) => {
+const checkPaths = (skill: Skill, where: string, root: string): Finding[] => {
 	const value = skill.frontmatter?.values.paths;
 
 	if (value === undefined) return [];
@@ -433,7 +440,7 @@ const checkPaths = (skill, where, root) => {
 	}
 
 	for (const glob of globs) {
-		const base = glob.split(/[*?[]/)[0].replace(/\/[^/]*$/, '');
+		const base = (glob.split(/[*?[]/)[0] ?? '').replace(/\/[^/]*$/, '');
 
 		if (base === '' || exists(path.join(root, base))) continue;
 
@@ -452,13 +459,18 @@ const checkPaths = (skill, where, root) => {
 /**
  * Checks what the body of one skill names.
  *
- * @param {import('./tree.mjs').Skill} skill The skill.
- * @param {string} where The path as a report spells it.
- * @param {string} root The repository root.
- * @param {{ scripts: Set<string>, agents: Set<string> }} available What exists.
- * @returns {import('./report.mjs').Finding[]} What was found.
+ * @param skill The skill.
+ * @param where The path as a report spells it.
+ * @param root The repository root.
+ * @param available What exists.
+ * @returns What was found.
  */
-const checkBody = (skill, where, root, available) => {
+const checkBody = (
+	skill: Skill,
+	where: string,
+	root: string,
+	available: { scripts: Set<string>; agents: Set<string> },
+): Finding[] => {
 	const findings = [];
 	const body = skill.frontmatter?.body ?? '';
 	const directory = path.join(root, '.claude', 'skills', skill.directory);
@@ -467,7 +479,7 @@ const checkBody = (skill, where, root, available) => {
 	findings.push(...missingReferences(prose, directory, root, where));
 
 	for (const match of body.matchAll(/npm run ([a-z][\w:-]*)/g)) {
-		if (available.scripts.has(match[1])) continue;
+		if (available.scripts.has(match[1] ?? '')) continue;
 
 		findings.push(
 			error(
@@ -479,7 +491,7 @@ const checkBody = (skill, where, root, available) => {
 	}
 
 	for (const match of body.matchAll(/\.claude\/agents\/([\w-]+)\.md/g)) {
-		if (available.agents.has(match[1])) continue;
+		if (available.agents.has(match[1] ?? '')) continue;
 
 		findings.push(
 			error(
@@ -524,12 +536,16 @@ const checkBody = (skill, where, root, available) => {
 /**
  * Checks one eval suite, and reports the coverage it gives its skill.
  *
- * @param {import('./tree.mjs').Evals} suite The suite.
- * @param {Map<string, string>} known The skill names, to their directories.
- * @param {Map<string, Set<string>>} covered Filled in with the kinds covered.
- * @returns {import('./report.mjs').Finding[]} What was found.
+ * @param suite The suite.
+ * @param known The skill names, to their directories.
+ * @param covered Filled in with the kinds covered.
+ * @returns What was found.
  */
-const checkEvals = (suite, known, covered) => {
+const checkEvals = (
+	suite: Evals,
+	known: Map<string, string>,
+	covered: Map<string, Set<string>>,
+): Finding[] => {
 	const where = `tools/claude/skill-evals/${suite.file}`;
 
 	if (suite.problem !== null || suite.document === null) {
@@ -571,7 +587,7 @@ const checkEvals = (suite, known, covered) => {
 	}
 
 	const ids = new Set();
-	const kinds = new Set();
+	const kinds = new Set<string>();
 
 	for (const [index, entry] of cases.entries()) {
 		const at = `${where} (case ${index + 1})`;
@@ -581,7 +597,7 @@ const checkEvals = (suite, known, covered) => {
 			continue;
 		}
 
-		const { id, kind, prompt, expect } = /** @type {Record<string, unknown>} */ (entry);
+		const { id, kind, prompt, expect } = entry;
 
 		if (typeof id !== 'string' || id === '') {
 			findings.push(error('eval-case-id', at, '`id` is missing.'));
@@ -608,7 +624,7 @@ const checkEvals = (suite, known, covered) => {
 			continue;
 		}
 
-		const expectation = /** @type {Record<string, unknown>} */ (expect);
+		const expectation = expect;
 
 		if (typeof expectation.invokes !== 'boolean') {
 			findings.push(error('eval-case-expect', at, '`expect.invokes` is `true` or `false`.'));
@@ -645,10 +661,10 @@ const checkEvals = (suite, known, covered) => {
 /**
  * Validates the whole skill tree.
  *
- * @param {string} [root] The repository root.
- * @returns {import('./report.mjs').Finding[]} Everything found.
+ * @param [root] The repository root.
+ * @returns Everything found.
  */
-export const validateSkills = (root = repositoryRoot) => {
+export const validateSkills = (root: string = repositoryRoot): Finding[] => {
 	const findings = [];
 	const skills = skillsOf(root);
 	const available = { scripts: scriptsOf(root), agents: agentsOf(root) };
@@ -674,8 +690,7 @@ export const validateSkills = (root = repositoryRoot) => {
 		findings.push(...checkBody(skill, where, root, available));
 	}
 
-	/** @type {Map<string, Set<string>>} */
-	const covered = new Map();
+	const covered: Map<string, Set<string>> = new Map();
 
 	for (const suite of evalsOf(root)) {
 		findings.push(...checkEvals(suite, names, covered));

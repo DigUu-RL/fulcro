@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { review } from '../../.claude/hooks/protect-publish.mjs';
+import { review } from '../../.claude/hooks/protect-publish.mts';
 
 /**
  * The hook that keeps pushing, publishing and merging with a human.

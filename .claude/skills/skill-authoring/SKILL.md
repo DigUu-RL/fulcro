@@ -204,7 +204,7 @@ What moves out, into supporting files beside `SKILL.md`:
   let it be read only when that branch is taken.
 
 Every supporting file a skill names must exist.
-`tools/claude/validate-skills.mjs` checks this, and the failure mode without it
+`tools/claude/validate-skills.mts` checks this, and the failure mode without it
 is a skill confidently following a step that points at nothing.
 
 Dynamic context injection — pulling command output into the skill at load —

@@ -45,7 +45,7 @@ Run from the repository root. These are the scripts that exist today — read
 | Command                                   | What it does                                                                |
 | ----------------------------------------- | --------------------------------------------------------------------------- |
 | `npm run build`                           | Builds `errors`, then `transform-core`, then every workspace                |
-| `npm run typecheck`                       | `tsc --noEmit` per package, then `tsconfig.tests.json`                      |
+| `npm run typecheck`                       | `tsc` per package, then the root `tsconfig.json` (suites, tooling, hooks)   |
 | `npm test`                                | Builds, then runs Vitest                                                    |
 | `npx vitest run --configLoader native`    | The suites without rebuilding                                               |
 | `npx eslint .`                            | Lint, including the local `brace-wrapped-branches` and `coded-errors` rules |
@@ -185,7 +185,10 @@ editing the page to agree.
 - `tools/claude/` — the validators of everything above, the eval suites in
   `tools/claude/skill-evals/` and the rule fixtures in
   `tools/claude/rule-fixtures/`; `tests/claude/` is their suite. They run on a
-  bare checkout, with no dependency beyond Node.
+  bare checkout, with no dependency beyond Node 22.18, which runs their
+  TypeScript directly. Like the hooks, they are `.mts`: Node runs them with
+  plain `node`, so they import their siblings by relative `.mts` path rather
+  than through the `@/` alias.
 - The roadmap — GitHub issues on `DigUu-RL/fulcro`, not files in the
   checkout. A feature is an issue labelled `feature` and titled
   `F<n> — <name>`, found with

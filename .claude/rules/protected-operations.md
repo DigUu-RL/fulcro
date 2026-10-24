@@ -11,10 +11,10 @@ Two guards run before every `Bash` and `PowerShell` call:
 
 | Hook                    | Refuses                                                        |
 | ----------------------- | -------------------------------------------------------------- |
-| `protect-publish.mjs`   | `git push`, any `publish`, `npm run release`, `gh pr merge`    |
-| `block-destructive.mjs` | `git reset --hard`, `git clean --force`, deleting the checkout |
+| `protect-publish.mts`   | `git push`, any `publish`, `npm run release`, `gh pr merge`    |
+| `block-destructive.mts` | `git reset --hard`, `git clean --force`, deleting the checkout |
 
-A third, `post-edit-check.mjs`, runs after a write and only reports: emitted
+A third, `post-edit-check.mts`, runs after a write and only reports: emitted
 output written beside its source, which `.gitignore` hides and the test runner
 turns into a broken import hours later. See `build-output.md`. It never fixes
 and never deletes — the fix is the build configuration, and removing the file

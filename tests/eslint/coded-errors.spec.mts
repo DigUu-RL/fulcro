@@ -4,7 +4,7 @@ import { Linter } from 'eslint';
 import typescriptEslint from 'typescript-eslint';
 import { describe, expect, it } from 'vitest';
 
-import { codedErrors, PACKAGE_RANGES } from '../../tools/eslint/coded-errors.mjs';
+import { codedErrors, PACKAGE_RANGES } from '../../tools/eslint/coded-errors.mts';
 
 /**
  * Suite for the `local/coded-errors` rule.

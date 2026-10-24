@@ -2,7 +2,7 @@
 paths:
   - packages/*/src/**/*.ts
   - packages/*/src/**/*.mts
-  - tools/eslint/**/*.mjs
+  - tools/eslint/**/*.mts
 ---
 
 # Every error carries a registered code
@@ -37,7 +37,7 @@ error a package creates comes from one place.
 
 - Each package owns one range: 1 collections, 2 functions, 3 parallel,
   4 reflect, 5 transform-core, 6 types, 7 memory. A new package takes the next
-  digit, in `tools/eslint/coded-errors.mjs` and a new catalog file, before it
+  digit, in `tools/eslint/coded-errors.mts` and a new catalog file, before it
   throws anything.
 - A code is never renumbered and never reused, even after its error is gone.
   Retire it by leaving its entry and its page in place, marked as retired.

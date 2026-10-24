@@ -41,7 +41,7 @@ pages disagree about who owns the digit.
 
 | Path                                        | What changes                                                                                                                                                      |
 | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tools/eslint/coded-errors.mjs`             | `'<name>': '<digit>'` in `PACKAGE_RANGES`.                                                                                                                        |
+| `tools/eslint/coded-errors.mts`             | `'<name>': '<digit>'` in `PACKAGE_RANGES`.                                                                                                                        |
 | `tests/eslint/coded-errors.spec.mts`        | The same entry in the expected map of `the ranges`. A row is added; no existing row is touched.                                                                   |
 | `packages/errors/src/catalog/<name>.ts`     | `export const <camelName>Catalog = {} as const satisfies RangeCatalog<'<digit>'>;`, with the doc comment its siblings carry. Empty until the first error is born. |
 | `packages/errors/src/catalog/index.ts`      | The import and the spread, alphabetical.                                                                                                                          |

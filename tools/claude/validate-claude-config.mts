@@ -1,7 +1,7 @@
 /**
  * Structural validation of the rest of the `.claude` tree.
  *
- * The skills are checked next door, in `validate-skills.mjs`. What is left is
+ * The skills are checked next door, in `validate-skills.mts`. What is left is
  * the machinery around them — the settings, the hooks they are wired to, the
  * rules the prompts point at, the subagents work is delegated to — and it
  * fails the same way skills do: in
@@ -19,8 +19,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { matchedBy } from './glob.mjs';
-import { error, report, warning } from './report.mjs';
+import type { Value } from './frontmatter.mts';
+import { matchedBy } from './glob.mts';
+import type { Finding } from './report.mts';
+import { error, report, warning } from './report.mts';
+import type { Rule } from './tree.mts';
 import {
 	agentDefinitionsOf,
 	displayed,
@@ -29,8 +32,8 @@ import {
 	ruleFixturesOf,
 	rulesOf,
 	settingsOf,
-} from './tree.mjs';
-import { claimingProse, missingReferences } from './validate-skills.mjs';
+} from './tree.mts';
+import { claimingProse, missingReferences } from './validate-skills.mts';
 
 /**
  * Hook modules that are libraries rather than guards.
@@ -39,7 +42,7 @@ import { claimingProse, missingReferences } from './validate-skills.mjs';
  * halves every guard is built from — the command line reader and the process
  * plumbing — and nothing runs them directly.
  */
-const LIBRARIES = new Set(['command-line.mjs', 'hook.mjs']);
+const LIBRARIES = new Set(['command-line.mts', 'hook.mts']);
 
 /**
  * The frontmatter keys a rule may set.
@@ -58,7 +61,7 @@ const RULE_KEYS = new Set(['paths']);
  *
  * The ones Claude Code documents whose values are scalars or lists. `hooks`,
  * `mcpServers` in its inline form and `experimental` take nested mappings,
- * which `frontmatter.mjs` refuses rather than guesses at; an agent that needs
+ * which `frontmatter.mts` refuses rather than guesses at; an agent that needs
  * one is the case that extends the reader, not this list.
  */
 const AGENT_KEYS = new Set([
@@ -98,10 +101,10 @@ const WRITING_TOOLS = new Set(['Write', 'Edit', 'NotebookEdit']);
  * the duplication the acceptance criteria ask about: one of the two will be
  * updated and the other will go on saying the old thing.
  *
- * @param {string} body The rule below its frontmatter.
- * @returns {string[]} The paragraphs, whitespace normalised.
+ * @param body The rule below its frontmatter.
+ * @returns The paragraphs, whitespace normalised.
  */
-const proseParagraphs = (body) => {
+const proseParagraphs = (body: string): string[] => {
 	return claimingProse(body)
 		.split(/\n\s*\n/)
 		.map((paragraph) => paragraph.replace(/\s+/g, ' ').trim())
@@ -111,12 +114,14 @@ const proseParagraphs = (body) => {
 /**
  * Every hook event of a settings document, flattened.
  *
- * @param {Record<string, unknown> | null} document The settings.
- * @returns {{ event: string, matcher: string, command: string }[]} The hooks.
+ * @param document The settings.
+ * @returns The hooks.
  */
-const hooksIn = (document) => {
+const hooksIn = (
+	document: Record<string, unknown> | null,
+): { event: string; matcher: string; command: string }[] => {
 	const found = [];
-	const events = /** @type {Record<string, unknown>} */ (document?.hooks ?? {});
+	const events = document?.hooks ?? {};
 
 	for (const [event, entries] of Object.entries(events)) {
 		if (!Array.isArray(entries)) continue;
@@ -138,24 +143,26 @@ const hooksIn = (document) => {
 /**
  * The tools a permission entry applies to, and the command it names.
  *
- * @param {string} entry A line of `permissions.deny`, `Bash(git push:*)`.
- * @returns {{ tool: string, command: string } | null} The parts, or `null`.
+ * @param entry A line of `permissions.deny`, `Bash(git push:*)`.
+ * @returns The parts, or `null`.
  */
-const permissionOf = (entry) => {
+const permissionOf = (entry: string): { tool: string; command: string } | null => {
 	const parsed = /^([A-Za-z]+)\(([^)]*)\)$/.exec(entry.trim());
 
 	if (parsed === null) return null;
 
-	return { tool: parsed[1], command: parsed[2].replace(/:\*$/, '').trim() };
+	const [, tool = '', command = ''] = parsed;
+
+	return { tool, command: command.replace(/:\*$/, '').trim() };
 };
 
 /**
  * Checks the settings files and what they wire up.
  *
- * @param {string} root The repository root.
- * @returns {import('./report.mjs').Finding[]} What was found.
+ * @param root The repository root.
+ * @returns What was found.
  */
-const checkSettings = (root) => {
+const checkSettings = (root: string): Finding[] => {
 	const findings = [];
 	const settings = settingsOf(root, 'settings.json');
 	const local = settingsOf(root, 'settings.local.json');
@@ -186,7 +193,7 @@ const checkSettings = (root) => {
 	const wired = new Set();
 
 	for (const hook of hooks) {
-		for (const match of hook.command.matchAll(/[\w./-]+\.mjs/g)) {
+		for (const match of hook.command.matchAll(/[\w./-]+\.mts/g)) {
 			const script = match[0];
 
 			if (!exists(path.join(root, script))) {
@@ -208,7 +215,7 @@ const checkSettings = (root) => {
 	const directory = path.join(root, '.claude', 'hooks');
 
 	const modules = exists(directory)
-		? fs.readdirSync(directory).filter((file) => file.endsWith('.mjs'))
+		? fs.readdirSync(directory).filter((file) => file.endsWith('.mts'))
 		: [];
 
 	for (const module of modules) {
@@ -230,7 +237,7 @@ const checkSettings = (root) => {
 
 		if (!guard) continue;
 
-		const spec = path.join(root, 'tests', 'hooks', module.replace(/\.mjs$/, '.spec.mts'));
+		const spec = path.join(root, 'tests', 'hooks', module.replace(/\.mts$/, '.spec.mts'));
 
 		if (exists(spec)) continue;
 
@@ -249,12 +256,13 @@ const checkSettings = (root) => {
 			.flatMap((hook) => hook.matcher.split('|').map((name) => name.trim())),
 	);
 
-	const denied = /** @type {unknown} */ (
-		/** @type {Record<string, unknown>} */ (settings.document.permissions ?? {}).deny
-	);
+	const permissions: unknown = settings.document?.permissions;
+	const denied: unknown =
+		typeof permissions === 'object' && permissions !== null && 'deny' in permissions
+			? permissions.deny
+			: undefined;
 
-	/** @type {Map<string, Set<string>>} */
-	const byCommand = new Map();
+	const byCommand: Map<string, Set<string>> = new Map();
 
 	for (const entry of Array.isArray(denied) ? denied : []) {
 		const permission = permissionOf(`${entry}`);
@@ -307,10 +315,10 @@ const checkSettings = (root) => {
 /**
  * Checks the rules and the contract that points at them.
  *
- * @param {string} root The repository root.
- * @returns {import('./report.mjs').Finding[]} What was found.
+ * @param root The repository root.
+ * @returns What was found.
  */
-const checkRules = (root) => {
+const checkRules = (root: string): Finding[] => {
 	const findings = [];
 	const directory = path.join(root, '.claude', 'rules');
 	const contract = path.join(root, '.claude', 'CLAUDE.md');
@@ -330,8 +338,7 @@ const checkRules = (root) => {
 		);
 	}
 
-	/** @type {Map<string, string>} */
-	const paragraphs = new Map();
+	const paragraphs: Map<string, string> = new Map();
 
 	for (const rule of rulesOf(root)) {
 		const at = `.claude/rules/${rule.file}`;
@@ -376,13 +383,13 @@ const checkRules = (root) => {
 /**
  * Checks the frontmatter of one rule, and the scope it declares.
  *
- * @param {import('./tree.mjs').Rule} rule The rule.
- * @param {string} at The path as a report spells it.
- * @param {string} root The repository root.
- * @returns {import('./report.mjs').Finding[]} What was found.
+ * @param rule The rule.
+ * @param at The path as a report spells it.
+ * @param root The repository root.
+ * @returns What was found.
  */
-const checkRuleFrontmatter = (rule, at, root) => {
-	const findings = [];
+const checkRuleFrontmatter = (rule: Rule, at: string, root: string): Finding[] => {
+	const findings: Finding[] = [];
 	const block = rule.frontmatter;
 
 	// A rule without a block is loaded for every session, which is the shape
@@ -423,7 +430,7 @@ const checkRuleFrontmatter = (rule, at, root) => {
 	}
 
 	for (const glob of globs) {
-		const base = glob.split(/[*?[]/)[0].replace(/\/[^/]*$/, '');
+		const base = (glob.split(/[*?[]/)[0] ?? '').replace(/\/[^/]*$/, '');
 
 		if (base === '' || exists(path.join(root, base))) continue;
 
@@ -442,14 +449,13 @@ const checkRuleFrontmatter = (rule, at, root) => {
 /**
  * Checks the fixtures that prove each path-scoped rule loads where it should.
  *
- * @param {string} root The repository root.
- * @returns {import('./report.mjs').Finding[]} What was found.
+ * @param root The repository root.
+ * @returns What was found.
  */
-const checkRuleFixtures = (root) => {
+const checkRuleFixtures = (root: string): Finding[] => {
 	const findings = [];
 
-	/** @type {Map<string, string[]>} */
-	const scoped = new Map();
+	const scoped: Map<string, string[]> = new Map();
 
 	for (const rule of rulesOf(root)) {
 		const value = rule.frontmatter.values.paths;
@@ -499,7 +505,7 @@ const checkRuleFixtures = (root) => {
 
 		covered.add(named);
 
-		const globs = /** @type {string[]} */ (scoped.get(named));
+		const globs = scoped.get(named) ?? [];
 		const loads = fixture.document.loads;
 		const ignores = fixture.document.ignores;
 
@@ -577,10 +583,10 @@ const checkRuleFixtures = (root) => {
  *
  * Claude Code takes either a comma-separated string or a list.
  *
- * @param {import('./frontmatter.mjs').Value | undefined} value The raw value.
- * @returns {string[] | null} The tool names, or `null` when none was given.
+ * @param value The raw value.
+ * @returns The tool names, or `null` when none was given.
  */
-const toolsIn = (value) => {
+const toolsIn = (value: Value | undefined): string[] | null => {
 	if (value === undefined) return null;
 	if (Array.isArray(value)) return value.map((tool) => tool.trim());
 
@@ -598,10 +604,10 @@ const toolsIn = (value) => {
  * own: an agent that leaves `tools` out inherits every tool, writing ones
  * included, and a reviewer that can edit is a reviewer nobody watched edit.
  *
- * @param {string} root The repository root.
- * @returns {import('./report.mjs').Finding[]} What was found.
+ * @param root The repository root.
+ * @returns What was found.
  */
-const checkAgents = (root) => {
+const checkAgents = (root: string): Finding[] => {
 	const findings = [];
 
 	for (const agent of agentDefinitionsOf(root)) {
@@ -702,10 +708,10 @@ const checkAgents = (root) => {
  * pointing at a file that was renamed sends the session looking for a
  * replacement rather than reporting a gap.
  *
- * @param {string} root The repository root.
- * @returns {import('./report.mjs').Finding[]} What was found.
+ * @param root The repository root.
+ * @returns What was found.
  */
-const checkReferences = (root) => {
+const checkReferences = (root: string): Finding[] => {
 	const findings = [];
 	const files = [path.join(root, '.claude', 'CLAUDE.md')];
 	const rules = path.join(root, '.claude', 'rules');
@@ -735,10 +741,10 @@ const checkReferences = (root) => {
 /**
  * Validates the configuration around the skills.
  *
- * @param {string} [root] The repository root.
- * @returns {import('./report.mjs').Finding[]} Everything found.
+ * @param [root] The repository root.
+ * @returns Everything found.
  */
-export const validateConfig = (root = repositoryRoot) => {
+export const validateConfig = (root: string = repositoryRoot): Finding[] => {
 	return [
 		...checkSettings(root),
 		...checkRules(root),

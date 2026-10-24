@@ -87,7 +87,7 @@ nothing to decide.
 | 3   | The feature issues that will live in the package         | Which features will live in the package — the case |
 | 4   | The pinned glossary issue, #113                          | The canonical name for the concept                 |
 | 5   | `.claude/rules/naming.md`, `general.md`, `api-design.md` | What a package name and its first surface must be  |
-| 6   | `tools/eslint/coded-errors.mjs` `PACKAGE_RANGES`         | The digits taken, and so the next one              |
+| 6   | `tools/eslint/coded-errors.mts` `PACKAGE_RANGES`         | The digits taken, and so the next one              |
 | 7   | `packages/functions/` — manifest, tsconfigs, LICENSE     | The shape to copy                                  |
 | 8   | `vitest.config.mts`, `tests/entrypoints.spec.mts`        | Where the package is registered for the suites     |
 | 9   | `.changeset/config.json`, `.changeset/README.md`         | Which packages version together, and why           |

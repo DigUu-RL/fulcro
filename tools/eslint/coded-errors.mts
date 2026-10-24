@@ -11,13 +11,14 @@
  * Rethrowing what was caught is untouched: an error that is somebody else's
  * stays theirs.
  */
+import type { Rule } from 'eslint';
 
 /**
  * The leading digit of each package's range, by its directory under
  * `packages/`. A code is never moved between ranges, and a new package gets
  * the next digit when it is created.
  */
-export const PACKAGE_RANGES = {
+export const PACKAGE_RANGES: Readonly<Record<string, string>> = {
 	collections: '1',
 	functions: '2',
 	parallel: '3',
@@ -36,20 +37,19 @@ const CODE = /^FULCRO(\d)\d{3}$/;
 /**
  * Reads the package a file belongs to from its path.
  *
- * @param {string} filename Path of the file being linted.
- * @returns {string | null} The directory under `packages/`, or `null`.
+ * @param filename Path of the file being linted.
+ * @returns The directory under `packages/`, or `null`.
  */
-const packageOf = (filename) => {
+const packageOf = (filename: string): string | null => {
 	// Either separator, and relative or absolute: ESLint hands over whatever
 	// path it was given, and a path that failed to match would skip the range
 	// check without a word.
 	const match = /(?:^|[\\/])packages[\\/]([^\\/]+)[\\/]src[\\/]/.exec(filename);
 
-	return match === null ? null : match[1];
+	return match === null ? null : (match[1] ?? null);
 };
 
-/** @type {import('eslint').Rule.RuleModule} */
-export const codedErrors = {
+export const codedErrors: Rule.RuleModule = {
 	meta: {
 		type: 'problem',
 		schema: [],
@@ -61,7 +61,7 @@ export const codedErrors = {
 			otherRange:
 				'{{code}} belongs to the range FULCRO{{found}}xxx, and this file is in @fulcro/{{package}}, whose range is FULCRO{{expected}}xxx.',
 			noRange:
-				'@fulcro/{{package}} has no error range assigned. Add it to PACKAGE_RANGES in tools/eslint/coded-errors.mjs before it throws anything.',
+				'@fulcro/{{package}} has no error range assigned. Add it to PACKAGE_RANGES in tools/eslint/coded-errors.mts before it throws anything.',
 		},
 	},
 

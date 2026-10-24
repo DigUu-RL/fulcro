@@ -31,11 +31,11 @@
 				"hooks": [
 					{
 						"type": "command",
-						"command": "node .claude/hooks/protect-publish.mjs"
+						"command": "node .claude/hooks/protect-publish.mts"
 					},
 					{
 						"type": "command",
-						"command": "node .claude/hooks/block-destructive.mjs"
+						"command": "node .claude/hooks/block-destructive.mts"
 					}
 				]
 			}
@@ -46,7 +46,7 @@
 				"hooks": [
 					{
 						"type": "command",
-						"command": "node .claude/hooks/post-edit-check.mjs"
+						"command": "node .claude/hooks/post-edit-check.mts"
 					}
 				]
 			}

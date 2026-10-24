@@ -8,7 +8,7 @@ import {
 	isRepositoryWide,
 	nameOf,
 	runs,
-} from '../../.claude/hooks/command-line.mjs';
+} from '../../.claude/hooks/command-line.mts';
 
 /**
  * The reader the two guards share.

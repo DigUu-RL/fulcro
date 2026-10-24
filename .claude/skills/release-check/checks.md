@@ -55,8 +55,8 @@ report would be describing artifacts rather than observing them.
 
 ## 3. Typecheck
 
-**Reads.** `npm run typecheck` — `tsc --noEmit` per package, then
-`tsconfig.tests.json`.
+**Reads.** `npm run typecheck` — `tsc` per package, then the root
+`tsconfig.json`, which covers the suites, the tooling and the hooks.
 
 **A failure** is a non-zero exit. A release carrying a type error ships
 declarations a consumer's editor will disagree with, and check 14 is where that

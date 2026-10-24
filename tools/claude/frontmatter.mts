@@ -13,8 +13,8 @@
 /**
  * A value as written in the block.
  *
- * @typedef {string | string[] | boolean} Value
  */
+export type Value = string | string[] | boolean;
 
 /**
  * The outcome of reading one file.
@@ -22,24 +22,24 @@
  * `values` is empty when the block is absent or malformed; `problems` says
  * which, in the words the caller reports.
  *
- * @typedef {{
- *   present: boolean,
- *   values: Record<string, Value>,
- *   order: string[],
- *   problems: string[],
- * }} Frontmatter
  */
+export type Frontmatter = {
+	present: boolean;
+	values: Record<string, Value>;
+	order: string[];
+	problems: string[];
+};
 
 /**
  * Strips one layer of matching quotes.
  *
- * @param {string} text The raw scalar.
- * @returns {string} The scalar without its quotes.
+ * @param text The raw scalar.
+ * @returns The scalar without its quotes.
  */
-const unquoted = (text) => {
+const unquoted = (text: string): string => {
 	const quoted = /^(['"])([\s\S]*)\1$/.exec(text);
 
-	return quoted === null ? text : quoted[2];
+	return quoted === null ? text : (quoted[2] ?? '');
 };
 
 /**
@@ -48,10 +48,10 @@ const unquoted = (text) => {
  * `''` inside a single-quoted scalar is an escaped quote and not the end of
  * it; `\"` is the same inside a double-quoted one.
  *
- * @param {string} text The trimmed scalar, opening quote included.
- * @returns {number} The index of the closing quote.
+ * @param text The trimmed scalar, opening quote included.
+ * @returns The index of the closing quote.
  */
-const closingQuote = (text) => {
+const closingQuote = (text: string): number => {
 	const quote = text[0];
 
 	for (let at = 1; at < text.length; at += 1) {
@@ -89,11 +89,11 @@ const closingQuote = (text) => {
  * frontmatter contract takes one, and a version-looking value silently
  * becoming a float is a worse failure than a string nobody compares.
  *
- * @param {string} text The raw scalar.
- * @param {string} key The key it belongs to, for the message.
- * @returns {{ value: string | boolean, problem: string | null }} The value.
+ * @param text The raw scalar.
+ * @param key The key it belongs to, for the message.
+ * @returns The value.
  */
-const scalar = (text, key) => {
+const scalar = (text: string, key: string): { value: string | boolean; problem: string | null } => {
 	const trimmed = text.trim();
 
 	if (trimmed === 'true') return { value: true, problem: null };
@@ -145,10 +145,10 @@ const scalar = (text, key) => {
 /**
  * Reads an inline list, `[one, two]`.
  *
- * @param {string} text The raw value, brackets included.
- * @returns {string[]} The entries.
+ * @param text The raw value, brackets included.
+ * @returns The entries.
  */
-const inlineList = (text) => {
+const inlineList = (text: string): string[] => {
 	return text
 		.slice(1, -1)
 		.split(',')
@@ -159,10 +159,10 @@ const inlineList = (text) => {
 /**
  * Splits a file into its frontmatter lines and the body below.
  *
- * @param {string} content The whole file.
- * @returns {{ lines: string[] | null, body: string }} The block and the body.
+ * @param content The whole file.
+ * @returns The block and the body.
  */
-const split = (content) => {
+const split = (content: string): { lines: string[] | null; body: string } => {
 	const lines = content.split(/\r?\n/);
 
 	if (lines[0]?.trim() !== '---') return { lines: null, body: content };
@@ -180,24 +180,21 @@ const split = (content) => {
 /**
  * Reads the frontmatter of a Markdown file.
  *
- * @param {string} content The whole file.
- * @returns {Frontmatter & { body: string }} The block, and what follows it.
+ * @param content The whole file.
+ * @returns The block, and what follows it.
  */
-export const frontmatterOf = (content) => {
+export const frontmatterOf = (content: string): Frontmatter & { body: string } => {
 	const { lines, body } = split(content);
 
 	if (lines === null) {
 		return { present: false, values: {}, order: [], problems: [], body };
 	}
 
-	/** @type {Record<string, Value>} */
-	const values = {};
-	/** @type {string[]} */
-	const order = [];
-	/** @type {string[]} */
-	const problems = [];
+	const values: Record<string, Value> = {};
+	const order: string[] = [];
+	const problems: string[] = [];
 
-	let current = null;
+	let current: string | null = null;
 
 	for (const line of lines) {
 		if (line.trim() === '' || line.trim().startsWith('#')) continue;
@@ -205,12 +202,16 @@ export const frontmatterOf = (content) => {
 		const entry = /^[-*]\s+(.*)$/.exec(line.trim());
 
 		if (entry !== null) {
-			if (current === null || !Array.isArray(values[current])) {
+			const list = current === null ? undefined : values[current];
+
+			if (!Array.isArray(list)) {
 				problems.push(`A list entry with no key above it: \`${line.trim()}\`.`);
 				continue;
 			}
 
-			/** @type {string[]} */ (values[current]).push(unquoted(entry[1].trim()));
+			const [, item = ''] = entry;
+
+			list.push(unquoted(item.trim()));
 			continue;
 		}
 
@@ -221,7 +222,7 @@ export const frontmatterOf = (content) => {
 			continue;
 		}
 
-		const [, key, raw] = pair;
+		const [, key = '', raw = ''] = pair;
 
 		if (key in values) {
 			problems.push(`\`${key}\` is set twice; the second value wins silently.`);

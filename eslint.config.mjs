@@ -2,7 +2,7 @@ import eslintConfigPrettier from 'eslint-config-prettier';
 import simpleImportSort from 'eslint-plugin-simple-import-sort';
 import typescriptEslint from 'typescript-eslint';
 
-import { codedErrors } from './tools/eslint/coded-errors.mjs';
+import { codedErrors } from './tools/eslint/coded-errors.mts';
 
 /**
  * Braces on any branch that does not fit on one line.

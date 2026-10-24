@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { review } from '../../.claude/hooks/post-edit-check.mjs';
+import { review } from '../../.claude/hooks/post-edit-check.mts';
 
 /**
  * The one check that runs after an edit.
@@ -42,7 +42,7 @@ describe('every other edit', () => {
 
 	it('says nothing about JavaScript that lives outside a package source tree', () => {
 		expect(review({ file_path: 'eslint.config.mjs' })).toBeNull();
-		expect(review({ file_path: '.claude/hooks/block-destructive.mjs' })).toBeNull();
+		expect(review({ file_path: '.claude/hooks/block-destructive.mts' })).toBeNull();
 		expect(review({ file_path: 'packages/collections/dist/index.js' })).toBeNull();
 		expect(review({ file_path: 'tests/entrypoints.spec.mts' })).toBeNull();
 	});

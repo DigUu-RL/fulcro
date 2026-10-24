@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { matchedBy, matches } from '../../tools/claude/glob.mjs';
+import { matchedBy, matches } from '../../tools/claude/glob.mts';
 
 /**
  * The matcher the rule fixtures are decided with.
@@ -46,7 +46,7 @@ describe('a wildcard across segments', () => {
 
 	it('takes everything below it when it ends the glob', () => {
 		expect(matches('tests/**', 'tests/hooks/hook.spec.mts')).toBe(true);
-		expect(matches('tests/**', 'tools/claude/tree.mjs')).toBe(false);
+		expect(matches('tests/**', 'tools/claude/tree.mts')).toBe(false);
 	});
 });
 

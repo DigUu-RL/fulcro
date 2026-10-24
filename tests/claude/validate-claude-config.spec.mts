@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { validateConfig } from '../../tools/claude/validate-claude-config.mjs';
+import { validateConfig } from '../../tools/claude/validate-claude-config.mts';
 
 import { discardTrees, type Tree, tree } from './fixture.mjs';
 
@@ -87,7 +87,7 @@ const hook = (
 	const { tested = true, guard = true } = options;
 
 	fixture.write(
-		`.claude/hooks/${name}.mjs`,
+		`.claude/hooks/${name}.mts`,
 		guard ? 'export const review = () => null;\n' : 'export const runs = () => true;\n',
 	);
 
@@ -105,7 +105,7 @@ describe('the settings', () => {
 		fixture.write(
 			'.claude/settings.json',
 			settings(
-				['.claude/hooks/protect-publish.mjs'],
+				['.claude/hooks/protect-publish.mts'],
 				['Bash(git push:*)', 'PowerShell(git push:*)'],
 			),
 		);
@@ -117,7 +117,7 @@ describe('the settings', () => {
 	it('reports a hook wired to a file that is not there', () => {
 		const fixture = configured();
 
-		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mjs']));
+		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mts']));
 
 		expect(rules(fixture.root)).toEqual(['hook-missing']);
 	});
@@ -127,7 +127,7 @@ describe('the settings', () => {
 
 		hook(fixture, 'protect-publish');
 		hook(fixture, 'block-destructive');
-		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mjs']));
+		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mts']));
 
 		expect(rules(fixture.root)).toEqual(['hook-unwired']);
 	});
@@ -136,7 +136,7 @@ describe('the settings', () => {
 		const fixture = configured();
 
 		hook(fixture, 'protect-publish', { tested: false });
-		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mjs']));
+		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mts']));
 
 		expect(rules(fixture.root)).toEqual(['hook-untested']);
 	});
@@ -146,7 +146,7 @@ describe('the settings', () => {
 
 		hook(fixture, 'protect-publish');
 		hook(fixture, 'helpers', { guard: false, tested: false });
-		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mjs']));
+		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mts']));
 
 		expect(rules(fixture.root, 'warning')).toEqual(['hook-unused']);
 	});
@@ -171,7 +171,7 @@ describe('the permission list beside the hooks', () => {
 
 		fixture.write(
 			'.claude/settings.json',
-			settings(['.claude/hooks/protect-publish.mjs'], ['Write(dist/**)']),
+			settings(['.claude/hooks/protect-publish.mts'], ['Write(dist/**)']),
 		);
 
 		expect(rules(fixture.root)).toEqual(['permission-unmatched']);
@@ -184,7 +184,7 @@ describe('the permission list beside the hooks', () => {
 
 		fixture.write(
 			'.claude/settings.json',
-			settings(['.claude/hooks/protect-publish.mjs'], ['git push']),
+			settings(['.claude/hooks/protect-publish.mts'], ['git push']),
 		);
 
 		expect(rules(fixture.root)).toEqual(['permission-shape']);
@@ -197,7 +197,7 @@ describe('the permission list beside the hooks', () => {
 
 		fixture.write(
 			'.claude/settings.json',
-			settings(['.claude/hooks/protect-publish.mjs'], ['Bash(npm publish:*)']),
+			settings(['.claude/hooks/protect-publish.mts'], ['Bash(npm publish:*)']),
 		);
 
 		expect(rules(fixture.root, 'warning')).toEqual(['permission-asymmetric']);
@@ -209,7 +209,7 @@ describe('the rules', () => {
 		const fixture = configured();
 
 		hook(fixture, 'protect-publish');
-		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mjs']));
+		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mts']));
 		fixture.write('.claude/rules/build-output.md', '# Build output\n\n**Scope:** `packages/*`\n');
 
 		expect(rules(fixture.root)).toEqual(['rule-unlisted']);
@@ -219,7 +219,7 @@ describe('the rules', () => {
 		const fixture = configured();
 
 		hook(fixture, 'protect-publish');
-		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mjs']));
+		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mts']));
 		fixture.write('.claude/rules/README.md', '# Rules\n\n- `build-output.md`\n');
 		fixture.write('.claude/rules/build-output.md', '# Build output\n\nSomewhere.\n');
 
@@ -230,7 +230,7 @@ describe('the rules', () => {
 		const fixture = tree();
 
 		hook(fixture, 'protect-publish');
-		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mjs']));
+		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mts']));
 
 		expect(rules(fixture.root)).toContain('contract-missing');
 	});
@@ -241,7 +241,7 @@ describe('what the contract and the rules name', () => {
 		const fixture = configured();
 
 		hook(fixture, 'protect-publish');
-		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mjs']));
+		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mts']));
 		fixture.write('.claude/CLAUDE.md', '# Contract\n\nThe standard is `docs/testing.md`.\n');
 
 		expect(rules(fixture.root)).toEqual(['reference-missing']);
@@ -251,7 +251,7 @@ describe('what the contract and the rules name', () => {
 		const fixture = configured();
 
 		hook(fixture, 'protect-publish');
-		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mjs']));
+		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mts']));
 		fixture.write('.gitignore', '.notes/*\n');
 		fixture.write('.claude/CLAUDE.md', '# Contract\n\nThe plan is `.notes/PLAN.md`.\n');
 
@@ -277,7 +277,7 @@ const ruled = (rules: string[] = []): Tree => {
 	const fixture = configured();
 
 	hook(fixture, 'protect-publish');
-	fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mjs']));
+	fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mts']));
 
 	fixture.write(
 		'.claude/rules/README.md',

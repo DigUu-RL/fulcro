@@ -13,19 +13,19 @@
 
 import { pathToFileURL } from 'node:url';
 
-import { commandsOf, invocationOf, runs } from './command-line.mjs';
-import { exceptions, guard } from './hook.mjs';
+import { commandsOf, invocationOf, runs } from './command-line.mts';
+import { exceptions, guard } from './hook.mts';
 
 /**
  * How a refusal reads to the model that tripped it.
  *
- * @param {string} operation What was attempted.
- * @param {string} instead What to do about it.
- * @returns {string} The message handed back.
+ * @param operation What was attempted.
+ * @param instead What to do about it.
+ * @returns The message handed back.
  */
-const refusal = (operation, instead) => {
+const refusal = (operation: string, instead: string): string => {
 	return [
-		`Blocked by .claude/hooks/protect-publish.mjs: ${operation}.`,
+		`Blocked by .claude/hooks/protect-publish.mts: ${operation}.`,
 		instead,
 		'See .claude/rules/protected-operations.md. Do not look for another way to run it.',
 	].join(' ');
@@ -77,10 +77,10 @@ const RULES = [
 /**
  * Reviews one command line.
  *
- * @param {{ command?: unknown }} input The `tool_input` of the hook event.
- * @returns {string | null} The reason the call is refused, or `null`.
+ * @param input The `tool_input` of the hook event.
+ * @returns The reason the call is refused, or `null`.
  */
-export const review = (input) => {
+export const review = (input: { readonly command?: unknown }): string | null => {
 	if (typeof input.command !== 'string') return null;
 
 	const allowed = exceptions();
