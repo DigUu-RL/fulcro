@@ -32,24 +32,28 @@ beforeEach(() => {
  * @param size Amount of elements the source yields.
  * @returns The instrumented source.
  */
-const instrumentedSource = (size: number): AsyncIterable<number> => ({
-	async *[Symbol.asyncIterator](): AsyncIterator<number> {
-		for (let index = 0; index < size; index++) {
-			pulled++;
-			yield index;
-		}
-	},
-});
+const instrumentedSource = (size: number): AsyncIterable<number> => {
+	return {
+		async *[Symbol.asyncIterator](): AsyncIterator<number> {
+			for (let index = 0; index < size; index++) {
+				pulled++;
+				yield index;
+			}
+		},
+	};
+};
 
 /** A source that never ends, for proving an operator stops pulling. */
-const endless = (): AsyncIterable<number> => ({
-	async *[Symbol.asyncIterator](): AsyncIterator<number> {
-		for (let index = 0; ; index++) {
-			pulled++;
-			yield index;
-		}
-	},
-});
+const endless = (): AsyncIterable<number> => {
+	return {
+		async *[Symbol.asyncIterator](): AsyncIterator<number> {
+			for (let index = 0; ; index++) {
+				pulled++;
+				yield index;
+			}
+		},
+	};
+};
 
 /**
  * Waits a real interval.
@@ -59,8 +63,9 @@ const endless = (): AsyncIterable<number> => ({
  * @param milliseconds How long to wait.
  * @returns A promise settling after that long.
  */
-const delay = (milliseconds: number): Promise<void> =>
-	new Promise((resolve) => setTimeout(resolve, milliseconds));
+const delay = (milliseconds: number): Promise<void> => {
+	return new Promise((resolve) => setTimeout(resolve, milliseconds));
+};
 
 describe('laziness', () => {
 	it('should pull nothing while a chain is only described', async () => {
@@ -245,20 +250,22 @@ describe('realistic records at volume', () => {
 	 * @param size Amount of readings to produce.
 	 * @returns The source.
 	 */
-	const readings = (size: number): AsyncIterable<Reading> => ({
-		async *[Symbol.asyncIterator](): AsyncIterator<Reading> {
-			for (let index = 0; index < size; index++) {
-				pulled++;
+	const readings = (size: number): AsyncIterable<Reading> => {
+		return {
+			async *[Symbol.asyncIterator](): AsyncIterator<Reading> {
+				for (let index = 0; index < size; index++) {
+					pulled++;
 
-				yield {
-					sensorId: `sensor-${index % 500}`,
-					takenAt: new Date(2024, 0, 1 + (index % 365)),
-					celsius: (index % 60) - 10,
-					tags: [`floor-${index % 12}`, index % 2 === 0 ? 'indoor' : 'outdoor'],
-				};
-			}
-		},
-	});
+					yield {
+						sensorId: `sensor-${index % 500}`,
+						takenAt: new Date(2024, 0, 1 + (index % 365)),
+						celsius: (index % 60) - 10,
+						tags: [`floor-${index % 12}`, index % 2 === 0 ? 'indoor' : 'outdoor'],
+					};
+				}
+			},
+		};
+	};
 
 	it('should stream fifty thousand records without collecting them', async () => {
 		const started: number = performance.now();
@@ -279,10 +286,12 @@ describe('realistic records at volume', () => {
 		let batches = 0;
 
 		await AsyncSequenceCollection.from(readings(50_000))
-			.select((reading) => ({
-				...reading,
-				fahrenheit: reading.celsius * 1.8 + 32,
-			}))
+			.select((reading) => {
+				return {
+					...reading,
+					fahrenheit: reading.celsius * 1.8 + 32,
+				};
+			})
 			.chunk(500)
 			.forEach((batch) => {
 				if (batches === 0) pulledAtFirstBatch = pulled;

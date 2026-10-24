@@ -221,8 +221,9 @@ const packageNameIn = (directory: string): string | null => {
  * @returns The package name, or `null` when no `package.json` above the file
  * names one.
  */
-export const packageNameOf = (fileName: string): string | null =>
-	packageNameIn(path.dirname(path.resolve(fileName)));
+export const packageNameOf = (fileName: string): string | null => {
+	return packageNameIn(path.dirname(path.resolve(fileName)));
+};
 
 /**
  * Tells whether a call resolves to the function a rewriter owns.
@@ -286,6 +287,9 @@ export const isOwnedCall = (
  * @param type Type being inspected.
  * @returns `true` when the type is a tuple.
  */
-export const isTupleType = (type: typescript.ObjectType): boolean =>
-	(type.objectFlags & typescript.ObjectFlags.Reference) !== 0 &&
-	((type as typescript.TypeReference).target.objectFlags & typescript.ObjectFlags.Tuple) !== 0;
+export const isTupleType = (type: typescript.ObjectType): boolean => {
+	return (
+		(type.objectFlags & typescript.ObjectFlags.Reference) !== 0 &&
+		((type as typescript.TypeReference).target.objectFlags & typescript.ObjectFlags.Tuple) !== 0
+	);
+};

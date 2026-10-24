@@ -20,19 +20,24 @@ import { coded } from './coded';
  */
 
 /** The error a spent owner throws, for an operation. */
-const spent = (operation: string): Error =>
-	coded(new Error(`FULCRO7023: ${operation}: the owner was moved; use the owner move returned.`), {
-		operation,
-	});
+const spent = (operation: string): Error => {
+	return coded(
+		new Error(`FULCRO7023: ${operation}: the owner was moved; use the owner move returned.`),
+		{
+			operation,
+		},
+	);
+};
 
 /** The error an ended borrow throws, for an operation. */
-const ended = (operation: string): Error =>
-	coded(
+const ended = (operation: string): Error => {
+	return coded(
 		new Error(
 			`FULCRO7024: ${operation}: the borrow has ended — its owner was moved or disposed, or borrowed again in a way it cannot share; borrow again.`,
 		),
 		{ operation },
 	);
+};
 
 describe('move, unchecked', () => {
 	it('should refuse everything asked of the owner it spent', () => {

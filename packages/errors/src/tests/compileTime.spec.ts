@@ -63,11 +63,13 @@ const errorsFrom = (packageName: string): string => {
  * @param report What the compiler printed.
  * @returns The one-based line numbers, in order, without repeats.
  */
-const reportedLines = (report: string): number[] => [
-	...new Set(
-		[...report.matchAll(/rejected\.fixture\.ts[:(](\d+)/g)].map((match) => Number(match[1])),
-	),
-];
+const reportedLines = (report: string): number[] => {
+	return [
+		...new Set(
+			[...report.matchAll(/rejected\.fixture\.ts[:(](\d+)/g)].map((match) => Number(match[1])),
+		),
+	];
+};
 
 describe.each(COMPILERS)('createError at compile time, on %s', (_label, name) => {
 	const report: string = errorsFrom(name);

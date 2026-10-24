@@ -286,9 +286,13 @@ export const missingReferences = (prose, directory, root, where) => {
 
 	return unresolved
 		.filter((reference) => !ignored.has(reference))
-		.map((reference) =>
-			error('reference-missing', where, `Names \`${reference}\`, which is not in the repository.`),
-		);
+		.map((reference) => {
+			return error(
+				'reference-missing',
+				where,
+				`Names \`${reference}\`, which is not in the repository.`,
+			);
+		});
 };
 
 /**

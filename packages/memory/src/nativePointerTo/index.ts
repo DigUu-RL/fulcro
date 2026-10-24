@@ -38,11 +38,14 @@ interface Region {
  * @param value Value to inspect.
  * @returns `true` when it has `bytes` and `isLive`.
  */
-const isAllocation = (value: unknown): value is Allocation =>
-	typeof value === 'object' &&
-	value !== null &&
-	(value as Partial<Allocation>).bytes instanceof DataView &&
-	typeof (value as Partial<Allocation>).isLive === 'function';
+const isAllocation = (value: unknown): value is Allocation => {
+	return (
+		typeof value === 'object' &&
+		value !== null &&
+		(value as Partial<Allocation>).bytes instanceof DataView &&
+		typeof (value as Partial<Allocation>).isLive === 'function'
+	);
+};
 
 /**
  * Refuses an element type a pointer cannot read and write at an address.

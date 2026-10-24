@@ -38,15 +38,17 @@ let orders: readonly Order[] = [];
 beforeAll(() => {
 	// Built once. A dataset rebuilt per test would make every count below a
 	// measurement of the builder.
-	orders = Array.from({ length: SIZE }, (_, index) => ({
-		id: index,
-		region: ['north', 'south', 'east', 'west'][index % 4] as string,
-		total: (index * 7919) % 50_000,
-		items: [
-			{ sku: `sku-${index % 97}`, quantity: (index % 5) + 1 },
-			{ sku: `sku-${index % 89}`, quantity: (index % 3) + 1 },
-		],
-	}));
+	orders = Array.from({ length: SIZE }, (_, index) => {
+		return {
+			id: index,
+			region: ['north', 'south', 'east', 'west'][index % 4] as string,
+			total: (index * 7919) % 50_000,
+			items: [
+				{ sku: `sku-${index % 97}`, quantity: (index % 5) + 1 },
+				{ sku: `sku-${index % 89}`, quantity: (index % 3) + 1 },
+			],
+		};
+	});
 });
 
 /**
@@ -72,11 +74,13 @@ const counted = <T>(values: readonly T[]): { source: AsyncIterable<T>; pulled: (
 };
 
 /** A source that never ends, for proving an operator yields before it. */
-const endless = (): AsyncIterable<number> => ({
-	async *[Symbol.asyncIterator](): AsyncIterator<number> {
-		for (let value = 0; ; value++) yield value;
-	},
-});
+const endless = (): AsyncIterable<number> => {
+	return {
+		async *[Symbol.asyncIterator](): AsyncIterator<number> {
+			for (let value = 0; ; value++) yield value;
+		},
+	};
+};
 
 describe('the terminals read the source once', () => {
 	it.each([
@@ -149,8 +153,9 @@ describe('the windows hold a window, not the stream', () => {
 		['skipLast', (sequence: AsyncSequenceOfNumbers) => sequence.skipLast(3)],
 		[
 			'groupAdjacent',
-			(sequence: AsyncSequenceOfNumbers) =>
-				sequence.groupAdjacent((value) => Math.floor(value / 2)),
+			(sequence: AsyncSequenceOfNumbers) => {
+				return sequence.groupAdjacent((value) => Math.floor(value / 2));
+			},
 		],
 	])('should let %s yield before the source ends', async (_label, build) => {
 		// The property that matters, and the one an implementation collecting the
@@ -196,9 +201,11 @@ describe('the second side is read once', () => {
 	it('should index the inner side of a join a single time', async () => {
 		let innerReads = 0;
 
-		const regions = ['north', 'south', 'east', 'west'].map((name) => ({
-			name,
-		}));
+		const regions = ['north', 'south', 'east', 'west'].map((name) => {
+			return {
+				name,
+			};
+		});
 
 		const inner: Iterable<{ name: string }> = {
 			*[Symbol.iterator](): Iterator<{ name: string }> {
@@ -257,9 +264,11 @@ describe('smoke ceilings', () => {
 	});
 
 	it('should group and join fifty thousand records within a generous ceiling', async () => {
-		const regions = ['north', 'south', 'east', 'west'].map((name) => ({
-			name,
-		}));
+		const regions = ['north', 'south', 'east', 'west'].map((name) => {
+			return {
+				name,
+			};
+		});
 
 		const started: number = performance.now();
 

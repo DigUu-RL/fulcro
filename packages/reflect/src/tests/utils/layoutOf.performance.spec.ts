@@ -63,16 +63,16 @@ describe('what the transformer leaves behind', () => {
 	});
 
 	it('should cost what the same literal written by hand costs', () => {
-		const baseline: number = timed(() =>
-			Object.freeze({
+		const baseline: number = timed(() => {
+			return Object.freeze({
 				size: 16,
 				alignment: 8,
 				fields: Object.freeze({
 					flag: Object.freeze({ offset: 8, size: 1, alignment: 1 }),
 					weight: Object.freeze({ offset: 0, size: 8, alignment: 8 }),
 				}),
-			}),
-		);
+			});
+		});
 
 		const resolved: number = timed(() => layoutOf<Pair>());
 

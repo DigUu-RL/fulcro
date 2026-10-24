@@ -52,26 +52,28 @@ afterAll(() => {
  * @param seen Receives the text of each file the analyzer was given.
  * @returns The analyzer.
  */
-const flagging = (seen: string[]): FileAnalyzer => ({
-	functionNames: ['flag'],
-	analyze: (sourceFile, context): void => {
-		seen.push(sourceFile.getText());
+const flagging = (seen: string[]): FileAnalyzer => {
+	return {
+		functionNames: ['flag'],
+		analyze: (sourceFile, context): void => {
+			seen.push(sourceFile.getText());
 
-		const visit = (node: typescript.Node): void => {
-			if (
-				typescript.isCallExpression(node) &&
-				typescript.isIdentifier(node.expression) &&
-				node.expression.text === 'flag'
-			) {
-				context.report(node, 'FULCRO5999: flag is refused here.');
-			}
+			const visit = (node: typescript.Node): void => {
+				if (
+					typescript.isCallExpression(node) &&
+					typescript.isIdentifier(node.expression) &&
+					node.expression.text === 'flag'
+				) {
+					context.report(node, 'FULCRO5999: flag is refused here.');
+				}
 
-			typescript.forEachChild(node, visit);
-		};
+				typescript.forEachChild(node, visit);
+			};
 
-		visit(sourceFile);
-	},
-});
+			visit(sourceFile);
+		},
+	};
+};
 
 /**
  * Turns every call to `rename` into a call to `renamed`, visiting its
@@ -80,13 +82,14 @@ const flagging = (seen: string[]): FileAnalyzer => ({
 const renaming: CallRewriter = {
 	functionName: 'rename',
 	moduleSegment: 'fixture',
-	rewrite: (call, context) =>
-		context.factory.updateCallExpression(
+	rewrite: (call, context) => {
+		return context.factory.updateCallExpression(
 			call,
 			context.factory.createIdentifier('renamed'),
 			undefined,
 			call.arguments.map((argument) => context.visit(argument) as typescript.Expression),
-		),
+		);
+	},
 };
 
 /**
@@ -133,14 +136,16 @@ describe('createTransformer with analyzers', () => {
 		run([flagging([])], (diagnostic) => diagnostics.push(diagnostic));
 
 		expect(
-			diagnostics.map((diagnostic) => ({
-				code: diagnostic.code,
-				text: fixture.text.slice(
-					diagnostic.start,
-					(diagnostic.start ?? 0) + (diagnostic.length ?? 0),
-				),
-				source: diagnostic.source,
-			})),
+			diagnostics.map((diagnostic) => {
+				return {
+					code: diagnostic.code,
+					text: fixture.text.slice(
+						diagnostic.start,
+						(diagnostic.start ?? 0) + (diagnostic.length ?? 0),
+					),
+					source: diagnostic.source,
+				};
+			}),
 		).toEqual([
 			{ code: 5999, text: 'flag(1)', source: 'fulcro' },
 			{ code: 5999, text: 'flag(2)', source: 'fulcro' },

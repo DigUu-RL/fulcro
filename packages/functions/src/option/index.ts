@@ -187,5 +187,6 @@ export const none = <T = never>(): None<T> => ABSENT;
  * @param value The value, or `null` or `undefined`.
  * @returns `none()` for a nullish value, a `Some` carrying it otherwise.
  */
-export const optionOf = <T>(value: T): Option<NonNullable<T>> =>
-	value === null || value === undefined ? none() : some(value);
+export const optionOf = <T>(value: T): Option<NonNullable<T>> => {
+	return value === null || value === undefined ? none() : some(value);
+};

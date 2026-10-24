@@ -303,14 +303,13 @@ describe('the first failure', () => {
 
 		scope.spawn(() => Promise.reject(first));
 
-		scope.spawn(
-			(token) =>
-				new Promise((_resolve, reject) => {
-					token.onCancelled(() => {
-						reject(new Error('answering the cancel'));
-					});
-				}),
-		);
+		scope.spawn((token) => {
+			return new Promise((_resolve, reject) => {
+				token.onCancelled(() => {
+					reject(new Error('answering the cancel'));
+				});
+			});
+		});
 
 		expect(await rejectionOf(scope.join())).toBe(first);
 	});

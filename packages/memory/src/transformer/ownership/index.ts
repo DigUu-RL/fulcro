@@ -84,13 +84,14 @@ interface Facts {
  * @param node The expression.
  * @returns What it wraps, all the way down.
  */
-const unwrap = (node: typescript.Expression): typescript.Expression =>
-	typescript.isParenthesizedExpression(node) ||
-	typescript.isAsExpression(node) ||
-	typescript.isSatisfiesExpression(node) ||
-	typescript.isNonNullExpression(node)
+const unwrap = (node: typescript.Expression): typescript.Expression => {
+	return typescript.isParenthesizedExpression(node) ||
+		typescript.isAsExpression(node) ||
+		typescript.isSatisfiesExpression(node) ||
+		typescript.isNonNullExpression(node)
 		? unwrap(node.expression)
 		: node;
+};
 
 /**
  * Builds the rules for one file.
@@ -136,10 +137,11 @@ const createRules = (
 	 * @param identifier The identifier.
 	 * @returns Its symbol, if it has one.
 	 */
-	const symbolOf = (identifier: typescript.Identifier): typescript.Symbol | undefined =>
-		typescript.isShorthandPropertyAssignment(identifier.parent)
+	const symbolOf = (identifier: typescript.Identifier): typescript.Symbol | undefined => {
+		return typescript.isShorthandPropertyAssignment(identifier.parent)
 			? checker.getShorthandAssignmentValueSymbol(identifier.parent)
 			: checker.getSymbolAtLocation(identifier);
+	};
 
 	/**
 	 * The variable a call's first argument names, if it names one.
@@ -164,8 +166,9 @@ const createRules = (
 		return symbol === undefined ? null : { name: argument.text, symbol };
 	};
 
-	const lineOf = (node: typescript.Node): number =>
-		sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
+	const lineOf = (node: typescript.Node): number => {
+		return sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
+	};
 
 	/**
 	 * Reports once per place and error, though a loop walks it twice.
@@ -332,10 +335,12 @@ const createRules = (
 
 	return {
 		initial: (): Facts => ({ moved: new Map(), loans: new Map() }),
-		copy: (facts: Facts): Facts => ({
-			moved: new Map(facts.moved),
-			loans: new Map(facts.loans),
-		}),
+		copy: (facts: Facts): Facts => {
+			return {
+				moved: new Map(facts.moved),
+				loans: new Map(facts.loans),
+			};
+		},
 		join: (first: Facts, second: Facts): Facts => {
 			const loans = new Map<typescript.Symbol, Loan>(first.loans);
 
@@ -355,20 +360,23 @@ const createRules = (
 				loans,
 			};
 		},
-		same: (first: Facts, second: Facts): boolean =>
-			first.moved.size === second.moved.size &&
-			first.loans.size === second.loans.size &&
-			[...first.moved.keys()].every((symbol) => second.moved.has(symbol)) &&
-			[...first.loans].every(([symbol, loan]) => {
-				const other: Loan | undefined = second.loans.get(symbol);
+		same: (first: Facts, second: Facts): boolean => {
+			return (
+				first.moved.size === second.moved.size &&
+				first.loans.size === second.loans.size &&
+				[...first.moved.keys()].every((symbol) => second.moved.has(symbol)) &&
+				[...first.loans].every(([symbol, loan]) => {
+					const other: Loan | undefined = second.loans.get(symbol);
 
-				return (
-					other !== undefined &&
-					other.owner === loan.owner &&
-					other.kind === loan.kind &&
-					other.ended?.by === loan.ended?.by
-				);
-			}),
+					return (
+						other !== undefined &&
+						other.owner === loan.owner &&
+						other.kind === loan.kind &&
+						other.ended?.by === loan.ended?.by
+					);
+				})
+			);
+		},
 		read,
 		call,
 		bind,

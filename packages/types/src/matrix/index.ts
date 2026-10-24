@@ -244,13 +244,14 @@ export interface MatrixType<
  * @param columns Number of columns.
  * @returns The value.
  */
-export const createValue = <T>(elements: T[], rows: number, columns: number): readonly T[] =>
-	Object.freeze(
+export const createValue = <T>(elements: T[], rows: number, columns: number): readonly T[] => {
+	return Object.freeze(
 		Object.defineProperties(elements, {
 			rows: { value: rows, enumerable: false },
 			columns: { value: columns, enumerable: false },
 		}),
 	);
+};
 
 /**
  * The shape of an operand, as it carries it.
@@ -313,8 +314,9 @@ const requireDimension = (
  * @param columns Number of columns.
  * @returns `Matrix<…>`, or `Vector<…>` with one row or one column.
  */
-const describeShape = (element: string, rows: number, columns: number): string =>
-	describeType(rows === 1 || columns === 1 ? 'Vector' : 'Matrix', element, rows, columns);
+const describeShape = (element: string, rows: number, columns: number): string => {
+	return describeType(rows === 1 || columns === 1 ? 'Vector' : 'Matrix', element, rows, columns);
+};
 
 /**
  * Builds what a matrix and a vector of one shape share, and the registration
@@ -620,8 +622,8 @@ export const Matrix = <TElement extends ElementDescriptor, R extends number, C e
 	const descriptor: MatrixType<T, R, C, SourceOf<TElement>> = {
 		...operations,
 
-		from: (source) =>
-			createValue(
+		from: (source) => {
+			return createValue(
 				convertElements(
 					`${name}.from`,
 					elementType,
@@ -632,7 +634,8 @@ export const Matrix = <TElement extends ElementDescriptor, R extends number, C e
 				),
 				rows,
 				columns,
-			) as Matrix<T, R, C>,
+			) as Matrix<T, R, C>;
+		},
 
 		identity: () => {
 			if ((rows as number) !== columns) {

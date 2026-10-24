@@ -180,9 +180,11 @@ export const readLayout = (
 	return {
 		size,
 		alignment,
-		fields: declared.map((field) => ({
-			...field,
-			offset: offsets.get(field.name) as number,
-		})),
+		fields: declared.map((field) => {
+			return {
+				...field,
+				offset: offsets.get(field.name) as number,
+			};
+		}),
 	};
 };

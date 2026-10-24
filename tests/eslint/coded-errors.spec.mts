@@ -26,8 +26,8 @@ const linter = new Linter({ configType: 'flat' });
  * @param filename Where it lives, relative to the repository.
  * @returns The message ids the rule reported, in order.
  */
-const reported = (code: string, filename: string): string[] =>
-	linter
+const reported = (code: string, filename: string): string[] => {
+	return linter
 		.verify(
 			code,
 			[
@@ -41,6 +41,7 @@ const reported = (code: string, filename: string): string[] =>
 			{ filename },
 		)
 		.map((message) => message.messageId ?? message.message);
+};
 
 /** A file inside `@fulcro/types`, whose range is 6. */
 const TYPES_FILE = 'packages/types/src/decimal/index.ts';

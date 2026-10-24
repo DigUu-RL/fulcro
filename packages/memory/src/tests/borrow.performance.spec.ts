@@ -80,14 +80,16 @@ describe('borrow, counted', () => {
 		let livenessChecks = 0;
 
 		const allocator: Allocator = {
-			allocate: (size: number): Allocation => ({
-				bytes: new DataView(new ArrayBuffer(size)),
-				isLive: (): boolean => {
-					livenessChecks++;
+			allocate: (size: number): Allocation => {
+				return {
+					bytes: new DataView(new ArrayBuffer(size)),
+					isLive: (): boolean => {
+						livenessChecks++;
 
-					return true;
-				},
-			}),
+						return true;
+					},
+				};
+			},
 		};
 
 		const values: Borrowed<Struct<typeof Sample>> = borrow(

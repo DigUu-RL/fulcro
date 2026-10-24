@@ -35,10 +35,12 @@ const decode = (bits: number): number => {
 const POSITIVE_FINITE: readonly {
 	readonly bits: number;
 	readonly value: number;
-}[] = Array.from({ length: 0x7c00 }, (_, bits) => ({
-	bits,
-	value: decode(bits),
-}));
+}[] = Array.from({ length: 0x7c00 }, (_, bits) => {
+	return {
+		bits,
+		value: decode(bits),
+	};
+});
 
 describe('HalfPrecisionFloat', () => {
 	it('should convert every one of the 65,536 patterns to itself', () => {

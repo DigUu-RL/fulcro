@@ -16,10 +16,11 @@ import { failure, type Result, success } from '@/src/result';
 const RESULTS = 10_000;
 
 /** Results alternating between the two variants. */
-const mixed = (): Result<number, string>[] =>
-	[...Array(RESULTS).keys()].map((index) =>
-		index % 2 === 0 ? success(index) : failure(`failed ${index}`),
-	);
+const mixed = (): Result<number, string>[] => {
+	return [...Array(RESULTS).keys()].map((index) => {
+		return index % 2 === 0 ? success(index) : failure(`failed ${index}`);
+	});
+};
 
 describe('Result', () => {
 	it('should share one prototype per variant, however many results exist', () => {

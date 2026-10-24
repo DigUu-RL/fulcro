@@ -17,12 +17,13 @@ enum Level {
 
 describe('switchFor, exhaustive form', () => {
 	it('should dispatch on each member of a numeric enum', () => {
-		const label = (status: Status): string =>
-			switchFor(status, {
+		const label = (status: Status): string => {
+			return switchFor(status, {
 				[Status.Draft]: () => 'draft',
 				[Status.Published]: () => 'published',
 				[Status.Archived]: () => 'archived',
 			});
+		};
 
 		expect(label(Status.Draft)).toBe('draft');
 		expect(label(Status.Published)).toBe('published');
@@ -42,22 +43,24 @@ describe('switchFor, exhaustive form', () => {
 	});
 
 	it('should dispatch on a string enum by value rather than by name', () => {
-		const level = (value: Level): number =>
-			switchFor(value, {
+		const level = (value: Level): number => {
+			return switchFor(value, {
 				[Level.Low]: () => 1,
 				[Level.High]: () => 2,
 			});
+		};
 
 		expect(level(Level.Low)).toBe(1);
 		expect(level(Level.High)).toBe(2);
 	});
 
 	it('should dispatch on a union of string literals', () => {
-		const theme = (value: 'dark' | 'light'): string =>
-			switchFor(value, {
+		const theme = (value: 'dark' | 'light'): string => {
+			return switchFor(value, {
 				dark: () => 'moon',
 				light: () => 'sun',
 			});
+		};
 
 		expect(theme('dark')).toBe('moon');
 		expect(theme('light')).toBe('sun');

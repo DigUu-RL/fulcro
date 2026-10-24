@@ -123,8 +123,9 @@ export const createStackAllocator = (capacity: number): StackAllocator => {
 	};
 
 	return Object.freeze({
-		allocate: (size: number, alignment: number): Allocation =>
-			allocateIn('StackAllocator.allocate', frames[0] as Frame, size, alignment),
+		allocate: (size: number, alignment: number): Allocation => {
+			return allocateIn('StackAllocator.allocate', frames[0] as Frame, size, alignment);
+		},
 
 		enter: (): AllocationDomain => {
 			const frame: Frame = {
@@ -136,8 +137,9 @@ export const createStackAllocator = (capacity: number): StackAllocator => {
 			frames.push(frame);
 
 			return Object.freeze({
-				allocate: (size: number, alignment: number): Allocation =>
-					allocateIn('StackAllocator.enter().allocate', frame, size, alignment),
+				allocate: (size: number, alignment: number): Allocation => {
+					return allocateIn('StackAllocator.enter().allocate', frame, size, alignment);
+				},
 
 				// Leaving twice is leaving once, as for any disposable: the second
 				// call finds nothing left to release.

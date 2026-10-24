@@ -9,8 +9,9 @@ import type { RangeCatalog } from '@/src/definition';
 export const functionsCatalog = {
 	FULCRO2001: {
 		kind: Error,
-		message: ({ thrown }: { operation: string; thrown: null | undefined }) =>
-			`Operation rejected with ${String(thrown)}`,
+		message: ({ thrown }: { operation: string; thrown: null | undefined }) => {
+			return `Operation rejected with ${String(thrown)}`;
+		},
 		cause: ({ thrown }: { operation: string; thrown: null | undefined }) => thrown,
 	},
 } as const satisfies RangeCatalog<'2'>;

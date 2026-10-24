@@ -26,13 +26,15 @@ interface Order {
 }
 
 /** A value satisfying every clause, for the cases below to spoil. */
-const valid = (): Record<string, unknown> => ({
-	id: 1,
-	tags: ['a'],
-	customer: { email: 'a@b.c' },
-	status: 'pending',
-	placedAt: new Date(),
-});
+const valid = (): Record<string, unknown> => {
+	return {
+		id: 1,
+		tags: ['a'],
+		customer: { email: 'a@b.c' },
+		status: 'pending',
+		placedAt: new Date(),
+	};
+};
 
 describe('what it accepts', () => {
 	it('should accept a value that satisfies every clause', () => {
@@ -94,10 +96,13 @@ describe('the escape hatch', () => {
 		expect(
 			is<{ id: number }>(payload, {
 				name: 'Identified',
-				matches: (value) =>
-					value !== null &&
-					typeof value === 'object' &&
-					typeof (value as { id: unknown }).id === 'number',
+				matches: (value) => {
+					return (
+						value !== null &&
+						typeof value === 'object' &&
+						typeof (value as { id: unknown }).id === 'number'
+					);
+				},
 			}),
 		).toBe(true);
 	});

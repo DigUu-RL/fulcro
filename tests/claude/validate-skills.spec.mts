@@ -21,10 +21,11 @@ afterEach(discardTrees);
  * @param level Which half of the report to read.
  * @returns The rule identifiers, in the order they were reported.
  */
-const rules = (root: string, level: 'error' | 'warning' = 'error'): string[] =>
-	validateSkills(root)
+const rules = (root: string, level: 'error' | 'warning' = 'error'): string[] => {
+	return validateSkills(root)
 		.filter((finding) => finding.level === level)
 		.map((finding) => finding.rule);
+};
 
 const WELL_FORMED = [
 	'name: exports-audit',
@@ -262,8 +263,9 @@ describe('path scoping', () => {
 });
 
 describe('the operations a human keeps', () => {
-	const body = (fence: string): string =>
-		[`\`\`\`${fence}`, 'npm run build', 'git push origin dev', '```'].join('\n');
+	const body = (fence: string): string => {
+		return [`\`\`\`${fence}`, 'npm run build', 'git push origin dev', '```'].join('\n');
+	};
 
 	it('refuses a model-invocable skill that runs one', () => {
 		const fixture = tree();
@@ -305,8 +307,9 @@ describe('size', () => {
 });
 
 describe('the eval suites', () => {
-	const suite = (cases: unknown[]): string =>
-		`${JSON.stringify({ skill: 'exports-audit', cases }, null, '\t')}\n`;
+	const suite = (cases: unknown[]): string => {
+		return `${JSON.stringify({ skill: 'exports-audit', cases }, null, '\t')}\n`;
+	};
 
 	const complete = [
 		{

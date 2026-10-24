@@ -52,8 +52,9 @@ const counting = (length: number): Storage<number> => {
  * @param view The view.
  * @returns Its values.
  */
-const valuesOf = <T>(view: ReadOnlyView<T>): T[] =>
-	Array.from({ length: view.length }, (_, index) => view.get(index));
+const valuesOf = <T>(view: ReadOnlyView<T>): T[] => {
+	return Array.from({ length: view.length }, (_, index) => view.get(index));
+};
 
 describe('asView over a storage', () => {
 	it('should observe the whole storage when given no bounds', () => {

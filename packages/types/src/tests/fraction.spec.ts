@@ -25,11 +25,12 @@ import { UnsignedInteger } from '@/src/unsignedInteger';
  * @param details The details the error is expected to carry.
  * @returns The same error, carrying that code and those details.
  */
-const coded = <T extends Error>(error: T, details: Readonly<Record<string, unknown>>): T =>
-	Object.assign(error, {
+const coded = <T extends Error>(error: T, details: Readonly<Record<string, unknown>>): T => {
+	return Object.assign(error, {
 		code: error.message.slice(0, 'FULCRO0000'.length),
 		details,
 	});
+};
 
 const Ratio = FractionOf(SignedInteger(32));
 
@@ -143,12 +144,12 @@ describe('Fraction', () => {
 		it("should throw the integer type's error when an intermediate leaves its range", () => {
 			const Small = FractionOf(SignedInteger(8));
 
-			expect(() =>
-				Small.add(
+			expect(() => {
+				return Small.add(
 					Small.from({ numerator: 1, denominator: 127 }),
 					Small.from({ numerator: 1, denominator: 126 }),
-				),
-			).toThrow(RangeError);
+				);
+			}).toThrow(RangeError);
 		});
 	});
 

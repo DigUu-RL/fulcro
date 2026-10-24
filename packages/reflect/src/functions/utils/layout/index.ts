@@ -82,8 +82,9 @@ export interface TypeLayout<T extends WithLayout> {
  * up to its type argument, which is what the error reports as its operation.
  * @returns The error.
  */
-export const unresolvedLayout = (call: string): Error =>
-	createError('FULCRO4009', {
+export const unresolvedLayout = (call: string): Error => {
+	return createError('FULCRO4009', {
 		operation: call.slice(0, call.indexOf('<')),
 		call,
 	});
+};

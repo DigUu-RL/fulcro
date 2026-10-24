@@ -446,5 +446,6 @@ export const agentDefinitionsOf = (root = repositoryRoot) => {
  * @param {string} [root] The repository root.
  * @returns {Set<string>} The agent names, without the `.md`.
  */
-export const agentsOf = (root = repositoryRoot) =>
-	new Set(agentDefinitionsOf(root).map((agent) => agent.file.replace(/\.md$/, '')));
+export const agentsOf = (root = repositoryRoot) => {
+	return new Set(agentDefinitionsOf(root).map((agent) => agent.file.replace(/\.md$/, '')));
+};

@@ -22,10 +22,11 @@ afterEach(discardTrees);
  * @param level Which half of the report to read.
  * @returns The rule identifiers, in the order they were reported.
  */
-const rules = (root: string, level: 'error' | 'warning' = 'error'): string[] =>
-	validateConfig(root)
+const rules = (root: string, level: 'error' | 'warning' = 'error'): string[] => {
+	return validateConfig(root)
 		.filter((finding) => finding.level === level)
 		.map((finding) => finding.rule);
+};
 
 /**
  * A settings document wiring the named hooks to `PreToolUse`.
@@ -34,18 +35,20 @@ const rules = (root: string, level: 'error' | 'warning' = 'error'): string[] =>
  * @param deny The permission entries.
  * @returns The file contents.
  */
-const settings = (scripts: string[], deny: string[] = []): string =>
-	`${JSON.stringify(
+const settings = (scripts: string[], deny: string[] = []): string => {
+	return `${JSON.stringify(
 		{
 			permissions: { deny },
 			hooks: {
 				PreToolUse: [
 					{
 						matcher: 'Bash|PowerShell',
-						hooks: scripts.map((script) => ({
-							type: 'command',
-							command: `node ${script}`,
-						})),
+						hooks: scripts.map((script) => {
+							return {
+								type: 'command',
+								command: `node ${script}`,
+							};
+						}),
 					},
 				],
 			},
@@ -53,6 +56,7 @@ const settings = (scripts: string[], deny: string[] = []): string =>
 		null,
 		'\t',
 	)}\n`;
+};
 
 /**
  * A repository with a contract, a rules index and nothing else to say.

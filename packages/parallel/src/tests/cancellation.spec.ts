@@ -127,11 +127,11 @@ describe('onCancelled', () => {
 		source.cancel();
 
 		try {
-			expect(() =>
-				source.token.onCancelled(() => {
+			expect(() => {
+				return source.token.onCancelled(() => {
 					throw error;
-				}),
-			).not.toThrow();
+				});
+			}).not.toThrow();
 		} finally {
 			spy.mockRestore();
 		}

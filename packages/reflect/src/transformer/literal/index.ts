@@ -22,12 +22,13 @@ import { IDENTIFIER_PATTERN } from '@fulcro/transform-core';
  * @param name Name of the member.
  * @returns The property name node.
  */
-const memberName = (factory: typescript.NodeFactory, name: string): typescript.PropertyName =>
-	name === '__proto__'
+const memberName = (factory: typescript.NodeFactory, name: string): typescript.PropertyName => {
+	return name === '__proto__'
 		? factory.createComputedPropertyName(factory.createStringLiteral(name))
 		: IDENTIFIER_PATTERN.test(name)
 			? factory.createIdentifier(name)
 			: factory.createStringLiteral(name);
+};
 
 /**
  * `Object.freeze(…)` around an expression.
@@ -39,12 +40,13 @@ const memberName = (factory: typescript.NodeFactory, name: string): typescript.P
 const freeze = (
 	factory: typescript.NodeFactory,
 	value: typescript.Expression,
-): typescript.Expression =>
-	factory.createCallExpression(
+): typescript.Expression => {
+	return factory.createCallExpression(
 		factory.createPropertyAccessExpression(factory.createIdentifier('Object'), 'freeze'),
 		undefined,
 		[value],
 	);
+};
 
 /**
  * `Object.freeze({ … })` over some members, in order.
@@ -56,15 +58,16 @@ const freeze = (
 export const frozenObject = (
 	factory: typescript.NodeFactory,
 	members: readonly (readonly [string, typescript.Expression])[],
-): typescript.Expression =>
-	freeze(
+): typescript.Expression => {
+	return freeze(
 		factory,
 		factory.createObjectLiteralExpression(
-			members.map(([name, value]) =>
-				factory.createPropertyAssignment(memberName(factory, name), value),
-			),
+			members.map(([name, value]) => {
+				return factory.createPropertyAssignment(memberName(factory, name), value);
+			}),
 		),
 	);
+};
 
 /**
  * A number, written so that it reads back as exactly the same number.
@@ -77,14 +80,15 @@ export const frozenObject = (
  * @returns The expression.
  */
 const numberLiteral = (factory: typescript.NodeFactory, value: number): typescript.Expression => {
-	const division = (numerator: number): typescript.Expression =>
-		factory.createParenthesizedExpression(
+	const division = (numerator: number): typescript.Expression => {
+		return factory.createParenthesizedExpression(
 			factory.createBinaryExpression(
 				factory.createNumericLiteral(numerator),
 				typescript.SyntaxKind.SlashToken,
 				factory.createNumericLiteral(0),
 			),
 		);
+	};
 
 	if (Number.isNaN(value)) return division(0);
 	if (value === Infinity) return division(1);

@@ -32,5 +32,6 @@ export const variantPrototype = <TMethods extends object>(methods: TMethods): TM
  * @param fields The value's own data.
  * @returns The value, frozen, inheriting the variant's methods.
  */
-export const createVariant = <TValue>(prototype: object, fields: object): TValue =>
-	Object.freeze(Object.assign(Object.create(prototype) as object, fields)) as TValue;
+export const createVariant = <TValue>(prototype: object, fields: object): TValue => {
+	return Object.freeze(Object.assign(Object.create(prototype) as object, fields)) as TValue;
+};

@@ -68,8 +68,9 @@ afterEach(async () => {
  * @param workers How many to run.
  * @returns The pool.
  */
-const drivenPool = <T, R>(fake: FakeWorkers, workers: number): WorkerPool<T, R> =>
-	createPool<T, R>({ module: NOWHERE, export: 'echo', workers }, fake.spawn, NOWHERE);
+const drivenPool = <T, R>(fake: FakeWorkers, workers: number): WorkerPool<T, R> => {
+	return createPool<T, R>({ module: NOWHERE, export: 'echo', workers }, fake.spawn, NOWHERE);
+};
 
 /** How a piece of work ended, read without waiting for it. */
 interface Outcome<V> {

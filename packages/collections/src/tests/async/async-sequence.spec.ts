@@ -231,8 +231,9 @@ describe('operators', () => {
 
 describe('terminals', () => {
 	it('should answer the scalar questions', async () => {
-		const of = (): ReturnType<typeof AsyncSequenceCollection.from<number>> =>
-			AsyncSequenceCollection.from([1, 2, 3]);
+		const of = (): ReturnType<typeof AsyncSequenceCollection.from<number>> => {
+			return AsyncSequenceCollection.from([1, 2, 3]);
+		};
 
 		expect(await of().count()).toBe(3);
 		expect(await of().any()).toBe(true);
@@ -244,8 +245,9 @@ describe('terminals', () => {
 	});
 
 	it('should report absence rather than throwing, where asked to', async () => {
-		const empty = (): ReturnType<typeof AsyncSequenceCollection.empty<number>> =>
-			AsyncSequenceCollection.empty<number>();
+		const empty = (): ReturnType<typeof AsyncSequenceCollection.empty<number>> => {
+			return AsyncSequenceCollection.empty<number>();
+		};
 
 		expect(await empty().firstOrNull()).toBeNull();
 		expect(await empty().lastOrNull()).toBeNull();

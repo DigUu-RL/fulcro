@@ -21,8 +21,8 @@ const always = (): boolean => true;
  *
  * @returns The allocator, frozen.
  */
-export const createManagedAllocator = (): Allocator =>
-	Object.freeze({
+export const createManagedAllocator = (): Allocator => {
+	return Object.freeze({
 		allocate: (size: number, alignment: number): Allocation => {
 			requireRequest('ManagedAllocator.allocate', size, alignment);
 
@@ -34,3 +34,4 @@ export const createManagedAllocator = (): Allocator =>
 			});
 		},
 	});
+};

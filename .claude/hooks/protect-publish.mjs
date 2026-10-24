@@ -23,12 +23,13 @@ import { exceptions, guard } from './hook.mjs';
  * @param {string} instead What to do about it.
  * @returns {string} The message handed back.
  */
-const refusal = (operation, instead) =>
-	[
+const refusal = (operation, instead) => {
+	return [
 		`Blocked by .claude/hooks/protect-publish.mjs: ${operation}.`,
 		instead,
 		'See .claude/rules/protected-operations.md. Do not look for another way to run it.',
 	].join(' ');
+};
 
 /**
  * The operations this hook refuses.
@@ -88,9 +89,9 @@ export const review = (input) => {
 	for (const rule of RULES) {
 		if (allowed.has(rule.id)) continue;
 
-		const tripped = invocations.some((invocation) =>
-			rule.patterns.some((pattern) => runs(invocation, pattern)),
-		);
+		const tripped = invocations.some((invocation) => {
+			return rule.patterns.some((pattern) => runs(invocation, pattern));
+		});
 
 		if (tripped) return rule.reason;
 	}

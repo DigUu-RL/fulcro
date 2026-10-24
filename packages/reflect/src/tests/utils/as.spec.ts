@@ -26,13 +26,15 @@ interface Order {
 }
 
 /** A value satisfying every clause, for the cases below to spoil. */
-const valid = (): Record<string, unknown> => ({
-	id: 1,
-	tags: ['a'],
-	customer: { email: 'a@b.c' },
-	status: 'pending',
-	placedAt: new Date(),
-});
+const valid = (): Record<string, unknown> => {
+	return {
+		id: 1,
+		tags: ['a'],
+		customer: { email: 'a@b.c' },
+		status: 'pending',
+		placedAt: new Date(),
+	};
+};
 
 describe('what it lets through', () => {
 	it('should hand back the value itself, not a copy', () => {
@@ -106,12 +108,12 @@ describe('what it refuses, and what it says', () => {
 
 describe('the escape hatch', () => {
 	it('should accept a test written by hand, and use its name', () => {
-		expect(() =>
-			as<{ id: number }>('wrong', {
+		expect(() => {
+			return as<{ id: number }>('wrong', {
 				name: 'Identified',
 				matches: () => false,
-			}),
-		).toThrow(/as<Identified>\(\)/);
+			});
+		}).toThrow(/as<Identified>\(\)/);
 	});
 
 	it('should fall back to describing the value with no explainer', () => {

@@ -66,24 +66,26 @@ const HALF_WIDTH = 64n;
  * @param descriptor Descriptor of the width.
  * @returns The codec.
  */
-const integer128Codec = (descriptor: IntegerType<unknown>): FieldCodec => ({
-	size: 16,
-	alignment: 16,
-	read: (view, offset) => {
-		const low: bigint = view.getBigUint64(offset, true);
+const integer128Codec = (descriptor: IntegerType<unknown>): FieldCodec => {
+	return {
+		size: 16,
+		alignment: 16,
+		read: (view, offset) => {
+			const low: bigint = view.getBigUint64(offset, true);
 
-		const high: bigint = descriptor.signed
-			? view.getBigInt64(offset + 8, true)
-			: view.getBigUint64(offset + 8, true);
+			const high: bigint = descriptor.signed
+				? view.getBigInt64(offset + 8, true)
+				: view.getBigUint64(offset + 8, true);
 
-		return (high << HALF_WIDTH) | low;
-	},
-	write: (view, offset, value) => {
-		view.setBigUint64(offset, BigInt.asUintN(64, value as bigint), true);
-		view.setBigUint64(offset + 8, BigInt.asUintN(64, (value as bigint) >> HALF_WIDTH), true);
-	},
-	equals: (left, right) => descriptor.equals(left, right),
-});
+			return (high << HALF_WIDTH) | low;
+		},
+		write: (view, offset, value) => {
+			view.setBigUint64(offset, BigInt.asUintN(64, value as bigint), true);
+			view.setBigUint64(offset + 8, BigInt.asUintN(64, (value as bigint) >> HALF_WIDTH), true);
+		},
+		equals: (left, right) => descriptor.equals(left, right),
+	};
+};
 
 /**
  * The codec of a fixed-width integer, through the `DataView` accessor of its
@@ -115,8 +117,9 @@ const integerCodec = (descriptor: IntegerType<unknown>): FieldCodec => {
 			return {
 				size,
 				alignment: size,
-				read: (view, offset) =>
-					signed ? view.getInt16(offset, true) : view.getUint16(offset, true),
+				read: (view, offset) => {
+					return signed ? view.getInt16(offset, true) : view.getUint16(offset, true);
+				},
 				write: (view, offset, value) => {
 					signed
 						? view.setInt16(offset, value as number, true)
@@ -128,8 +131,9 @@ const integerCodec = (descriptor: IntegerType<unknown>): FieldCodec => {
 			return {
 				size,
 				alignment: size,
-				read: (view, offset) =>
-					signed ? view.getInt32(offset, true) : view.getUint32(offset, true),
+				read: (view, offset) => {
+					return signed ? view.getInt32(offset, true) : view.getUint32(offset, true);
+				},
 				write: (view, offset, value) => {
 					signed
 						? view.setInt32(offset, value as number, true)
@@ -141,8 +145,9 @@ const integerCodec = (descriptor: IntegerType<unknown>): FieldCodec => {
 			return {
 				size,
 				alignment: size,
-				read: (view, offset) =>
-					signed ? view.getBigInt64(offset, true) : view.getBigUint64(offset, true),
+				read: (view, offset) => {
+					return signed ? view.getBigInt64(offset, true) : view.getBigUint64(offset, true);
+				},
 				write: (view, offset, value) => {
 					signed
 						? view.setBigInt64(offset, value as bigint, true)
@@ -220,8 +225,9 @@ const floatCodecs = new Map<object, FieldCodec>([
 			write: (view, offset, value) => {
 				view.setUint16(offset, encodeHalf(value as number), true);
 			},
-			equals: (left, right) =>
-				HalfPrecisionFloat.equals(left as HalfPrecisionFloat, right as HalfPrecisionFloat),
+			equals: (left, right) => {
+				return HalfPrecisionFloat.equals(left as HalfPrecisionFloat, right as HalfPrecisionFloat);
+			},
 		},
 	],
 	[
@@ -233,8 +239,12 @@ const floatCodecs = new Map<object, FieldCodec>([
 			write: (view, offset, value) => {
 				view.setFloat32(offset, value as number, true);
 			},
-			equals: (left, right) =>
-				SinglePrecisionFloat.equals(left as SinglePrecisionFloat, right as SinglePrecisionFloat),
+			equals: (left, right) => {
+				return SinglePrecisionFloat.equals(
+					left as SinglePrecisionFloat,
+					right as SinglePrecisionFloat,
+				);
+			},
 		},
 	],
 	[
@@ -246,8 +256,12 @@ const floatCodecs = new Map<object, FieldCodec>([
 			write: (view, offset, value) => {
 				view.setFloat64(offset, value as number, true);
 			},
-			equals: (left, right) =>
-				DoublePrecisionFloat.equals(left as DoublePrecisionFloat, right as DoublePrecisionFloat),
+			equals: (left, right) => {
+				return DoublePrecisionFloat.equals(
+					left as DoublePrecisionFloat,
+					right as DoublePrecisionFloat,
+				);
+			},
 		},
 	],
 ]);

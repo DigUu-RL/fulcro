@@ -128,5 +128,6 @@ const hamiltonProduct: ProductRule = <T>(
  */
 export const Quaternion = <TElement extends ElementDescriptor>(
 	element: TElement,
-): QuaternionType<ValueOf<TElement>, SourceOf<TElement>> =>
-	createHypercomplexType('Quaternion', COMPONENTS, element, hamiltonProduct);
+): QuaternionType<ValueOf<TElement>, SourceOf<TElement>> => {
+	return createHypercomplexType('Quaternion', COMPONENTS, element, hamiltonProduct);
+};

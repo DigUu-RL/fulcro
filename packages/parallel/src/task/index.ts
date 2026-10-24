@@ -24,12 +24,15 @@ import { createWaitingQueue, type Waiting, type WaitingQueue } from '@/src/task/
  * @param thrown What the work rejected with.
  * @returns The value itself, or FULCRO3013 standing in for a nullish one.
  */
-const asFailure = (thrown: unknown): NonNullable<unknown> =>
-	thrown ??
-	createError('FULCRO3013', {
-		operation: 'spawn',
-		thrown: thrown,
-	});
+const asFailure = (thrown: unknown): NonNullable<unknown> => {
+	return (
+		thrown ??
+		createError('FULCRO3013', {
+			operation: 'spawn',
+			thrown: thrown,
+		})
+	);
+};
 
 /**
  * Creates a scope that tasks start in and that ends only when they all have.
@@ -235,7 +238,9 @@ export const createTaskScope = (options: TaskScopeOptions = {}): TaskScope => {
 			then: <TResult1 = T, TResult2 = never>(
 				onFulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | null,
 				onRejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
-			): PromiseLike<TResult1 | TResult2> => outcome.then(onFulfilled, onRejected),
+			): PromiseLike<TResult1 | TResult2> => {
+				return outcome.then(onFulfilled, onRejected);
+			},
 			settled: outcomeAsResult,
 			token,
 			cancel: own.cancel,

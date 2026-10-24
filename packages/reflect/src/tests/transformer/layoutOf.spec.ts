@@ -106,10 +106,13 @@ const evaluate = (binding: string): unknown => {
  * @param value Value to inspect.
  * @returns `true` when nothing in it can be changed.
  */
-const deeplyFrozen = (value: unknown): boolean =>
-	typeof value !== 'object' ||
-	value === null ||
-	(Object.isFrozen(value) && Object.values(value).every(deeplyFrozen));
+const deeplyFrozen = (value: unknown): boolean => {
+	return (
+		typeof value !== 'object' ||
+		value === null ||
+		(Object.isFrozen(value) && Object.values(value).every(deeplyFrozen))
+	);
+};
 
 describe('layoutOf at compile time', () => {
 	it('should compile the fixture without errors', () => {

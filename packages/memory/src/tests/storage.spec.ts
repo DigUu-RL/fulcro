@@ -39,8 +39,9 @@ const STRATEGIES = [
 	// buffer, so a position it got wrong would land on a neighbour.
 	[
 		'View',
-		(length: number): Storage<Point> =>
-			asView(createFixedBufferStorage(Point, length + 2), 1, length),
+		(length: number): Storage<Point> => {
+			return asView(createFixedBufferStorage(Point, length + 2), 1, length);
+		},
 	],
 ] as const;
 

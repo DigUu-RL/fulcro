@@ -11,11 +11,15 @@ import type { DetailsShape } from '@/src/definition';
  *
  * @returns Fresh details, so each error freezes its own.
  */
-export const sampleDetails = (): DetailsShape =>
-	new Proxy<DetailsShape>(
+export const sampleDetails = (): DetailsShape => {
+	return new Proxy<DetailsShape>(
 		{ operation: 'operation' },
 		{
-			get: (target, field) =>
-				typeof field === 'string' && !(field in target) ? 'value' : Reflect.get(target, field),
+			get: (target, field) => {
+				return typeof field === 'string' && !(field in target)
+					? 'value'
+					: Reflect.get(target, field);
+			},
 		},
 	);
+};

@@ -47,11 +47,13 @@ const counted = <T>(values: readonly T[]): { source: AsyncIterable<T>; pulled: (
  * @param values Elements to yield.
  * @returns The sequence.
  */
-const streamOf = <T>(values: readonly T[]): AsyncIterable<T> => ({
-	async *[Symbol.asyncIterator](): AsyncIterator<T> {
-		yield* values;
-	},
-});
+const streamOf = <T>(values: readonly T[]): AsyncIterable<T> => {
+	return {
+		async *[Symbol.asyncIterator](): AsyncIterator<T> {
+			yield* values;
+		},
+	};
+};
 
 describe('choose', () => {
 	it('should keep what the projection produced and drop what it did not', async () => {
@@ -74,9 +76,9 @@ describe('choose', () => {
 	});
 
 	it('should treat falsy values as results, not as absence', async () => {
-		const values = AsyncSequenceCollection.from(streamOf([1, 2, 3])).choose((value) =>
-			value === 2 ? null : 0,
-		);
+		const values = AsyncSequenceCollection.from(streamOf([1, 2, 3])).choose((value) => {
+			return value === 2 ? null : 0;
+		});
 
 		expect(await values.toArray()).toEqual([0, 0]);
 	});
@@ -141,9 +143,11 @@ describe('choose', () => {
 	});
 
 	it.each([0, -1, 1.5])('should reject a concurrency of %s', (concurrency) => {
-		expect(() =>
-			AsyncSequenceCollection.from(streamOf([1])).chooseAwait((value) => value, { concurrency }),
-		).toThrow(/positive integer/i);
+		expect(() => {
+			return AsyncSequenceCollection.from(streamOf([1])).chooseAwait((value) => value, {
+				concurrency,
+			});
+		}).toThrow(/positive integer/i);
 	});
 });
 
@@ -186,10 +190,13 @@ describe('ofType and cast', () => {
 			id: number;
 		}>({
 			name: 'Account',
-			matches: (value) =>
-				value !== null &&
-				typeof value === 'object' &&
-				typeof (value as { id: unknown }).id === 'number',
+			matches: (value) => {
+				return (
+					value !== null &&
+					typeof value === 'object' &&
+					typeof (value as { id: unknown }).id === 'number'
+				);
+			},
 		});
 
 		expect(await kept.toArray()).toEqual([{ id: 1 }]);
@@ -198,13 +205,13 @@ describe('ofType and cast', () => {
 	it('should refuse an unresolved type argument before reading anything', async () => {
 		const { source, pulled } = counted<unknown>([1, 2, 3]);
 
-		expect(() =>
-			(
+		expect(() => {
+			return (
 				AsyncSequenceCollection.from(source) as unknown as {
 					ofType: () => unknown;
 				}
-			).ofType(),
-		).toThrow(/was not resolved at compile time/);
+			).ofType();
+		}).toThrow(/was not resolved at compile time/);
 
 		expect(pulled()).toBe(0);
 	});
@@ -223,10 +230,12 @@ describe('topBy', () => {
 	it('should agree with the synchronous operator, ties included', async () => {
 		// The two share one window implementation precisely so this holds. The
 		// dataset is mostly ties, which is where two heaps would disagree.
-		const players = Array.from({ length: 500 }, (_, index) => ({
-			name: `player-${index}`,
-			score: index % 7,
-		}));
+		const players = Array.from({ length: 500 }, (_, index) => {
+			return {
+				name: `player-${index}`,
+				score: index % 7,
+			};
+		});
 
 		const expected = SequenceCollection.from(players)
 			.topBy((player) => player.score, 10)
@@ -267,10 +276,12 @@ describe('topBy', () => {
 		// finishes in an order with nothing to do with the input. Every score is
 		// identical here, which leaves the answer entirely to the tie-break — and
 		// it must still be the first three that arrived.
-		const players = Array.from({ length: 24 }, (_, index) => ({
-			index,
-			score: 1,
-		}));
+		const players = Array.from({ length: 24 }, (_, index) => {
+			return {
+				index,
+				score: 1,
+			};
+		});
 
 		const best = await AsyncSequenceCollection.from(streamOf(players))
 			.topByAwait(

@@ -33,10 +33,11 @@ const offsetsOf = (descriptor: {
 	readonly layout: {
 		readonly fields: Readonly<Record<string, { readonly offset: number }>>;
 	};
-}): Record<string, number> =>
-	Object.fromEntries(
+}): Record<string, number> => {
+	return Object.fromEntries(
 		Object.entries(descriptor.layout.fields).map(([name, field]) => [name, field.offset]),
 	);
+};
 
 describe('offsetOf over the structs of @fulcro/types', () => {
 	it.each(['Mixed', 'Reversed', 'Outer', 'Account'])(

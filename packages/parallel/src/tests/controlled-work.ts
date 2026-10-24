@@ -97,7 +97,8 @@ export const controlledWork = <T>(
  *
  * @returns A promise settling on the next turn of the event loop.
  */
-export const flush = (): Promise<void> =>
-	new Promise<void>((resolve) => {
+export const flush = (): Promise<void> => {
+	return new Promise<void>((resolve) => {
 		setTimeout(resolve, 0);
 	});
+};

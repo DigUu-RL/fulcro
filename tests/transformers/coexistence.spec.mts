@@ -161,11 +161,11 @@ describe('the plugins on one file', () => {
 			skipLibCheck: true,
 		});
 
-		expect(() =>
-			program.emit(program.getSourceFile(rejected), () => undefined, undefined, false, {
+		expect(() => {
+			return program.emit(program.getSourceFile(rejected), () => undefined, undefined, false, {
 				before: [reflect(program), memory(program)],
-			}),
-		).toThrow(
+			});
+		}).toThrow(
 			/coexistence\.rejected\.sample\.ts\(19,26\): FULCRO7027: move: 'orders' is used after it was moved at line 17/,
 		);
 	});

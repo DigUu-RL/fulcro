@@ -26,10 +26,14 @@ const SIZE = 24;
  * @param columns Number of columns.
  * @returns The rows.
  */
-const scattered = (rows: number, columns: number): number[][] =>
-	Array.from({ length: rows }, (_row, row) =>
-		Array.from({ length: columns }, (_column, column) => ((row * 31 + column * 17) % 97) - 48),
-	);
+const scattered = (rows: number, columns: number): number[][] => {
+	return Array.from({ length: rows }, (_row, row) => {
+		return Array.from(
+			{ length: columns },
+			(_column, column) => ((row * 31 + column * 17) % 97) - 48,
+		);
+	});
+};
 
 const Large = Matrix(DoublePrecisionFloat, SIZE, SIZE);
 const large = Large.from(scattered(SIZE, SIZE));
@@ -77,9 +81,9 @@ describe('Matrix', () => {
 	});
 
 	it('should transpose without asking the element type for anything', () => {
-		const spies = (['add', 'subtract', 'multiply', 'negate', 'from', 'is'] as const).map((name) =>
-			vi.spyOn(DoublePrecisionFloat, name),
-		);
+		const spies = (['add', 'subtract', 'multiply', 'negate', 'from', 'is'] as const).map((name) => {
+			return vi.spyOn(DoublePrecisionFloat, name);
+		});
 
 		Large.transpose(large);
 

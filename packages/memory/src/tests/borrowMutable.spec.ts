@@ -27,13 +27,15 @@ describe('borrowMutable', () => {
 	it('should write the owned storage itself', () => {
 		const values: number[] = [0, 0, 0];
 
-		const owner: Owned<number> = own((): Storage<number> => ({
-			length: 3,
-			get: (index: number): number => values[index] as number,
-			set: (index: number, value: number): void => {
-				values[index] = value;
-			},
-		}));
+		const owner: Owned<number> = own((): Storage<number> => {
+			return {
+				length: 3,
+				get: (index: number): number => values[index] as number,
+				set: (index: number, value: number): void => {
+					values[index] = value;
+				},
+			};
+		});
 
 		const scores: MutableBorrow<number> = borrowMutable(owner);
 

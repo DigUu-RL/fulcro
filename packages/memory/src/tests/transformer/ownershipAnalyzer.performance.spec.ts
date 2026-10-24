@@ -52,10 +52,11 @@ const questionsFor = (text: string): { questions: number; refused: number } => {
 	const host: ts.CompilerHost = ts.createCompilerHost(options);
 	const { getSourceFile, fileExists, readFile } = host;
 
-	host.getSourceFile = (name, ...rest) =>
-		name === fileName
+	host.getSourceFile = (name, ...rest) => {
+		return name === fileName
 			? ts.createSourceFile(name, text, ts.ScriptTarget.ES2022, true)
 			: getSourceFile(name, ...rest);
+	};
 
 	host.fileExists = (name) => name === fileName || fileExists(name);
 	host.readFile = (name) => (name === fileName ? text : readFile(name));
@@ -82,8 +83,9 @@ const questionsFor = (text: string): { questions: number; refused: number } => {
 	});
 
 	const counted: ts.Program = new Proxy(program, {
-		get: (target, key, receiver) =>
-			key === 'getTypeChecker' ? () => counting : Reflect.get(target, key, receiver),
+		get: (target, key, receiver) => {
+			return key === 'getTypeChecker' ? () => counting : Reflect.get(target, key, receiver);
+		},
 	});
 
 	let refused = 0;
@@ -101,9 +103,12 @@ const questionsFor = (text: string): { questions: number; refused: number } => {
  * @param count How many.
  * @returns Its text.
  */
-const unitsOf = (count: number): string =>
-	IMPORTS +
-	Array.from({ length: count }, (_, index) => UNIT.replace('{n}', String(index))).join('\n');
+const unitsOf = (count: number): string => {
+	return (
+		IMPORTS +
+		Array.from({ length: count }, (_, index) => UNIT.replace('{n}', String(index))).join('\n')
+	);
+};
 
 /** What the transformer asked of files of none, fifty and a hundred units. */
 let empty: { questions: number; refused: number };

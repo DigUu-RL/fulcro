@@ -55,39 +55,41 @@ const SEQUENCE_MODULE_SEGMENT = path.join('@types', 'collections');
  * @param functionName Name of the method being claimed.
  * @returns The rewriter.
  */
-const narrowingRewriter = (functionName: string): CallRewriter => ({
-	functionName,
-	moduleSegment: SEQUENCE_MODULE_SEGMENT,
-	callForm: 'method',
+const narrowingRewriter = (functionName: string): CallRewriter => {
+	return {
+		functionName,
+		moduleSegment: SEQUENCE_MODULE_SEGMENT,
+		callForm: 'method',
 
-	rewrite: (call: typescript.CallExpression, context: RewriteContext): typescript.Node | null => {
-		const [typeArgument] = call.typeArguments ?? [];
+		rewrite: (call: typescript.CallExpression, context: RewriteContext): typescript.Node | null => {
+			const [typeArgument] = call.typeArguments ?? [];
 
-		// Only the no-argument form is ours to fill in. Written with a token
-		// already — `ofType('string')` — there is nothing to resolve, and the
-		// argument the consumer wrote wins.
-		if (typeArgument === undefined || call.arguments.length > 0) return null;
+			// Only the no-argument form is ours to fill in. Written with a token
+			// already — `ofType('string')` — there is nothing to resolve, and the
+			// argument the consumer wrote wins.
+			if (typeArgument === undefined || call.arguments.length > 0) return null;
 
-		const resolved: Resolution = resolveTypeToken(typeArgument, call, context);
+			const resolved: Resolution = resolveTypeToken(typeArgument, call, context);
 
-		// Left alone deliberately when the type has no runtime form. The call
-		// reaches the runtime with no argument, which is exactly the shape it
-		// refuses — and it refuses with a message naming both reasons it could
-		// have arrived that way, since from there they are indistinguishable.
-		if (resolved.kind === 'unsupported') return null;
+			// Left alone deliberately when the type has no runtime form. The call
+			// reaches the runtime with no argument, which is exactly the shape it
+			// refuses — and it refuses with a message naming both reasons it could
+			// have arrived that way, since from there they are indistinguishable.
+			if (resolved.kind === 'unsupported') return null;
 
-		return context.factory.updateCallExpression(
-			call,
-			// Visited, so a call further left in the same chain is rewritten too:
-			// `seq.ofType<string>().cast<string>()` has one inside the other.
-			context.visit(call.expression) as typescript.Expression,
-			// Dropped: the type argument has done its work, and leaving it would
-			// not match the overload now that an argument is being passed.
-			undefined,
-			[resolved.token],
-		);
-	},
-});
+			return context.factory.updateCallExpression(
+				call,
+				// Visited, so a call further left in the same chain is rewritten too:
+				// `seq.ofType<string>().cast<string>()` has one inside the other.
+				context.visit(call.expression) as typescript.Expression,
+				// Dropped: the type argument has done its work, and leaving it would
+				// not match the overload now that an argument is being passed.
+				undefined,
+				[resolved.token],
+			);
+		},
+	};
+};
 
 /** Rewriter turning `ofType<T>()` into the runtime test for `T`. */
 export const ofTypeRewriter: CallRewriter = narrowingRewriter('ofType');

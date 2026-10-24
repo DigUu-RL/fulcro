@@ -104,18 +104,17 @@ beforeAll(() => {
 describe('ownership rules at compile time', () => {
 	it('should compile both fixtures without type errors', () => {
 		expect(
-			[...accepted.errors, ...rejected.errors].map((error) =>
-				ts.flattenDiagnosticMessageText(error.messageText, '\n'),
-			),
+			[...accepted.errors, ...rejected.errors].map((error) => {
+				return ts.flattenDiagnosticMessageText(error.messageText, '\n');
+			}),
 		).toEqual([]);
 	});
 
 	it('should refuse nothing a correct program does', () => {
 		expect(
-			accepted.refused.map(
-				(diagnostic) =>
-					`${located(diagnostic)} ${ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')}`,
-			),
+			accepted.refused.map((diagnostic) => {
+				return `${located(diagnostic)} ${ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')}`;
+			}),
 		).toEqual([]);
 	});
 

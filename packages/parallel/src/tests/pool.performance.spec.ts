@@ -29,8 +29,13 @@ const ELEMENTS: readonly number[] = Array.from({ length: 60 }, (_, index) => ind
  * @param workers How many to run.
  * @returns The pool.
  */
-const countedPool = (fake: FakeWorkers, workers: number): WorkerPool<number, number> =>
-	createPool<number, number>({ module: NOWHERE, export: 'echo', workers }, fake.spawn, NOWHERE);
+const countedPool = (fake: FakeWorkers, workers: number): WorkerPool<number, number> => {
+	return createPool<number, number>(
+		{ module: NOWHERE, export: 'echo', workers },
+		fake.spawn,
+		NOWHERE,
+	);
+};
 
 describe('what one run costs', () => {
 	it.each([1, 2, 4])(

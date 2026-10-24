@@ -1431,9 +1431,9 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 * @throws {Error} When the sequence is empty.
 	 */
 	minBy<K>(keySelector: Selector<T, K>): T {
-		return this.resolveExtremeBy(keySelector, 'minBy', (candidate, best) =>
-			candidate < best ? true : false,
-		);
+		return this.resolveExtremeBy(keySelector, 'minBy', (candidate, best) => {
+			return candidate < best ? true : false;
+		});
 	}
 
 	/**
@@ -1445,9 +1445,9 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 * @throws {Error} When the sequence is empty.
 	 */
 	maxBy<K>(keySelector: Selector<T, K>): T {
-		return this.resolveExtremeBy(keySelector, 'maxBy', (candidate, best) =>
-			candidate > best ? true : false,
-		);
+		return this.resolveExtremeBy(keySelector, 'maxBy', (candidate, best) => {
+			return candidate > best ? true : false;
+		});
 	}
 
 	/**

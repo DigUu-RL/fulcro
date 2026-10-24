@@ -16,8 +16,9 @@ import { none, type Option, optionOf, some } from '@/src/option';
 const OPTIONS = 10_000;
 
 /** Options alternating between present and absent, through `optionOf`. */
-const mixed = (): Option<number>[] =>
-	[...Array(OPTIONS).keys()].map((index) => optionOf(index % 2 === 0 ? index : null));
+const mixed = (): Option<number>[] => {
+	return [...Array(OPTIONS).keys()].map((index) => optionOf(index % 2 === 0 ? index : null));
+};
 
 describe('Option', () => {
 	it('should allocate nothing for an absent value', () => {

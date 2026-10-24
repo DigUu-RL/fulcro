@@ -9,9 +9,12 @@ import type { RangeCatalog } from '@/src/definition';
 export const transformCoreCatalog = {
 	FULCRO5001: {
 		kind: Error,
-		message: ({ root }: { operation: string; root: string }) =>
-			`No tsconfig.json found from ${root}. The transformer needs one to ` +
-			'know which files belong to the program.',
+		message: ({ root }: { operation: string; root: string }) => {
+			return (
+				`No tsconfig.json found from ${root}. The transformer needs one to ` +
+				'know which files belong to the program.'
+			);
+		},
 	},
 	FULCRO5002: {
 		kind: Error,
@@ -24,7 +27,8 @@ export const transformCoreCatalog = {
 		kind: Error,
 		// Each line already carries the file, the position and the refusal's
 		// own code and message; this only says where they came from.
-		message: ({ report }: { operation: string; report: string }) =>
-			`The Fulcro transformer refused calls it could not answer at compile time:\n${report}`,
+		message: ({ report }: { operation: string; report: string }) => {
+			return `The Fulcro transformer refused calls it could not answer at compile time:\n${report}`;
+		},
 	},
 } as const satisfies RangeCatalog<'5'>;

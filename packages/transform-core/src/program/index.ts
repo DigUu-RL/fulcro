@@ -61,8 +61,9 @@ const buildUtilityPattern = (
  * @param fileName Path in whatever spelling it arrived.
  * @returns The path as the compiler spells it.
  */
-export const toCompilerPath = (fileName: string): string =>
-	path.resolve(fileName).split(path.sep).join('/');
+export const toCompilerPath = (fileName: string): string => {
+	return path.resolve(fileName).split(path.sep).join('/');
+};
 
 /**
  * Keeps a TypeScript program alive across recompilations.

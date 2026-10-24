@@ -51,9 +51,8 @@ const createMeter = (): Meter => {
 	let started = 0;
 
 	return {
-		work:
-			(delay, fails = false) =>
-			async () => {
+		work: (delay, fails = false) => {
+			return async () => {
 				started++;
 				current++;
 				peak = Math.max(peak, current);
@@ -67,7 +66,8 @@ const createMeter = (): Meter => {
 				} finally {
 					current--;
 				}
-			},
+			};
+		},
 		untilCancelled: (token) => {
 			started++;
 

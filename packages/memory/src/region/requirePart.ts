@@ -9,8 +9,9 @@ import { describeValue } from '@/src/storage/describeValue';
  * @param value Value handed in.
  * @returns The detail.
  */
-const reported = (value: unknown): number | string =>
-	typeof value === 'number' ? value : describeValue(value);
+const reported = (value: unknown): number | string => {
+	return typeof value === 'number' ? value : describeValue(value);
+};
 
 /**
  * Refuses a part that does not fit inside what it is cut from, and says how

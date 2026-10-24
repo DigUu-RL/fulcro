@@ -35,12 +35,14 @@
  * @param {string} message What is wrong, in one sentence.
  * @returns {Finding} The finding.
  */
-export const error = (rule, where, message) => ({
-	level: 'error',
-	rule,
-	where,
-	message,
-});
+export const error = (rule, where, message) => {
+	return {
+		level: 'error',
+		rule,
+		where,
+		message,
+	};
+};
 
 /**
  * Records a warning.
@@ -50,12 +52,14 @@ export const error = (rule, where, message) => ({
  * @param {string} message What is missing, in one sentence.
  * @returns {Finding} The finding.
  */
-export const warning = (rule, where, message) => ({
-	level: 'warning',
-	rule,
-	where,
-	message,
-});
+export const warning = (rule, where, message) => {
+	return {
+		level: 'warning',
+		rule,
+		where,
+		message,
+	};
+};
 
 /**
  * Prints findings and answers with the exit code they earn.

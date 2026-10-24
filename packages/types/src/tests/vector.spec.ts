@@ -27,11 +27,12 @@ import { type Vector, Vector as VectorOf } from '@/src/vector';
  * @param details The details the error is expected to carry.
  * @returns The same error, carrying that code and those details.
  */
-const coded = <T extends Error>(error: T, details: Readonly<Record<string, unknown>>): T =>
-	Object.assign(error, {
+const coded = <T extends Error>(error: T, details: Readonly<Record<string, unknown>>): T => {
+	return Object.assign(error, {
 		code: error.message.slice(0, 'FULCRO0000'.length),
 		details,
 	});
+};
 
 const Column = VectorOf(DoublePrecisionFloat, 3, 1);
 const Row = VectorOf(DoublePrecisionFloat, 1, 3);

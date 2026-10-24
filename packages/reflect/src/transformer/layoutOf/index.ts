@@ -31,8 +31,11 @@ export const layoutOfRewriter: CallRewriter = {
 
 		const { factory } = context;
 
-		const frozen = (members: Parameters<typeof frozenObject>[1]): ReturnType<typeof frozenObject> =>
-			frozenObject(factory, members);
+		const frozen = (
+			members: Parameters<typeof frozenObject>[1],
+		): ReturnType<typeof frozenObject> => {
+			return frozenObject(factory, members);
+		};
 
 		return frozen([
 			['size', factory.createNumericLiteral(layout.size)],
@@ -40,14 +43,16 @@ export const layoutOfRewriter: CallRewriter = {
 			[
 				'fields',
 				frozen(
-					layout.fields.map((field) => [
-						field.name,
-						frozen([
-							['offset', factory.createNumericLiteral(field.offset)],
-							['size', factory.createNumericLiteral(field.size)],
-							['alignment', factory.createNumericLiteral(field.alignment)],
-						]),
-					]),
+					layout.fields.map((field) => {
+						return [
+							field.name,
+							frozen([
+								['offset', factory.createNumericLiteral(field.offset)],
+								['size', factory.createNumericLiteral(field.size)],
+								['alignment', factory.createNumericLiteral(field.alignment)],
+							]),
+						];
+					}),
 				),
 			],
 		]);

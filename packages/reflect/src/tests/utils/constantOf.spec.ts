@@ -22,11 +22,12 @@ const evaluateAtRuntime: typeof constantOf = constantOf;
  * @param details The details the error is expected to carry.
  * @returns The same error, carrying that code and those details.
  */
-const coded = <T extends Error>(error: T, details: Readonly<Record<string, unknown>>): T =>
-	Object.assign(error, {
+const coded = <T extends Error>(error: T, details: Readonly<Record<string, unknown>>): T => {
+	return Object.assign(error, {
 		code: error.message.slice(0, 'FULCRO0000'.length),
 		details,
 	});
+};
 
 /**
  * Tells whether an object and every object inside it is frozen.
@@ -34,10 +35,13 @@ const coded = <T extends Error>(error: T, details: Readonly<Record<string, unkno
  * @param value Value to inspect.
  * @returns `true` when nothing in it can be changed.
  */
-const deeplyFrozen = (value: unknown): boolean =>
-	typeof value !== 'object' ||
-	value === null ||
-	(Object.isFrozen(value) && Object.values(value).every(deeplyFrozen));
+const deeplyFrozen = (value: unknown): boolean => {
+	return (
+		typeof value !== 'object' ||
+		value === null ||
+		(Object.isFrozen(value) && Object.values(value).every(deeplyFrozen))
+	);
+};
 
 /**
  * The message of the refusal a result gets.
@@ -45,8 +49,8 @@ const deeplyFrozen = (value: unknown): boolean =>
  * @param value What the function returns.
  * @returns What the refusal says the value is.
  */
-const refusalFor = (value: unknown): TypeError =>
-	coded(
+const refusalFor = (value: unknown): TypeError => {
+	return coded(
 		new TypeError(
 			`FULCRO4011: constantOf(…) produced ${String(value)}, which cannot be written as a literal. ` +
 				'A constant is a number, a string, a boolean, a bigint, null or undefined, or an array or a plain object of them, each reached once.',
@@ -57,6 +61,7 @@ const refusalFor = (value: unknown): TypeError =>
 			received: String(value),
 		},
 	);
+};
 
 describe('constantOf', () => {
 	describe('values', () => {
@@ -78,10 +83,12 @@ describe('constantOf', () => {
 		});
 
 		it('should freeze arrays and plain objects at every level', () => {
-			const value = evaluateAtRuntime(() => ({
-				list: [1, { deep: [true] }],
-				nested: { name: 'fulcro' },
-			}));
+			const value = evaluateAtRuntime(() => {
+				return {
+					list: [1, { deep: [true] }],
+					nested: { name: 'fulcro' },
+				};
+			});
 
 			expect(deeplyFrozen(value)).toBe(true);
 		});
@@ -121,11 +128,13 @@ describe('constantOf', () => {
 			['an object with symbol keys', () => ({ [Symbol('key')]: 1 })],
 			[
 				"an object whose 'value' is a getter",
-				() => ({
-					get value(): number {
-						return 1;
-					},
-				}),
+				() => {
+					return {
+						get value(): number {
+							return 1;
+						},
+					};
+				},
 			],
 		])('should refuse %s', (description, compute) => {
 			expect(() => evaluateAtRuntime(compute as never)).toThrow(refusalFor(description));
@@ -158,11 +167,11 @@ describe('constantOf', () => {
 		it('should let what the function throws through, unchanged', () => {
 			const thrown = new RangeError('from the function');
 
-			expect(() =>
-				evaluateAtRuntime(() => {
+			expect(() => {
+				return evaluateAtRuntime(() => {
 					throw thrown;
-				}),
-			).toThrow(thrown);
+				});
+			}).toThrow(thrown);
 		});
 	});
 });

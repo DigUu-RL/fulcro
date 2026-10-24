@@ -31,8 +31,9 @@ afterEach(() => {
  * @param arena Arena to fill.
  * @returns The allocations.
  */
-const fill = (arena: ArenaAllocator): Allocation[] =>
-	Array.from({ length: VOLUME }, () => arena.allocate(SIZE, 8));
+const fill = (arena: ArenaAllocator): Allocation[] => {
+	return Array.from({ length: VOLUME }, () => arena.allocate(SIZE, 8));
+};
 
 describe('createArenaAllocator, counted', () => {
 	it('should make nothing when it is created', () => {

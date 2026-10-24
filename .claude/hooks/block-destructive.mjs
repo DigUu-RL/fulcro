@@ -35,12 +35,13 @@ import { exceptions, guard } from './hook.mjs';
  * @param {string} instead What to do about it.
  * @returns {string} The message handed back.
  */
-const refusal = (operation, instead) =>
-	[
+const refusal = (operation, instead) => {
+	return [
 		`Blocked by .claude/hooks/block-destructive.mjs: ${operation}.`,
 		instead,
 		'See .claude/rules/protected-operations.md. Do not look for another way to run it.',
 	].join(' ');
+};
 
 /**
  * The operations this hook refuses.
@@ -59,8 +60,9 @@ const RULES = [
 	},
 	{
 		id: 'clean',
-		refuses: (invocation) =>
-			runs(invocation, ['git', 'clean']) && hasFlag(invocation, '--force', 'f'),
+		refuses: (invocation) => {
+			return runs(invocation, ['git', 'clean']) && hasFlag(invocation, '--force', 'f');
+		},
 		reason: refusal(
 			'`git clean --force` deletes untracked files, and some untracked files here are source',
 			'Delete the paths you mean by name, after `git clean -n` has said what would go.',

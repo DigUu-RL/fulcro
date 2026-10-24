@@ -439,8 +439,9 @@ export const struct = <TFields extends StructFields, TMethods extends StructMeth
 	 *
 	 * @returns The object, still empty and not yet frozen.
 	 */
-	const blank = (): Record<string, unknown> =>
-		prototype === undefined ? {} : Object.create(prototype);
+	const blank = (): Record<string, unknown> => {
+		return prototype === undefined ? {} : Object.create(prototype);
+	};
 
 	// Largest alignment first, so that every field lands aligned without padding
 	// before it: each size is a multiple of its own alignment. `sort` is stable,
@@ -458,25 +459,29 @@ export const struct = <TFields extends StructFields, TMethods extends StructMeth
 	const alignment: number = Math.max(...declared.map((field) => field.codec.alignment));
 	const size: number = Math.ceil(end / alignment) * alignment;
 
-	const plan: readonly PlacedField[] = declared.map((field) => ({
-		...field,
-		descriptor: field.descriptor as unknown as PlacedField['descriptor'],
-		offset: offsets.get(field.key) as number,
-	}));
+	const plan: readonly PlacedField[] = declared.map((field) => {
+		return {
+			...field,
+			descriptor: field.descriptor as unknown as PlacedField['descriptor'],
+			offset: offsets.get(field.key) as number,
+		};
+	});
 
 	const layout = Object.freeze({
 		size,
 		alignment,
 		fields: Object.freeze(
 			Object.fromEntries(
-				plan.map((field) => [
-					field.key,
-					Object.freeze({
-						offset: field.offset,
-						size: field.codec.size,
-						alignment: field.codec.alignment,
-					}),
-				]),
+				plan.map((field) => {
+					return [
+						field.key,
+						Object.freeze({
+							offset: field.offset,
+							size: field.codec.size,
+							alignment: field.codec.alignment,
+						}),
+					];
+				}),
 			),
 		),
 	});
@@ -523,13 +528,14 @@ export const struct = <TFields extends StructFields, TMethods extends StructMeth
 		}
 	};
 
-	const equals = (left: unknown, right: unknown): boolean =>
-		plan.every((field) =>
-			field.codec.equals(
+	const equals = (left: unknown, right: unknown): boolean => {
+		return plan.every((field) => {
+			return field.codec.equals(
 				(left as Record<string, unknown>)[field.key],
 				(right as Record<string, unknown>)[field.key],
-			),
-		);
+			);
+		});
+	};
 
 	type Value = StructValue<TFields, TMethods>;
 
@@ -575,17 +581,21 @@ export const struct = <TFields extends StructFields, TMethods extends StructMeth
 			return Object.freeze(value) as Value;
 		},
 
-		is: (value): value is Value =>
-			typeof value === 'object' &&
-			value !== null &&
-			(prototype === undefined || Object.getPrototypeOf(value) === prototype) &&
-			Object.isFrozen(value) &&
-			Object.keys(value).length === plan.length &&
-			plan.every(
-				(field) =>
-					Object.hasOwn(value, field.key) &&
-					field.descriptor.is((value as Record<string, unknown>)[field.key]),
-			),
+		is: (value): value is Value => {
+			return (
+				typeof value === 'object' &&
+				value !== null &&
+				(prototype === undefined || Object.getPrototypeOf(value) === prototype) &&
+				Object.isFrozen(value) &&
+				Object.keys(value).length === plan.length &&
+				plan.every((field) => {
+					return (
+						Object.hasOwn(value, field.key) &&
+						field.descriptor.is((value as Record<string, unknown>)[field.key])
+					);
+				})
+			);
+		},
 
 		equals,
 

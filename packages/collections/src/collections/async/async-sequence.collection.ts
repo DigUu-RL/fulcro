@@ -968,11 +968,13 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 
 				const keyed = mapConcurrent(
 					numbered,
-					async (entry) => ({
-						item: entry.item,
-						arrival: entry.arrival,
-						key: await keySelector(entry.item),
-					}),
+					async (entry) => {
+						return {
+							item: entry.item,
+							arrival: entry.arrival,
+							key: await keySelector(entry.item),
+						};
+					},
 					options,
 				);
 

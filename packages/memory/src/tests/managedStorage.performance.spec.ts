@@ -28,8 +28,8 @@ interface Order {
  * @param touches Counter to increment.
  * @returns The order, behind a counting proxy.
  */
-const watchedOrder = (id: number, touches: { count: number }): Order =>
-	new Proxy(
+const watchedOrder = (id: number, touches: { count: number }): Order => {
+	return new Proxy(
 		{ id, region: 'north', total: id * 2 },
 		{
 			get: (target, key, receiver) => {
@@ -49,6 +49,7 @@ const watchedOrder = (id: number, touches: { count: number }): Order =>
 			},
 		},
 	);
+};
 
 describe('createManagedStorage, counted', () => {
 	it('should not look inside the initial value, however long it is', () => {

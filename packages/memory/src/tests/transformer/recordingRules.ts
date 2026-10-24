@@ -28,8 +28,9 @@ export const recordingRules = (): {
 			initial: () => new Set<string>(),
 			copy: (facts) => new Set(facts),
 			join: (first, second) => new Set([...first, ...second]),
-			same: (first, second) =>
-				first.size === second.size && [...first].every((name) => second.has(name)),
+			same: (first, second) => {
+				return first.size === second.size && [...first].every((name) => second.has(name));
+			},
 			read: (identifier, facts) => {
 				recording.events.push(
 					facts.has(identifier.text)
@@ -64,5 +65,6 @@ export const recordingRules = (): {
  * @param text The source.
  * @returns The file.
  */
-export const parse = (text: string): ts.SourceFile =>
-	ts.createSourceFile('flow.ts', text, ts.ScriptTarget.ES2022, true);
+export const parse = (text: string): ts.SourceFile => {
+	return ts.createSourceFile('flow.ts', text, ts.ScriptTarget.ES2022, true);
+};

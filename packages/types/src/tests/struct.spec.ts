@@ -28,11 +28,12 @@ import { UnsignedInteger } from '@/src/unsignedInteger';
  * @param details The details the error is expected to carry.
  * @returns The same error, carrying that code and those details.
  */
-const coded = <T extends Error>(error: T, details: Readonly<Record<string, unknown>>): T =>
-	Object.assign(error, {
+const coded = <T extends Error>(error: T, details: Readonly<Record<string, unknown>>): T => {
+	return Object.assign(error, {
 		code: error.message.slice(0, 'FULCRO0000'.length),
 		details,
 	});
+};
 
 const Vector3 = struct('Vector3', {
 	x: SinglePrecisionFloat,
@@ -463,9 +464,9 @@ describe('struct', () => {
 		});
 
 		it('should refuse a method named like a field, an index or the layout', () => {
-			expect(() =>
-				struct('Clash', { x: SinglePrecisionFloat }, { x: () => 1 } as never),
-			).toThrowError(
+			expect(() => {
+				return struct('Clash', { x: SinglePrecisionFloat }, { x: () => 1 } as never);
+			}).toThrowError(
 				coded(
 					new TypeError(
 						"FULCRO6009: struct Clash: method 'x' has the name of a field; a value could not hold both.",

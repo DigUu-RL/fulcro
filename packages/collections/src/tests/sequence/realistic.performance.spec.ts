@@ -69,25 +69,31 @@ let customers: readonly Customer[] = [];
 beforeAll(() => {
 	// Built once. A dataset rebuilt per test would make every budget below a
 	// measurement of the builder rather than of the operator.
-	orders = Array.from({ length: ORDERS }, (_, index) => ({
-		id: index,
-		customerId: index % CUSTOMERS,
-		region: REGIONS[index % REGIONS.length] as Region,
-		status: STATUSES[index % STATUSES.length] as Status,
-		total: (index % 997) + (index % 13) / 10,
-		placedAt: new Date(2020, 0, 1 + (index % 1_000)),
-		items: Array.from({ length: ITEMS_PER_ORDER }, (__, line) => ({
-			sku: `SKU-${(index + line) % 5_000}`,
-			quantity: (line % 4) + 1,
-			unitPrice: ((index + line) % 200) + 0.99,
-		})),
-	}));
+	orders = Array.from({ length: ORDERS }, (_, index) => {
+		return {
+			id: index,
+			customerId: index % CUSTOMERS,
+			region: REGIONS[index % REGIONS.length] as Region,
+			status: STATUSES[index % STATUSES.length] as Status,
+			total: (index % 997) + (index % 13) / 10,
+			placedAt: new Date(2020, 0, 1 + (index % 1_000)),
+			items: Array.from({ length: ITEMS_PER_ORDER }, (__, line) => {
+				return {
+					sku: `SKU-${(index + line) % 5_000}`,
+					quantity: (line % 4) + 1,
+					unitPrice: ((index + line) % 200) + 0.99,
+				};
+			}),
+		};
+	});
 
-	customers = Array.from({ length: CUSTOMERS }, (_, index) => ({
-		id: index,
-		name: `customer-${index}`,
-		region: REGIONS[index % REGIONS.length] as Region,
-	}));
+	customers = Array.from({ length: CUSTOMERS }, (_, index) => {
+		return {
+			id: index,
+			name: `customer-${index}`,
+			region: REGIONS[index % REGIONS.length] as Region,
+		};
+	});
 }, 60_000);
 
 /** How many times the instrumented key projections ran. */
@@ -104,12 +110,12 @@ let keyReads = 0;
  * @param projection Projection being instrumented.
  * @returns The instrumented projection.
  */
-const countedKey =
-	<R>(projection: (order: Order) => R) =>
-	(order: Order): R => {
+const countedKey = <R>(projection: (order: Order) => R) => {
+	return (order: Order): R => {
 		keyReads++;
 		return projection(order);
 	};
+};
 
 describe('sorting records by their fields', () => {
 	it('should read each sorting key once per element, not per comparison', () => {
@@ -236,10 +242,12 @@ describe('joining two large collections', () => {
 				orders,
 				(customer) => customer.id,
 				(order) => order.customerId,
-				(customer, theirOrders) => ({
-					customer: customer.name,
-					count: theirOrders.count(),
-				}),
+				(customer, theirOrders) => {
+					return {
+						customer: customer.name,
+						count: theirOrders.count(),
+					};
+				},
 			)
 			.toArray();
 

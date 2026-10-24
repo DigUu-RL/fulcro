@@ -66,15 +66,17 @@ const CODE = /^FULCRO(\d{4})/;
  * @param message What went wrong, starting with its `FULCRO` code.
  * @returns The diagnostic.
  */
-const diagnosticAt = (node: typescript.Node, message: string): typescript.Diagnostic => ({
-	category: typescript.DiagnosticCategory.Error,
-	code: Number(CODE.exec(message)?.[1] ?? 0),
-	file: node.getSourceFile(),
-	start: node.getStart(),
-	length: node.getWidth(),
-	messageText: message,
-	source: 'fulcro',
-});
+const diagnosticAt = (node: typescript.Node, message: string): typescript.Diagnostic => {
+	return {
+		category: typescript.DiagnosticCategory.Error,
+		code: Number(CODE.exec(message)?.[1] ?? 0),
+		file: node.getSourceFile(),
+		start: node.getStart(),
+		length: node.getWidth(),
+		messageText: message,
+		source: 'fulcro',
+	};
+};
 
 /**
  * A diagnostic as one line: where, and what.
@@ -106,12 +108,11 @@ const describeDiagnostic = (diagnostic: typescript.Diagnostic): string => {
  * @returns The factory a package exports as the default of its transformer
  * entry point.
  */
-export const createTransformer =
-	(
-		rewriters: readonly CallRewriter[],
-		analyzers: readonly FileAnalyzer[] = [],
-	): TransformerFactory =>
-	(
+export const createTransformer = (
+	rewriters: readonly CallRewriter[],
+	analyzers: readonly FileAnalyzer[] = [],
+): TransformerFactory => {
+	return (
 		program: typescript.Program,
 		options: TransformerOptions = {},
 		extras: TransformerExtras = {},
@@ -147,9 +148,9 @@ export const createTransformer =
 			};
 
 			const rewriteCall = (call: typescript.CallExpression): typescript.Node | null => {
-				const owner: CallRewriter | undefined = rewriters.find((rewriter) =>
-					isOwnedCall(call, checker, rewriter),
-				);
+				const owner: CallRewriter | undefined = rewriters.find((rewriter) => {
+					return isOwnedCall(call, checker, rewriter);
+				});
 
 				return owner === undefined ? null : owner.rewrite(call, rewriteContext);
 			};
@@ -189,3 +190,4 @@ export const createTransformer =
 			};
 		};
 	};
+};

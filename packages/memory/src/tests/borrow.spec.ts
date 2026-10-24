@@ -25,14 +25,15 @@ import { coded } from './coded';
  * @param length How many values.
  * @returns The owner.
  */
-const counting = (length: number): Owned<number> =>
-	own(() => {
+const counting = (length: number): Owned<number> => {
+	return own(() => {
 		const storage = createManagedStorage(length, 0);
 
 		for (let index = 0; index < length; index++) storage.set(index, index);
 
 		return storage;
 	});
+};
 
 describe('borrow', () => {
 	it('should read every value of the owner, in place', () => {

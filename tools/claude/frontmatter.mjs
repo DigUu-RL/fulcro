@@ -148,12 +148,13 @@ const scalar = (text, key) => {
  * @param {string} text The raw value, brackets included.
  * @returns {string[]} The entries.
  */
-const inlineList = (text) =>
-	text
+const inlineList = (text) => {
+	return text
 		.slice(1, -1)
 		.split(',')
 		.map((entry) => unquoted(entry.trim()))
 		.filter((entry) => entry !== '');
+};
 
 /**
  * Splits a file into its frontmatter lines and the body below.

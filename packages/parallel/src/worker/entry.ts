@@ -61,9 +61,11 @@ type CodedFailure = {
  * @param error The thrown value.
  * @returns Its text.
  */
-const describeForeign = (error: unknown): { readonly error: string } => ({
-	error: error instanceof Error ? error.message : String(error),
-});
+const describeForeign = (error: unknown): { readonly error: string } => {
+	return {
+		error: error instanceof Error ? error.message : String(error),
+	};
+};
 
 /**
  * Loads the module and finds the export the pool asked for.

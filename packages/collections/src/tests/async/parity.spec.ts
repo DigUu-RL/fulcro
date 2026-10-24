@@ -51,18 +51,22 @@ const counted = <T>(values: readonly T[]): { source: AsyncIterable<T>; pulled: (
  * @param values Elements to yield.
  * @returns The sequence.
  */
-const streamOf = <T>(values: readonly T[]): AsyncIterable<T> => ({
-	async *[Symbol.asyncIterator](): AsyncIterator<T> {
-		yield* values;
-	},
-});
+const streamOf = <T>(values: readonly T[]): AsyncIterable<T> => {
+	return {
+		async *[Symbol.asyncIterator](): AsyncIterator<T> {
+			yield* values;
+		},
+	};
+};
 
 /** A source that never ends, for proving an operator stops pulling. */
-const endless = (): AsyncIterable<number> => ({
-	async *[Symbol.asyncIterator](): AsyncIterator<number> {
-		for (let value = 0; ; value++) yield value;
-	},
-});
+const endless = (): AsyncIterable<number> => {
+	return {
+		async *[Symbol.asyncIterator](): AsyncIterator<number> {
+			for (let value = 0; ; value++) yield value;
+		},
+	};
+};
 
 /** Records the suites query, so the assertions are not all about numbers. */
 interface Order {
@@ -72,11 +76,13 @@ interface Order {
 }
 
 /** The dataset both halves are run over. */
-const ORDERS: readonly Order[] = Array.from({ length: 200 }, (_, index) => ({
-	id: index,
-	region: ['north', 'south', 'east', 'west'][index % 4] as string,
-	total: (index * 37) % 500,
-}));
+const ORDERS: readonly Order[] = Array.from({ length: 200 }, (_, index) => {
+	return {
+		id: index,
+		region: ['north', 'south', 'east', 'west'][index % 4] as string,
+		total: (index * 37) % 500,
+	};
+});
 
 describe('the numeric terminals', () => {
 	it.each([
@@ -755,8 +761,9 @@ describe('cancellation', () => {
 			sum: () => sequence.sum(undefined, { signal }),
 			average: () => sequence.average(undefined, { signal }),
 			countBy: <K>(keySelector: (value: number) => K) => sequence.countBy(keySelector, { signal }),
-			toMap: <K>(keySelector: (value: number) => K) =>
-				sequence.toMap(keySelector, undefined, { signal }),
+			toMap: <K>(keySelector: (value: number) => K) => {
+				return sequence.toMap(keySelector, undefined, { signal });
+			},
 			single: () => sequence.single({ signal }),
 		};
 	}

@@ -182,11 +182,11 @@ describe('selectAwait', () => {
 		(concurrency) => {
 			// Thrown at the call rather than on first iteration, so the mistake is
 			// reported where it was made.
-			expect(() =>
-				AsyncSequenceCollection.from([1]).selectAwait(async (v) => v, {
+			expect(() => {
+				return AsyncSequenceCollection.from([1]).selectAwait(async (v) => v, {
 					concurrency,
-				}),
-			).toThrow(/positive integer concurrency/i);
+				});
+			}).toThrow(/positive integer concurrency/i);
 		},
 	);
 
@@ -239,11 +239,11 @@ describe('whereAwait', () => {
 	});
 
 	it.each([0, -1])('should reject a concurrency of %s', (concurrency) => {
-		expect(() =>
-			AsyncSequenceCollection.from([1]).whereAwait(async () => true, {
+		expect(() => {
+			return AsyncSequenceCollection.from([1]).whereAwait(async () => true, {
 				concurrency,
-			}),
-		).toThrow(/positive integer concurrency/i);
+			});
+		}).toThrow(/positive integer concurrency/i);
 	});
 });
 

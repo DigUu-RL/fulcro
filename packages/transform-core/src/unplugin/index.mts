@@ -76,8 +76,9 @@ export const createTransformerUnplugin = (
 	rewriters: readonly CallRewriter[],
 	name: string,
 	analyzers: readonly FileAnalyzer[] = [],
-): TransformerUnplugin =>
-	createAdapters((options) => createFileTransformer(rewriters, options, analyzers), name);
+): TransformerUnplugin => {
+	return createAdapters((options) => createFileTransformer(rewriters, options, analyzers), name);
+};
 
 /**
  * Builds the adapters around the core of a package.

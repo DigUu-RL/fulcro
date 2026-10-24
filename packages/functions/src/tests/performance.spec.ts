@@ -30,13 +30,15 @@ describe('switchFor, exhaustive form', () => {
 		const run: number[] = [];
 
 		const cases = Object.fromEntries(
-			[...Array(BRANCHES).keys()].map((key) => [
-				key,
-				() => {
-					run.push(key);
-					return key;
-				},
-			]),
+			[...Array(BRANCHES).keys()].map((key) => {
+				return [
+					key,
+					() => {
+						run.push(key);
+						return key;
+					},
+				];
+			}),
 		) as Record<number, () => number>;
 
 		const matched: number = switchFor(BRANCHES - 1, cases);
@@ -77,13 +79,15 @@ describe('switchFor, predicate form', () => {
 	it('should stop testing conditions at the first match', () => {
 		let tested = 0;
 
-		const cases = [...Array(BRANCHES).keys()].map((key) => ({
-			when: (): boolean => {
-				tested++;
-				return key === 2;
-			},
-			then: (): number => key,
-		}));
+		const cases = [...Array(BRANCHES).keys()].map((key) => {
+			return {
+				when: (): boolean => {
+					tested++;
+					return key === 2;
+				},
+				then: (): number => key,
+			};
+		});
 
 		switchFor(0, cases, () => -1);
 
@@ -96,13 +100,15 @@ describe('switchFor, predicate form', () => {
 
 		switchFor(
 			0,
-			[...Array(BRANCHES).keys()].map((key) => ({
-				when: (): boolean => key === 0,
-				then: (): number => {
-					run++;
-					return key;
-				},
-			})),
+			[...Array(BRANCHES).keys()].map((key) => {
+				return {
+					when: (): boolean => key === 0,
+					then: (): number => {
+						run++;
+						return key;
+					},
+				};
+			}),
 			() => -1,
 		);
 
@@ -114,13 +120,15 @@ describe('switchFor, predicate form', () => {
 
 		switchFor(
 			0,
-			[...Array(BRANCHES).keys()].map(() => ({
-				when: (): boolean => {
-					tested++;
-					return false;
-				},
-				then: (): number => 0,
-			})),
+			[...Array(BRANCHES).keys()].map(() => {
+				return {
+					when: (): boolean => {
+						tested++;
+						return false;
+					},
+					then: (): number => 0,
+				};
+			}),
 			() => -1,
 		);
 

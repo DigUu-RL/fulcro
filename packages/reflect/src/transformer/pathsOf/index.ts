@@ -45,8 +45,8 @@ export const pathsOfRewriter: CallRewriter = {
 
 		return factory.updateCallExpression(call, call.expression, undefined, [
 			factory.createArrayLiteralExpression(
-				paths.map((entry) =>
-					factory.createObjectLiteralExpression(
+				paths.map((entry) => {
+					return factory.createObjectLiteralExpression(
 						[
 							factory.createPropertyAssignment('path', factory.createStringLiteral(entry.path)),
 							factory.createPropertyAssignment('type', factory.createStringLiteral(entry.type)),
@@ -56,8 +56,8 @@ export const pathsOfRewriter: CallRewriter = {
 							),
 						],
 						false,
-					),
-				),
+					);
+				}),
 				true,
 			),
 		]);

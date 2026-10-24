@@ -132,8 +132,9 @@ const operand = (random: () => number, exponentSpread: number): Exact => {
  * @param value Exact value.
  * @returns Its literal.
  */
-const literal = (value: Exact): string =>
-	`${value.negative ? '-' : ''}${value.coefficient}e${value.exponent}`;
+const literal = (value: Exact): string => {
+	return `${value.negative ? '-' : ''}${value.coefficient}e${value.exponent}`;
+};
 
 /**
  * The exact sum of two values, by aligning them in full.
@@ -145,8 +146,11 @@ const literal = (value: Exact): string =>
 const exactSum = (left: Exact, right: Exact): Exact => {
 	const exponent: number = Math.min(left.exponent, right.exponent);
 
-	const signed = (value: Exact): bigint =>
-		(value.negative ? -1n : 1n) * value.coefficient * 10n ** BigInt(value.exponent - exponent);
+	const signed = (value: Exact): bigint => {
+		return (
+			(value.negative ? -1n : 1n) * value.coefficient * 10n ** BigInt(value.exponent - exponent)
+		);
+	};
 
 	const sum: bigint = signed(left) + signed(right);
 
@@ -481,8 +485,9 @@ describe('Decimal', () => {
 					// compare q × right with left, exactly.
 					const base: number = Math.min(q.exponent + right.exponent, left.exponent);
 
-					const scale = (value: bigint, exponent: number): bigint =>
-						value * 10n ** BigInt(exponent - base);
+					const scale = (value: bigint, exponent: number): bigint => {
+						return value * 10n ** BigInt(exponent - base);
+					};
 
 					const product: bigint = scale(
 						q.coefficient * right.coefficient,

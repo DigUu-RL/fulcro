@@ -97,8 +97,9 @@ const patternedMemoryOf = (bytes: number): { memory: LinearMemory; buffer: Array
  * @param end Byte after the last.
  * @returns The bytes, as numbers.
  */
-const bytesOf = (buffer: ArrayBuffer, start: number, end: number): number[] =>
-	Array.from(new Uint8Array(buffer, start, end - start));
+const bytesOf = (buffer: ArrayBuffer, start: number, end: number): number[] => {
+	return Array.from(new Uint8Array(buffer, start, end - start));
+};
 
 /**
  * Which addresses in `start` to `end` no longer hold {@link UNTOUCHED}.
@@ -108,8 +109,11 @@ const bytesOf = (buffer: ArrayBuffer, start: number, end: number): number[] =>
  * @param end Address after the last.
  * @returns The addresses that were written.
  */
-const touchedIn = (buffer: ArrayBuffer, start: number, end: number): number[] =>
-	bytesOf(buffer, start, end).flatMap((byte, index) => (byte === UNTOUCHED ? [] : [start + index]));
+const touchedIn = (buffer: ArrayBuffer, start: number, end: number): number[] => {
+	return bytesOf(buffer, start, end).flatMap((byte, index) =>
+		byte === UNTOUCHED ? [] : [start + index],
+	);
+};
 
 /** `1.5` as a little-endian 64-bit float, written out by hand. */
 const ONE_AND_A_HALF = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf8, 0x3f];
@@ -551,13 +555,14 @@ describe('nativePointerTo an allocation', () => {
 		arena.reset();
 		arena.allocate(16, 8);
 
-		const released = (operation: string): Error =>
-			coded(
+		const released = (operation: string): Error => {
+			return coded(
 				new Error(
 					`FULCRO7009: ${operation}: the memory was released by its allocator, and may already hold other values.`,
 				),
 				{ operation },
 			);
+		};
 
 		expect(() => pointer.get()).toThrowError(released('NativePointer.get'));
 		expect(() => {

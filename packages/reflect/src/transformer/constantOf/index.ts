@@ -120,10 +120,13 @@ const outcomes = new WeakMap<typescript.TypeChecker, Map<typescript.CallExpressi
  * @param outer Node that may contain it.
  * @returns `true` when it does.
  */
-const isWithin = (inner: typescript.Node, outer: typescript.Node): boolean =>
-	inner.getSourceFile() === outer.getSourceFile() &&
-	inner.pos >= outer.pos &&
-	inner.end <= outer.end;
+const isWithin = (inner: typescript.Node, outer: typescript.Node): boolean => {
+	return (
+		inner.getSourceFile() === outer.getSourceFile() &&
+		inner.pos >= outer.pos &&
+		inner.end <= outer.end
+	);
+};
 
 /**
  * Tells whether an identifier is read as a value, rather than naming a member,
@@ -265,11 +268,12 @@ const prove = (
  * @returns The position.
  */
 const functionStart = (declaration: typescript.FunctionDeclaration): number => {
-	const kept: typescript.ModifierLike | undefined = declaration.modifiers?.find(
-		(modifier) =>
+	const kept: typescript.ModifierLike | undefined = declaration.modifiers?.find((modifier) => {
+		return (
 			modifier.kind !== typescript.SyntaxKind.ExportKeyword &&
-			modifier.kind !== typescript.SyntaxKind.DefaultKeyword,
-	);
+			modifier.kind !== typescript.SyntaxKind.DefaultKeyword
+		);
+	});
 
 	if (kept !== undefined) return kept.getStart();
 
@@ -417,14 +421,15 @@ const bind = (
  * @param value A value a literal can write.
  * @returns Its source.
  */
-const printLiteral = (value: unknown): string =>
-	typescript
+const printLiteral = (value: unknown): string => {
+	return typescript
 		.createPrinter()
 		.printNode(
 			typescript.EmitHint.Expression,
 			constantLiteral(typescript.factory, value),
 			typescript.createSourceFile('', '', typescript.ScriptTarget.ES2022),
 		);
+};
 
 /**
  * Describes what an evaluation threw, which may come from the evaluation's own
@@ -513,14 +518,16 @@ const evaluate = (call: typescript.CallExpression, context: RewriteContext): Out
  * @returns Its value, or why it has none.
  */
 const computeOutcome = (call: typescript.CallExpression, context: RewriteContext): Outcome => {
-	const refuse = (reason: string): Outcome => ({
-		kind: 'refused',
-		message: createError('FULCRO4010', {
-			operation: 'constantOf',
-			call: CALL,
-			reason,
-		}).message,
-	});
+	const refuse = (reason: string): Outcome => {
+		return {
+			kind: 'refused',
+			message: createError('FULCRO4010', {
+				operation: 'constantOf',
+				call: CALL,
+				reason,
+			}).message,
+		};
+	};
 
 	if (call.arguments.length !== 1) {
 		return refuse('it takes exactly one function');

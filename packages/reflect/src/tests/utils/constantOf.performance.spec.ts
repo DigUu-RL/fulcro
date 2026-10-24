@@ -84,20 +84,18 @@ describe('constantOf', () => {
 		const readsFor = (length: number): number => {
 			let reads = 0;
 
-			const observed = Array.from(
-				{ length },
-				(_item, index) =>
-					new Proxy(
-						{ index },
-						{
-							getOwnPropertyDescriptor: (target, key) => {
-								reads++;
+			const observed = Array.from({ length }, (_item, index) => {
+				return new Proxy(
+					{ index },
+					{
+						getOwnPropertyDescriptor: (target, key) => {
+							reads++;
 
-								return Reflect.getOwnPropertyDescriptor(target, key);
-							},
+							return Reflect.getOwnPropertyDescriptor(target, key);
 						},
-					),
-			);
+					},
+				);
+			});
 
 			evaluateAtRuntime(() => observed as never);
 

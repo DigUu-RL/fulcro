@@ -200,7 +200,9 @@ export const describeType = (
 	family: string,
 	element: string,
 	...dimensions: readonly number[]
-): string => `${family}<${[element, ...dimensions].join(', ')}>`;
+): string => {
+	return `${family}<${[element, ...dimensions].join(', ')}>`;
+};
 
 /**
  * The operations of a component type, whatever form its descriptor takes.

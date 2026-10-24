@@ -43,8 +43,9 @@ export class OrderedSequenceCollection<T>
 				// materialize the whole sequence anyway, so handing out the
 				// iterator of the sorted array costs one frame instead of
 				// suspending and resuming a generator once per element.
-				[Symbol.iterator]: (): Iterator<T> =>
-					OrderedSequenceCollection.sort(source, criteria)[Symbol.iterator](),
+				[Symbol.iterator]: (): Iterator<T> => {
+					return OrderedSequenceCollection.sort(source, criteria)[Symbol.iterator]();
+				},
 			},
 			// Sorting rearranges the elements without adding or removing any,
 			// so whatever the origin knows about its size still holds.

@@ -93,5 +93,6 @@ const complexProduct: ProductRule = <T>(
  */
 export const ComplexNumber = <TElement extends ElementDescriptor>(
 	element: TElement,
-): ComplexNumberType<ValueOf<TElement>, SourceOf<TElement>> =>
-	createHypercomplexType('ComplexNumber', PARTS, element, complexProduct);
+): ComplexNumberType<ValueOf<TElement>, SourceOf<TElement>> => {
+	return createHypercomplexType('ComplexNumber', PARTS, element, complexProduct);
+};

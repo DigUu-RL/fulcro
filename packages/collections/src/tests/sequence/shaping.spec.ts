@@ -32,11 +32,14 @@ interface Player {
  * @param distinctScores How many different scores to spread them across.
  * @returns The players, in a fixed order.
  */
-const playersWithTies = (count: number, distinctScores: number): readonly Player[] =>
-	Array.from({ length: count }, (_, index) => ({
-		name: `player-${index}`,
-		score: index % distinctScores,
-	}));
+const playersWithTies = (count: number, distinctScores: number): readonly Player[] => {
+	return Array.from({ length: count }, (_, index) => {
+		return {
+			name: `player-${index}`,
+			score: index % distinctScores,
+		};
+	});
+};
 
 describe('choose', () => {
 	it('should keep what the projection produced and drop what it did not', () => {
@@ -364,8 +367,9 @@ describe('a type that contains itself', () => {
 	 * @param value Value being tested.
 	 * @returns Whether the check kept it.
 	 */
-	const accepts = (value: unknown): boolean =>
-		SequenceCollection.from([value]).ofType<Comment>().count() === 1;
+	const accepts = (value: unknown): boolean => {
+		return SequenceCollection.from([value]).ofType<Comment>().count() === 1;
+	};
 
 	it('should accept a tree that is valid all the way down', () => {
 		expect(
@@ -443,8 +447,9 @@ describe('a type that contains itself', () => {
 			posts: [{ title: 'a post', author: { name: 7, posts: [] } }],
 		};
 
-		const kept = (value: unknown): number =>
-			SequenceCollection.from([value]).ofType<Author>().count();
+		const kept = (value: unknown): number => {
+			return SequenceCollection.from([value]).ofType<Author>().count();
+		};
 
 		expect(kept(author)).toBe(1);
 		expect(kept(wrong)).toBe(0);
@@ -473,11 +478,11 @@ describe('a type that contains itself', () => {
 	});
 
 	it('should name the type in the error cast throws', () => {
-		expect(() =>
-			SequenceCollection.from([{ id: 1, text: 'a', replies: [] }, 'wrong'])
+		expect(() => {
+			return SequenceCollection.from([{ id: 1, text: 'a', replies: [] }, 'wrong'])
 				.cast<Comment>()
-				.toArray(),
-		).toThrow(/cast\('Comment'\)/);
+				.toArray();
+		}).toThrow(/cast\('Comment'\)/);
 	});
 });
 
@@ -496,13 +501,15 @@ describe('the shape check the transformer writes', () => {
 	}
 
 	/** A value that satisfies every clause, for the cases below to spoil. */
-	const valid = (): Record<string, unknown> => ({
-		id: 1,
-		tags: ['a'],
-		customer: { email: 'a@b.c' },
-		status: 'pending',
-		placedAt: new Date(),
-	});
+	const valid = (): Record<string, unknown> => {
+		return {
+			id: 1,
+			tags: ['a'],
+			customer: { email: 'a@b.c' },
+			status: 'pending',
+			placedAt: new Date(),
+		};
+	};
 
 	/**
 	 * Runs one value through the check.
@@ -510,8 +517,9 @@ describe('the shape check the transformer writes', () => {
 	 * @param value Value being tested.
 	 * @returns Whether the check kept it.
 	 */
-	const accepts = (value: unknown): boolean =>
-		SequenceCollection.from([value]).ofType<Order>().count() === 1;
+	const accepts = (value: unknown): boolean => {
+		return SequenceCollection.from([value]).ofType<Order>().count() === 1;
+	};
 
 	it('should accept a value that satisfies every clause', () => {
 		expect(accepts(valid())).toBe(true);
@@ -542,10 +550,12 @@ describe('the shape check the transformer writes', () => {
 		['a value outside the union', () => ({ ...valid(), status: 'shipped' })],
 		[
 			'a class field that is not an instance',
-			() => ({
-				...valid(),
-				placedAt: '2020-01-01',
-			}),
+			() => {
+				return {
+					...valid(),
+					placedAt: '2020-01-01',
+				};
+			},
 		],
 		['null', () => null],
 		['a primitive', () => 'an order'],
@@ -562,9 +572,9 @@ describe('the shape check the transformer writes', () => {
 	});
 
 	it('should name the type in the error cast throws', () => {
-		expect(() =>
-			SequenceCollection.from([valid(), 'not an order']).cast<Order>().toArray(),
-		).toThrow(/cast\('Order'\)/);
+		expect(() => {
+			return SequenceCollection.from([valid(), 'not an order']).cast<Order>().toArray();
+		}).toThrow(/cast\('Order'\)/);
 	});
 
 	it('should check every element of an array, not just the first', () => {

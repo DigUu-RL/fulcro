@@ -176,12 +176,13 @@ export const membersOfType = (
 				name: property.getName(),
 				type: checker.typeToString(declared),
 				optional: (property.flags & typescript.SymbolFlags.Optional) !== 0,
-				readonly: (property.declarations ?? []).some(
-					(declaration) =>
+				readonly: (property.declarations ?? []).some((declaration) => {
+					return (
 						(typescript.getCombinedModifierFlags(declaration) &
 							typescript.ModifierFlags.Readonly) !==
-						0,
-				),
+						0
+					);
+				}),
 			};
 		});
 };

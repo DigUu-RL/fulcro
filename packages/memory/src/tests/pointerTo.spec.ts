@@ -134,9 +134,9 @@ describe('pointerTo', () => {
 			},
 		);
 
-		expect(() =>
-			pointerTo(pointerTo(counting(2), 0) as unknown as Storage<number>, 0),
-		).toThrowError(expected);
+		expect(() => {
+			return pointerTo(pointerTo(counting(2), 0) as unknown as Storage<number>, 0);
+		}).toThrowError(expected);
 
 		expect(() => pointerTo(referenceTo(0) as unknown as Storage<number>, 0)).toThrowError(expected);
 	});

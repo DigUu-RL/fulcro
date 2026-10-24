@@ -152,8 +152,9 @@ beforeAll(readPackedFiles, 120_000);
  * @param declared Path as written in the manifest, such as `./dist/index.js`.
  * @returns The same path without its leading `./`, with forward slashes.
  */
-const asPackedPath = (declared: string): string =>
-	declared.replace(/^\.\//, '').split(path.sep).join('/');
+const asPackedPath = (declared: string): string => {
+	return declared.replace(/^\.\//, '').split(path.sep).join('/');
+};
 
 /**
  * Collects every relative path an exports map points at.
@@ -651,13 +652,13 @@ describe('@fulcro/errors', () => {
 		// survive the hop between two built packages.
 		const { createWorkerPool } = await import('@fulcro/parallel');
 
-		expect(() =>
-			createWorkerPool({
+		expect(() => {
+			return createWorkerPool({
 				module: 'file:///nowhere.mjs',
 				export: 'task',
 				workers: 0,
-			}),
-		).toThrow(expect.objectContaining({ code: 'FULCRO3003' }));
+			});
+		}).toThrow(expect.objectContaining({ code: 'FULCRO3003' }));
 	});
 });
 
@@ -1022,13 +1023,13 @@ describe('@fulcro/collections/transformer', () => {
 
 		// Compiled without the plugin, so this call arrives with no token. It has
 		// to say so rather than quietly keeping everything or nothing.
-		expect(() =>
-			(
+		expect(() => {
+			return (
 				SequenceCollection.from(['a']) as unknown as {
 					ofType: () => unknown;
 				}
-			).ofType(),
-		).toThrow(/was not resolved at compile time/);
+			).ofType();
+		}).toThrow(/was not resolved at compile time/);
 	});
 });
 

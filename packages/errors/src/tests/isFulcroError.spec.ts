@@ -10,12 +10,13 @@ import { prefixError } from '@/src/prefixError';
  */
 
 /** An error as `@fulcro/memory` throws it for an index past the end. */
-const outside = (): RangeError & FulcroError<'FULCRO7002'> =>
-	createError('FULCRO7002', {
+const outside = (): RangeError & FulcroError<'FULCRO7002'> => {
+	return createError('FULCRO7002', {
 		operation: 'ManagedStorage.get',
 		index: 12,
 		length: 10,
 	});
+};
 
 describe('isFulcroError', () => {
 	it('should accept an error a package created', () => {

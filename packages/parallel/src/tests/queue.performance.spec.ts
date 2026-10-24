@@ -44,11 +44,13 @@ describe('what a queue that never empties keeps', () => {
 		const queue = createWaitingQueue();
 		let starts = 0;
 
-		const counted = (): Waiting => ({
-			start: () => {
-				starts++;
-			},
-		});
+		const counted = (): Waiting => {
+			return {
+				start: () => {
+					starts++;
+				},
+			};
+		};
 
 		queue.push(counted());
 

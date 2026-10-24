@@ -101,10 +101,13 @@ const evaluate = (binding: string): unknown => {
  * @param value Value to inspect.
  * @returns `true` when nothing in it can be changed.
  */
-const deeplyFrozen = (value: unknown): boolean =>
-	typeof value !== 'object' ||
-	value === null ||
-	(Object.isFrozen(value) && Object.values(value).every(deeplyFrozen));
+const deeplyFrozen = (value: unknown): boolean => {
+	return (
+		typeof value !== 'object' ||
+		value === null ||
+		(Object.isFrozen(value) && Object.values(value).every(deeplyFrozen))
+	);
+};
 
 /**
  * The line of the fixture a diagnostic points at, trimmed.
@@ -131,16 +134,17 @@ const refusalOf = (binding: string): string => {
 			? -1
 			: (rejected.refused[0]?.file as ts.SourceFile).text.indexOf(`export const ${binding} =`);
 
-	const found: ts.Diagnostic | undefined = rejected.refused.find(
-		(diagnostic) =>
+	const found: ts.Diagnostic | undefined = rejected.refused.find((diagnostic) => {
+		return (
 			declaration >= 0 &&
 			(diagnostic.start ?? 0) > declaration &&
 			// The first refusal after the declaration is its own: every binding
 			// of the fixture declares exactly one call.
 			!rejected.refused.some(
 				(other) => (other.start ?? 0) > declaration && (other.start ?? 0) < (diagnostic.start ?? 0),
-			),
-	);
+			)
+		);
+	});
 
 	if (found === undefined) throw new Error(`${binding} was not refused`);
 
@@ -225,10 +229,11 @@ describe('constantOf at compile time', () => {
 			expect(rejected.refused).toHaveLength(10);
 
 			expect(
-				rejected.refused.every(
-					(diagnostic) =>
-						diagnostic.category === ts.DiagnosticCategory.Error && diagnostic.source === 'fulcro',
-				),
+				rejected.refused.every((diagnostic) => {
+					return (
+						diagnostic.category === ts.DiagnosticCategory.Error && diagnostic.source === 'fulcro'
+					);
+				}),
 			).toBe(true);
 
 			expect(rejected.emitted.match(/constantOf\(/g)).toHaveLength(10);

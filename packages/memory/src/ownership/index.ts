@@ -94,8 +94,9 @@ export const recordBorrow = <T extends object>(borrow: T): T => {
  * @param value Value to look at.
  * @returns `true` for a borrow.
  */
-export const isBorrow = (value: unknown): boolean =>
-	typeof value === 'object' && value !== null && borrows.has(value);
+export const isBorrow = (value: unknown): boolean => {
+	return typeof value === 'object' && value !== null && borrows.has(value);
+};
 
 /**
  * Makes the handle that owns a storage now, and spends the one before it.
@@ -137,13 +138,15 @@ export const createOwned = <T>(state: Ownership<T>): Owned<T> => {
  * @param storage The storage, already claimed.
  * @returns What its owners and borrows will share.
  */
-export const createOwnership = <T>(storage: Storage<T>): Ownership<T> => ({
-	storage,
-	source: storageSource(storage),
-	generation: 0,
-	exclusive: false,
-	owner: null,
-});
+export const createOwnership = <T>(storage: Storage<T>): Ownership<T> => {
+	return {
+		storage,
+		source: storageSource(storage),
+		generation: 0,
+		exclusive: false,
+		owner: null,
+	};
+};
 
 /**
  * Finds the state behind an owner, refusing a spent one.

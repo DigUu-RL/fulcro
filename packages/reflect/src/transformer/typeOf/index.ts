@@ -197,8 +197,8 @@ const buildMetadataLiteral = (
 			factory.createPropertyAssignment(
 				'members',
 				factory.createArrayLiteralExpression(
-					members.map((member) =>
-						factory.createObjectLiteralExpression(
+					members.map((member) => {
+						return factory.createObjectLiteralExpression(
 							[
 								factory.createPropertyAssignment('name', factory.createStringLiteral(member.name)),
 								factory.createPropertyAssignment('type', factory.createStringLiteral(member.type)),
@@ -212,8 +212,8 @@ const buildMetadataLiteral = (
 								),
 							],
 							false,
-						),
-					),
+						);
+					}),
 					true,
 				),
 			),

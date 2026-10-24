@@ -56,12 +56,14 @@ describe('createTransformer with analyzers, counted', () => {
 	it('should invoke each analyzer once per file, however many calls it holds', () => {
 		const counts: [number, number] = [0, 0];
 
-		const counting = (slot: 0 | 1): FileAnalyzer => ({
-			functionNames: ['flag'],
-			analyze: (): void => {
-				counts[slot]++;
-			},
-		});
+		const counting = (slot: 0 | 1): FileAnalyzer => {
+			return {
+				functionNames: ['flag'],
+				analyze: (): void => {
+					counts[slot]++;
+				},
+			};
+		};
 
 		const transformer = createTransformer([], [counting(0), counting(1)])(program);
 

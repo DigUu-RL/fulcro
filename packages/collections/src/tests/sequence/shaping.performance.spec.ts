@@ -44,20 +44,22 @@ let orders: readonly Order[] = [];
 beforeAll(() => {
 	// Built once: a dataset rebuilt per test would make every count below a
 	// measurement of the builder.
-	orders = Array.from({ length: SIZE }, (_, index) => ({
-		id: index,
-		region: ['north', 'south', 'east', 'west'][index % 4] as string,
-		status: (['pending', 'paid', 'shipped'] as const)[index % 3] as Order['status'],
-		// Spread by a prime so the ranking cannot be satisfied by arrival order,
-		// and so the best elements are not clustered at either end.
-		total: (index * 7919) % 50_000,
-		placedAt: new Date(2020, 0, 1 + (index % 1_000)),
-		items: [
-			{ sku: `sku-${index % 97}`, quantity: (index % 5) + 1 },
-			{ sku: `sku-${index % 89}`, quantity: (index % 3) + 1 },
-		],
-		reference: index % 4 === 0 ? null : `ref-${index}`,
-	}));
+	orders = Array.from({ length: SIZE }, (_, index) => {
+		return {
+			id: index,
+			region: ['north', 'south', 'east', 'west'][index % 4] as string,
+			status: (['pending', 'paid', 'shipped'] as const)[index % 3] as Order['status'],
+			// Spread by a prime so the ranking cannot be satisfied by arrival order,
+			// and so the best elements are not clustered at either end.
+			total: (index * 7919) % 50_000,
+			placedAt: new Date(2020, 0, 1 + (index % 1_000)),
+			items: [
+				{ sku: `sku-${index % 97}`, quantity: (index % 5) + 1 },
+				{ sku: `sku-${index % 89}`, quantity: (index % 3) + 1 },
+			],
+			reference: index % 4 === 0 ? null : `ref-${index}`,
+		};
+	});
 });
 
 /** Conversions observed by the counting keys of the test in hand. */
@@ -72,12 +74,14 @@ let conversions = 0;
  * @param value Value the key stands for.
  * @returns The counting key.
  */
-const countingKey = (value: number): object => ({
-	[Symbol.toPrimitive]: (): number => {
-		conversions++;
-		return value;
-	},
-});
+const countingKey = (value: number): object => {
+	return {
+		[Symbol.toPrimitive]: (): number => {
+			conversions++;
+			return value;
+		},
+	};
+};
 
 /**
  * A source that counts what is pulled out of it.
@@ -89,14 +93,16 @@ const countingKey = (value: number): object => ({
  * @param counter Called for each element as it is pulled.
  * @returns The instrumented source.
  */
-const counted = <T>(values: readonly T[], counter: () => void): Iterable<T> => ({
-	*[Symbol.iterator](): Iterator<T> {
-		for (const value of values) {
-			counter();
-			yield value;
-		}
-	},
-});
+const counted = <T>(values: readonly T[], counter: () => void): Iterable<T> => {
+	return {
+		*[Symbol.iterator](): Iterator<T> {
+			for (const value of values) {
+				counter();
+				yield value;
+			}
+		},
+	};
+};
 
 describe('topBy', () => {
 	it('should make one comparison per element, whatever the volume', () => {
@@ -307,11 +313,11 @@ describe('ofType and cast', () => {
 
 		let pulled = 0;
 
-		expect(() =>
-			SequenceCollection.from(counted(broken, () => pulled++))
+		expect(() => {
+			return SequenceCollection.from(counted(broken, () => pulled++))
 				.cast('object')
-				.toArray(),
-		).toThrow(TypeError);
+				.toArray();
+		}).toThrow(TypeError);
 
 		expect(pulled).toBe(6);
 	});
@@ -379,13 +385,14 @@ describe('the shape check the transformer writes', () => {
 				typeof order.total === 'number' &&
 				order.placedAt instanceof Date &&
 				Array.isArray(order.items) &&
-				order.items.every(
-					(item) =>
+				order.items.every((item) => {
+					return (
 						item !== null &&
 						typeof item === 'object' &&
 						typeof item.sku === 'string' &&
-						typeof item.quantity === 'number',
-				) &&
+						typeof item.quantity === 'number'
+					);
+				}) &&
 				(order.reference === null || typeof order.reference === 'string')
 			);
 		};
@@ -452,12 +459,14 @@ describe('a recursive shape check', () => {
 	 * @param next Counter handing out ids.
 	 * @returns The root comment.
 	 */
-	const treeOf = (depth: number, breadth: number, next: { value: number }): Comment => ({
-		id: next.value++,
-		text: `comment ${next.value}`,
-		replies:
-			depth === 0 ? [] : Array.from({ length: breadth }, () => treeOf(depth - 1, breadth, next)),
-	});
+	const treeOf = (depth: number, breadth: number, next: { value: number }): Comment => {
+		return {
+			id: next.value++,
+			text: `comment ${next.value}`,
+			replies:
+				depth === 0 ? [] : Array.from({ length: breadth }, () => treeOf(depth - 1, breadth, next)),
+		};
+	};
 
 	let forest: readonly Comment[] = [];
 

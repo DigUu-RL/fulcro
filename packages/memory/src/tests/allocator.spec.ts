@@ -45,14 +45,15 @@ const STRATEGIES = [
  * @param allocation Allocation to read.
  * @returns Its bytes, in order.
  */
-const bytesOf = (allocation: Allocation): number[] =>
-	Array.from(
+const bytesOf = (allocation: Allocation): number[] => {
+	return Array.from(
 		new Uint8Array(
 			allocation.bytes.buffer,
 			allocation.bytes.byteOffset,
 			allocation.bytes.byteLength,
 		),
 	);
+};
 
 /**
  * A consumer that knows nothing but the contract.

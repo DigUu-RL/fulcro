@@ -34,11 +34,12 @@ import { Vector } from '@/src/vector';
  * @param details The details the error is expected to carry.
  * @returns The same error, carrying that code and those details.
  */
-const coded = <T extends Error>(error: T, details: Readonly<Record<string, unknown>>): T =>
-	Object.assign(error, {
+const coded = <T extends Error>(error: T, details: Readonly<Record<string, unknown>>): T => {
+	return Object.assign(error, {
 		code: error.message.slice(0, 'FULCRO0000'.length),
 		details,
 	});
+};
 
 const Pair = MatrixOf(DoublePrecisionFloat, 2, 3);
 const Tall = MatrixOf(DoublePrecisionFloat, 3, 2);
@@ -347,12 +348,12 @@ describe('Matrix', () => {
 				),
 			);
 
-			expect(() =>
-				Pair.from([
+			expect(() => {
+				return Pair.from([
 					[1, 2, 3],
 					[4, 5],
-				]),
-			).toThrow(
+				]);
+			}).toThrow(
 				coded(
 					new RangeError(
 						'FULCRO6038: Matrix<DoublePrecisionFloat, 2, 3>.from: expected 3 elements in row 1, received 2.',
@@ -367,12 +368,12 @@ describe('Matrix', () => {
 		});
 
 		it('should name the element its own type refused, keeping its code', () => {
-			expect(() =>
-				Pair.from([
+			expect(() => {
+				return Pair.from([
 					[1, 2, 3],
 					[4, 'x' as never, 6],
-				]),
-			).toThrow(
+				]);
+			}).toThrow(
 				coded(
 					new TypeError(
 						'FULCRO6006: Matrix<DoublePrecisionFloat, 2, 3>.from: row 1, column 1: DoublePrecisionFloat.from: expected a number, received string.',

@@ -157,9 +157,9 @@ describe('createFixedBufferStorage', () => {
 	});
 
 	it('should refuse a numeric type, which carries no byte encoding of its own', () => {
-		expect(() =>
-			createFixedBufferStorage(SinglePrecisionFloat as unknown as typeof Point, 1),
-		).toThrowError(TypeError);
+		expect(() => {
+			return createFixedBufferStorage(SinglePrecisionFloat as unknown as typeof Point, 1);
+		}).toThrowError(TypeError);
 	});
 
 	it('should infer the struct it stores', () => {

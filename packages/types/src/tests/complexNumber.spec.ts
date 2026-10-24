@@ -26,11 +26,12 @@ import { struct } from '@/src/struct';
  * @param details The details the error is expected to carry.
  * @returns The same error, carrying that code and those details.
  */
-const coded = <T extends Error>(error: T, details: Readonly<Record<string, unknown>>): T =>
-	Object.assign(error, {
+const coded = <T extends Error>(error: T, details: Readonly<Record<string, unknown>>): T => {
+	return Object.assign(error, {
 		code: error.message.slice(0, 'FULCRO0000'.length),
 		details,
 	});
+};
 
 const Complex = ComplexNumberOf(DoublePrecisionFloat);
 const i = Complex.from({ real: 0, imaginary: 1 });
@@ -115,12 +116,12 @@ describe('ComplexNumber', () => {
 			expect(quotient.real).toBeNaN();
 			expect(quotient.imaginary).toBeNaN();
 
-			expect(() =>
-				ComplexNumberOf(SignedInteger(32)).divide(
+			expect(() => {
+				return ComplexNumberOf(SignedInteger(32)).divide(
 					ComplexNumberOf(SignedInteger(32)).from(1),
 					ComplexNumberOf(SignedInteger(32)).from(0),
-				),
-			).toThrow(RangeError);
+				);
+			}).toThrow(RangeError);
 		});
 
 		it('should conjugate and scale', () => {

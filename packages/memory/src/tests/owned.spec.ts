@@ -27,22 +27,24 @@ import { coded } from './coded';
  */
 
 /** The error a disposed owner throws, for an operation. */
-const disposed = (operation: string): Error =>
-	coded(
+const disposed = (operation: string): Error => {
+	return coded(
 		new Error(
 			`FULCRO7030: ${operation}: the owner was disposed when its scope ended; nothing can be borrowed or moved from it any more.`,
 		),
 		{ operation },
 	);
+};
 
 /** The error an ended borrow throws, for an operation. */
-const ended = (operation: string): Error =>
-	coded(
+const ended = (operation: string): Error => {
+	return coded(
 		new Error(
 			`FULCRO7024: ${operation}: the borrow has ended — its owner was moved or disposed, or borrowed again in a way it cannot share; borrow again.`,
 		),
 		{ operation },
 	);
+};
 
 const Particle = struct('Particle', {
 	x: SinglePrecisionFloat,

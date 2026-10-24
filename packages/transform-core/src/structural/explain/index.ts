@@ -58,8 +58,9 @@ interface Walk {
  * @param flag Flag looked for.
  * @returns `true` when the type carries it.
  */
-const has = (type: typescript.Type, flag: typescript.TypeFlags): boolean =>
-	(type.flags & flag) !== 0;
+const has = (type: typescript.Type, flag: typescript.TypeFlags): boolean => {
+	return (type.flags & flag) !== 0;
+};
 
 /**
  * Builds the expression naming what a value actually is, at runtime.
@@ -74,14 +75,15 @@ const has = (type: typescript.Type, flag: typescript.TypeFlags): boolean =>
 const describe = (
 	factory: typescript.NodeFactory,
 	value: typescript.Expression,
-): typescript.Expression =>
-	factory.createConditionalExpression(
+): typescript.Expression => {
+	return factory.createConditionalExpression(
 		factory.createStrictEquality(value, factory.createNull()),
 		undefined,
 		factory.createStringLiteral('null'),
 		undefined,
 		factory.createTypeOfExpression(value),
 	);
+};
 
 /**
  * Builds `return "<path>: expected <expected>, got " + typeof value`.
@@ -122,10 +124,11 @@ const propertyOf = (
 	factory: typescript.NodeFactory,
 	value: typescript.Expression,
 	name: string,
-): typescript.Expression =>
-	/^[A-Za-z_$][\w$]*$/.test(name)
+): typescript.Expression => {
+	return /^[A-Za-z_$][\w$]*$/.test(name)
 		? factory.createPropertyAccessExpression(value, name)
 		: factory.createElementAccessExpression(value, factory.createStringLiteral(name));
+};
 
 /**
  * Extends a path expression with a property name.
@@ -139,10 +142,11 @@ const pathTo = (
 	factory: typescript.NodeFactory,
 	path: typescript.Expression,
 	name: string,
-): typescript.Expression =>
-	typescript.isStringLiteral(path) && path.text === ''
+): typescript.Expression => {
+	return typescript.isStringLiteral(path) && path.text === ''
 		? factory.createStringLiteral(name)
 		: factory.createAdd(path, factory.createStringLiteral(`.${name}`));
+};
 
 /**
  * Writes the statements that look for a failure of one type at one path.

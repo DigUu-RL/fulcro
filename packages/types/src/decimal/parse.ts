@@ -33,8 +33,9 @@ const KEPT_DIGITS = PRECISION + 1;
  * @param text Input that was rejected.
  * @returns A quoted, shortened copy.
  */
-const describeInput = (text: string): string =>
-	JSON.stringify(text.length > 40 ? `${text.slice(0, 40)}…` : text);
+const describeInput = (text: string): string => {
+	return JSON.stringify(text.length > 40 ? `${text.slice(0, 40)}…` : text);
+};
 
 /**
  * Parses a decimal literal into normalised parts, rounding half to even when it

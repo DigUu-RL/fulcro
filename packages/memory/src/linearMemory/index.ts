@@ -50,8 +50,9 @@ const currentBytes = new WeakMap<LinearMemory, () => DataView>();
  * @param value Value to inspect.
  * @returns `true` when it is.
  */
-export const isLinearMemory = (value: unknown): value is LinearMemory =>
-	currentBytes.has(value as LinearMemory);
+export const isLinearMemory = (value: unknown): value is LinearMemory => {
+	return currentBytes.has(value as LinearMemory);
+};
 
 /**
  * The bytes of a linear memory as they are now, every address in it valid in
@@ -60,8 +61,9 @@ export const isLinearMemory = (value: unknown): value is LinearMemory =>
  * @param memory A linear memory made by this package.
  * @returns A view over all of it.
  */
-export const bytesOf = (memory: LinearMemory): DataView =>
-	(currentBytes.get(memory) as () => DataView)();
+export const bytesOf = (memory: LinearMemory): DataView => {
+	return (currentBytes.get(memory) as () => DataView)();
+};
 
 /**
  * Builds a linear memory, naming the caller's operation if the backing is
@@ -165,5 +167,6 @@ export const openLinearMemory = (
  * @throws {TypeError} When the backing is neither an `ArrayBuffer` nor an
  * object with one as its `buffer`, or when it is shared.
  */
-export const createLinearMemory = (backing: ArrayBuffer | GrowableMemory): LinearMemory =>
-	openLinearMemory('createLinearMemory', backing);
+export const createLinearMemory = (backing: ArrayBuffer | GrowableMemory): LinearMemory => {
+	return openLinearMemory('createLinearMemory', backing);
+};

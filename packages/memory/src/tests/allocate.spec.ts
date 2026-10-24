@@ -219,16 +219,16 @@ describe('allocate', () => {
 	it('should refuse an element type it cannot store, before asking for memory', () => {
 		const { allocator, requests } = createLedgerAllocator();
 
-		expect(() =>
-			allocate(
+		expect(() => {
+			return allocate(
 				{
 					name: 'T',
 					layout: { size: 4, alignment: 4 },
 				} as unknown as typeof Particle,
 				1,
 				allocator,
-			),
-		).toThrowError(
+			);
+		}).toThrowError(
 			coded(
 				new TypeError(
 					'FULCRO7003: allocate: expected an element type with a name, layout.size, read, write and is; read is missing.',

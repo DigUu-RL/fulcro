@@ -135,8 +135,9 @@ interface RecursiveCheck {
  * @param flag Flag looked for.
  * @returns `true` when the type carries it.
  */
-const has = (type: typescript.Type, flag: typescript.TypeFlags): boolean =>
-	(type.flags & flag) !== 0;
+const has = (type: typescript.Type, flag: typescript.TypeFlags): boolean => {
+	return (type.flags & flag) !== 0;
+};
 
 /**
  * Builds `typeof value === name`.
@@ -150,11 +151,12 @@ const typeofIs = (
 	factory: typescript.NodeFactory,
 	value: typescript.Expression,
 	name: string,
-): typescript.Expression =>
-	factory.createStrictEquality(
+): typescript.Expression => {
+	return factory.createStrictEquality(
 		factory.createTypeOfExpression(value),
 		factory.createStringLiteral(name),
 	);
+};
 
 /**
  * Joins checks with `&&`, or answers `true` when there are none.
@@ -166,10 +168,11 @@ const typeofIs = (
 const all = (
 	factory: typescript.NodeFactory,
 	checks: readonly typescript.Expression[],
-): typescript.Expression =>
-	checks.length === 0
+): typescript.Expression => {
+	return checks.length === 0
 		? factory.createTrue()
 		: checks.reduce((left, right) => factory.createLogicalAnd(left, right));
+};
 
 /**
  * Joins checks with `||`, or answers `false` when there are none.
@@ -181,10 +184,11 @@ const all = (
 const any = (
 	factory: typescript.NodeFactory,
 	checks: readonly typescript.Expression[],
-): typescript.Expression =>
-	checks.length === 0
+): typescript.Expression => {
+	return checks.length === 0
 		? factory.createFalse()
 		: checks.reduce((left, right) => factory.createLogicalOr(left, right));
+};
 
 /**
  * Reads a property off an expression, quoting the key when it has to.
@@ -198,10 +202,11 @@ const propertyOf = (
 	factory: typescript.NodeFactory,
 	value: typescript.Expression,
 	name: string,
-): typescript.Expression =>
-	/^[A-Za-z_$][\w$]*$/.test(name)
+): typescript.Expression => {
+	return /^[A-Za-z_$][\w$]*$/.test(name)
 		? factory.createPropertyAccessExpression(value, name)
 		: factory.createElementAccessExpression(value, factory.createStringLiteral(name));
+};
 
 /**
  * Names a global constructor that is safe to test with `instanceof`.
@@ -242,9 +247,12 @@ const GLOBAL_CLASSES = new Set([
  * @param type Type being inspected.
  * @returns `true` when `undefined` is one of its members.
  */
-const admitsUndefined = (type: typescript.Type): boolean =>
-	has(type, typescript.TypeFlags.Undefined) ||
-	(type.isUnion() && type.types.some((member) => has(member, typescript.TypeFlags.Undefined)));
+const admitsUndefined = (type: typescript.Type): boolean => {
+	return (
+		has(type, typescript.TypeFlags.Undefined) ||
+		(type.isUnion() && type.types.some((member) => has(member, typescript.TypeFlags.Undefined)))
+	);
+};
 
 /**
  * Lists the types a type is built out of, for the cycle search.
@@ -420,9 +428,9 @@ const checkFor = (
 
 	// A union takes in enums too, which the checker presents as one.
 	if (type.isUnion()) {
-		const members: (typescript.Expression | null)[] = type.types.map((member) =>
-			checkFor(member, value, generation, depth + 1),
-		);
+		const members: (typescript.Expression | null)[] = type.types.map((member) => {
+			return checkFor(member, value, generation, depth + 1);
+		});
 
 		if (members.some((member) => member === null)) return null;
 
@@ -430,9 +438,9 @@ const checkFor = (
 	}
 
 	if (type.isIntersection()) {
-		const members: (typescript.Expression | null)[] = type.types.map((member) =>
-			checkFor(member, value, generation, depth + 1),
-		);
+		const members: (typescript.Expression | null)[] = type.types.map((member) => {
+			return checkFor(member, value, generation, depth + 1);
+		});
 
 		if (members.some((member) => member === null)) return null;
 
@@ -801,8 +809,8 @@ export const buildStructuralTest = (
 					// two can never disagree about what counts as a match. A separate
 					// generation, since the walker and the check number their own
 					// helpers independently.
-					(inner, value) =>
-						checkFor(
+					(inner, value) => {
+						return checkFor(
 							inner,
 							value,
 							{
@@ -814,7 +822,8 @@ export const buildStructuralTest = (
 								counter: generation.counter,
 							},
 							0,
-						),
+						);
+					},
 				)
 			: null;
 

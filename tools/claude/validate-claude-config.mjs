@@ -101,11 +101,12 @@ const WRITING_TOOLS = new Set(['Write', 'Edit', 'NotebookEdit']);
  * @param {string} body The rule below its frontmatter.
  * @returns {string[]} The paragraphs, whitespace normalised.
  */
-const proseParagraphs = (body) =>
-	claimingProse(body)
+const proseParagraphs = (body) => {
+	return claimingProse(body)
 		.split(/\n\s*\n/)
 		.map((paragraph) => paragraph.replace(/\s+/g, ' ').trim())
 		.filter((paragraph) => paragraph.length >= 80 && !/^[|\-*>#]/.test(paragraph));
+};
 
 /**
  * Every hook event of a settings document, flattened.
@@ -737,13 +738,15 @@ const checkReferences = (root) => {
  * @param {string} [root] The repository root.
  * @returns {import('./report.mjs').Finding[]} Everything found.
  */
-export const validateConfig = (root = repositoryRoot) => [
-	...checkSettings(root),
-	...checkRules(root),
-	...checkRuleFixtures(root),
-	...checkAgents(root),
-	...checkReferences(root),
-];
+export const validateConfig = (root = repositoryRoot) => {
+	return [
+		...checkSettings(root),
+		...checkRules(root),
+		...checkRuleFixtures(root),
+		...checkAgents(root),
+		...checkReferences(root),
+	];
+};
 
 // Run from the command line, imported by its tests.
 if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {

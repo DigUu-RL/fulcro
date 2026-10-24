@@ -118,11 +118,14 @@ export const createComponentRecord = <T, TValue>(
 		});
 	};
 
-	const isRecord = (value: unknown): value is TValue =>
-		isPlainObject(value) &&
-		Object.isFrozen(value) &&
-		Object.keys(value).length === keys.length &&
-		keys.every((key) => Object.hasOwn(value, key) && element.is(value[key]));
+	const isRecord = (value: unknown): value is TValue => {
+		return (
+			isPlainObject(value) &&
+			Object.isFrozen(value) &&
+			Object.keys(value).length === keys.length &&
+			keys.every((key) => Object.hasOwn(value, key) && element.is(value[key]))
+		);
+	};
 
 	const register = (descriptor: object, equals: (left: TValue, right: TValue) => boolean): void => {
 		registerRepeatedCodec(

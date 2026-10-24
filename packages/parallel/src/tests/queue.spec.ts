@@ -16,11 +16,13 @@ import { createWaitingQueue, type Waiting } from '@/src/task/queue.js';
  * @param name What it writes.
  * @returns The entry.
  */
-const entryFor = (started: string[], name: string): Waiting => ({
-	start: () => {
-		started.push(name);
-	},
-});
+const entryFor = (started: string[], name: string): Waiting => {
+	return {
+		start: () => {
+			started.push(name);
+		},
+	};
+};
 
 describe('startWhile', () => {
 	it('should start entries oldest first', () => {

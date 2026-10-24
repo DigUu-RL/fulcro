@@ -40,9 +40,12 @@ describe('DoublePrecisionFloat', () => {
 	it('should cost a small multiple of the bare operator', () => {
 		const baseline: number = timed((left, right) => left * right);
 
-		const described: number = timed((left, right) =>
-			DoublePrecisionFloat.multiply(left as DoublePrecisionFloat, right as DoublePrecisionFloat),
-		);
+		const described: number = timed((left, right) => {
+			return DoublePrecisionFloat.multiply(
+				left as DoublePrecisionFloat,
+				right as DoublePrecisionFloat,
+			);
+		});
 
 		expect(described).toBeLessThan(baseline * 25);
 	});

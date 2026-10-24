@@ -101,10 +101,13 @@ type FunctionWithBody = typescript.FunctionLikeDeclaration & {
  * @param node The node.
  * @returns `true` for a function, method, accessor or constructor with a body.
  */
-const isFunctionWithBody = (node: typescript.Node): node is FunctionWithBody =>
-	typescript.isFunctionLike(node) &&
-	'body' in node &&
-	(node as { body?: typescript.Node }).body !== undefined;
+const isFunctionWithBody = (node: typescript.Node): node is FunctionWithBody => {
+	return (
+		typescript.isFunctionLike(node) &&
+		'body' in node &&
+		(node as { body?: typescript.Node }).body !== undefined
+	);
+};
 
 /**
  * Walks every function of a file, the top level included, each from the
@@ -120,30 +123,38 @@ export const walkFlow = <TFacts>(
 ): void => {
 	const pending: typescript.Node[] = [sourceFile];
 
-	const start = (): Path<TFacts> => ({
-		facts: rules.initial(),
-		reachable: true,
-	});
+	const start = (): Path<TFacts> => {
+		return {
+			facts: rules.initial(),
+			reachable: true,
+		};
+	};
 
-	const unreachable = (): Path<TFacts> => ({
-		facts: rules.initial(),
-		reachable: false,
-	});
+	const unreachable = (): Path<TFacts> => {
+		return {
+			facts: rules.initial(),
+			reachable: false,
+		};
+	};
 
-	const fork = (path: Path<TFacts>): Path<TFacts> => ({
-		facts: rules.copy(path.facts),
-		reachable: path.reachable,
-	});
+	const fork = (path: Path<TFacts>): Path<TFacts> => {
+		return {
+			facts: rules.copy(path.facts),
+			reachable: path.reachable,
+		};
+	};
 
-	const merge = (first: Path<TFacts>, second: Path<TFacts>): Path<TFacts> =>
-		!first.reachable
+	const merge = (first: Path<TFacts>, second: Path<TFacts>): Path<TFacts> => {
+		return !first.reachable
 			? second
 			: !second.reachable
 				? first
 				: { facts: rules.join(first.facts, second.facts), reachable: true };
+	};
 
-	const mergeAll = (first: Path<TFacts>, rest: readonly Path<TFacts>[]): Path<TFacts> =>
-		rest.reduce(merge, first);
+	const mergeAll = (first: Path<TFacts>, rest: readonly Path<TFacts>[]): Path<TFacts> => {
+		return rest.reduce(merge, first);
+	};
 
 	/**
 	 * Notes a function created here, and queues its body.
@@ -293,8 +304,8 @@ export const walkFlow = <TFacts>(
 		return expression(node.right, expression(node.left, path));
 	};
 
-	const declare = (list: typescript.VariableDeclarationList, path: Path<TFacts>): Path<TFacts> =>
-		list.declarations.reduce((before, declaration) => {
+	const declare = (list: typescript.VariableDeclarationList, path: Path<TFacts>): Path<TFacts> => {
+		return list.declarations.reduce((before, declaration) => {
 			const after: Path<TFacts> =
 				declaration.initializer === undefined
 					? before
@@ -306,6 +317,7 @@ export const walkFlow = <TFacts>(
 
 			return after;
 		}, path);
+	};
 
 	/**
 	 * Walks a loop: once from where it is entered, and once more from what
@@ -393,15 +405,15 @@ export const walkFlow = <TFacts>(
 		}
 
 		if (typescript.isWhileStatement(node)) {
-			return loop(path, (each, own) =>
-				statement(node.statement, expression(node.expression, each), own),
-			);
+			return loop(path, (each, own) => {
+				return statement(node.statement, expression(node.expression, each), own);
+			});
 		}
 
 		if (typescript.isDoStatement(node)) {
-			return loop(path, (each, own) =>
-				expression(node.expression, statement(node.statement, each, own)),
-			);
+			return loop(path, (each, own) => {
+				return expression(node.expression, statement(node.statement, each, own));
+			});
 		}
 
 		if (typescript.isForStatement(node)) {

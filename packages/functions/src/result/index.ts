@@ -182,5 +182,6 @@ export const success = <T>(value: T): Success<T> => createVariant(SUCCESS, { val
  * failure read as a success.
  * @returns A frozen failure carrying it.
  */
-export const failure = <E>(error: NonNullable<E>): Failure<never, E> =>
-	createVariant(FAILURE, { value: null, error });
+export const failure = <E>(error: NonNullable<E>): Failure<never, E> => {
+	return createVariant(FAILURE, { value: null, error });
+};

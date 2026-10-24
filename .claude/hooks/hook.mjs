@@ -25,13 +25,14 @@
  *
  * @returns {Set<string>} The rule identifiers that are allowed through.
  */
-export const exceptions = () =>
-	new Set(
+export const exceptions = () => {
+	return new Set(
 		(process.env.FULCRO_HOOKS_ALLOW ?? '')
 			.split(/[,\s]+/)
 			.filter((entry) => entry !== '')
 			.map((entry) => entry.toLowerCase()),
 	);
+};
 
 /**
  * Reads the hook event from standard input.

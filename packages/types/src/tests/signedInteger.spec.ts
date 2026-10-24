@@ -27,8 +27,9 @@ const RANGES = [
  * @param value Exact value.
  * @returns A `number` up to 32 bits, a `bigint` from 64.
  */
-const carried = (width: number, value: bigint): number | bigint =>
-	width >= 64 ? value : Number(value);
+const carried = (width: number, value: bigint): number | bigint => {
+	return width >= 64 ? value : Number(value);
+};
 
 describe('SignedInteger', () => {
 	describe.each(RANGES)('at $width bits', ({ width, minimum, maximum }) => {

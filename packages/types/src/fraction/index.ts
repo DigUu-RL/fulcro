@@ -74,12 +74,15 @@ const PARTS: readonly string[] = ['numerator', 'denominator'];
  * @param descriptor Value to inspect.
  * @returns `true` for `BigInteger` and for a fixed-width integer type.
  */
-const isIntegerDescriptor = (descriptor: unknown): boolean =>
-	descriptor === BigInteger ||
-	(typeof descriptor === 'object' &&
-		descriptor !== null &&
-		typeof (descriptor as { signed?: unknown }).signed === 'boolean' &&
-		typeof (descriptor as { width?: unknown }).width === 'number');
+const isIntegerDescriptor = (descriptor: unknown): boolean => {
+	return (
+		descriptor === BigInteger ||
+		(typeof descriptor === 'object' &&
+			descriptor !== null &&
+			typeof (descriptor as { signed?: unknown }).signed === 'boolean' &&
+			typeof (descriptor as { width?: unknown }).width === 'number')
+	);
+};
 
 /**
  * Declares a fraction type over an integer type.
@@ -208,10 +211,11 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 		const first: T = greatestCommonDivisor(left, rightDenominator);
 		const second: T = greatestCommonDivisor(right, leftDenominator);
 
-		const over = (value: T, divisor: T): T =>
-			integer.equals(divisor, zero) || integer.equals(divisor, one)
+		const over = (value: T, divisor: T): T => {
+			return integer.equals(divisor, zero) || integer.equals(divisor, one)
 				? value
 				: integer.divide(value, divisor);
+		};
 
 		return reduce(
 			operation,
@@ -257,10 +261,12 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 	 * @param right Second operand.
 	 * @returns The two cross products.
 	 */
-	const cross = (left: Value, right: Value): [T, T] => [
-		integer.multiply(left.numerator, right.denominator),
-		integer.multiply(right.numerator, left.denominator),
-	];
+	const cross = (left: Value, right: Value): [T, T] => {
+		return [
+			integer.multiply(left.numerator, right.denominator),
+			integer.multiply(right.numerator, left.denominator),
+		];
+	};
 
 	const descriptor: FractionType<T, SourceOf<TElement>> = {
 		name,
@@ -274,24 +280,29 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 			return make(integer.from(value as number), one);
 		},
 
-		is: (value): value is Value =>
-			isRecord(value) &&
-			integer.lessThan(zero, value.denominator) &&
-			integer.equals(greatestCommonDivisor(value.numerator, value.denominator), one),
+		is: (value): value is Value => {
+			return (
+				isRecord(value) &&
+				integer.lessThan(zero, value.denominator) &&
+				integer.equals(greatestCommonDivisor(value.numerator, value.denominator), one)
+			);
+		},
 
 		add: (left, right) => sum(`${name}.add`, left, right, (a, b) => integer.add(a, b)),
 
-		subtract: (left, right) =>
-			sum(`${name}.subtract`, left, right, (a, b) => integer.subtract(a, b)),
+		subtract: (left, right) => {
+			return sum(`${name}.subtract`, left, right, (a, b) => integer.subtract(a, b));
+		},
 
-		multiply: (left, right) =>
-			product(
+		multiply: (left, right) => {
+			return product(
 				`${name}.multiply`,
 				left.numerator,
 				left.denominator,
 				right.numerator,
 				right.denominator,
-			),
+			);
+		},
 
 		divide: (left, right) => {
 			if (integer.equals(right.numerator, zero)) {
@@ -354,12 +365,16 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 
 		increment: (value) => make(integer.add(value.numerator, value.denominator), value.denominator),
 
-		decrement: (value) =>
-			make(integer.subtract(value.numerator, value.denominator), value.denominator),
+		decrement: (value) => {
+			return make(integer.subtract(value.numerator, value.denominator), value.denominator);
+		},
 
-		equals: (left, right) =>
-			integer.equals(left.numerator, right.numerator) &&
-			integer.equals(left.denominator, right.denominator),
+		equals: (left, right) => {
+			return (
+				integer.equals(left.numerator, right.numerator) &&
+				integer.equals(left.denominator, right.denominator)
+			);
+		},
 
 		lessThan: (left, right) => integer.lessThan(...cross(left, right)),
 		lessThanOrEqual: (left, right) => integer.lessThanOrEqual(...cross(left, right)),

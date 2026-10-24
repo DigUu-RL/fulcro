@@ -27,11 +27,11 @@ const KINDS = [Error, RangeError, SyntaxError, TypeError] as const;
  * @param code The code.
  * @returns The error.
  */
-const createAny = (code: ErrorCode): Error & { code: string; details: unknown } =>
-	(createError as (code: string, details: unknown) => Error & { code: string; details: unknown })(
-		code,
-		sampleDetails(),
-	);
+const createAny = (code: ErrorCode): Error & { code: string; details: unknown } => {
+	return (
+		createError as (code: string, details: unknown) => Error & { code: string; details: unknown }
+	)(code, sampleDetails());
+};
 
 describe('createError', () => {
 	it('should register at least one code', () => {

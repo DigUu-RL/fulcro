@@ -239,33 +239,32 @@ export const createPool = <T, R>(
 
 		try {
 			await Promise.all(
-				started.map(
-					(member) =>
-						new Promise<void>((resolve, reject) => {
-							stops.push(
-								member.handle.listen((message, failure) => {
-									if (failure !== undefined) {
-										reject(failure);
-										return;
-									}
+				started.map((member) => {
+					return new Promise<void>((resolve, reject) => {
+						stops.push(
+							member.handle.listen((message, failure) => {
+								if (failure !== undefined) {
+									reject(failure);
+									return;
+								}
 
-									const reply = message as Outgoing;
+								const reply = message as Outgoing;
 
-									if (reply.kind === 'ready') resolve();
+								if (reply.kind === 'ready') resolve();
 
-									if (reply.kind === 'broken') {
-										reject(errorFrom(reply, 'FULCRO3004'));
-									}
-								}),
-							);
+								if (reply.kind === 'broken') {
+									reject(errorFrom(reply, 'FULCRO3004'));
+								}
+							}),
+						);
 
-							member.handle.post({
-								kind: 'init',
-								module: typeof options.module === 'string' ? options.module : options.module.href,
-								export: options.export,
-							});
-						}),
-				),
+						member.handle.post({
+							kind: 'init',
+							module: typeof options.module === 'string' ? options.module : options.module.href,
+							export: options.export,
+						});
+					});
+				}),
 			);
 		} catch (error) {
 			// One worker failing to load says nothing about the others, which
@@ -377,8 +376,8 @@ export const createPool = <T, R>(
 		// Registered for this run and removed when it ends. A handler left behind
 		// reads the next run's replies into this run's buffers, and holds them
 		// alive for as long as the pool.
-		const stops: (() => void)[] = pool.map((member) =>
-			member.handle.listen((message, workerFailure) => {
+		const stops: (() => void)[] = pool.map((member) => {
+			return member.handle.listen((message, workerFailure) => {
 				if (workerFailure !== undefined) {
 					failure ??= { error: workerFailure };
 					notify();
@@ -401,8 +400,8 @@ export const createPool = <T, R>(
 					outstanding.delete(reply.id);
 					notify();
 				}
-			}),
-		);
+			});
+		});
 
 		/** The termination of this run's workers, once one has begun. */
 		let discarding: Promise<void> | null = null;
@@ -579,13 +578,15 @@ export const createPool = <T, R>(
 			return collected;
 		},
 
-		stream: (items, runOptions): AsyncIterable<R> => ({
-			async *[Symbol.asyncIterator](): AsyncIterator<R> {
-				for await (const { value } of process(items, runOptions, 'stream')) {
-					yield value;
-				}
-			},
-		}),
+		stream: (items, runOptions): AsyncIterable<R> => {
+			return {
+				async *[Symbol.asyncIterator](): AsyncIterator<R> {
+					for await (const { value } of process(items, runOptions, 'stream')) {
+						yield value;
+					}
+				},
+			};
+		},
 
 		close,
 

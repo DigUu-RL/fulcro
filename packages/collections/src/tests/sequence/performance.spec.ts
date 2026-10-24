@@ -42,14 +42,16 @@ beforeEach(() => {
  * @param size Amount of elements the source yields.
  * @returns The instrumented source.
  */
-const instrumentedSource = (size: number): Iterable<number> => ({
-	*[Symbol.iterator](): Iterator<number> {
-		for (let index = 0; index < size; index++) {
-			visits++;
-			yield index;
-		}
-	},
-});
+const instrumentedSource = (size: number): Iterable<number> => {
+	return {
+		*[Symbol.iterator](): Iterator<number> {
+			for (let index = 0; index < size; index++) {
+				visits++;
+				yield index;
+			}
+		},
+	};
+};
 
 /**
  * Wraps a projection so that each of its invocations is counted.
@@ -58,12 +60,12 @@ const instrumentedSource = (size: number): Iterable<number> => ({
  * @param projection Projection being instrumented.
  * @returns The instrumented projection.
  */
-const counted =
-	<R>(projection: (value: number) => R) =>
-	(value: number): R => {
+const counted = <R>(projection: (value: number) => R) => {
+	return (value: number): R => {
 		projections++;
 		return projection(value);
 	};
+};
 
 describe('SequenceCollection Performance', () => {
 	describe('counting', () => {
@@ -372,10 +374,12 @@ describe('SequenceCollection Performance', () => {
 		});
 
 		it('should sort a million elements within budget', () => {
-			const source = [...Array(LARGE_VOLUME).keys()].map((n) => ({
-				id: n,
-				key: (n * 7919) % LARGE_VOLUME,
-			}));
+			const source = [...Array(LARGE_VOLUME).keys()].map((n) => {
+				return {
+					id: n,
+					key: (n * 7919) % LARGE_VOLUME,
+				};
+			});
 
 			const numbers = SequenceCollection.from(source);
 
