@@ -2,8 +2,7 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import type { Allocation, AllocationDomain } from '@/src/allocator';
 import { createStackAllocator, type StackAllocator } from '@/src/stackAllocator';
-
-import { coded } from './coded';
+import { coded } from '@/src/tests/coded';
 
 /**
  * Behaviour suite for `createStackAllocator`.

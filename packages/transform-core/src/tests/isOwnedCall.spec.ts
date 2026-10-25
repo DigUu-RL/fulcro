@@ -4,8 +4,7 @@ import typescript from 'typescript';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { type CallTarget, isOwnedCall } from '@/src/shared';
-
-import { createWorkspace } from './workspace';
+import { createWorkspace } from '@/src/tests/workspace';
 
 /**
  * Behaviour suite for `isOwnedCall`, on what `packageName` adds to it.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { review } from '../../.claude/hooks/post-edit-check.mts';
+import { review } from '@/.claude/hooks/post-edit-check.mts';
 
 /**
  * The one check that runs after an edit.

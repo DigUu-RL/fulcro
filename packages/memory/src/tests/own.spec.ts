@@ -6,8 +6,7 @@ import { createManagedStorage } from '@/src/managedStorage';
 import { own } from '@/src/own';
 import type { Owned } from '@/src/owned';
 import type { Storage } from '@/src/storage';
-
-import { coded } from './coded';
+import { coded } from '@/src/tests/coded';
 
 /**
  * Behaviour suite for `own`, and for the `Owned<T>` it returns.

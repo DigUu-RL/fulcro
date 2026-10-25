@@ -8,8 +8,7 @@ import { createFixedBufferStorage } from '@/src/fixedBufferStorage';
 import { createManagedAllocator } from '@/src/managedAllocator';
 import { createManagedStorage } from '@/src/managedStorage';
 import type { Storage } from '@/src/storage';
-
-import { coded } from './coded';
+import { coded } from '@/src/tests/coded';
 
 /**
  * Behaviour suite for the `Storage<T>` contract.

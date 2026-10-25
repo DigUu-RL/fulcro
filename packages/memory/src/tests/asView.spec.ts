@@ -12,9 +12,8 @@ import type { MemoryReference } from '@/src/memoryReference';
 import { pointerTo } from '@/src/pointerTo';
 import { referenceTo } from '@/src/referenceTo';
 import type { Storage } from '@/src/storage';
+import { coded } from '@/src/tests/coded';
 import type { ReadOnlyView, View } from '@/src/view';
-
-import { coded } from './coded';
 
 /**
  * Behaviour suite for `asView`, and for the `View<T>` it returns.

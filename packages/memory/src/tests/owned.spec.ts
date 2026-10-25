@@ -13,8 +13,7 @@ import { own } from '@/src/own';
 import type { Owned } from '@/src/owned';
 import { pointerTo } from '@/src/pointerTo';
 import { createStackAllocator } from '@/src/stackAllocator';
-
-import { coded } from './coded';
+import { coded } from '@/src/tests/coded';
 
 /**
  * Behaviour suite for `Owned<T>[Symbol.dispose]`: the ownership ending with

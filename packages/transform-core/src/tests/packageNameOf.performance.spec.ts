@@ -4,8 +4,7 @@ import typescript from 'typescript';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { packageNameOf } from '@/src/shared';
-
-import { createWorkspace } from './workspace';
+import { createWorkspace } from '@/src/tests/workspace';
 
 /**
  * Performance suite for `packageNameOf`.

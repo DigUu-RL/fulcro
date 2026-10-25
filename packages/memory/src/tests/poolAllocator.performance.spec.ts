@@ -2,8 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { Allocation } from '@/src/allocator';
 import { createPoolAllocator, type PoolAllocator } from '@/src/poolAllocator';
-
-import { watchBuffers } from './watchBuffers';
+import { watchBuffers } from '@/src/tests/watchBuffers';
 
 /**
  * Performance suite for `createPoolAllocator`.

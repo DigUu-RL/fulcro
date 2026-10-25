@@ -8,8 +8,7 @@ import { move } from '@/src/move';
 import { own } from '@/src/own';
 import type { Owned } from '@/src/owned';
 import { pointerTo } from '@/src/pointerTo';
-
-import { coded } from './coded';
+import { coded } from '@/src/tests/coded';
 
 /**
  * Runtime refusals of `move`: the owner it spent, and every borrow of it.

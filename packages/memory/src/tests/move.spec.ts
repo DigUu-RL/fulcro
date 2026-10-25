@@ -6,8 +6,7 @@ import { createManagedStorage } from '@/src/managedStorage';
 import { move } from '@/src/move';
 import { own } from '@/src/own';
 import type { Owned } from '@/src/owned';
-
-import { coded } from './coded';
+import { coded } from '@/src/tests/coded';
 
 /**
  * Behaviour suite for `move`.

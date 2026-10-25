@@ -1,7 +1,5 @@
 import { createError } from '@fulcro/errors';
 
-import { requireRoundingMode, type RoundingMode } from '@/src/roundingMode';
-
 import {
 	addParts,
 	compareParts,
@@ -10,15 +8,15 @@ import {
 	powerParts,
 	remainderParts,
 	roundParts,
-} from './arithmetic';
+} from '@/src/decimal/arithmetic';
 import {
 	formatDecimal,
 	formatExponential,
 	formatFixed,
 	formatPrecision,
 	requireDigits,
-} from './format';
-import { parseDecimal } from './parse';
+} from '@/src/decimal/format';
+import { parseDecimal } from '@/src/decimal/parse';
 import {
 	type DecimalParts,
 	infinity,
@@ -28,7 +26,8 @@ import {
 	powerOfTen,
 	PRECISION,
 	zero,
-} from './parts';
+} from '@/src/decimal/parts';
+import { requireRoundingMode, type RoundingMode } from '@/src/roundingMode';
 
 /** Rounding applied wherever a mode is optional. */
 const DEFAULT_MODE: RoundingMode = 'halfEven';

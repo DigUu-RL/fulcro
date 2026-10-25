@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { asView } from '@/src/asView';
+import { countedArray, countedStorage } from '@/src/tests/countedSource';
 import type { View } from '@/src/view';
-
-import { countedArray, countedStorage } from './countedSource';
 
 /**
  * Performance suite for `asView`, and for the `View<T>` it returns.

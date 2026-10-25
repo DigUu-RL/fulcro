@@ -4,8 +4,7 @@ import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { failure, type Result, success } from '@/src/result';
-
-import { compileFixture, COMPILERS, reportedLines } from './compileFixture';
+import { compileFixture, COMPILERS, reportedLines } from '@/src/tests/compileFixture';
 
 describe('success', () => {
 	it('should carry the value and a null error', () => {

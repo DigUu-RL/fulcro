@@ -5,8 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { createFileTransformer } from '@/src/program';
 import type { CallRewriter, FileAnalyzer } from '@/src/shared';
-
-import { createWorkspace } from './workspace';
+import { createWorkspace } from '@/src/tests/workspace';
 
 /**
  * Behaviour suite for `createFileTransformer`, the core of every bundler

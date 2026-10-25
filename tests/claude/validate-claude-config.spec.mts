@@ -2,9 +2,8 @@ import { spawnSync } from 'node:child_process';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { validateConfig } from '../../tools/claude/validate-claude-config.mts';
-
-import { discardTrees, type Tree, tree } from './fixture.mjs';
+import { discardTrees, type Tree, tree } from '@/tests/claude/fixture.mts';
+import { validateConfig } from '@/tools/claude/validate-claude-config.mts';
 
 /**
  * The structural validation of the settings, the hooks and the rules.

@@ -18,9 +18,8 @@ import type { NativePointer } from '@/src/nativePointer';
 import { nativePointerTo } from '@/src/nativePointerTo';
 import { createPoolAllocator } from '@/src/poolAllocator';
 import { createStackAllocator } from '@/src/stackAllocator';
-
-import { coded } from './coded';
-import { instantiateRecordingModule } from './recordingModule';
+import { coded } from '@/src/tests/coded';
+import { instantiateRecordingModule } from '@/src/tests/recordingModule';
 
 /**
  * Behaviour suite for `nativePointerTo`, and for the `NativePointer<T>` it

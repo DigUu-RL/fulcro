@@ -7,9 +7,8 @@ import { createManagedStorage } from '@/src/managedStorage';
 import { own } from '@/src/own';
 import type { Owned } from '@/src/owned';
 import { pointerTo } from '@/src/pointerTo';
+import { coded } from '@/src/tests/coded';
 import type { ReadOnlyView } from '@/src/view';
-
-import { coded } from './coded';
 
 /**
  * Behaviour suite for `borrow`, and for the `Borrowed<T>` it returns.

@@ -1,10 +1,10 @@
-import { collectionsCatalog } from './collections';
-import { functionsCatalog } from './functions';
-import { memoryCatalog } from './memory';
-import { parallelCatalog } from './parallel';
-import { reflectCatalog } from './reflect';
-import { transformCoreCatalog } from './transform-core';
-import { typesCatalog } from './types';
+import { collectionsCatalog } from '@/src/catalog/collections';
+import { functionsCatalog } from '@/src/catalog/functions';
+import { memoryCatalog } from '@/src/catalog/memory';
+import { parallelCatalog } from '@/src/catalog/parallel';
+import { reflectCatalog } from '@/src/catalog/reflect';
+import { transformCoreCatalog } from '@/src/catalog/transform-core';
+import { typesCatalog } from '@/src/catalog/types';
 
 /**
  * Every registered error, keyed by its code.

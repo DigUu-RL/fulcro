@@ -6,8 +6,7 @@ import { isFulcroError } from '@fulcro/errors';
 import { createWorkerPool, type WorkerPool } from '@fulcro/parallel';
 
 import { createPool } from '@/src/pool/index.js';
-
-import { createFakeWorkers, type FakeWorkers, NOWHERE, until } from './fake-worker.js';
+import { createFakeWorkers, type FakeWorkers, NOWHERE, until } from '@/src/tests/fake-worker';
 
 /**
  * Worker pool suite.

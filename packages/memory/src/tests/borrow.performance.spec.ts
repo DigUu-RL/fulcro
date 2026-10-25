@@ -8,9 +8,8 @@ import { borrow } from '@/src/borrow';
 import type { Borrowed } from '@/src/borrowed';
 import { own } from '@/src/own';
 import type { Owned } from '@/src/owned';
+import { countedStorage } from '@/src/tests/countedSource';
 import type { ReadOnlyView } from '@/src/view';
-
-import { countedStorage } from './countedSource';
 
 /**
  * Performance suite for `borrow`, and for the `Borrowed<T>` it returns.

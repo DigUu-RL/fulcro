@@ -4,8 +4,7 @@ import { borrow } from '@/src/borrow';
 import { move } from '@/src/move';
 import { own } from '@/src/own';
 import type { Owned } from '@/src/owned';
-
-import { countedStorage } from './countedSource';
+import { countedStorage } from '@/src/tests/countedSource';
 
 /**
  * Performance suite for `move`.

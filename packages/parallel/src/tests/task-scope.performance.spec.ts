@@ -4,8 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import { type TaskWork } from '@/src/@types/index.js';
 import { createTaskScope } from '@/src/task/index.js';
-
-import { flush } from './controlled-work.js';
+import { flush } from '@/src/tests/controlled-work';
 
 /**
  * What a task scope costs, counted rather than timed.

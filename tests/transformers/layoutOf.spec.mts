@@ -2,7 +2,7 @@ import { createRequire } from 'node:module';
 
 import { beforeAll, describe, expect, it } from 'vitest';
 
-import { type CompiledStructs, compileStructs } from './struct.fixture.mjs';
+import { type CompiledStructs, compileStructs } from '@/tests/transformers/struct.fixture.mts';
 
 /**
  * `layoutOf` across the package boundary.

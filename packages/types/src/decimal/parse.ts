@@ -1,7 +1,7 @@
 import { createError } from '@fulcro/errors';
 
-import { type DecimalParts, infinity, NOT_A_NUMBER, PRECISION, zero } from './parts';
-import { finish } from './round';
+import { type DecimalParts, infinity, NOT_A_NUMBER, PRECISION, zero } from '@/src/decimal/parts';
+import { finish } from '@/src/decimal/round';
 
 /**
  * A decimal literal: an optional sign, digits with at most one point and at

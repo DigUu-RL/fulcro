@@ -2,8 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { Allocation } from '@/src/allocator';
 import { type ArenaAllocator, createArenaAllocator } from '@/src/arenaAllocator';
-
-import { watchBuffers } from './watchBuffers';
+import { watchBuffers } from '@/src/tests/watchBuffers';
 
 /**
  * Performance suite for `createArenaAllocator`.

@@ -4,9 +4,8 @@ import typescript from 'typescript';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import type { FileAnalyzer } from '@/src/shared';
+import { createWorkspace } from '@/src/tests/workspace';
 import { createTransformer } from '@/src/transformer';
-
-import { createWorkspace } from './workspace';
 
 /**
  * Performance suite for `createTransformer`, on the analyzers it runs.

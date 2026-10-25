@@ -1,5 +1,3 @@
-import type { RoundingMode } from '@/src/roundingMode';
-
 import {
 	type DecimalParts,
 	digitCount,
@@ -9,7 +7,8 @@ import {
 	powerOfTen,
 	PRECISION,
 	zero,
-} from './parts';
+} from '@/src/decimal/parts';
+import type { RoundingMode } from '@/src/roundingMode';
 
 /**
  * Where the discarded digits of a rounding sat relative to half a unit of the

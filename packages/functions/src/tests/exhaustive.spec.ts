@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { compileFixture, COMPILERS } from './compileFixture';
+import { compileFixture, COMPILERS } from '@/src/tests/compileFixture';
 
 /**
  * Exhaustiveness suite.

@@ -3,8 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { asView } from '@/src/asView';
 import type { Pointer } from '@/src/pointer';
 import { pointerTo } from '@/src/pointerTo';
-
-import { countedArray, countedStorage } from './countedSource';
+import { countedArray, countedStorage } from '@/src/tests/countedSource';
 
 /**
  * Performance suite for `pointerTo`, and for the `Pointer<T>` it returns.

@@ -8,9 +8,8 @@ import { createManagedStorage } from '@/src/managedStorage';
 import { pointerTo } from '@/src/pointerTo';
 import { referenceTo } from '@/src/referenceTo';
 import type { Storage } from '@/src/storage';
+import { coded } from '@/src/tests/coded';
 import type { ReadOnlyView, View } from '@/src/view';
-
-import { coded } from './coded';
 
 /**
  * Behaviour suite for `asReadOnlyView`, and for the `ReadOnlyView<T>` it

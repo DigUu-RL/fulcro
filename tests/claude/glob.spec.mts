@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { matchedBy, matches } from '../../tools/claude/glob.mts';
+import { matchedBy, matches } from '@/tools/claude/glob.mts';
 
 /**
  * The matcher the rule fixtures are decided with.

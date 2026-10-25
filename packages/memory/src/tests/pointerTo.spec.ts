@@ -12,8 +12,7 @@ import type { Pointer } from '@/src/pointer';
 import { pointerTo } from '@/src/pointerTo';
 import { referenceTo } from '@/src/referenceTo';
 import type { Storage } from '@/src/storage';
-
-import { coded } from './coded';
+import { coded } from '@/src/tests/coded';
 
 /**
  * Behaviour suite for `pointerTo`, and for the `Pointer<T>` it returns.

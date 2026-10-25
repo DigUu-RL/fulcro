@@ -151,6 +151,8 @@ const memoryUnchecked = (): ViteUserConfig => {
  */
 const entryPoints = (): ViteUserConfig => {
 	return {
+		// The suites import through the @/ alias of the root tsconfig, as the package projects do.
+		resolve: { tsconfigPaths: true },
 		test: {
 			name: 'entrypoints',
 			globals: true,
@@ -180,6 +182,8 @@ const entryPoints = (): ViteUserConfig => {
  */
 const transformers = (): ViteUserConfig => {
 	return {
+		// The suites import through the @/ alias of the root tsconfig, as the package projects do.
+		resolve: { tsconfigPaths: true },
 		test: {
 			name: 'transformers',
 			globals: true,
@@ -203,6 +207,8 @@ const transformers = (): ViteUserConfig => {
  */
 const lint = (): ViteUserConfig => {
 	return {
+		// The suites import through the @/ alias of the root tsconfig, as the package projects do.
+		resolve: { tsconfigPaths: true },
 		test: {
 			name: 'eslint',
 			globals: true,
@@ -224,6 +230,8 @@ const lint = (): ViteUserConfig => {
  */
 const hooks = (): ViteUserConfig => {
 	return {
+		// The suites import through the @/ alias of the root tsconfig, as the package projects do.
+		resolve: { tsconfigPaths: true },
 		test: {
 			name: 'hooks',
 			globals: true,
@@ -245,6 +253,8 @@ const hooks = (): ViteUserConfig => {
  */
 const claude = (): ViteUserConfig => {
 	return {
+		// The suites import through the @/ alias of the root tsconfig, as the package projects do.
+		resolve: { tsconfigPaths: true },
 		test: {
 			name: 'claude',
 			globals: true,

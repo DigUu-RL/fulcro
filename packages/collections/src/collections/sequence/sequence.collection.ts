@@ -1066,8 +1066,9 @@ export class SequenceCollection<T> implements Sequence<T> {
 			const leftStep: IteratorResult<T> = left.next();
 			const rightStep: IteratorResult<T> = right.next();
 
-			if (leftStep.done === true || rightStep.done === true)
-				{return leftStep.done === rightStep.done;}
+			if (leftStep.done === true || rightStep.done === true) {
+				return leftStep.done === rightStep.done;
+			}
 			if (leftStep.value !== rightStep.value) return false;
 		}
 	}

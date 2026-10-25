@@ -1,8 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { validateSkills } from '../../tools/claude/validate-skills.mts';
-
-import { discardTrees, tree } from './fixture.mjs';
+import { discardTrees, tree } from '@/tests/claude/fixture.mts';
+import { validateSkills } from '@/tools/claude/validate-skills.mts';
 
 /**
  * The structural validation of `.claude/skills`.

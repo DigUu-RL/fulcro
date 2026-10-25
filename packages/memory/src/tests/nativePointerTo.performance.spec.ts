@@ -6,9 +6,8 @@ import type { Allocation } from '@/src/allocator';
 import { createLinearMemory, type LinearMemory } from '@/src/linearMemory';
 import type { NativePointer } from '@/src/nativePointer';
 import { nativePointerTo } from '@/src/nativePointerTo';
-
-import { countedMemory } from './countedMemory';
-import { watchBuffers } from './watchBuffers';
+import { countedMemory } from '@/src/tests/countedMemory';
+import { watchBuffers } from '@/src/tests/watchBuffers';
 
 /**
  * Performance suite for `nativePointerTo`, and for the `NativePointer<T>` it

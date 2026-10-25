@@ -11,8 +11,7 @@ import {
 
 import { createFixedBufferStorage } from '@/src/fixedBufferStorage';
 import type { Storage } from '@/src/storage';
-
-import { coded } from './coded';
+import { coded } from '@/src/tests/coded';
 
 /**
  * Behaviour suite for `createFixedBufferStorage`.

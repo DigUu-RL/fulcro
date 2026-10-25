@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { own } from '@/src/own';
 import type { Owned } from '@/src/owned';
-
-import { countedStorage } from './countedSource';
+import { countedStorage } from '@/src/tests/countedSource';
 
 /**
  * Performance suite for `own`.

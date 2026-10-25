@@ -10,9 +10,8 @@ import { own } from '@/src/own';
 import type { Owned } from '@/src/owned';
 import { pointerTo } from '@/src/pointerTo';
 import type { Storage } from '@/src/storage';
+import { coded } from '@/src/tests/coded';
 import type { View } from '@/src/view';
-
-import { coded } from './coded';
 
 /**
  * Behaviour suite for `borrowMutable`, and for the `MutableBorrow<T>` it

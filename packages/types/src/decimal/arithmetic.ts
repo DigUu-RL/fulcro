@@ -1,5 +1,3 @@
-import type { RoundingMode } from '@/src/roundingMode';
-
 import {
 	adjustedExponent,
 	type DecimalParts,
@@ -12,8 +10,9 @@ import {
 	powerOfTen,
 	PRECISION,
 	zero,
-} from './parts';
-import { discardDigits, finish } from './round';
+} from '@/src/decimal/parts';
+import { discardDigits, finish } from '@/src/decimal/round';
+import type { RoundingMode } from '@/src/roundingMode';
 
 /**
  * The operations of `Decimal`, on parts.

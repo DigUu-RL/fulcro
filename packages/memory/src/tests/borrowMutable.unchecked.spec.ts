@@ -6,8 +6,7 @@ import { borrowMutable } from '@/src/borrowMutable';
 import { createManagedStorage } from '@/src/managedStorage';
 import { own } from '@/src/own';
 import type { Owned } from '@/src/owned';
-
-import { coded } from './coded';
+import { coded } from '@/src/tests/coded';
 
 /**
  * Runtime refusals of an exclusive borrow: it ends as soon as its owner is

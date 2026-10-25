@@ -4,8 +4,7 @@ import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { none, type Option, optionOf, some } from '@/src/option';
-
-import { compileFixture, COMPILERS, reportedLines } from './compileFixture';
+import { compileFixture, COMPILERS, reportedLines } from '@/src/tests/compileFixture';
 
 describe('some', () => {
 	it('should carry the value', () => {

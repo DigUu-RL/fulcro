@@ -2,8 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { Allocation } from '@/src/allocator';
 import { createStackAllocator, type StackAllocator } from '@/src/stackAllocator';
-
-import { watchBuffers } from './watchBuffers';
+import { watchBuffers } from '@/src/tests/watchBuffers';
 
 /**
  * Performance suite for `createStackAllocator`.

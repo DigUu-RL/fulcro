@@ -16,8 +16,7 @@ import { createManagedAllocator } from '@/src/managedAllocator';
 import { createPoolAllocator } from '@/src/poolAllocator';
 import { createStackAllocator } from '@/src/stackAllocator';
 import type { Storage } from '@/src/storage';
-
-import { coded } from './coded';
+import { coded } from '@/src/tests/coded';
 
 /**
  * Behaviour suite for `allocate`.

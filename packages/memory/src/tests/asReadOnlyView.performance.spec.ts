@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { asReadOnlyView } from '@/src/asReadOnlyView';
+import { countedArray, countedStorage } from '@/src/tests/countedSource';
 import type { ReadOnlyView } from '@/src/view';
-
-import { countedArray, countedStorage } from './countedSource';
 
 /**
  * Performance suite for `asReadOnlyView`, and for the `ReadOnlyView<T>` it

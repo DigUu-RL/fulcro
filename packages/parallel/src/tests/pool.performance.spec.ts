@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { type WorkerPool } from '@/src/@types/index.js';
 import { createPool } from '@/src/pool/index.js';
-
-import { createFakeWorkers, type FakeWorkers, NOWHERE } from './fake-worker.js';
+import { createFakeWorkers, type FakeWorkers, NOWHERE } from '@/src/tests/fake-worker';
 
 /**
  * What the pool costs, counted rather than timed.

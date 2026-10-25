@@ -1,9 +1,14 @@
 import { createError } from '@fulcro/errors';
 
+import {
+	adjustedExponent,
+	type DecimalParts,
+	digitCount,
+	isZero,
+	powerOfTen,
+} from '@/src/decimal/parts';
+import { discardDigits } from '@/src/decimal/round';
 import type { RoundingMode } from '@/src/roundingMode';
-
-import { adjustedExponent, type DecimalParts, digitCount, isZero, powerOfTen } from './parts';
-import { discardDigits } from './round';
 
 /**
  * The textual forms of a decimal, each following the method of `Number` it is

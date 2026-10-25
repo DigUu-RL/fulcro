@@ -4,8 +4,7 @@ import { borrowMutable } from '@/src/borrowMutable';
 import type { MutableBorrow } from '@/src/mutableBorrow';
 import { own } from '@/src/own';
 import type { Owned } from '@/src/owned';
-
-import { countedStorage } from './countedSource';
+import { countedStorage } from '@/src/tests/countedSource';
 
 /**
  * Performance suite for `borrowMutable`, and for the `MutableBorrow<T>` it

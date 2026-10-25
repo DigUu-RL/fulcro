@@ -2,8 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { Allocator } from '@/src/allocator';
 import { createManagedAllocator } from '@/src/managedAllocator';
-
-import { watchBuffers } from './watchBuffers';
+import { watchBuffers } from '@/src/tests/watchBuffers';
 
 /**
  * Performance suite for `createManagedAllocator`.

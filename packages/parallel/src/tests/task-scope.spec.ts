@@ -8,8 +8,7 @@ import { type Result } from '@fulcro/functions';
 import { type Task, type TaskScope } from '@/src/@types/index.js';
 import { createCancellationSource } from '@/src/cancellation/index.js';
 import { createTaskScope } from '@/src/task/index.js';
-
-import { controlledWork, flush } from './controlled-work.js';
+import { controlledWork, flush } from '@/src/tests/controlled-work';
 
 /**
  * Task scope suite.
