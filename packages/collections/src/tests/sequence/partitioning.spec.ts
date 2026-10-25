@@ -57,13 +57,12 @@ describe('concat', () => {
 	});
 
 	it('should count without traversing when both sides are known', () => {
-		const { source, read } = counted([1, 2, 3]);
+		const { read } = counted([1, 2, 3]);
 
 		// `counted` declares no length, so this leans on the array it is
 		// concatenated with plus a traversal of the generator.
 		expect(SequenceCollection.from([1, 2]).concat([3, 4, 5]).count()).toBe(5);
 		expect(read()).toBe(0);
-		source;
 	});
 });
 

@@ -264,7 +264,7 @@ describe('allocate', () => {
 					),
 					{
 						operation: 'allocate',
-						received: alignment === undefined ? 'undefined' : alignment,
+						received: alignment ?? 'undefined',
 					},
 				),
 			);

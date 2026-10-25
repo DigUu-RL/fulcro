@@ -101,6 +101,9 @@ describe('prefixError', () => {
 
 	it('should return a value that is not an error as it came', () => {
 		expect(prefixError('a string', 'context')).toBe('a string');
-		expect(prefixError(undefined, 'context')).toBeUndefined();
+		// Handed over as a caller would hold it: of a type nobody knows.
+		const nothing: unknown = undefined;
+
+		expect(prefixError(nothing, 'context')).toBeUndefined();
 	});
 });

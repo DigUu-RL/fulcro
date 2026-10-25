@@ -76,7 +76,10 @@ describe('what it refuses', () => {
 			'an array with a wrong element',
 			(): { tags: (string | number)[] } => ({ ...valid(), tags: ['a', 2] }),
 		],
-		['a nested object missing its field', (): { customer: {} } => ({ ...valid(), customer: {} })],
+		[
+			'a nested object missing its field',
+			(): { customer: Record<string, never> } => ({ ...valid(), customer: {} }),
+		],
 		['a value outside the union', (): { status: string } => ({ ...valid(), status: 'shipped' })],
 		[
 			'a class field that is not an instance',

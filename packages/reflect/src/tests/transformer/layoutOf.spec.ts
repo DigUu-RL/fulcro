@@ -1,4 +1,5 @@
 import * as path from 'node:path';
+import { runInThisContext } from 'node:vm';
 
 import * as typescript from 'typescript';
 import { assert, beforeAll, describe, expect, it } from 'vitest';
@@ -100,7 +101,11 @@ const evaluate = (binding: string): unknown => {
 
 	if (match === null) throw new Error(`${binding} was not emitted`);
 
-	return new Function(`return ${String(match[1])};`)();
+	// Evaluated in this realm, so what it builds has the prototypes the
+	// assertions compare against.
+	const value: unknown = runInThisContext(`(${String(match[1])})`);
+
+	return value;
 };
 
 /**

@@ -343,9 +343,8 @@ describe('the ends of the sequence', () => {
 
 		const expected = SequenceCollection.from(ORDERS)[name as Trailing](7).toArray();
 
-		const actual = await AsyncSequenceCollection.from(streamOf(ORDERS))
-			[name as Trailing](7)
-			.toArray();
+		const streamed = AsyncSequenceCollection.from(streamOf(ORDERS));
+		const actual = await streamed[name as Trailing](7).toArray();
 
 		expect(actual).toEqual(expected);
 	});
@@ -514,9 +513,8 @@ describe('the set operations', () => {
 
 		const expected = SequenceCollection.from(first)[name as SetOp](second).toArray();
 
-		const actual = await AsyncSequenceCollection.from(streamOf(first))
-			[name as SetOp](second)
-			.toArray();
+		const streamed = AsyncSequenceCollection.from(streamOf(first));
+		const actual = await streamed[name as SetOp](second).toArray();
 
 		expect(actual).toEqual(expected);
 	});
@@ -529,13 +527,14 @@ describe('the set operations', () => {
 
 		const keys = ['north', 'south'];
 
-		const expected = SequenceCollection.from(ORDERS)
-			[name as KeyedOp](keys, (order) => order.region)
+		const listed = SequenceCollection.from(ORDERS);
+		const streamed = AsyncSequenceCollection.from(streamOf(ORDERS));
+
+		const expected = listed[name as KeyedOp](keys, (order) => order.region)
 			.select((order) => order.id)
 			.toArray();
 
-		const actual = await AsyncSequenceCollection.from(streamOf(ORDERS))
-			[name as KeyedOp](keys, (order) => order.region)
+		const actual = await streamed[name as KeyedOp](keys, (order) => order.region)
 			.select((order) => order.id)
 			.toArray();
 
@@ -771,8 +770,9 @@ describe('cancellation', () => {
 		return {
 			sum: (): Promise<number> => sequence.sum(undefined, { signal }),
 			average: (): Promise<number> => sequence.average(undefined, { signal }),
-			countBy: <K>(keySelector: (value: number) => K): Promise<Map<K, number>> =>
-				sequence.countBy(keySelector, { signal }),
+			countBy: <K>(keySelector: (value: number) => K): Promise<Map<K, number>> => {
+				return sequence.countBy(keySelector, { signal });
+			},
 			toMap: <K>(keySelector: (value: number) => K): Promise<Map<K, number>> => {
 				return sequence.toMap(keySelector, undefined, { signal });
 			},

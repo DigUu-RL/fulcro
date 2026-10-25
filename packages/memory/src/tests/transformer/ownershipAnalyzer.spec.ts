@@ -143,7 +143,9 @@ describe('ownership rules at compile time', () => {
 	});
 
 	it('should name the conflicting borrow and the owner of an ended one', () => {
-		const messages: string[] = rejected.refused.map((diagnostic) => String(diagnostic.messageText));
+		const messages: string[] = rejected.refused.map((diagnostic) => {
+			return typescript.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
+		});
 
 		expect(messages).toContain(
 			"FULCRO7028: borrow: the borrow 'reading' is used after borrowMutable(owner) at line 40 ended it.",

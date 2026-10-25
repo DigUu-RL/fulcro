@@ -186,19 +186,25 @@ describe('the windows hold a window, not the stream', () => {
 			'windowed',
 			(
 				sequence: AsyncSequenceOfNumbers,
-			): ReturnType<typeof AsyncSequenceCollection.from<unknown>> => sequence.windowed(3),
+			): ReturnType<typeof AsyncSequenceCollection.from<unknown>> => {
+				return sequence.windowed(3);
+			},
 		],
 		[
 			'pairwise',
 			(
 				sequence: AsyncSequenceOfNumbers,
-			): ReturnType<typeof AsyncSequenceCollection.from<unknown>> => sequence.pairwise(),
+			): ReturnType<typeof AsyncSequenceCollection.from<unknown>> => {
+				return sequence.pairwise();
+			},
 		],
 		[
 			'skipLast',
 			(
 				sequence: AsyncSequenceOfNumbers,
-			): ReturnType<typeof AsyncSequenceCollection.from<unknown>> => sequence.skipLast(3),
+			): ReturnType<typeof AsyncSequenceCollection.from<unknown>> => {
+				return sequence.skipLast(3);
+			},
 		],
 		[
 			'groupAdjacent',

@@ -106,7 +106,7 @@ const operand = (random: () => number, exponentSpread: number): Exact => {
 	let digits = '';
 
 	for (let index = 0; index < length; index++) {
-		digits += Math.floor(random() * 10);
+		digits += String(Math.floor(random() * 10));
 	}
 
 	// Nines and trailing zeros are where carries and ties live, and a power of
@@ -832,7 +832,8 @@ describe('Decimal', () => {
 			const one = decimalFrom('1') as unknown as number;
 
 			expect(() => one + 1).toThrow(TypeError);
-			expect(() => +one).toThrow(TypeError);
+			// The conversion unary plus makes, asked of the decimal itself.
+			expect(() => Number(decimalFrom('1'))).toThrow(TypeError);
 			expect(() => one < 2).toThrow(TypeError);
 		});
 	});

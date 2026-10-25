@@ -86,11 +86,13 @@ describe('typeOf', () => {
 		expect(typeOf(User).typeId).toBe('class');
 
 		expect(typeOf(() => 1).typeId).toBe('function');
+
 		expect(
 			typeOf(async () => {
 				await Promise.resolve();
 			}).typeId,
 		).toBe('async-function');
+
 		expect(
 			typeOf(function* (): Generator<number> {
 				// Only the kind of function is asked about.

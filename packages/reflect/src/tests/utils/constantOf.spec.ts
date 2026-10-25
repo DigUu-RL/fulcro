@@ -94,7 +94,9 @@ describe('constantOf', () => {
 		});
 
 		it('should accept an object with no prototype', () => {
-			expect(evaluateAtRuntime(() => Object.assign(Object.create(null), { a: 1 }))).toEqual({
+			expect(
+				evaluateAtRuntime(() => Object.assign(Object.create(null) as object, { a: 1 })),
+			).toEqual({
 				a: 1,
 			});
 		});
@@ -121,9 +123,20 @@ describe('constantOf', () => {
 		it.each([
 			['a function', () => (): number => 1],
 			['a symbol', (): symbol => Symbol('refused')],
-			['an instance of Map', (): Map<any, any> => new Map()],
+			['an instance of Map', (): Map<unknown, unknown> => new Map()],
 			['an instance of Date', (): Date => new Date(0)],
-			['an array with holes', (): (number | undefined)[] => [1, , 3]],
+			[
+				'an array with holes',
+				(): (number | undefined)[] => {
+					// Holes made by leaving indices unassigned rather than by a literal.
+					const holed = new Array<number>(3);
+
+					holed[0] = 1;
+					holed[2] = 3;
+
+					return holed;
+				},
+			],
 			[
 				'an array with properties besides its elements',
 				(): number[] & { extra: number } => Object.assign([1], { extra: 2 }),

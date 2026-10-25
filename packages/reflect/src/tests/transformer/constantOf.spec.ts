@@ -1,4 +1,5 @@
 import * as path from 'node:path';
+import { runInThisContext } from 'node:vm';
 
 import * as typescript from 'typescript';
 import { assert, beforeAll, describe, expect, it } from 'vitest';
@@ -92,7 +93,11 @@ const evaluate = (binding: string): unknown => {
 
 	if (match === null) throw new Error(`${binding} was not emitted`);
 
-	return new Function(`return ${String(match[1])};`)();
+	// Evaluated in this realm, so what it builds has the prototypes the
+	// assertions compare against.
+	const value: unknown = runInThisContext(`(${String(match[1])})`);
+
+	return value;
 };
 
 /**
@@ -133,6 +138,7 @@ const lineOf = (diagnostic: typescript.Diagnostic): string => {
  */
 const refusalOf = (binding: string): string => {
 	const file: typescript.SourceFile | undefined = rejected.refused[0]?.file;
+
 	const declaration: number =
 		file === undefined ? -1 : file.text.indexOf(`export const ${binding} =`);
 
@@ -150,7 +156,7 @@ const refusalOf = (binding: string): string => {
 
 	if (found === undefined) throw new Error(`${binding} was not refused`);
 
-	return String(found.messageText);
+	return typescript.flattenDiagnosticMessageText(found.messageText, '\n');
 };
 
 describe('constantOf at compile time', () => {
@@ -337,7 +343,11 @@ describe('constantOf at compile time', () => {
 		it('should stop a function that never returns, and refuse it', () => {
 			const { refused } = compile('constantOf.timeout.fixture.ts');
 
-			expect(refused.map((diagnostic) => String(diagnostic.messageText))).toEqual([
+			const messages: string[] = refused.map((diagnostic) => {
+				return typescript.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
+			});
+
+			expect(messages).toEqual([
 				'FULCRO4013: constantOf(…) did not finish within 5000 ms at compile time.',
 			]);
 		}, 60_000);

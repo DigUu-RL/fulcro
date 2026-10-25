@@ -7,6 +7,7 @@ import { own } from '@/src/own';
 import type { Owned } from '@/src/owned';
 import type { Storage } from '@/src/storage';
 import { coded } from '@/src/tests/coded';
+import { thrownBy } from '@/src/tests/thrownBy';
 
 /**
  * Behaviour suite for `own`, and for the `Owned<T>` it returns.
@@ -126,12 +127,10 @@ describe('own', () => {
 			),
 		);
 
-		expect(() => own(() => null as never)).toThrow(
-			expect.objectContaining({
-				code: 'FULCRO7017',
-				details: expect.objectContaining({ received: 'null' }),
-			}),
-		);
+		expect(thrownBy(() => own(() => null as never))).toMatchObject({
+			code: 'FULCRO7017',
+			details: { received: 'null' },
+		});
 	});
 
 	it('should infer the type of the values from the storage created', () => {

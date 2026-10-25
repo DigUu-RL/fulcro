@@ -66,11 +66,11 @@ describe('SequenceCollection Unit Tests', () => {
 	});
 
 	it('should find the last element of a single pass source', () => {
-		function* generate(): Generator<number> {
+		const generate = function* (): Generator<number> {
 			yield 1;
 			yield 2;
 			yield 3;
-		}
+		};
 
 		expect(SequenceCollection.from(generate()).last()).toBe(3);
 	});
@@ -145,10 +145,10 @@ describe('SequenceCollection Unit Tests', () => {
 		expect(numbers.distinct().count()).toBe(4);
 		expect(numbers.count((value) => value > 2)).toBe(2);
 
-		function* generate(): Generator<number> {
+		const generate = function* (): Generator<number> {
 			yield 1;
 			yield 2;
-		}
+		};
 
 		expect(SequenceCollection.from(generate()).count()).toBe(2);
 	});

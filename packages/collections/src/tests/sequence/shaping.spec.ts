@@ -123,7 +123,9 @@ describe('ofType', () => {
 	});
 
 	it('should recognise a subclass as an instance of its base', () => {
-		class Base {}
+		class Base {
+			readonly tier: string = 'base';
+		}
 		class Derived extends Base {}
 
 		const values: unknown[] = [new Derived(), new Base(), 'neither'];
@@ -550,7 +552,10 @@ describe('the shape check the transformer writes', () => {
 			'an array with a wrong element',
 			(): { tags: (string | number)[] } => ({ ...valid(), tags: ['a', 2] }),
 		],
-		['a nested object missing its field', (): { customer: {} } => ({ ...valid(), customer: {} })],
+		[
+			'a nested object missing its field',
+			(): { customer: Record<string, never> } => ({ ...valid(), customer: {} }),
+		],
 		[
 			'a nested object of the wrong type',
 			(): { customer: string } => ({ ...valid(), customer: 'a@b.c' }),

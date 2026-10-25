@@ -1,6 +1,7 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import type { IntegerType } from '@/src/integer';
+import type { SignedInteger } from '@/src/signedInteger';
 import { UnsignedInteger } from '@/src/unsignedInteger';
 
 /**
@@ -143,9 +144,7 @@ describe('UnsignedInteger', () => {
 	it('should be told apart from the signed type of the same width', () => {
 		expectTypeOf(UnsignedInteger(16).from(1)).toEqualTypeOf<UnsignedInteger<16>>();
 
-		expectTypeOf<UnsignedInteger<16>>().not.toExtend<
-			import('@/src/signedInteger').SignedInteger<16>
-		>();
+		expectTypeOf<UnsignedInteger<16>>().not.toExtend<SignedInteger<16>>();
 
 		expectTypeOf(UnsignedInteger(64).from(1)).toExtend<bigint>();
 	});

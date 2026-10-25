@@ -56,11 +56,11 @@ export const controlledWork = <T>(
 	const work: TaskWork<T> = (token) => {
 		handedToken = token;
 
-		return new Promise<T>((resolve, reject) => {
+		// Settled once an outcome is known; the failure is then thrown as it came,
+		// which may be a cancellation reason of any kind.
+		const decided = new Promise<{ readonly value: T } | { readonly error: unknown }>((resolve) => {
 			settle = (): void => {
-				if (outcome === undefined) return;
-				if ('value' in outcome) resolve(outcome.value);
-				if ('error' in outcome) reject(outcome.error);
+				if (outcome !== undefined) resolve(outcome);
 			};
 
 			if (options.honoursCancellation !== false) {
@@ -71,6 +71,12 @@ export const controlledWork = <T>(
 			}
 
 			settle();
+		});
+
+		return decided.then((decision) => {
+			if ('error' in decision) throw decision.error;
+
+			return decision.value;
 		});
 	};
 

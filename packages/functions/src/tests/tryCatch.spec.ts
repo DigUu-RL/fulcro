@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { type Result } from '@/src/result';
+import { rejectedWith } from '@/src/tests/rejectedWith';
 import { tryCatch } from '@/src/tryCatch';
 
 describe('tryCatch', () => {
@@ -38,7 +39,7 @@ describe('tryCatch', () => {
 	});
 
 	it('should keep a thrown non-error exactly as it was thrown', async () => {
-		const result: Result<number> = await tryCatch<number>(Promise.reject('a bare string'));
+		const result: Result<number> = await tryCatch<number>(rejectedWith('a bare string'));
 
 		expect(result.value).toBeNull();
 		expect(result.error).toBe('a bare string');
@@ -47,7 +48,7 @@ describe('tryCatch', () => {
 	it.each([null, undefined])('should keep %s from defeating the discriminant', async (thrown) => {
 		// Storing a nullish throw as it came would make the failure read as
 		// a success, since `error === null` is what tells the two apart.
-		const result: Result<number> = await tryCatch<number>(Promise.reject(thrown));
+		const result: Result<number> = await tryCatch<number>(rejectedWith(thrown));
 
 		expect(result.error).not.toBeNull();
 		expect(result.error).toBeInstanceOf(Error);

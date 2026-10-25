@@ -99,12 +99,8 @@ describe('offsetOf', () => {
 	it('should leave a field held in a variable to throw, naming it', () => {
 		const field: 'flag' | 'count' = ['flag', 'count'][0] as 'flag';
 
-		expect(() => offsetOf<Mixed>(field)).toThrow(
-			expect.objectContaining({
-				code: 'FULCRO4009',
-				message: expect.stringContaining('offsetOf<T>("flag")'),
-			}),
-		);
+		expect(() => offsetOf<Mixed>(field)).toThrow(expect.objectContaining({ code: 'FULCRO4009' }));
+		expect(() => offsetOf<Mixed>(field)).toThrow('offsetOf<T>("flag")');
 	});
 
 	it('should leave a union of structs placing the field differently to throw', () => {

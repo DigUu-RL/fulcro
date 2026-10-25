@@ -19,6 +19,7 @@ import { nativePointerTo } from '@/src/nativePointerTo';
 import { createPoolAllocator } from '@/src/poolAllocator';
 import { createStackAllocator } from '@/src/stackAllocator';
 import { coded } from '@/src/tests/coded';
+import { thrownBy } from '@/src/tests/thrownBy';
 import { instantiateRecordingModule } from '@/src/tests/recordingModule';
 
 /**
@@ -251,14 +252,11 @@ describe('nativePointerTo a memory', () => {
 			),
 		);
 
-		expect(() => {
-			end.set(Sample.from({ value: 1 }));
-		}).toThrow(
-			expect.objectContaining({
-				code: 'FULCRO7021',
-				details: expect.objectContaining({ operation: 'NativePointer.set' }),
+		expect(
+			thrownBy(() => {
+				end.set(Sample.from({ value: 1 }));
 			}),
-		);
+		).toMatchObject({ code: 'FULCRO7021', details: { operation: 'NativePointer.set' } });
 	});
 
 	it.each([
@@ -298,12 +296,10 @@ describe('nativePointerTo a memory', () => {
 			),
 		);
 
-		expect(() => nativePointerTo(memory, 0, Sample).at(4)).toThrow(
-			expect.objectContaining({
-				code: 'FULCRO7020',
-				details: expect.objectContaining({ operation: 'NativePointer.at' }),
-			}),
-		);
+		expect(thrownBy(() => nativePointerTo(memory, 0, Sample).at(4))).toMatchObject({
+			code: 'FULCRO7020',
+			details: { operation: 'NativePointer.at' },
+		});
 
 		expect(nativePointerTo(memory, 0, Sample).at(4, Point).address).toBe(4);
 	});
@@ -365,12 +361,10 @@ describe('nativePointerTo a memory', () => {
 
 		buffer.resize(8);
 
-		expect(() => pointer.get()).toThrow(
-			expect.objectContaining({
-				code: 'FULCRO7021',
-				details: expect.objectContaining({ end: 8 }),
-			}),
-		);
+		expect(thrownBy(() => pointer.get())).toMatchObject({
+			code: 'FULCRO7021',
+			details: { end: 8 },
+		});
 	});
 
 	it('should be frozen, its methods working taken off it', () => {
@@ -539,12 +533,10 @@ describe('nativePointerTo an allocation', () => {
 			),
 		);
 
-		expect(() => pointer.at(-8)).toThrow(
-			expect.objectContaining({
-				code: 'FULCRO7019',
-				details: expect.objectContaining({ address: 0, start: 8 }),
-			}),
-		);
+		expect(thrownBy(() => pointer.at(-8))).toMatchObject({
+			code: 'FULCRO7019',
+			details: { address: 0, start: 8 },
+		});
 
 		expect(() => pointer.at(16).get()).toThrow(expect.objectContaining({ code: 'FULCRO7021' }));
 	});

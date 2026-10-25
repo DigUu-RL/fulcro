@@ -7,11 +7,11 @@ class User {
 	email = 'a@b.c';
 	profile = { theme: 'dark' };
 
-	// Declares that it never reads `this`, which is true of a method only ever
-	// named: reading it off the object is then safe, and says so.
-	save(this: void): void {
-		// A method to be named, never called.
-	}
+	// A function held by the instance, so reading it off the object is safe:
+	// the expression `user.save` is what is named, as it would be for a method.
+	save = (): void => {
+		// To be named, never called.
+	};
 
 	get displayName(): string {
 		return this.email;
@@ -84,9 +84,9 @@ describe('nameOf', () => {
 	});
 
 	it('should fall back to the name of the callable when it is not an accessor', () => {
-		function namedFunction(): number {
+		const namedFunction = function namedFunction(): number {
 			return 1;
-		}
+		};
 
 		expect(nameOf(namedFunction)).toBe('namedFunction');
 		expect(nameOf(() => 1)).toBe('(anonymous)');

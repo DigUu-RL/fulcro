@@ -71,8 +71,9 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-	if (nativeToString !== undefined)
+	if (nativeToString !== undefined) {
 		Object.defineProperty(BigInt.prototype, 'toString', nativeToString);
+	}
 
 	globalThis.BigInt = nativeBigInt;
 });

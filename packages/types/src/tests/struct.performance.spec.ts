@@ -175,7 +175,7 @@ describe('struct', () => {
 		);
 
 		const view = new DataView(new ArrayBuffer(Point.layout.size));
-		const prototypes = new Set<object>();
+		const prototypes = new Set<object | null>();
 		let ownFunctions = 0;
 
 		Point.write(view, 0, Point.from({ x: 3, y: 4 }));
@@ -183,7 +183,7 @@ describe('struct', () => {
 		for (let index = 0; index < VOLUME; index++) {
 			const value = index % 2 === 0 ? Point.from({ x: 3, y: 4 }) : Point.read(view, 0);
 
-			prototypes.add(Object.getPrototypeOf(value));
+			prototypes.add(Reflect.getPrototypeOf(value));
 
 			for (const key of Reflect.ownKeys(value)) {
 				if (typeof Object.getOwnPropertyDescriptor(value, key)?.value === 'function') {

@@ -18,7 +18,7 @@ import transformer from '@/src/transformer';
  */
 
 vi.mock('node:vm', async (importOriginal) => {
-	const original = await importOriginal<typeof import('node:vm')>();
+	const original = await importOriginal<typeof virtualMachine>();
 
 	return { ...original, runInContext: vi.fn(original.runInContext) };
 });
@@ -88,7 +88,7 @@ describe('constantOf', () => {
 				return new Proxy(
 					{ index },
 					{
-						getOwnPropertyDescriptor: (target, key): TypedPropertyDescriptor<any> | undefined => {
+						getOwnPropertyDescriptor: (target, key): PropertyDescriptor | undefined => {
 							reads++;
 
 							return Reflect.getOwnPropertyDescriptor(target, key);

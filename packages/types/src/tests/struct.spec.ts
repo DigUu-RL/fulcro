@@ -719,9 +719,9 @@ describe('a struct declared without methods', () => {
 	it('should make values that are their fields alone, with no marker showing', () => {
 		const Plain = struct('Plain', { x: SinglePrecisionFloat });
 
-		type Value = ReturnType<typeof Plain.from>;
+		const value = Plain.from({ x: 1 });
 
-		expectTypeOf<Value>().not.toHaveProperty('~noMethods');
-		expectTypeOf<Value['x']>().toEqualTypeOf<SinglePrecisionFloat>();
+		expectTypeOf(value).not.toHaveProperty('~noMethods');
+		expectTypeOf(value).toHaveProperty('x').toEqualTypeOf<SinglePrecisionFloat>();
 	});
 });

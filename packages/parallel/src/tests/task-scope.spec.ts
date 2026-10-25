@@ -9,6 +9,7 @@ import { type Task, type TaskScope } from '@/src/@types/index.js';
 import { createCancellationSource } from '@/src/cancellation/index.js';
 import { createTaskScope } from '@/src/task/index.js';
 import { controlledWork, flush } from '@/src/tests/controlled-work';
+import { rejectedWith } from '@/src/tests/rejectedWith';
 
 /**
  * Task scope suite.
@@ -102,7 +103,7 @@ describe('spawn', () => {
 			const scope = createTaskScope();
 			const sibling = scope.spawn(controlledWork<number>().work);
 
-			const task = scope.spawn(() => Promise.reject(thrown));
+			const task = scope.spawn(() => rejectedWith(thrown));
 			const settled: Result<unknown> = await task.settled;
 			const failure: unknown = settled.isFailure() ? settled.error : undefined;
 
@@ -125,7 +126,7 @@ describe('spawn', () => {
 		const leaving = async (): Promise<void> => {
 			await using scope = createTaskScope();
 
-			failure = await scope.spawn(() => Promise.reject(undefined)).settled;
+			failure = await scope.spawn(() => rejectedWith(undefined)).settled;
 		};
 
 		const thrown: unknown = await rejectionOf(leaving());

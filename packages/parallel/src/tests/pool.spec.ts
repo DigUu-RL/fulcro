@@ -356,13 +356,8 @@ describe('the codes a failure carries', () => {
 
 		expect(isFulcroError(failure, 'FULCRO3001')).toBe(true);
 
-		expect(failure).toMatchObject({
-			details: {
-				operation: 'initialize',
-				module: expect.stringMatching(/\S/),
-				name: 'notAFunction',
-			},
-		});
+		expect(failure).toMatchObject({ details: { operation: 'initialize', name: 'notAFunction' } });
+		expect(failure).toHaveProperty('details.module', expect.stringMatching(/\S/));
 	});
 
 	it("should give the task's own failure details naming its text", async () => {
@@ -437,7 +432,7 @@ describe('lifecycle', () => {
 	it('should stop its threads when an await using scope ends', async () => {
 		// Not registered for closing: a pool the scope failed to close would keep
 		// its threads, and the run would hang rather than pass.
-		let doubled: number[] = [];
+		let doubled: number[];
 
 		{
 			await using pool = createWorkerPool<number, number>({
@@ -726,9 +721,8 @@ describe('cancelling, in order', () => {
 		const controller = new AbortController();
 		const reason = new Error('called off');
 
-		const iterator = pool
-			.stream([1, 2, 3, 4], { signal: controller.signal })
-			[Symbol.asyncIterator]();
+		const stream = pool.stream([1, 2, 3, 4], { signal: controller.signal });
+		const iterator = stream[Symbol.asyncIterator]();
 
 		const first = iterator.next();
 
@@ -823,9 +817,7 @@ describe('closing', () => {
 
 		await until(() => first.settled && second.settled, 'both runs to be settled');
 
-		expect(first.error).toMatchObject({
-			message: expect.stringMatching(/exited/i),
-		});
+		expect(first.error).toHaveProperty('message', expect.stringMatching(/exited/i));
 
 		expect(second.error).toMatchObject({
 			code: 'FULCRO3010',

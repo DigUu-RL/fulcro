@@ -39,6 +39,9 @@ interface Order {
 	readonly reference: string | null;
 }
 
+/** Statuses the dataset is spread across. */
+const STATUSES: readonly Order['status'][] = ['pending', 'paid', 'shipped'];
+
 let orders: readonly Order[] = [];
 
 beforeAll(() => {
@@ -46,9 +49,7 @@ beforeAll(() => {
 	// measurement of the builder.
 	orders = Array.from({ length: SIZE }, (_, index) => {
 		const region: string | undefined = ['north', 'south', 'east', 'west'][index % 4];
-		const status: Order['status'] | undefined = (['pending', 'paid', 'shipped'] as const)[
-			index % 3
-		];
+		const status: Order['status'] | undefined = STATUSES[index % 3];
 
 		assert.isDefined(region);
 		assert.isDefined(status);
