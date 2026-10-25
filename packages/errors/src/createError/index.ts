@@ -44,9 +44,8 @@ type WithoutDetails = {
 }[ErrorCode];
 
 // Fails to compile, naming the code, when a template takes no details.
-const everyTemplateTakesDetails: [WithoutDetails] extends [never] ? true : WithoutDetails = true;
-
-everyTemplateTakesDetails;
+// Named with a leading underscore because it exists only to be type checked.
+const _everyTemplateTakesDetails: [WithoutDetails] extends [never] ? true : WithoutDetails = true;
 
 /**
  * Creates the error a code names, ready to be thrown.

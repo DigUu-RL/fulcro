@@ -37,7 +37,9 @@ const propagate = (step: () => void): void => {
 	propagating = queue;
 
 	try {
-		for (let index = 0; index < queue.length; index++) (queue[index] as () => void)();
+		// A step may queue more while this runs; the array's own iterator reads
+		// the length again at every step, so those run in this same loop.
+		for (const run of queue) run();
 	} finally {
 		propagating = null;
 	}
@@ -126,7 +128,10 @@ export const createCancellationSource = (parent?: CancellationToken): Cancellati
 			return signal.aborted;
 		},
 		get reason(): unknown {
-			return signal.reason;
+			// The platform types it as ny; what it holds is whatever cancelled.
+			const reason: unknown = signal.reason;
+
+			return reason;
 		},
 		signal,
 		throwIfCancelled: (): void => {

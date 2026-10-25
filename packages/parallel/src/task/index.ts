@@ -12,6 +12,9 @@ import type {
 import { createCancellationSource } from '@/src/cancellation/index.js';
 import { createWaitingQueue, type Waiting, type WaitingQueue } from '@/src/task/queue.js';
 
+/** Any value but `null` and `undefined`: what a task may fail with. */
+type NonNullish = string | number | bigint | boolean | symbol | object;
+
 /**
  * What a task rejects with, made safe to hold as a failure.
  *
@@ -24,7 +27,7 @@ import { createWaitingQueue, type Waiting, type WaitingQueue } from '@/src/task/
  * @param thrown What the work rejected with.
  * @returns The value itself, or FULCRO3013 standing in for a nullish one.
  */
-const asFailure = (thrown: unknown): NonNullable<unknown> => {
+const asFailure = (thrown: unknown): NonNullish => {
 	return (
 		thrown ??
 		createError('FULCRO3013', {
@@ -176,11 +179,12 @@ export const createTaskScope = (options: TaskScopeOptions = {}): TaskScope => {
 				// Called off between being started and the work beginning —
 				// `spawn` then `cancel` in one breath. It has not run, so it
 				// never does.
-				const producing: Promise<T> = token.isCancelled
-					? Promise.reject(token.reason)
-					: new Promise<T>((onValue) => {
-							onValue(work(token));
-						});
+				// The token throws its own reason, so the rejection carries exactly
+				// what cancelled it.
+				const producing: Promise<T> = new Promise<T>((onValue) => {
+					token.throwIfCancelled();
+					onValue(work(token));
+				});
 
 				void producing
 					.then(
@@ -188,7 +192,7 @@ export const createTaskScope = (options: TaskScopeOptions = {}): TaskScope => {
 							resolve(value);
 						},
 						(thrown: unknown) => {
-							const error: NonNullable<unknown> = asFailure(thrown);
+							const error: NonNullish = asFailure(thrown);
 
 							// After a cancellation, the rejection is the work
 							// answering it. Only a task nobody called off can fail

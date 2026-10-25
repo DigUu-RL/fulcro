@@ -19,8 +19,16 @@ type StructFields = Readonly<Record<string, FieldDescriptor>>;
 /** The methods of a struct, by name. */
 type StructMethods = Readonly<Record<string, (...parameters: never[]) => unknown>>;
 
-/** What a struct declared without methods has: none. */
-type NoMethods = Record<never, never>;
+/**
+ * What a struct declared without methods is typed with: an object with no
+ * method in it. It has to be an object type — the methods a struct is given
+ * are typed against it before they are inferred — and an empty one would
+ * stand for any value at all, so it carries one optional method slot, marked
+ * with a tilde as `'~layout'` is, which `StructValue` reads as no methods. The
+ * slot is typed as a method, so that methods in general and none at all stay
+ * assignable to each other, as two structs' descriptors are compared.
+ */
+type NoMethods = Readonly<Partial<Record<'~noMethods', StructMethods[string]>>>;
 
 /** The type of the values a descriptor recognises. */
 type ValueOf<TDescriptor> = TDescriptor extends {
@@ -113,7 +121,7 @@ type StructData<TFields extends StructFields> = {
  */
 type StructValue<TFields extends StructFields, TMethods extends StructMethods = NoMethods> = [
 	keyof TMethods,
-] extends [never]
+] extends ['~noMethods']
 	? StructData<TFields>
 	: StructData<TFields> & Readonly<TMethods>;
 
@@ -446,7 +454,7 @@ export const struct = <TFields extends StructFields, TMethods extends StructMeth
 	 * @returns The object, still empty and not yet frozen.
 	 */
 	const blank = (): Record<string, unknown> => {
-		return prototype === undefined ? {} : Object.create(prototype);
+		return prototype === undefined ? {} : (Object.create(prototype) as Record<string, unknown>);
 	};
 
 	// Largest alignment first, so that every field lands aligned without padding
@@ -468,6 +476,7 @@ export const struct = <TFields extends StructFields, TMethods extends StructMeth
 				offset: end,
 			},
 		});
+
 		end += field.codec.size;
 	}
 

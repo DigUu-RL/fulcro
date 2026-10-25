@@ -110,7 +110,12 @@ const integerCodec = (descriptor: IntegerType<unknown>): FieldCodec => {
 				alignment: size,
 				read: (view, offset) => (signed ? view.getInt8(offset) : view.getUint8(offset)),
 				write: (view, offset, value): void => {
-					signed ? view.setInt8(offset, value as number) : view.setUint8(offset, value as number);
+					if (signed) {
+						view.setInt8(offset, value as number);
+						return;
+					}
+
+					view.setUint8(offset, value as number);
 				},
 				equals,
 			};
@@ -122,9 +127,12 @@ const integerCodec = (descriptor: IntegerType<unknown>): FieldCodec => {
 					return signed ? view.getInt16(offset, true) : view.getUint16(offset, true);
 				},
 				write: (view, offset, value): void => {
-					signed
-						? view.setInt16(offset, value as number, true)
-						: view.setUint16(offset, value as number, true);
+					if (signed) {
+						view.setInt16(offset, value as number, true);
+						return;
+					}
+
+					view.setUint16(offset, value as number, true);
 				},
 				equals,
 			};
@@ -136,9 +144,12 @@ const integerCodec = (descriptor: IntegerType<unknown>): FieldCodec => {
 					return signed ? view.getInt32(offset, true) : view.getUint32(offset, true);
 				},
 				write: (view, offset, value): void => {
-					signed
-						? view.setInt32(offset, value as number, true)
-						: view.setUint32(offset, value as number, true);
+					if (signed) {
+						view.setInt32(offset, value as number, true);
+						return;
+					}
+
+					view.setUint32(offset, value as number, true);
 				},
 				equals,
 			};
@@ -150,9 +161,12 @@ const integerCodec = (descriptor: IntegerType<unknown>): FieldCodec => {
 					return signed ? view.getBigInt64(offset, true) : view.getBigUint64(offset, true);
 				},
 				write: (view, offset, value): void => {
-					signed
-						? view.setBigInt64(offset, value as bigint, true)
-						: view.setBigUint64(offset, value as bigint, true);
+					if (signed) {
+						view.setBigInt64(offset, value as bigint, true);
+						return;
+					}
+
+					view.setBigUint64(offset, value as bigint, true);
 				},
 				equals,
 			};

@@ -47,6 +47,6 @@ export type Defaulted<T> = T extends unknown ? T : never;
  * @returns The default value of `T`.
  * @throws {Error} Always, when the transformer is not enabled.
  */
-export function defaultOf<T>(): Defaulted<T> {
+export const defaultOf = <T>(): Defaulted<T> => {
 	throw createError('FULCRO4003', { operation: 'defaultOf' });
-}
+};

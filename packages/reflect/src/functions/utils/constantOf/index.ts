@@ -67,11 +67,11 @@ export const describeUnwritable = (
 			: 'an array with properties besides its elements';
 	}
 
-	const prototype: object | null = Object.getPrototypeOf(object);
+	const prototype: object | null = Reflect.getPrototypeOf(object);
 
 	// A plain object's prototype is its realm's `Object.prototype`, whose own
 	// prototype is null — whichever realm made it.
-	if (prototype !== null && Object.getPrototypeOf(prototype) !== null) {
+	if (prototype !== null && Reflect.getPrototypeOf(prototype) !== null) {
 		const name: unknown = (prototype as { constructor?: { name?: unknown } }).constructor?.name;
 
 		return typeof name === 'string' && name !== ''

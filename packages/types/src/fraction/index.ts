@@ -295,9 +295,9 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 		},
 
 		add: (left, right) => {
-			return sum(`${name}.add`, left, right, (leftTerm, rightTerm) =>
-				integer.add(leftTerm, rightTerm),
-			);
+			return sum(`${name}.add`, left, right, (leftTerm, rightTerm) => {
+				return integer.add(leftTerm, rightTerm);
+			});
 		},
 
 		subtract: (left, right) => {

@@ -113,7 +113,7 @@ describe('layoutOf', () => {
 			};
 		}>();
 
-		expectTypeOf<TypeLayout<Half>['fields']>().toEqualTypeOf<Record<never, never>>();
+		expectTypeOf<TypeLayout<Half>['fields']>().toEqualTypeOf<Readonly<Record<string, never>>>();
 	});
 
 	it('should leave a union of different layouts to throw, having no single answer', () => {

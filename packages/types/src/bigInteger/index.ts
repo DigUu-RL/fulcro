@@ -110,7 +110,7 @@ export const BigInteger: NumericType<BigInteger, number | bigint | string> = {
 		return (base ** exponent) as BigInteger;
 	},
 
-	negate: (value: BigInteger): BigInteger => -value as BigInteger,
+	negate: (value: BigInteger): BigInteger => -(value as bigint) as BigInteger,
 
 	increment: (value: BigInteger): BigInteger => (value + 1n) as BigInteger,
 

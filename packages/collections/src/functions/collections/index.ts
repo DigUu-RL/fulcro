@@ -59,6 +59,20 @@ export const resolveDeclaredCount = (source: unknown): number | null => {
 };
 
 /**
+ * Tells whether a source is an array, keeping the type of its elements.
+ *
+ * `Array.isArray` alone narrows to `any[]`, which turns every element read
+ * from it into `any`; the sources here are typed, and stay so.
+ *
+ * @template T Type of the elements.
+ * @param source Source of a sequence.
+ * @returns `true` when the source is an array.
+ */
+export const isArraySource = <T>(source: Iterable<T>): source is readonly T[] => {
+	return Array.isArray(source);
+};
+
+/**
  * Tells whether a property name read by a `Proxy` represents a positional
  * index rather than a member of the collection.
  *

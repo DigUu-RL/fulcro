@@ -367,7 +367,7 @@ const resolveObjectId = (value: object): TypeId => {
 	if (TYPED_ARRAY_TAGS.has(tag)) return 'typed-array';
 	if (BOXED_PRIMITIVE_TAGS.has(tag)) return 'boxed-primitive';
 
-	const prototype: object | null = Object.getPrototypeOf(value);
+	const prototype: object | null = Reflect.getPrototypeOf(value);
 
 	if (prototype === null) return 'null-prototype-object';
 	if (prototype === Object.prototype) return 'plain-object';
@@ -459,7 +459,7 @@ const resolveLineage = (value: unknown): readonly string[] => {
 
 	// Boxing a primitive exposes the chain behind it — `1` reports
 	// `['Number', 'Object']` — without altering the value itself.
-	let prototype: object | null = Object.getPrototypeOf(Object(value));
+	let prototype: object | null = Reflect.getPrototypeOf(Object(value) as object);
 
 	while (prototype !== null) {
 		const constructorName: unknown = (prototype as { constructor?: { name?: unknown } }).constructor
@@ -471,7 +471,7 @@ const resolveLineage = (value: unknown): readonly string[] => {
 				: NULL_PROTOTYPE_NAME,
 		);
 
-		prototype = Object.getPrototypeOf(prototype);
+		prototype = Reflect.getPrototypeOf(prototype);
 	}
 
 	return lineage;

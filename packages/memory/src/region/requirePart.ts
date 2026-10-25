@@ -36,7 +36,7 @@ export const requirePart = (
 	length: number | undefined,
 	available: number,
 ): number => {
-	const resolved: number = length === undefined ? Math.max(0, available - start) : length;
+	const resolved: number = length ?? Math.max(0, available - start);
 
 	if (
 		!Number.isSafeInteger(start) ||

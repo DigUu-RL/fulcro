@@ -17,7 +17,7 @@ import type { Group } from '@/src/@types/collections/group';
 import type { OrderedSequence } from '@/src/@types/collections/ordered';
 import type { Sequence } from '@/src/@types/collections/sequence';
 import { createGroup, createOrderedSequence } from '@/src/collections/factories';
-import { isIndexKey, resolveDeclaredCount } from '@/src/functions/collections';
+import { isArraySource, isIndexKey, resolveDeclaredCount } from '@/src/functions/collections';
 import { TopWindow } from '@/src/functions/ranking';
 import { describeExpected, describeType, resolveTypeTest } from '@/src/functions/types';
 
@@ -155,7 +155,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 				if (isIndexKey(property)) {
 					const index: number = Number(property);
 
-					if (Array.isArray(target.source)) return target.source[index];
+					if (isArraySource(target.source)) return target.source[index];
 
 					let currentIndex: number = 0;
 
@@ -394,13 +394,21 @@ export class SequenceCollection<T> implements Sequence<T> {
 	private findLast(predicate?: Predicate<T>): T | typeof NOT_FOUND {
 		const source: Iterable<T> = this.source;
 
-		if (Array.isArray(source)) {
-			for (let index = source.length - 1; index >= 0; index--) {
-				const item: T = source[index];
-				if (!predicate || predicate(item)) return item;
-			}
+		if (isArraySource(source)) {
+			let found: T | typeof NOT_FOUND = NOT_FOUND;
 
-			return NOT_FOUND;
+			// Walked from the end by the array itself, which hands each element
+			// over as it is: read by index it would be typed as possibly missing,
+			// and an element may well be `undefined` on its own account.
+			source.findLastIndex((item) => {
+				if (predicate !== undefined && !predicate(item)) return false;
+
+				found = item;
+
+				return true;
+			});
+
+			return found;
 		}
 
 		let last: T | typeof NOT_FOUND = NOT_FOUND;
@@ -561,7 +569,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 					// a single loop would keep re-evaluating long after the
 					// bypassed prefix is behind us, and still forwards early
 					// termination back to the source iterator.
-					yield* { [Symbol.iterator]: (): Iterator<T, any, any> => iterator };
+					yield* { [Symbol.iterator]: (): Iterator<T> => iterator };
 				},
 			},
 			() => {
@@ -597,7 +605,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 * @returns A new array holding every element of the source.
 	 */
 	protected static materialize<T>(source: Iterable<T>): T[] {
-		if (Array.isArray(source)) return source.slice();
+		if (isArraySource(source)) return source.slice();
 
 		if (source instanceof SequenceCollection) {
 			return SequenceCollection.materialize(source.source as Iterable<T>);

@@ -88,11 +88,14 @@ const describeDiagnostic = (diagnostic: typescript.Diagnostic): string => {
 	const file: typescript.SourceFile | undefined = diagnostic.file;
 
 	// A diagnostic about the program as a whole belongs to no file.
-	if (file === undefined) return String(diagnostic.messageText);
+	// A chained message is an object, and String would print [object Object].
+	const message: string = typescript.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
+
+	if (file === undefined) return message;
 
 	const { line, character } = file.getLineAndCharacterOfPosition(diagnostic.start ?? 0);
 
-	return `${file.fileName}(${String(line + 1)},${String(character + 1)}): ${String(diagnostic.messageText)}`;
+	return `${file.fileName}(${String(line + 1)},${String(character + 1)}): ${message}`;
 };
 
 /**

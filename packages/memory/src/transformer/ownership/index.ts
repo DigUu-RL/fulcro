@@ -217,7 +217,7 @@ const createRules = (
 
 		const loan: Loan | undefined = facts.loans.get(symbol);
 
-		if (loan === undefined || loan.ended === null) return;
+		if (!loan?.ended) return;
 
 		report(
 			identifier,
@@ -349,9 +349,7 @@ const createRules = (
 
 				loans.set(
 					symbol,
-					known === undefined || known.ended !== null
-						? (known ?? loan)
-						: { ...known, ended: loan.ended },
+					known?.ended !== null ? (known ?? loan) : { ...known, ended: loan.ended },
 				);
 			}
 
@@ -369,8 +367,7 @@ const createRules = (
 					const other: Loan | undefined = second.loans.get(symbol);
 
 					return (
-						other !== undefined &&
-						other.owner === loan.owner &&
+						other?.owner === loan.owner &&
 						other.kind === loan.kind &&
 						other.ended?.by === loan.ended?.by
 					);

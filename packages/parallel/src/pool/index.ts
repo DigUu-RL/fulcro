@@ -89,9 +89,11 @@ interface Member {
 const turnAfter = (queued: Promise<void>, signal: AbortSignal | undefined): Promise<void> => {
 	if (signal === undefined) return queued;
 
-	return new Promise<void>((resolve, reject) => {
+	// The race decides only whether the run was called off; the signal itself
+	// then throws its reason, so the rejection carries exactly that.
+	const calledOff = new Promise<boolean>((resolve) => {
 		const onAbort = (): void => {
-			reject(signal.reason);
+			resolve(true);
 		};
 
 		if (signal.aborted) {
@@ -103,8 +105,12 @@ const turnAfter = (queued: Promise<void>, signal: AbortSignal | undefined): Prom
 
 		void queued.then(() => {
 			signal.removeEventListener('abort', onAbort);
-			resolve();
+			resolve(false);
 		});
+	});
+
+	return calledOff.then((aborted) => {
+		if (aborted) signal.throwIfAborted();
 	});
 };
 
@@ -249,21 +255,24 @@ export const createPool = <T, R>(
 
 		try {
 			await Promise.all(
-				started.map((member) => {
-					return new Promise<void>((resolve, reject) => {
+				started.map(async (member) => {
+					// Settles with what went wrong, if anything, rather than
+					// rejecting with it: a worker's failure is rethrown below as it
+					// came, its own error rather than one this pool made.
+					const outcome: { readonly failure: unknown } | null = await new Promise((resolve) => {
 						stops.push(
 							member.handle.listen((message, failure) => {
 								if (failure !== undefined) {
-									reject(failure);
+									resolve({ failure });
 									return;
 								}
 
 								const reply = message as Outgoing;
 
-								if (reply.kind === 'ready') resolve();
+								if (reply.kind === 'ready') resolve(null);
 
 								if (reply.kind === 'broken') {
-									reject(errorFrom(reply, 'FULCRO3004'));
+									resolve({ failure: errorFrom(reply, 'FULCRO3004') });
 								}
 							}),
 						);
@@ -274,6 +283,8 @@ export const createPool = <T, R>(
 							export: options.export,
 						});
 					});
+
+					if (outcome !== null) throw outcome.failure;
 				}),
 			);
 		} catch (error) {

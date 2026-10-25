@@ -714,3 +714,14 @@ describe('struct', () => {
 		});
 	});
 });
+
+describe('a struct declared without methods', () => {
+	it('should make values that are their fields alone, with no marker showing', () => {
+		const Plain = struct('Plain', { x: SinglePrecisionFloat });
+
+		type Value = ReturnType<typeof Plain.from>;
+
+		expectTypeOf<Value>().not.toHaveProperty('~noMethods');
+		expectTypeOf<Value['x']>().toEqualTypeOf<SinglePrecisionFloat>();
+	});
+});

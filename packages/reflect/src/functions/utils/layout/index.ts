@@ -72,7 +72,7 @@ export interface TypeLayout<T extends WithLayout> {
 					readonly alignment: TFields[TKey]['alignment'];
 				};
 			}
-		: Record<never, never>;
+		: Readonly<Record<string, never>>;
 }
 
 /**
