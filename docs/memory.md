@@ -58,10 +58,20 @@ A storage holds a fixed number of values of one type, by index:
 ```ts
 interface Storage<T> {
 	readonly length: number;
-	get(index: number): T;
-	set(index: number, value: T): void;
+	readonly get: (index: number) => T;
+	readonly set: (index: number, value: T) => void;
 }
 ```
+
+`get` and `set` are functions held by the storage, not methods: they work taken
+off their object, so `const { get, set } = storage` is as good as calling them
+through it. The same holds for every member of the views, pointers, references
+and allocators below.
+
+Being functions, their parameters are checked one way only. A `Storage<number>`
+is not a `Storage<unknown>` — that one could be handed a string to `set` — so
+code meant for a storage of any type takes it generically,
+`<T>(storage: Storage<T>)`, rather than as `Storage<unknown>`.
 
 Write code against that, and it runs unchanged over every strategy:
 
@@ -208,12 +218,12 @@ storage cannot tell.
 
 ```ts
 interface Allocator {
-	allocate(size: number, alignment: number): Allocation;
+	readonly allocate: (size: number, alignment: number) => Allocation;
 }
 
 interface Allocation {
 	readonly bytes: DataView; // exactly `size` bytes, zeroed
-	isLive(): boolean;
+	readonly isLive: () => boolean;
 }
 ```
 
@@ -372,14 +382,14 @@ MemoryReference<T>  one value that can be read and replaced
 ```ts
 interface ReadOnlyView<T> {
 	readonly length: number;
-	get(index: number): T;
-	subview(start: number, length?: number): ReadOnlyView<T>;
+	readonly get: (index: number) => T;
+	readonly subview: (start: number, length?: number) => ReadOnlyView<T>;
 }
 
 interface View<T> extends ReadOnlyView<T> {
-	set(index: number, value: T): void;
-	subview(start: number, length?: number): View<T>;
-	readOnly(): ReadOnlyView<T>;
+	readonly set: (index: number, value: T) => void;
+	readonly subview: (start: number, length?: number) => View<T>;
+	readonly readOnly: () => ReadOnlyView<T>;
 }
 ```
 
@@ -512,10 +522,12 @@ interface LinearMemory {
 interface NativePointer<T> extends MemoryReference<T> {
 	readonly memory: LinearMemory;
 	readonly address: number;
-	get(): T;
-	set(value: T): void;
-	at(byteOffset: number): NativePointer<T>;
-	at<TOther>(byteOffset: number, element: AlignedElement<TOther>): NativePointer<TOther>;
+	readonly get: () => T;
+	readonly set: (value: T) => void;
+	readonly at: {
+		(byteOffset: number): NativePointer<T>;
+		<TOther>(byteOffset: number, element: AlignedElement<TOther>): NativePointer<TOther>;
+	};
 }
 ```
 
