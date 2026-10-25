@@ -146,9 +146,13 @@ it and say what breaks; do not slip it in alongside an implementation change.
 
 ## Warnings
 
-A warning is diagnosed, never merely silenced. `eslint-disable`, `@ts-ignore`,
-`@ts-expect-error` and `skip` are last resorts and each needs explicit
-approval. See the `fix-warnings` skill.
+A warning is diagnosed and fixed, never silenced. `eslint-disable` in any form,
+`@ts-ignore`, `@ts-expect-error`, `skip`, and a configuration block that turns
+a rule off for some files are not used in this repository at all, approved or
+not: each leaves the finding true and hides it. Where a rule seems wrong for a
+construct, the fix is a change that makes it hold — a truer type, a different
+structure — and it must cost nothing at runtime; when no such change can be
+found, report that with the evidence. See the `fix-warnings` skill.
 
 ## Performance claims
 

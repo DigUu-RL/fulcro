@@ -13,8 +13,9 @@ whether to fix them. Nothing is modified before the user has seen what would be.
 A warning is not noise: it is a notice someone wrote because the code says one
 thing and does another. The value of this skill is in the diagnosis — the
 reason — not in making the message disappear. Silencing (`eslint-disable`,
-`@ts-ignore`, `@ts-expect-error`, `skip`) is always the last option and always
-needs the user's explicit approval.
+`@ts-ignore`, `@ts-expect-error`, `skip`, a configuration block that turns a
+rule off for some files) is not an option at all in this repository, approved
+or not: `.claude/CLAUDE.md` rules it out.
 
 ## Invocation
 
@@ -107,7 +108,8 @@ An item is **sensitive** when any of these holds:
 
 - it changes a package's public surface — what would break
   `tests/entrypoints.spec.mts`;
-- the fix is to silence rather than to resolve;
+- the only fix found is to silence, which is never applied: it is reported as
+  `FAILED`, with what was tried, and the user decides what changes instead;
 - it requires a dependency version bump, or edits `package.json`, `tsconfig*`
   or build config;
 - it touches a line carrying a comment that explains the current decision; this
@@ -160,8 +162,9 @@ Only after the yes. In the order of the table, trivial to sensitive.
 - Automatic `--fix` (`npx eslint . --fix`, `npm run format`) is allowed, but
   **read the diff afterwards**. Prettier's and `simple-import-sort`'s rewrites
   are safe; a rule that rewrites logic is not.
-- Never silence without explicit approval, and when the user approves
-  silencing, write a comment above it saying why.
+- Never silence, whatever the user is offered or answers about a single
+  warning. A rule that seems wrong for a construct is met by a change that makes
+  it hold — a truer type, a different structure — at no runtime cost.
 - If a fix touches `packages/*/src/**`, record a changeset with
   `npm run changeset`; the release-readiness workflow fails a pull request
   without one.

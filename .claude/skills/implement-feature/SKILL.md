@@ -223,8 +223,9 @@ What may not change:
   goes back with what broke. Deleting, skipping or loosening one to reach green
   is the anti-pattern this whole file is arranged around.
 - **A warning, by silencing it.** `eslint-disable`, `@ts-ignore`,
-  `@ts-expect-error`, `skip` — each is a last resort with explicit approval and
-  a comment saying why (`.claude/CLAUDE.md`).
+  `@ts-expect-error`, `skip` and a rule switched off for some files are not used
+  in this repository at all (`.claude/CLAUDE.md`); the warning is fixed or it
+  goes back as a stop condition.
 - **Anything outside the plan.** Unrelated tidying, reformatting and generated
   output are their own commits (`.claude/rules/git.md`), and in this skill they
   are their own turn.

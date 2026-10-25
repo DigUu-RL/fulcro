@@ -120,7 +120,8 @@ regression reaches everything at once.
   Uncommitted work is part of what is being audited.
 - The audit never edits a fixture to make it compile, never relaxes an
   assertion, and never adds `@ts-expect-error` to move past a case.
-  `.claude/CLAUDE.md` reserves each of those for explicit approval.
+  `.claude/CLAUDE.md` rules out the last of those entirely, and the first two
+  are changes to what the suites prove.
 
 ## 1. Read
 
