@@ -331,6 +331,7 @@ describe('View<T>', () => {
 	});
 
 	it('should work with its methods taken off the object', () => {
+		// eslint-disable-next-line @typescript-eslint/unbound-method -- destructured on purpose: the member must work off its object
 		const { get, set, subview } = asView(counting(4));
 
 		set(0, 10);

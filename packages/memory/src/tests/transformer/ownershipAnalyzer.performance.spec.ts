@@ -50,7 +50,11 @@ const questionsFor = (text: string): { questions: number; refused: number } => {
 	};
 
 	const host: typescript.CompilerHost = typescript.createCompilerHost(options);
-	const { getSourceFile, fileExists, readFile } = host;
+	// Bound, because they are called on their own below and nothing promises a
+	// compiler host's methods work off their object.
+	const getSourceFile = host.getSourceFile.bind(host);
+	const fileExists = host.fileExists.bind(host);
+	const readFile = host.readFile.bind(host);
 
 	host.getSourceFile = (name, ...rest): typescript.SourceFile | undefined => {
 		return name === fileName

@@ -25,6 +25,7 @@ import { Decimal } from '@/src/decimal';
 /** Digits of the largest integer printed or parsed since the test started. */
 let largest = 0;
 
+// eslint-disable-next-line @typescript-eslint/unbound-method -- kept to be called with apply, on its own receiver
 const nativeToString = BigInt.prototype.toString;
 const nativeBigInt: BigIntConstructor = globalThis.BigInt;
 

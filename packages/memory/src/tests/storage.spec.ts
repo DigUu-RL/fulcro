@@ -99,6 +99,7 @@ describe.each(STRATEGIES)('%s, as a Storage<T>', (name, create) => {
 	});
 
 	it('should work with its methods taken off the object', () => {
+		// eslint-disable-next-line @typescript-eslint/unbound-method -- destructured on purpose: the member must work off its object
 		const { get, set } = create(2);
 
 		set(1, Point.from({ x: 7, y: 0 }));

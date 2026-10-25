@@ -186,9 +186,18 @@ export class ProgramHost implements typescript.LanguageServiceHost {
 		return this.overlays.has(fileName) || typescript.sys.fileExists(fileName);
 	}
 
-	readDirectory = typescript.sys.readDirectory;
-	directoryExists = typescript.sys.directoryExists;
-	getDirectories = typescript.sys.getDirectories;
+	// Called through the system rather than taken off it: the compiler's own
+	// hosts do the same, and nothing promises these work detached.
+	readDirectory = (...parameters: Parameters<typescript.System['readDirectory']>): string[] => {
+		return typescript.sys.readDirectory(...parameters);
+	};
+
+	directoryExists = (directoryName: string): boolean => {
+		return typescript.sys.directoryExists(directoryName);
+	};
+
+	getDirectories = (directory: string): string[] => typescript.sys.getDirectories(directory);
+
 	// The system may not offer one; the path as given is what the compiler
 	// uses itself when a host has no `realpath`.
 	realpath = (path: string): string => typescript.sys.realpath?.(path) ?? path;
@@ -209,13 +218,15 @@ export const parseTsconfig = (
 	const configPath: string | undefined =
 		explicit !== undefined
 			? path.resolve(root, explicit)
-			: typescript.findConfigFile(root, typescript.sys.fileExists);
+			: typescript.findConfigFile(root, (fileName) => typescript.sys.fileExists(fileName));
 
 	if (configPath === undefined) {
 		throw createError('FULCRO5001', { operation: 'parseTsconfig', root });
 	}
 
-	const read = typescript.readConfigFile(configPath, typescript.sys.readFile);
+	const read = typescript.readConfigFile(configPath, (fileName) => {
+		return typescript.sys.readFile(fileName);
+	});
 
 	if (read.error !== undefined) {
 		throw createError('FULCRO5002', {

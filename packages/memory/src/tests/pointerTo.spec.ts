@@ -158,6 +158,7 @@ describe('pointerTo', () => {
 
 	it('should be frozen, its methods working taken off it', () => {
 		const pointer: Pointer<number> = pointerTo(counting(3), 0);
+		// eslint-disable-next-line @typescript-eslint/unbound-method -- destructured on purpose: the member must work off its object
 		const { get, set, offset } = pointer;
 
 		set(5);

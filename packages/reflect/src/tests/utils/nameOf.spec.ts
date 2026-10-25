@@ -46,6 +46,7 @@ describe('nameOf', () => {
 	it('should name a method and an accessor', () => {
 		const user = new User();
 
+		// eslint-disable-next-line @typescript-eslint/unbound-method -- the transformer reads the member expression; it is never called
 		expect(nameOf(() => user.save)).toBe('save');
 		expect(nameOf(() => user.displayName)).toBe('displayName');
 	});

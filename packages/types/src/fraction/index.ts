@@ -394,7 +394,7 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 		greaterThanOrEqual: (left, right) => integer.greaterThanOrEqual(...cross(left, right)),
 	};
 
-	register(descriptor, descriptor.equals);
+	register(descriptor, (left, right) => descriptor.equals(left, right));
 
 	return descriptor;
 };

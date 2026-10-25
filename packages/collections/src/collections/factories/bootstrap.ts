@@ -21,7 +21,7 @@ export const bootstrapCollections = (): void => {
 	if (hasCollectionFactories()) return;
 
 	registerCollectionFactories({
-		group: GroupCollection.createGroupProxy,
-		ordered: OrderedSequenceCollection.createOrderedProxy,
+		group: (key, source) => GroupCollection.createGroupProxy(key, source),
+		ordered: (source, criteria) => OrderedSequenceCollection.createOrderedProxy(source, criteria),
 	});
 };
