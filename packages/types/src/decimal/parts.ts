@@ -105,11 +105,19 @@ const POWERS_OF_TEN: bigint[] = [1n];
 export const powerOfTen = (exponent: number): bigint => {
 	if (exponent > 128) return 10n ** BigInt(exponent);
 
-	while (POWERS_OF_TEN.length <= exponent) {
-		POWERS_OF_TEN.push((POWERS_OF_TEN[POWERS_OF_TEN.length - 1] as bigint) * 10n);
-	}
+	const cached: bigint | undefined = POWERS_OF_TEN[exponent];
 
-	return POWERS_OF_TEN[exponent] as bigint;
+	if (cached !== undefined) return cached;
+
+	// The cache holds every power below its length, so it grows from there one
+	// multiplication at a time, and the last power pushed is the one asked for.
+	let power: bigint = 10n ** BigInt(POWERS_OF_TEN.length);
+
+	for (; POWERS_OF_TEN.length < exponent; power *= 10n) POWERS_OF_TEN.push(power);
+
+	POWERS_OF_TEN.push(power);
+
+	return power;
 };
 
 /**

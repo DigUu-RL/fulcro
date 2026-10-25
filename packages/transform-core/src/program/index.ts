@@ -267,6 +267,19 @@ export interface FileTransformer {
 }
 
 /**
+ * The file a bundler identifier names, without the query some bundlers append
+ * to it, such as Vite's `?raw`.
+ *
+ * @param id Identifier of the file, as the bundler spells it.
+ * @returns The path of the file.
+ */
+const fileNameOf = (id: string): string => {
+	const query: number = id.indexOf('?');
+
+	return query === -1 ? id : id.slice(0, query);
+};
+
+/**
  * Creates the transformer core.
  *
  * The program is built on the first file that actually needs it, so a project
@@ -291,7 +304,7 @@ export const createFileTransformer = (
 	let service: typescript.LanguageService | undefined;
 
 	const handles = (id: string): boolean => {
-		const fileName = id.split('?')[0] as string;
+		const fileName: string = fileNameOf(id);
 
 		if (!HANDLED_EXTENSIONS.includes(path.extname(fileName))) return false;
 
@@ -306,7 +319,7 @@ export const createFileTransformer = (
 		// would cost seconds for nothing.
 		if (!utilityPattern.test(code)) return null;
 
-		const fileName: string = toCompilerPath(id.split('?')[0] as string);
+		const fileName: string = toCompilerPath(fileNameOf(id));
 
 		if (host === undefined || service === undefined) {
 			host = new ProgramHost(parseTsconfig(root, options.tsconfig), root);
@@ -327,12 +340,12 @@ export const createFileTransformer = (
 		);
 
 		// One source file in, one transformed file out.
-		const transformed = result.transformed[0] as typescript.SourceFile;
+		const transformed: typescript.SourceFile | undefined = result.transformed[0];
 
 		// Nothing rewritten — every file an analyzer only checks, and every file
 		// that merely mentions a utility's name. Printing it anyway would hand the
 		// bundler a reformatted copy without a source map for nothing.
-		if (transformed === sourceFile) {
+		if (transformed === undefined || transformed === sourceFile) {
 			result.dispose();
 
 			return null;

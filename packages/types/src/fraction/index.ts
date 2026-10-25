@@ -275,7 +275,13 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 			const parts: T[] | null = convert(`${name}.from`, value);
 
 			// A converted fraction is always a numerator and a denominator.
-			if (parts !== null) return reduce(`${name}.from`, parts[0] as T, parts[1] as T);
+			if (parts !== null) {
+				const [numerator, denominator] = parts;
+
+				if (numerator !== undefined && denominator !== undefined) {
+					return reduce(`${name}.from`, numerator, denominator);
+				}
+			}
 
 			return make(integer.from(value as number), one);
 		},

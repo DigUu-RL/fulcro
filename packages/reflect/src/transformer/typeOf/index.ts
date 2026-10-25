@@ -184,12 +184,13 @@ const buildMetadataLiteral = (
 		? type.types.map((member) => checker.typeToString(member))
 		: null;
 
-	const element: string | null = checker.isArrayType(type)
-		? checker.typeToString(
-				// An array type always has its element as its one type argument.
-				checker.getTypeArguments(type as typescript.TypeReference)[0] as typescript.Type,
-			)
-		: null;
+	// An array type always has its element as its one type argument.
+	const elementType: typescript.Type | undefined = checker.isArrayType(type)
+		? checker.getTypeArguments(type as typescript.TypeReference)[0]
+		: undefined;
+
+	const element: string | null =
+		elementType === undefined ? null : checker.typeToString(elementType);
 
 	return factory.createObjectLiteralExpression(
 		[
@@ -251,11 +252,12 @@ export const typeOfRewriter: CallRewriter = {
 			return buildMetadataLiteral(context.checker.getTypeFromTypeNode(typeArgument), call, context);
 		}
 
+		const argument: typescript.Expression | undefined = call.arguments[0];
+
 		// Already carries its injected description, from a nested pass.
-		if (call.arguments.length !== 1) return null;
+		if (argument === undefined || call.arguments.length !== 1) return null;
 
 		const { checker, factory, visit } = context;
-		const argument = call.arguments[0] as typescript.Expression;
 
 		return factory.updateCallExpression(
 			call,

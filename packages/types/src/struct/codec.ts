@@ -393,6 +393,16 @@ const registeredCodecs = new WeakMap<object, FieldCodec>();
 const INTEGER_WIDTHS: readonly unknown[] = [8, 16, 32, 64, 128];
 
 /**
+ * Tells whether a value is one of the widths a fixed-width integer comes in.
+ *
+ * @param width Value to inspect.
+ * @returns `true` for a width `SignedInteger` and `UnsignedInteger` accept.
+ */
+const isIntegerWidth = (width: unknown): width is IntegerWidth => {
+	return INTEGER_WIDTHS.includes(width);
+};
+
+/**
  * Tells whether a value is the descriptor `SignedInteger` or `UnsignedInteger`
  * returns for its width — the same object, not one shaped like it.
  *
@@ -402,13 +412,13 @@ const INTEGER_WIDTHS: readonly unknown[] = [8, 16, 32, 64, 128];
 const isIntegerDescriptor = (descriptor: object): descriptor is IntegerType<unknown> => {
 	const { signed, width } = descriptor as Partial<IntegerType<unknown>>;
 
-	if (typeof signed !== 'boolean' || !INTEGER_WIDTHS.includes(width)) {
+	if (typeof signed !== 'boolean' || !isIntegerWidth(width)) {
 		return false;
 	}
 
 	const factory = signed ? SignedInteger : UnsignedInteger;
 
-	return factory(width as IntegerWidth) === descriptor;
+	return factory(width) === descriptor;
 };
 
 /**

@@ -308,21 +308,20 @@ const bind = (
 		(symbol.flags & typescript.SymbolFlags.Alias) !== 0 ? checker.getAliasedSymbol(symbol) : symbol;
 
 	const declarations: readonly typescript.Declaration[] = resolved.declarations ?? [];
+	const declaration: typescript.Declaration | undefined = declarations[0];
 
 	// `undefined` is the one built-in the checker gives a symbol with no
 	// declaration at all.
-	if (declarations.length === 0) {
+	if (declaration === undefined) {
 		return BUILT_INS.has(resolved.name)
 			? ''
 			: { reason: `'${name}' has no declaration the compiler can see` };
 	}
 
-	if (declarations.every((declaration) => isWithin(declaration, root))) {
+	if (declarations.every((each) => isWithin(each, root))) {
 		return '';
 	}
 
-	// An empty list was refused above.
-	const declaration = declarations[0] as typescript.Declaration;
 	const file: typescript.SourceFile = declaration.getSourceFile();
 
 	if (file.hasNoDefaultLib) {
@@ -529,11 +528,11 @@ const computeOutcome = (call: typescript.CallExpression, context: RewriteContext
 		};
 	};
 
-	if (call.arguments.length !== 1) {
+	const argument: typescript.Expression | undefined = call.arguments[0];
+
+	if (argument === undefined || call.arguments.length !== 1) {
 		return refuse('it takes exactly one function');
 	}
-
-	const argument = call.arguments[0] as typescript.Expression;
 
 	if (
 		!typescript.isArrowFunction(argument) &&

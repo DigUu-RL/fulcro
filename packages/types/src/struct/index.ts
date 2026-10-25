@@ -445,27 +445,32 @@ export const struct = <TFields extends StructFields, TMethods extends StructMeth
 
 	// Largest alignment first, so that every field lands aligned without padding
 	// before it: each size is a multiple of its own alignment. `sort` is stable,
-	// which keeps declaration order among equals.
-	const offsets = new Map<string, number>();
+	// which keeps declaration order among equals. Each field is placed as its
+	// offset is found, carrying its declaration index back to that order, so no
+	// offset has to be looked up again afterwards.
+	const placed: { readonly index: number; readonly field: PlacedField }[] = [];
 	let end = 0;
 
-	for (const field of [...declared].sort(
-		(left, right) => right.codec.alignment - left.codec.alignment,
+	for (const [index, field] of [...declared.entries()].sort(
+		([, left], [, right]) => right.codec.alignment - left.codec.alignment,
 	)) {
-		offsets.set(field.key, end);
+		placed.push({
+			index,
+			field: {
+				...field,
+				descriptor: field.descriptor as unknown as PlacedField['descriptor'],
+				offset: end,
+			},
+		});
 		end += field.codec.size;
 	}
 
 	const alignment: number = Math.max(...declared.map((field) => field.codec.alignment));
 	const size: number = Math.ceil(end / alignment) * alignment;
 
-	const plan: readonly PlacedField[] = declared.map((field) => {
-		return {
-			...field,
-			descriptor: field.descriptor as unknown as PlacedField['descriptor'],
-			offset: offsets.get(field.key) as number,
-		};
-	});
+	const plan: readonly PlacedField[] = placed
+		.sort((left, right) => left.index - right.index)
+		.map((entry) => entry.field);
 
 	const layout = Object.freeze({
 		size,

@@ -85,9 +85,13 @@ export const createComponentRecord = <T, TValue>(
 	const make = (...components: T[]): TValue => {
 		const value: Record<string, T> = {};
 
-		for (let index = 0; index < keys.length; index++) {
-			value[keys[index] as string] = components[index] as T;
-		}
+		components.forEach((component, index) => {
+			const key: string | undefined = keys[index];
+
+			// Callers pass one component per key; one past the last key has no
+			// field to land in.
+			if (key !== undefined) value[key] = component;
+		});
 
 		return Object.freeze(value) as TValue;
 	};
