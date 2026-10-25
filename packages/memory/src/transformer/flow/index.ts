@@ -530,9 +530,7 @@ export const walkFlow = <TFacts>(
 		return expression(node, path);
 	};
 
-	while (pending.length > 0) {
-		const body = pending.shift() as typescript.Node;
-
+	for (let body = pending.shift(); body !== undefined; body = pending.shift()) {
 		// An arrow function's body may be an expression rather than a block.
 		if (typescript.isBlock(body) || typescript.isSourceFile(body)) {
 			statement(body, start(), undefined);

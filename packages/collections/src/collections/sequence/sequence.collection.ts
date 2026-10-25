@@ -1947,10 +1947,11 @@ export class SequenceCollection<T> implements Sequence<T> {
 	median(selector?: Selector<T, number>): number {
 		const values: number[] = this.sortedValues('median', selector);
 		const middle: number = Math.floor(values.length / 2);
-		// `sortedValues` refuses an empty sequence, so both neighbours exist.
-		const upper = values[middle] as number;
+		// `sortedValues` refuses an empty sequence, so both neighbours exist and
+		// neither fallback is reached.
+		const upper: number = values[middle] ?? Number.NaN;
 
-		return values.length % 2 === 1 ? upper : ((values[middle - 1] as number) + upper) / 2;
+		return values.length % 2 === 1 ? upper : ((values[middle - 1] ?? Number.NaN) + upper) / 2;
 	}
 
 	/**
@@ -1973,12 +1974,13 @@ export class SequenceCollection<T> implements Sequence<T> {
 		const position: number = ((values.length - 1) * rank) / 100;
 		const lower: number = Math.floor(position);
 		const upper: number = Math.ceil(position);
-		// Both positions lie within `0..length - 1`, and the sequence is not empty.
-		const lowerValue = values[lower] as number;
+		// Both positions lie within `0..length - 1` and the sequence is not empty,
+		// so neither fallback is reached.
+		const lowerValue: number = values[lower] ?? Number.NaN;
 
 		if (lower === upper) return lowerValue;
 
-		return lowerValue + ((values[upper] as number) - lowerValue) * (position - lower);
+		return lowerValue + ((values[upper] ?? Number.NaN) - lowerValue) * (position - lower);
 	}
 
 	/**
@@ -2216,8 +2218,8 @@ export class SequenceCollection<T> implements Sequence<T> {
 		const matches: Predicate<unknown> = resolveTypeTest(type, 'cast');
 
 		// Present by now: the line above is what refuses a missing token, and it
-		// throws rather than returning.
-		const expected: string = describeExpected(type as TypeToken);
+		// throws rather than returning, so the empty text is never used.
+		const expected: string = type === undefined ? '' : describeExpected(type);
 		const knownCount: () => number | null = this.countResolver;
 
 		return SequenceCollection.deferred<unknown>(

@@ -127,7 +127,8 @@ export const createPoolAllocator = (blockSize: number, blockCount: number): Pool
 
 			const lease: Lease = {
 				block,
-				generation: generations[block] as number,
+				// `block` is always one of the pool's, whose generations start at zero.
+				generation: generations[block] ?? 0,
 			};
 
 			const isLive = (): boolean => generations[block] === lease.generation;

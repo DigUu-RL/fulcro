@@ -877,7 +877,9 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	cast(type?: TypeToken): AsyncSequence<unknown> {
 		const source: AsyncIterable<T> = this.source;
 		const matches: Predicate<unknown> = resolveTypeTest(type, 'cast');
-		const expected: string = describeExpected(type as TypeToken);
+		// Present by now: the line above refuses a missing token by throwing, so
+		// the empty text is never used.
+		const expected: string = type === undefined ? '' : describeExpected(type);
 
 		return AsyncSequenceCollection.deferred<unknown>({
 			async *[Symbol.asyncIterator](): AsyncIterator<unknown> {

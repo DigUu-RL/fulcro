@@ -85,7 +85,11 @@ const diagnosticAt = (node: typescript.Node, message: string): typescript.Diagno
  * @returns `file(line,column): message`.
  */
 const describeDiagnostic = (diagnostic: typescript.Diagnostic): string => {
-	const file = diagnostic.file as typescript.SourceFile;
+	const file: typescript.SourceFile | undefined = diagnostic.file;
+
+	// A diagnostic about the program as a whole belongs to no file.
+	if (file === undefined) return String(diagnostic.messageText);
+
 	const { line, character } = file.getLineAndCharacterOfPosition(diagnostic.start ?? 0);
 
 	return `${file.fileName}(${String(line + 1)},${String(character + 1)}): ${String(diagnostic.messageText)}`;

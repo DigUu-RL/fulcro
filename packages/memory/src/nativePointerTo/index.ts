@@ -55,7 +55,10 @@ const isAllocation = (value: unknown): value is Allocation => {
  * @throws {TypeError} When it cannot be stored as bytes.
  * @throws {RangeError} When its alignment is not a power of two.
  */
-const requirePointerElement = (operation: string, element: unknown): void => {
+const requirePointerElement: <T>(
+	operation: string,
+	element: AlignedElement<T> | undefined,
+) => asserts element is AlignedElement<T> = (operation, element) => {
 	requireElement(operation, element);
 	requireAlignment(operation, (element as AlignedElement<unknown>).layout.alignment);
 };
@@ -267,7 +270,7 @@ export function nativePointerTo<T>(
 	third?: AlignedElement<T>,
 ): NativePointer<T> {
 	if (isLinearMemory(target)) {
-		const element = third as AlignedElement<T>;
+		const element = third;
 
 		const region: Region = {
 			memory: target,

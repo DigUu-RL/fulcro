@@ -73,11 +73,16 @@ export const createArenaAllocator = (chunkSize: number): ArenaAllocator => {
 			while (bytes === undefined) {
 				current++;
 
-				if (current === chunks.length) {
-					chunks.push(new ArrayBuffer(Math.max(chunkSize, size)));
+				// The chunks have no holes, so a chunk missing at `current` is one
+				// past the last, and the arena grows by one.
+				let buffer: ArrayBuffer | undefined = chunks[current];
+
+				if (buffer === undefined) {
+					buffer = new ArrayBuffer(Math.max(chunkSize, size));
+					chunks.push(buffer);
 				}
 
-				region = { buffer: chunks[current] as ArrayBuffer, offset: 0 };
+				region = { buffer, offset: 0 };
 				bytes = bump(region, size, alignment);
 			}
 

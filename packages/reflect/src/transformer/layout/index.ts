@@ -148,7 +148,11 @@ export const readLayout = (
 
 	if (layout.isUnion()) return null;
 
-	const fieldsSymbol = checker.getPropertyOfType(layout, 'fields') as typescript.Symbol;
+	const fieldsSymbol: typescript.Symbol | undefined = checker.getPropertyOfType(layout, 'fields');
+
+	// Present whenever the single member lists fields; declined rather than guessed otherwise.
+	if (fieldsSymbol === undefined) return null;
+
 	const declared: { name: string; size: number; alignment: number }[] = [];
 
 	for (const field of checker.getPropertiesOfType(
@@ -177,14 +181,18 @@ export const readLayout = (
 		end += field.size;
 	}
 
-	return {
-		size,
-		alignment,
-		fields: declared.map((field) => {
-			return {
-				...field,
-				offset: offsets.get(field.name) as number,
-			};
-		}),
-	};
+	const fields: PlacedField[] = [];
+
+	for (const field of declared) {
+		const offset: number | undefined = offsets.get(field.name);
+
+		// Every declared field was just given an offset. Should one ever be
+		// missing, the call is declined: an offset made up here would be a wrong
+		// answer the runtime could not correct.
+		if (offset === undefined) return null;
+
+		fields.push({ ...field, offset });
+	}
+
+	return { size, alignment, fields };
 };

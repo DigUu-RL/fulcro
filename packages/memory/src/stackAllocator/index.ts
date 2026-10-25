@@ -64,7 +64,9 @@ export const createStackAllocator = (capacity: number): StackAllocator => {
 	requireSize('createStackAllocator', capacity);
 
 	const region: BumpRegion = { buffer: new ArrayBuffer(capacity), offset: 0 };
-	const frames: Frame[] = [{ depth: 0, mark: 0, live: true }];
+	/** The frame the allocator itself allocates in, which is never closed. */
+	const outermost: Frame = { depth: 0, mark: 0, live: true };
+	const frames: Frame[] = [outermost];
 
 	/**
 	 * Refuses a frame that is not the innermost one still open.
@@ -73,7 +75,8 @@ export const createStackAllocator = (capacity: number): StackAllocator => {
 	 * @param frame Frame being used.
 	 */
 	const requireInnermost = (operation: string, frame: Frame): void => {
-		const innermost = frames[frames.length - 1] as Frame;
+		// The outermost frame is never closed, so the stack is never empty.
+		const innermost: Frame = frames[frames.length - 1] ?? outermost;
 
 		if (innermost !== frame) {
 			throw createError('FULCRO7008', {
@@ -124,7 +127,7 @@ export const createStackAllocator = (capacity: number): StackAllocator => {
 
 	return Object.freeze({
 		allocate: (size: number, alignment: number): Allocation => {
-			return allocateIn('StackAllocator.allocate', frames[0] as Frame, size, alignment);
+			return allocateIn('StackAllocator.allocate', outermost, size, alignment);
 		},
 
 		enter: (): AllocationDomain => {
