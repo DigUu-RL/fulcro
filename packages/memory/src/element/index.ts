@@ -24,7 +24,7 @@ export interface FixedLayoutElement<T> {
 	 * @param offset Where the value starts.
 	 * @returns The value.
 	 */
-	read(view: DataView, offset: number): T;
+	readonly read: (view: DataView, offset: number) => T;
 
 	/**
 	 * Writes a value into bytes.
@@ -33,7 +33,7 @@ export interface FixedLayoutElement<T> {
 	 * @param offset Where the value starts.
 	 * @param value Value to write.
 	 */
-	write(view: DataView, offset: number, value: T): void;
+	readonly write: (view: DataView, offset: number, value: T) => void;
 
 	/**
 	 * Tells whether a value is one of this type's.
@@ -41,7 +41,7 @@ export interface FixedLayoutElement<T> {
 	 * @param value Value to inspect.
 	 * @returns `true` when it is.
 	 */
-	is(value: unknown): value is T;
+	readonly is: (value: unknown) => value is T;
 }
 
 /**

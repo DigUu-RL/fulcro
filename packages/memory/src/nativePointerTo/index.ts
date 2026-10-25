@@ -72,7 +72,8 @@ const requirePointerElement: <T>(
  * @param operation Operation being performed, for the error message.
  * @param region Where the pointer may point.
  * @param address Address asked for.
- * @param element Type of the value there.
+ * @param element Type of the value there; only its name and layout are read,
+ * so an element of any type is accepted.
  * @throws {RangeError} When the address is not an integer inside the region,
  * or is not a multiple of the element's alignment.
  */
@@ -80,7 +81,7 @@ const requireAddress = (
 	operation: string,
 	region: Region,
 	address: unknown,
-	element: AlignedElement<unknown>,
+	element: Pick<AlignedElement<unknown>, 'name' | 'layout'>,
 ): void => {
 	const end: number = region.end(region.bytes());
 

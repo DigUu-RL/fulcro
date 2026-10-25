@@ -22,7 +22,7 @@ export interface StackAllocator extends Allocator {
 	 *
 	 * @returns The frame.
 	 */
-	enter(): AllocationDomain;
+	readonly enter: () => AllocationDomain;
 }
 
 /** One frame of the stack, the stack itself being frame `0`. */

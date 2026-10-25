@@ -27,12 +27,12 @@ export interface MemoryReference<T> {
 	 *
 	 * @returns The value held.
 	 */
-	get(): T;
+	readonly get: () => T;
 
 	/**
 	 * Replaces the value.
 	 *
 	 * @param value The value to hold.
 	 */
-	set(value: T): void;
+	readonly set: (value: T) => void;
 }

@@ -99,7 +99,6 @@ describe.each(STRATEGIES)('%s, as a Storage<T>', (name, create) => {
 	});
 
 	it('should work with its methods taken off the object', () => {
-		// eslint-disable-next-line @typescript-eslint/unbound-method -- destructured on purpose: the member must work off its object
 		const { get, set } = create(2);
 
 		set(1, Point.from({ x: 7, y: 0 }));
@@ -175,5 +174,17 @@ describe('Storage<T> lengths', () => {
 				),
 			);
 		}
+	});
+});
+
+describe('the members of a storage', () => {
+	it('should be declared as the functions they are, which work off their object', () => {
+		expectTypeOf<Storage<number>['get']>().toEqualTypeOf<(index: number) => number>();
+		expectTypeOf<Storage<number>['set']>().toEqualTypeOf<(index: number, value: number) => void>();
+	});
+
+	it('should not stand for a storage of anything, which could be handed a string', () => {
+		expectTypeOf<Storage<number>>().not.toExtend<Storage<unknown>>();
+		expectTypeOf<Storage<number>>().toExtend<Storage<number>>();
 	});
 });

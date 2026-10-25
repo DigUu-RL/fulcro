@@ -14,7 +14,7 @@ export interface CountedMemory {
 	 *
 	 * @param bytes How many bytes to add.
 	 */
-	grow(bytes: number): void;
+	readonly grow: (bytes: number) => void;
 }
 
 /**

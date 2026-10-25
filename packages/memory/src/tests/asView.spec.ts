@@ -331,7 +331,6 @@ describe('View<T>', () => {
 	});
 
 	it('should work with its methods taken off the object', () => {
-		// eslint-disable-next-line @typescript-eslint/unbound-method -- destructured on purpose: the member must work off its object
 		const { get, set, subview } = asView(counting(4));
 
 		set(0, 10);
@@ -446,10 +445,13 @@ describe('asView types', () => {
 	});
 
 	it('should accept what it can write, and not a read-only array or view', () => {
-		expectTypeOf(asView).toBeCallableWith([1, 2]);
-		expectTypeOf(asView).toBeCallableWith(counting(2), 0, 1);
-		expectTypeOf(asView).toBeCallableWith(pointerTo(counting(2), 0), 2);
-		expectTypeOf(asView).toBeCallableWith(referenceTo(0));
+		// Called, rather than asked of with `toBeCallableWith`: that one reads the
+		// overloads with their type parameter as `unknown`, and a storage of
+		// numbers is not a storage of anything, since it cannot take a string.
+		expectTypeOf(asView([1, 2])).toEqualTypeOf<View<number>>();
+		expectTypeOf(asView(counting(2), 0, 1)).toEqualTypeOf<View<number>>();
+		expectTypeOf(asView(pointerTo(counting(2), 0), 2)).toEqualTypeOf<View<number>>();
+		expectTypeOf(asView(referenceTo(0))).toEqualTypeOf<View<number>>();
 		expectTypeOf<readonly number[]>().not.toExtend<Storage<number> | number[]>();
 		expectTypeOf<ReadOnlyView<number>>().not.toExtend<Storage<number> | number[]>();
 	});

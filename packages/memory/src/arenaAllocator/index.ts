@@ -15,7 +15,7 @@ export interface ArenaAllocator extends AllocationDomain {
 	 * the next ones. Every allocation made before it reports `isLive()` as
 	 * `false` from now on.
 	 */
-	reset(): void;
+	readonly reset: () => void;
 }
 
 /**

@@ -97,7 +97,6 @@ describe('nativePointerTo, counted', () => {
 	});
 
 	it('should make one new view per growth, however many accesses follow', () => {
-		// eslint-disable-next-line @typescript-eslint/unbound-method -- destructured on purpose: the member must work off its object
 		const { backing, grow } = countedMemory(64);
 		const pointer: NativePointer<Sample> = nativePointerTo(createLinearMemory(backing), 8, counted);
 		const views = watchViews();

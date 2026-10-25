@@ -32,7 +32,7 @@ export interface Pointer<T> extends MemoryReference<T> {
 	 * @throws {RangeError} When the pointer sits past the last value.
 	 * @throws {Error} When the memory of its source was released.
 	 */
-	get(): T;
+	readonly get: () => T;
 
 	/**
 	 * Replaces the value the pointer points at.
@@ -41,7 +41,7 @@ export interface Pointer<T> extends MemoryReference<T> {
 	 * @throws {RangeError} When the pointer sits past the last value.
 	 * @throws {Error} When the memory of its source was released.
 	 */
-	set(value: T): void;
+	readonly set: (value: T) => void;
 
 	/**
 	 * Points further into the same source, or back.
@@ -51,5 +51,5 @@ export interface Pointer<T> extends MemoryReference<T> {
 	 * @throws {RangeError} When that position is outside `0` to the source's
 	 * length.
 	 */
-	offset(delta: number): Pointer<T>;
+	readonly offset: (delta: number) => Pointer<T>;
 }

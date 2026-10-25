@@ -28,7 +28,7 @@ export interface PoolAllocator extends Allocator {
 	 * @throws {RangeError} When the request does not fit a block, or every
 	 * block is out.
 	 */
-	allocate(size: number, alignment: number): Allocation & Disposable;
+	readonly allocate: (size: number, alignment: number) => Allocation & Disposable;
 
 	/**
 	 * Returns one allocation's block to the pool, for the next request to reuse.
@@ -37,7 +37,7 @@ export interface PoolAllocator extends Allocator {
 	 * @param allocation An allocation this pool made and has not taken back.
 	 * @throws {Error} When this pool did not make it, or already took it back.
 	 */
-	deallocate(allocation: Allocation): void;
+	readonly deallocate: (allocation: Allocation) => void;
 }
 
 /** Which block an allocation holds, and the block's generation at the time. */

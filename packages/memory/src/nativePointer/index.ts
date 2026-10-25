@@ -43,7 +43,7 @@ export interface NativePointer<T> extends MemoryReference<T> {
 	 * @throws {Error} When the pointer was made from an allocation its
 	 * allocator released.
 	 */
-	get(): T;
+	readonly get: () => T;
 
 	/**
 	 * Writes a value at the address.
@@ -55,7 +55,7 @@ export interface NativePointer<T> extends MemoryReference<T> {
 	 * @throws {Error} When the pointer was made from an allocation its
 	 * allocator released.
 	 */
-	set(value: T): void;
+	readonly set: (value: T) => void;
 
 	/**
 	 * Points a number of bytes further into the same memory, or back, at a
@@ -66,20 +66,31 @@ export interface NativePointer<T> extends MemoryReference<T> {
 	 * @throws {RangeError} When that address is outside where the pointer may
 	 * point, or is not aligned for the type.
 	 */
-	at(byteOffset: number): NativePointer<T>;
+	readonly at: {
+		/**
+		 * Points a number of bytes further into the same memory, or back, at a
+		 * value of the same type.
+		 *
+		 * @param byteOffset How many bytes to move, negative to move back.
+		 * @returns A pointer at `address + byteOffset`.
+		 * @throws {RangeError} When that address is outside where the pointer may
+		 * point, or is not aligned for the type.
+		 */
+		(byteOffset: number): NativePointer<T>;
 
-	/**
-	 * Points a number of bytes further into the same memory, or back, and reads
-	 * what is there as another type: a field of a struct, or the same bytes
-	 * seen differently.
-	 *
-	 * @template TOther Type of the value at the new address.
-	 * @param byteOffset How many bytes to move; `0` to stay.
-	 * @param element Type of the value there.
-	 * @returns A pointer at `address + byteOffset`.
-	 * @throws {TypeError} When the element type cannot be stored as bytes.
-	 * @throws {RangeError} When that address is outside where the pointer may
-	 * point, or is not aligned for the type.
-	 */
-	at<TOther>(byteOffset: number, element: AlignedElement<TOther>): NativePointer<TOther>;
+		/**
+		 * Points a number of bytes further into the same memory, or back, and reads
+		 * what is there as another type: a field of a struct, or the same bytes
+		 * seen differently.
+		 *
+		 * @template TOther Type of the value at the new address.
+		 * @param byteOffset How many bytes to move; `0` to stay.
+		 * @param element Type of the value there.
+		 * @returns A pointer at `address + byteOffset`.
+		 * @throws {TypeError} When the element type cannot be stored as bytes.
+		 * @throws {RangeError} When that address is outside where the pointer may
+		 * point, or is not aligned for the type.
+		 */
+		<TOther>(byteOffset: number, element: AlignedElement<TOther>): NativePointer<TOther>;
+	};
 }

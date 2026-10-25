@@ -34,7 +34,7 @@ export interface ReadOnlyView<T> {
 	 * the array it observes shrank past it.
 	 * @throws {Error} When the memory of its source was released.
 	 */
-	get(index: number): T;
+	readonly get: (index: number) => T;
 
 	/**
 	 * Observes part of this region, copying nothing.
@@ -45,7 +45,7 @@ export interface ReadOnlyView<T> {
 	 * @returns A read-only view over the same source.
 	 * @throws {RangeError} When the part does not fit inside this view.
 	 */
-	subview(start: number, length?: number): ReadOnlyView<T>;
+	readonly subview: (start: number, length?: number) => ReadOnlyView<T>;
 }
 
 /**
@@ -82,7 +82,7 @@ export interface View<T> extends ReadOnlyView<T> {
 	 * the array it observes shrank past it.
 	 * @throws {Error} When the memory of its source was released.
 	 */
-	set(index: number, value: T): void;
+	readonly set: (index: number, value: T) => void;
 
 	/**
 	 * Observes part of this region, copying nothing.
@@ -93,12 +93,12 @@ export interface View<T> extends ReadOnlyView<T> {
 	 * @returns A view over the same source, starting further into it.
 	 * @throws {RangeError} When the part does not fit inside this view.
 	 */
-	subview(start: number, length?: number): View<T>;
+	readonly subview: (start: number, length?: number) => View<T>;
 
 	/**
 	 * Observes the same region without the right to write it.
 	 *
 	 * @returns A read-only view of the same values.
 	 */
-	readOnly(): ReadOnlyView<T>;
+	readonly readOnly: () => ReadOnlyView<T>;
 }

@@ -52,7 +52,7 @@ export interface Owned<T> extends Disposable {
 	 * reset does. An owner already moved from has nothing to end, and disposing
 	 * it, or disposing twice, does nothing.
 	 */
-	[Symbol.dispose](): void;
+	readonly [Symbol.dispose]: () => void;
 
 	/** Type-only mark, never present at runtime. */
 	readonly [owner]: T;

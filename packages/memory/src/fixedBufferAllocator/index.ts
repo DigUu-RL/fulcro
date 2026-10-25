@@ -18,7 +18,7 @@ export interface FixedBufferAllocator extends AllocationDomain {
 	 * front of the buffer. Every allocation made before it reports `isLive()` as
 	 * `false` from now on.
 	 */
-	reset(): void;
+	readonly reset: () => void;
 }
 
 /**

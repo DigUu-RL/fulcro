@@ -122,9 +122,7 @@ describe.each(STRATEGIES)('%s, as an Allocator', (_name, operation, create) => {
 	});
 
 	it('should work with its methods taken off the object', () => {
-		// eslint-disable-next-line @typescript-eslint/unbound-method -- destructured on purpose: the member must work off its object
 		const { allocate } = create();
-		// eslint-disable-next-line @typescript-eslint/unbound-method -- destructured on purpose: the member must work off its object
 		const { isLive } = allocate(8, 8);
 
 		expect(isLive()).toBe(true);

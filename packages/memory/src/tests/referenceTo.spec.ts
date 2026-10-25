@@ -58,7 +58,6 @@ describe('referenceTo', () => {
 
 	it('should be frozen, its methods working taken off it', () => {
 		const reference: MemoryReference<number> = referenceTo(1);
-		// eslint-disable-next-line @typescript-eslint/unbound-method -- destructured on purpose: the member must work off its object
 		const { get, set } = reference;
 
 		set(9);

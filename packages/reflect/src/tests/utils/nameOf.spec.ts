@@ -7,7 +7,9 @@ class User {
 	email = 'a@b.c';
 	profile = { theme: 'dark' };
 
-	save(): void {
+	// Declares that it never reads `this`, which is true of a method only ever
+	// named: reading it off the object is then safe, and says so.
+	save(this: void): void {
 		// A method to be named, never called.
 	}
 
@@ -48,7 +50,6 @@ describe('nameOf', () => {
 	it('should name a method and an accessor', () => {
 		const user = new User();
 
-		// eslint-disable-next-line @typescript-eslint/unbound-method -- the transformer reads the member expression; it is never called
 		expect(nameOf(() => user.save)).toBe('save');
 		expect(nameOf(() => user.displayName)).toBe('displayName');
 	});

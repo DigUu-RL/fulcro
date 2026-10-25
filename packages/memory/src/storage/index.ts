@@ -33,7 +33,7 @@ export interface Storage<T> {
 	 * @returns The value.
 	 * @throws {RangeError} When the index is not an integer inside the storage.
 	 */
-	get(index: number): T;
+	readonly get: (index: number) => T;
 
 	/**
 	 * Replaces the value at an index.
@@ -42,5 +42,5 @@ export interface Storage<T> {
 	 * @param value The value to hold there.
 	 * @throws {RangeError} When the index is not an integer inside the storage.
 	 */
-	set(index: number, value: T): void;
+	readonly set: (index: number, value: T) => void;
 }

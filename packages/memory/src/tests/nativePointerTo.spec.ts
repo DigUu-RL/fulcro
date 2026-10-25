@@ -376,7 +376,6 @@ describe('nativePointerTo a memory', () => {
 	it('should be frozen, its methods working taken off it', () => {
 		const { memory } = memoryOf(16);
 		const pointer: NativePointer<Sample> = nativePointerTo(memory, 0, Sample);
-		// eslint-disable-next-line @typescript-eslint/unbound-method -- destructured on purpose: the member must work off its object
 		const { get, set, at } = pointer;
 
 		set(Sample.from({ value: 5 }));
