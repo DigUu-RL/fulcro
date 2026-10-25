@@ -69,7 +69,7 @@ export const codedErrors: Rule.RuleModule = {
 		const directory = packageOf(context.filename);
 
 		return {
-			NewExpression(node) {
+			NewExpression(node): void {
 				if (node.callee.type !== 'Identifier') return;
 				if (!ERROR_CLASS.test(node.callee.name)) return;
 
@@ -80,7 +80,7 @@ export const codedErrors: Rule.RuleModule = {
 				});
 			},
 
-			ThrowStatement(node) {
+			ThrowStatement(node): void {
 				const { argument } = node;
 
 				if (argument.type === 'TemplateLiteral') {
@@ -93,7 +93,7 @@ export const codedErrors: Rule.RuleModule = {
 				}
 			},
 
-			CallExpression(node) {
+			CallExpression(node): void {
 				if (node.callee.type !== 'Identifier') return;
 				if (node.callee.name !== 'createError') return;
 

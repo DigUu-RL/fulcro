@@ -212,6 +212,7 @@ describe('Decimal', () => {
 
 		it('should round a tie buried past many digits by what follows it', () => {
 			expect(decimalFrom(`1.${'0'.repeat(33)}5`).toString()).toBe('1');
+
 			expect(decimalFrom(`1.${'0'.repeat(33)}5${'0'.repeat(500)}1`).toString()).toBe(
 				`1.${'0'.repeat(32)}1`,
 			);
@@ -256,6 +257,7 @@ describe('Decimal', () => {
 			expect(decimalFrom(10n ** 40n).toString()).toBe('1e+40');
 			expect(decimalFrom(10n ** 34n + 1n).toString()).toBe('1e+34');
 			expect(decimalFrom(10n ** 34n + 5n).toString()).toBe('1e+34');
+
 			expect(decimalFrom(10n ** 34n + 15n).toString()).toBe(
 				'1.000000000000000000000000000000002e+34',
 			);
@@ -328,12 +330,15 @@ describe('Decimal', () => {
 			// Past the borrow the last kept place moves down one: 1 - 7e-36 is
 			// 0.99…9 followed by 93, which rounds up to 1 and truncates to 34 nines.
 			expect(decimalFrom('1').subtract(decimalFrom('7e-36')).toString()).toBe('1');
+
 			expect(decimalFrom('1').subtract(decimalFrom('7e-36'), 'truncate').toString()).toBe(
 				`0.${'9'.repeat(34)}`,
 			);
+
 			expect(decimalFrom('1').subtract(decimalFrom('7e-35')).toString()).toBe(
 				`0.${'9'.repeat(34)}`,
 			);
+
 			expect(decimalFrom('1').subtract(decimalFrom('4e-35')).toString()).toBe('1');
 		});
 
@@ -440,6 +445,7 @@ describe('Decimal', () => {
 
 			expect(decimalFrom('1e-6176').multiply(decimalFrom('0.1')).toString()).toBe('0');
 			expect(decimalFrom('-1e-6176').multiply(decimalFrom('0.5')).toString()).toBe('-0');
+
 			expect(decimalFrom('-1e-6176').multiply(decimalFrom('0.5'), 'floor').toString()).toBe(
 				'-1e-6176',
 			);
@@ -464,12 +470,15 @@ describe('Decimal', () => {
 			expect(decimalFrom('2').divide(decimalFrom('3'), 'truncate').toString()).toBe(
 				`0.${'6'.repeat(34)}`,
 			);
+
 			expect(decimalFrom('2').divide(decimalFrom('3'), 'floor').toString()).toBe(
 				`0.${'6'.repeat(34)}`,
 			);
+
 			expect(decimalFrom('-2').divide(decimalFrom('3'), 'floor').toString()).toBe(
 				`-0.${'6'.repeat(33)}7`,
 			);
+
 			expect(decimalFrom('-2').divide(decimalFrom('3'), 'ceiling').toString()).toBe(
 				`-0.${'6'.repeat(34)}`,
 			);
@@ -658,17 +667,19 @@ describe('Decimal', () => {
 					decimalFrom('9.999999999999999999999999999999999e6144'),
 				),
 			).toBe(true);
+
 			expect(
 				decimalFrom('-Infinity').lessThan(decimalFrom('-9.999999999999999999999999999999999e6144')),
 			).toBe(true);
+
 			expect(decimalFrom('Infinity').equals(decimalFrom('Infinity'))).toBe(true);
 			expect(decimalFrom('-Infinity').compare(decimalFrom('Infinity'))).toBe(-1);
 		});
 
 		it('should answer each comparison method consistently with compare', () => {
-			const values = ['-Infinity', '-1', '-0', '0', '0.5', '1', 'Infinity'].map((text) =>
-				decimalFrom(text),
-			);
+			const values = ['-Infinity', '-1', '-0', '0', '0.5', '1', 'Infinity'].map((text) => {
+				return decimalFrom(text);
+			});
 
 			for (const left of values) {
 				for (const right of values) {
@@ -787,7 +798,7 @@ describe('Decimal', () => {
 
 		it('should serialise to JSON as a string, and interpolate as its text', () => {
 			expect(JSON.stringify({ price: decimalFrom('19.99') })).toBe('{"price":"19.99"}');
-			expect(`${String(decimalFrom('1.5'))}`).toBe('1.5');
+			expect(String(decimalFrom('1.5'))).toBe('1.5');
 		});
 	});
 
@@ -867,6 +878,7 @@ describe('Decimal', () => {
 				};
 
 				const expected: string = decimalFrom(referenceRound(exact, mode)).toString();
+
 				const actual: string = decimalFrom(literal(base))
 					.power(decimalFrom(power), mode)
 					.toString();
@@ -883,6 +895,7 @@ describe('Decimal', () => {
 			expect(decimalFrom(10).power(decimalFrom(6145), 'truncate').equals(Decimal.maximum)).toBe(
 				true,
 			);
+
 			expect(decimalFrom(-10).power(decimalFrom(6145), 'ceiling').equals(Decimal.minimum)).toBe(
 				true,
 			);
@@ -919,6 +932,7 @@ describe('Decimal', () => {
 
 		it('should return a Decimal from every operation', () => {
 			expectTypeOf(decimalFrom('1').add(decimalFrom('2'))).toEqualTypeOf<Decimal>();
+
 			expectTypeOf(decimalFrom('1').compare(decimalFrom('2'))).toEqualTypeOf<
 				-1 | 0 | 1 | undefined
 			>();

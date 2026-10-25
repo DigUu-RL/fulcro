@@ -91,9 +91,9 @@ beforeAll(() => {
 describe('offsetOf at compile time', () => {
 	it('should compile the fixture without errors', () => {
 		expect(
-			accepted.errors.map((error) =>
-				typescript.flattenDiagnosticMessageText(error.messageText, '\n'),
-			),
+			accepted.errors.map((error) => {
+				return typescript.flattenDiagnosticMessageText(error.messageText, '\n');
+			}),
 		).toEqual([]);
 	});
 

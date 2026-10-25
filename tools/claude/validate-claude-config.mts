@@ -274,7 +274,7 @@ const checkSettings = (root: string): Finding[] => {
 	const byCommand = new Map<string, Set<string>>();
 
 	for (const entry of Array.isArray(denied) ? denied : []) {
-		const permission = permissionOf(`${String(entry)}`);
+		const permission = permissionOf(String(entry));
 
 		if (permission === null) {
 			findings.push(
@@ -427,7 +427,7 @@ const checkRuleFrontmatter = (rule: Rule, position: string, root: string): Findi
 
 	if (value === undefined) return findings;
 
-	const globs = Array.isArray(value) ? value : [`${String(value)}`];
+	const globs = Array.isArray(value) ? value : [String(value)];
 
 	if (globs.length === 0) {
 		return [
@@ -473,7 +473,7 @@ const checkRuleFixtures = (root: string): Finding[] => {
 
 		if (value === undefined) continue;
 
-		scoped.set(rule.file, Array.isArray(value) ? value : [`${String(value)}`]);
+		scoped.set(rule.file, Array.isArray(value) ? value : [String(value)]);
 	}
 
 	const covered = new Set();
@@ -535,7 +535,7 @@ const checkRuleFixtures = (root: string): Finding[] => {
 			['ignores', ignores],
 		]) {
 			for (const entry of Array.isArray(entries) ? entries : []) {
-				const target = `${String(entry)}`;
+				const target = String(entry);
 
 				if (!exists(path.join(root, ...target.split('/')))) {
 					findings.push(
@@ -601,7 +601,7 @@ const toolsIn = (value: Value | undefined): string[] | null => {
 	if (value === undefined) return null;
 	if (Array.isArray(value)) return value.map((tool) => tool.trim());
 
-	return `${String(value)}`
+	return String(value)
 		.split(',')
 		.map((tool) => tool.trim())
 		.filter((tool) => tool !== '');

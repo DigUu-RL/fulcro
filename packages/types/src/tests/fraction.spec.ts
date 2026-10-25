@@ -39,8 +39,9 @@ const Ratio = FractionOf(SignedInteger(32));
  * @param denominator Denominator.
  * @returns The fraction, reduced.
  */
-const ratio = (numerator: number, denominator = 1): Fraction<SignedInteger<32>> =>
-	Ratio.from({ numerator, denominator });
+const ratio = (numerator: number, denominator = 1): Fraction<SignedInteger<32>> => {
+	return Ratio.from({ numerator, denominator });
+};
 
 describe('Fraction', () => {
 	describe('values', () => {

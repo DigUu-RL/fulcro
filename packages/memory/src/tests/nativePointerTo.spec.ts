@@ -109,9 +109,9 @@ const bytesOf = (buffer: ArrayBuffer, start: number, end: number): number[] => {
  * @returns The addresses that were written.
  */
 const touchedIn = (buffer: ArrayBuffer, start: number, end: number): number[] => {
-	return bytesOf(buffer, start, end).flatMap((byte, index) =>
-		byte === UNTOUCHED ? [] : [start + index],
-	);
+	return bytesOf(buffer, start, end).flatMap((byte, index) => {
+		return byte === UNTOUCHED ? [] : [start + index];
+	});
 };
 
 /** `1.5` as a little-endian 64-bit float, written out by hand. */
@@ -157,6 +157,7 @@ describe('nativePointerTo a memory', () => {
 
 		expect(Particle.layout.fields.velocity.offset).toBe(8);
 		expect(velocity.address).toBe(24);
+
 		expect([16, 20, 24, 28].map((position) => raw.getFloat32(position, true))).toEqual([
 			1, 2, 0, -10,
 		]);

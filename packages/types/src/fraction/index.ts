@@ -288,13 +288,16 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 			);
 		},
 
-		add: (left, right) =>
-			sum(`${name}.add`, left, right, (leftTerm, rightTerm) => integer.add(leftTerm, rightTerm)),
+		add: (left, right) => {
+			return sum(`${name}.add`, left, right, (leftTerm, rightTerm) =>
+				integer.add(leftTerm, rightTerm),
+			);
+		},
 
 		subtract: (left, right) => {
-			return sum(`${name}.subtract`, left, right, (leftTerm, rightTerm) =>
-				integer.subtract(leftTerm, rightTerm),
-			);
+			return sum(`${name}.subtract`, left, right, (leftTerm, rightTerm) => {
+				return integer.subtract(leftTerm, rightTerm);
+			});
 		},
 
 		multiply: (left, right) => {

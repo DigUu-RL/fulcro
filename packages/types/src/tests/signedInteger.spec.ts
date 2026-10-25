@@ -182,9 +182,11 @@ describe('SignedInteger', () => {
 			it('should step by one, refusing to step past either end', () => {
 				expect(type.increment(convert(1n))).toBe(carried(width, 2n));
 				expect(type.decrement(convert(1n))).toBe(carried(width, 0n));
+
 				expect(() => type.increment(type.maximum)).toThrow(
 					`SignedInteger<${String(width)}>.increment`,
 				);
+
 				expect(() => type.decrement(type.minimum)).toThrow(
 					`SignedInteger<${String(width)}>.decrement`,
 				);

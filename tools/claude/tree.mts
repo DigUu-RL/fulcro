@@ -48,8 +48,9 @@ export const exists = (target: string): boolean => fileSystem.existsSync(target)
  * @param target An absolute path inside it.
  * @returns The path as a report spells it.
  */
-export const displayed = (root: string, target: string): string =>
-	path.relative(root, target).split(path.sep).join('/');
+export const displayed = (root: string, target: string): string => {
+	return path.relative(root, target).split(path.sep).join('/');
+};
 
 /**
  * Every file below a directory, as paths relative to it.
@@ -288,7 +289,7 @@ export const ruleFixturesOf = (root: string = repositoryRoot): RuleFixture[] => 
 					problem: null,
 				};
 			} catch (failure) {
-				return { file, path: full, document: null, problem: `${String(failure)}` };
+				return { file, path: full, document: null, problem: String(failure) };
 			}
 		});
 };
@@ -338,7 +339,7 @@ export const evalsOf = (root: string = repositoryRoot): Evals[] => {
 					file,
 					path: full,
 					document: null,
-					problem: `${String(failure)}`,
+					problem: String(failure),
 				};
 			}
 		});
@@ -381,7 +382,7 @@ export const settingsOf = (
 			path: full,
 			present: true,
 			document: null,
-			problem: `${String(failure)}`,
+			problem: String(failure),
 		};
 	}
 };

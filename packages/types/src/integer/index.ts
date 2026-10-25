@@ -172,8 +172,9 @@ export interface IntegerType<T> extends BoundedNumericType<T, number | bigint> {
  * @param maximum Largest value.
  * @returns The range, as `[minimum, maximum]`.
  */
-const describeRange = (minimum: bigint, maximum: bigint): string =>
-	`[${String(minimum)}, ${String(maximum)}]`;
+const describeRange = (minimum: bigint, maximum: bigint): string => {
+	return `[${String(minimum)}, ${String(maximum)}]`;
+};
 
 /**
  * Describes a value for an error message without letting a stray `-0` read as

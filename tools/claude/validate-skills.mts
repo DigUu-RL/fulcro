@@ -432,7 +432,7 @@ const checkPaths = (skill: Skill, where: string, root: string): Finding[] => {
 
 	if (value === undefined) return [];
 
-	const globs = Array.isArray(value) ? value : [`${String(value)}`];
+	const globs = Array.isArray(value) ? value : [String(value)];
 	const findings = [];
 
 	if (globs.length === 0) {

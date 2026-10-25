@@ -1069,6 +1069,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 			if (leftStep.done === true || rightStep.done === true) {
 				return leftStep.done === rightStep.done;
 			}
+
 			if (leftStep.value !== rightStep.value) return false;
 		}
 	}

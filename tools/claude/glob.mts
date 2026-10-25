@@ -90,5 +90,6 @@ export const matches = (glob: string, target: string): boolean => expressionOf(g
  * @param target The path.
  * @returns Whether one of them matches.
  */
-export const matchedBy = (globs: string[], target: string): boolean =>
-	globs.some((glob) => matches(glob, target));
+export const matchedBy = (globs: string[], target: string): boolean => {
+	return globs.some((glob) => matches(glob, target));
+};

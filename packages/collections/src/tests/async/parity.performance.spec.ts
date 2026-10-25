@@ -90,8 +90,9 @@ describe('the terminals read the source once', () => {
 		],
 		[
 			'average',
-			(sequence: AsyncSequenceOf<Order>): Promise<number> =>
-				sequence.average((order) => order.total),
+			(sequence: AsyncSequenceOf<Order>): Promise<number> => {
+				return sequence.average((order) => order.total);
+			},
 		],
 		[
 			'min',
@@ -103,18 +104,21 @@ describe('the terminals read the source once', () => {
 		],
 		[
 			'countBy',
-			(sequence: AsyncSequenceOf<Order>): Promise<Map<string, number>> =>
-				sequence.countBy((order) => order.region),
+			(sequence: AsyncSequenceOf<Order>): Promise<Map<string, number>> => {
+				return sequence.countBy((order) => order.region);
+			},
 		],
 		[
 			'toLookup',
-			(sequence: AsyncSequenceOf<Order>): Promise<Map<string, Order[]>> =>
-				sequence.toLookup((order) => order.region),
+			(sequence: AsyncSequenceOf<Order>): Promise<Map<string, Order[]>> => {
+				return sequence.toLookup((order) => order.region);
+			},
 		],
 		[
 			'standardDeviation',
-			(sequence: AsyncSequenceOf<Order>): Promise<number> =>
-				sequence.standardDeviation((order) => order.total),
+			(sequence: AsyncSequenceOf<Order>): Promise<number> => {
+				return sequence.standardDeviation((order) => order.total);
+			},
 		],
 	])('should pull %s elements exactly once each', async (_label, run) => {
 		const { source, pulled } = counted(orders);

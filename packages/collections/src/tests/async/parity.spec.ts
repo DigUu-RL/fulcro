@@ -738,13 +738,15 @@ describe('cancellation', () => {
 		['average', (sequence: ReturnType<typeof numbers>): Promise<number> => sequence.average()],
 		[
 			'countBy',
-			(sequence: ReturnType<typeof numbers>): Promise<Map<number, number>> =>
-				sequence.countBy((value) => value),
+			(sequence: ReturnType<typeof numbers>): Promise<Map<number, number>> => {
+				return sequence.countBy((value) => value);
+			},
 		],
 		[
 			'toMap',
-			(sequence: ReturnType<typeof numbers>): Promise<Map<number, number>> =>
-				sequence.toMap((value) => value),
+			(sequence: ReturnType<typeof numbers>): Promise<Map<number, number>> => {
+				return sequence.toMap((value) => value);
+			},
 		],
 		['single', (sequence: ReturnType<typeof numbers>): Promise<number> => sequence.single()],
 	])('should reject %s with the reason the signal carries', async (_label, run) => {
