@@ -745,9 +745,13 @@ describe('@fulcro/functions', () => {
 	it('should still take the predicate form', async () => {
 		const { switchFor } = await import('@fulcro/functions');
 
-		expect(switchFor(10, [{ when: (value) => value > 5, then: () => 'big' }], () => 'small')).toBe(
-			'big',
-		);
+		expect(
+			switchFor(
+				10,
+				[{ when: (value): boolean => value > 5, then: (): string => 'big' }],
+				() => 'small',
+			),
+		).toBe('big');
 	});
 
 	it('should capture a synchronous throw', async () => {

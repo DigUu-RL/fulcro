@@ -32,17 +32,17 @@ const watchedOrder = (id: number, touches: { count: number }): Order => {
 	return new Proxy(
 		{ id, region: 'north', total: id * 2 },
 		{
-			get: (target, key, receiver) => {
+			get: (target, key, receiver): unknown => {
 				touches.count++;
 
 				return Reflect.get(target, key, receiver);
 			},
-			ownKeys: (target) => {
+			ownKeys: (target): (string | symbol)[] => {
 				touches.count += 1_000;
 
 				return Reflect.ownKeys(target);
 			},
-			getPrototypeOf: (target) => {
+			getPrototypeOf: (target): object | null => {
 				touches.count++;
 
 				return Reflect.getPrototypeOf(target);

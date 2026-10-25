@@ -28,17 +28,17 @@ export const recordingRules = (): {
 			initial: () => new Set<string>(),
 			copy: (facts) => new Set(facts),
 			join: (first, second) => new Set([...first, ...second]),
-			same: (first, second) => {
+			same: (first, second): boolean => {
 				return first.size === second.size && [...first].every((name) => second.has(name));
 			},
-			read: (identifier, facts) => {
+			read: (identifier, facts): void => {
 				recording.events.push(
 					facts.has(identifier.text)
 						? `read ${identifier.text} (spent)`
 						: `read ${identifier.text}`,
 				);
 			},
-			call: (call, facts) => {
+			call: (call, facts): void => {
 				const callee: string = call.expression.getText();
 				const [argument] = call.arguments;
 
@@ -48,11 +48,11 @@ export const recordingRules = (): {
 					facts.add(argument.text);
 				}
 			},
-			bind: (name, _value, facts) => {
+			bind: (name, _value, facts): void => {
 				recording.events.push(`bind ${name.text}`);
 				facts.delete(name.text);
 			},
-			capture: () => {
+			capture: (): void => {
 				recording.events.push('capture');
 			},
 		},

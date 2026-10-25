@@ -70,7 +70,7 @@ const integer128Codec = (descriptor: IntegerType<unknown>): FieldCodec => {
 	return {
 		size: 16,
 		alignment: 16,
-		read: (view, offset) => {
+		read: (view, offset): bigint => {
 			const low: bigint = view.getBigUint64(offset, true);
 
 			const high: bigint = descriptor.signed
@@ -79,7 +79,7 @@ const integer128Codec = (descriptor: IntegerType<unknown>): FieldCodec => {
 
 			return (high << HALF_WIDTH) | low;
 		},
-		write: (view, offset, value) => {
+		write: (view, offset, value): void => {
 			view.setBigUint64(offset, BigInt.asUintN(64, value as bigint), true);
 			view.setBigUint64(offset + 8, BigInt.asUintN(64, (value as bigint) >> HALF_WIDTH), true);
 		},
@@ -108,7 +108,7 @@ const integerCodec = (descriptor: IntegerType<unknown>): FieldCodec => {
 				size,
 				alignment: size,
 				read: (view, offset) => (signed ? view.getInt8(offset) : view.getUint8(offset)),
-				write: (view, offset, value) => {
+				write: (view, offset, value): void => {
 					signed ? view.setInt8(offset, value as number) : view.setUint8(offset, value as number);
 				},
 				equals,
@@ -117,10 +117,10 @@ const integerCodec = (descriptor: IntegerType<unknown>): FieldCodec => {
 			return {
 				size,
 				alignment: size,
-				read: (view, offset) => {
+				read: (view, offset): number => {
 					return signed ? view.getInt16(offset, true) : view.getUint16(offset, true);
 				},
-				write: (view, offset, value) => {
+				write: (view, offset, value): void => {
 					signed
 						? view.setInt16(offset, value as number, true)
 						: view.setUint16(offset, value as number, true);
@@ -131,10 +131,10 @@ const integerCodec = (descriptor: IntegerType<unknown>): FieldCodec => {
 			return {
 				size,
 				alignment: size,
-				read: (view, offset) => {
+				read: (view, offset): number => {
 					return signed ? view.getInt32(offset, true) : view.getUint32(offset, true);
 				},
-				write: (view, offset, value) => {
+				write: (view, offset, value): void => {
 					signed
 						? view.setInt32(offset, value as number, true)
 						: view.setUint32(offset, value as number, true);
@@ -145,10 +145,10 @@ const integerCodec = (descriptor: IntegerType<unknown>): FieldCodec => {
 			return {
 				size,
 				alignment: size,
-				read: (view, offset) => {
+				read: (view, offset): bigint => {
 					return signed ? view.getBigInt64(offset, true) : view.getBigUint64(offset, true);
 				},
-				write: (view, offset, value) => {
+				write: (view, offset, value): void => {
 					signed
 						? view.setBigInt64(offset, value as bigint, true)
 						: view.setBigUint64(offset, value as bigint, true);
@@ -221,11 +221,11 @@ const floatCodecs = new Map<object, FieldCodec>([
 		{
 			size: 2,
 			alignment: 2,
-			read: (view, offset) => decodeHalf(view.getUint16(offset, true)),
-			write: (view, offset, value) => {
+			read: (view, offset): number => decodeHalf(view.getUint16(offset, true)),
+			write: (view, offset, value): void => {
 				view.setUint16(offset, encodeHalf(value as number), true);
 			},
-			equals: (left, right) => {
+			equals: (left, right): boolean => {
 				return HalfPrecisionFloat.equals(left as HalfPrecisionFloat, right as HalfPrecisionFloat);
 			},
 		},
@@ -235,11 +235,11 @@ const floatCodecs = new Map<object, FieldCodec>([
 		{
 			size: 4,
 			alignment: 4,
-			read: (view, offset) => view.getFloat32(offset, true),
-			write: (view, offset, value) => {
+			read: (view, offset): number => view.getFloat32(offset, true),
+			write: (view, offset, value): void => {
 				view.setFloat32(offset, value as number, true);
 			},
-			equals: (left, right) => {
+			equals: (left, right): boolean => {
 				return SinglePrecisionFloat.equals(
 					left as SinglePrecisionFloat,
 					right as SinglePrecisionFloat,
@@ -252,11 +252,11 @@ const floatCodecs = new Map<object, FieldCodec>([
 		{
 			size: 8,
 			alignment: 8,
-			read: (view, offset) => view.getFloat64(offset, true),
-			write: (view, offset, value) => {
+			read: (view, offset): number => view.getFloat64(offset, true),
+			write: (view, offset, value): void => {
 				view.setFloat64(offset, value as number, true);
 			},
-			equals: (left, right) => {
+			equals: (left, right): boolean => {
 				return DoublePrecisionFloat.equals(
 					left as DoublePrecisionFloat,
 					right as DoublePrecisionFloat,

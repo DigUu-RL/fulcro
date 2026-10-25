@@ -68,7 +68,7 @@ const RULES: readonly Rule[] = [
 	},
 	{
 		id: 'clean',
-		refuses: (invocation) => {
+		refuses: (invocation): boolean => {
 			return runs(invocation, ['git', 'clean']) && hasFlag(invocation, '--force', 'f');
 		},
 		reason: refusal(

@@ -30,7 +30,7 @@ beforeEach(() => {
 	conversions = 0;
 
 	globalThis.BigInt = new Proxy(nativeBigInt, {
-		apply: (target, receiver, argumentsList) => {
+		apply: (target, receiver, argumentsList): unknown => {
 			conversions++;
 
 			return Reflect.apply(target, receiver, argumentsList);

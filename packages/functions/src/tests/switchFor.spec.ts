@@ -136,7 +136,7 @@ describe('switchFor, predicate form', () => {
 		// No result is read, and none has to be: `R` is inferred as void.
 		switchFor(
 			10,
-			[{ when: (value) => value > 5, then: () => void run.push('big') }],
+			[{ when: (value): boolean => value > 5, then: (): undefined => void run.push('big') }],
 			() => void run.push('small'),
 		);
 
@@ -177,18 +177,18 @@ describe('switchFor, predicate form', () => {
 			10,
 			[
 				{
-					when: () => {
+					when: (): true => {
 						tested.push('first');
 						return true;
 					},
-					then: () => 'matched',
+					then: (): string => 'matched',
 				},
 				{
-					when: () => {
+					when: (): true => {
 						tested.push('second');
 						return true;
 					},
-					then: () => 'unreachable',
+					then: (): string => 'unreachable',
 				},
 			],
 			() => 'fallback',
@@ -204,17 +204,17 @@ describe('switchFor, predicate form', () => {
 			10,
 			[
 				{
-					when: (value) => value > 100,
+					when: (value): boolean => value > 100,
 					// A branch may do work that would be wrong for a value it
 					// does not handle, so it must not run unless it matched.
-					then: () => {
+					then: (): string => {
 						run.push('unmatched');
 						return 'large';
 					},
 				},
 				{
-					when: (value) => value > 1,
-					then: () => {
+					when: (value): boolean => value > 1,
+					then: (): string => {
 						run.push('matched');
 						return 'small';
 					},
@@ -244,7 +244,7 @@ describe('switchFor, predicate form', () => {
 	it('should treat a falsy result as a result rather than as no match', () => {
 		// The branch is chosen by its condition, never by what it produces, so
 		// a branch returning 0 or '' must still win over the fallback.
-		expect(switchFor(1, [{ when: () => true, then: () => 0 }], () => -1)).toBe(0);
-		expect(switchFor(1, [{ when: () => true, then: () => '' }], () => 'x')).toBe('');
+		expect(switchFor(1, [{ when: (): true => true, then: (): number => 0 }], () => -1)).toBe(0);
+		expect(switchFor(1, [{ when: (): true => true, then: (): string => '' }], () => 'x')).toBe('');
 	});
 });

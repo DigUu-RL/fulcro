@@ -61,7 +61,7 @@ const watchViews = (): { made: number } => {
 	vi.stubGlobal(
 		'DataView',
 		new Proxy(DataView, {
-			construct: (target, args: unknown[], newTarget) => {
+			construct: (target, args: unknown[], newTarget): object => {
 				count.made++;
 
 				return Reflect.construct(target, args, newTarget) as object;

@@ -40,7 +40,7 @@ beforeEach(() => {
 	};
 
 	globalThis.BigInt = new Proxy(nativeBigInt, {
-		apply: (target, receiver, argumentsList: unknown[]) => {
+		apply: (target, receiver, argumentsList: unknown[]): unknown => {
 			const [value] = argumentsList;
 
 			if (typeof value === 'string') largest = Math.max(largest, value.length);

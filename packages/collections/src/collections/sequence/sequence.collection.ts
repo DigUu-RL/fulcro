@@ -557,7 +557,7 @@ export class SequenceCollection<T> implements Sequence<T> {
 					// a single loop would keep re-evaluating long after the
 					// bypassed prefix is behind us, and still forwards early
 					// termination back to the source iterator.
-					yield* { [Symbol.iterator]: () => iterator };
+					yield* { [Symbol.iterator]: (): Iterator<T, any, any> => iterator };
 				},
 			},
 			() => {

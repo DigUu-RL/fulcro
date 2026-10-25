@@ -209,7 +209,9 @@ describe('typeOf<T>()', () => {
 		// tell you a property it happens to carry was declared optional.
 		const members = typeOf<Order>().members;
 
-		const byName = (name: string) => members.find((member) => member.name === name);
+		const byName = (name: string): (typeof members)[number] | undefined => {
+			return members.find((member) => member.name === name);
+		};
 
 		expect(byName('note')?.optional).toBe(true);
 		expect(byName('id')?.optional).toBe(false);

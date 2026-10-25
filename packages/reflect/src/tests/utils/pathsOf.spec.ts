@@ -37,7 +37,9 @@ describe('pathsOf', () => {
 	 * @param path Path being looked up.
 	 * @returns The entry, when there is one.
 	 */
-	const entryAt = (path: string) => pathsOf<Order>().find((entry) => entry.path === path);
+	const entryAt = (path: string): ReturnType<typeof pathsOf<Order>>[number] | undefined => {
+		return pathsOf<Order>().find((entry) => entry.path === path);
+	};
 
 	it('should walk to a nested leaf', () => {
 		expect(entryAt('customer.email')?.type).toBe('string');

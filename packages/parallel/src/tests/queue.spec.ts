@@ -18,7 +18,7 @@ import { createWaitingQueue, type Waiting } from '@/src/task/queue.js';
  */
 const entryFor = (started: string[], name: string): Waiting => {
 	return {
-		start: () => {
+		start: (): void => {
 			started.push(name);
 		},
 	};

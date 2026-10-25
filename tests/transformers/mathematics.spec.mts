@@ -74,7 +74,7 @@ const compile = (fileName: string): Compiled => {
 	const refused: typescript.Diagnostic[] = [];
 
 	const extras = {
-		addDiagnostic: (diagnostic: typescript.Diagnostic) => refused.push(diagnostic),
+		addDiagnostic: (diagnostic: typescript.Diagnostic): number => refused.push(diagnostic),
 	};
 
 	let emitted = '';

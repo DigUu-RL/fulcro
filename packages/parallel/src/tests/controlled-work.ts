@@ -78,11 +78,11 @@ export const controlledWork = <T>(
 		work,
 		started: () => handedToken !== undefined,
 		token: () => handedToken,
-		succeed: (value) => {
+		succeed: (value): void => {
 			outcome ??= { value };
 			settle?.();
 		},
-		fail: (error) => {
+		fail: (error): void => {
 			outcome ??= { error };
 			settle?.();
 		},

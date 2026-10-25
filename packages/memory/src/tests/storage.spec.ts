@@ -29,11 +29,17 @@ const origin: Point = Point.from({ x: 0, y: 0 });
 
 /** Each strategy, as a factory of a storage of points. */
 const STRATEGIES = [
-	['ManagedStorage', (length: number) => createManagedStorage(length, origin)],
-	['FixedBufferStorage', (length: number) => createFixedBufferStorage(Point, length)],
+	['ManagedStorage', (length: number): Storage<Point> => createManagedStorage(length, origin)],
+	[
+		'FixedBufferStorage',
+		(length: number): Storage<Point> => createFixedBufferStorage(Point, length),
+	],
 	// What `allocate` returns names its operations after the contract itself,
 	// since no storage strategy of its own stands behind it.
-	['Storage', (length: number) => allocate(Point, length, createManagedAllocator())],
+	[
+		'Storage',
+		(length: number): Storage<Point> => allocate(Point, length, createManagedAllocator()),
+	],
 	// A view is accepted wherever a storage is; this one sits inside a larger
 	// buffer, so a position it got wrong would land on a neighbour.
 	[
@@ -144,8 +150,14 @@ describe.each(STRATEGIES)('%s, as a Storage<T>', (name, create) => {
 describe('Storage<T> lengths', () => {
 	it.each([
 		['createManagedStorage', (length: number): Storage<number> => createManagedStorage(length, 0)],
-		['createFixedBufferStorage', (length: number) => createFixedBufferStorage(Point, length)],
-		['allocate', (length: number) => allocate(Point, length, createManagedAllocator())],
+		[
+			'createFixedBufferStorage',
+			(length: number): Storage<Point> => createFixedBufferStorage(Point, length),
+		],
+		[
+			'allocate',
+			(length: number): Storage<Point> => allocate(Point, length, createManagedAllocator()),
+		],
 	] as const)('%s should refuse a length that is not a count', (name, create) => {
 		for (const [length, shown] of [
 			[-1, '-1'],

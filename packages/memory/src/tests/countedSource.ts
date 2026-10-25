@@ -53,12 +53,12 @@ export const countedArray = (length: number): { array: number[]; counts: SourceC
 		array: new Proxy(
 			Array.from({ length }, (_, index) => index),
 			{
-				get: (target, key, receiver) => {
+				get: (target, key, receiver): unknown => {
 					if (isElement(key)) counts.reads++;
 
 					return Reflect.get(target, key, receiver);
 				},
-				set: (target, key, value, receiver) => {
+				set: (target, key, value, receiver): boolean => {
 					if (isElement(key)) counts.writes++;
 
 					return Reflect.set(target, key, value, receiver);

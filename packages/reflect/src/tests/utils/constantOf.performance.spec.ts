@@ -88,7 +88,7 @@ describe('constantOf', () => {
 				return new Proxy(
 					{ index },
 					{
-						getOwnPropertyDescriptor: (target, key) => {
+						getOwnPropertyDescriptor: (target, key): TypedPropertyDescriptor<any> | undefined => {
 							reads++;
 
 							return Reflect.getOwnPropertyDescriptor(target, key);

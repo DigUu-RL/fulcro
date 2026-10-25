@@ -67,7 +67,7 @@ const createMeter = (): Meter => {
 				}
 			};
 		},
-		untilCancelled: (token) => {
+		untilCancelled: (token): Promise<number> => {
 			started++;
 
 			return new Promise<number>((_resolve, reject) => {

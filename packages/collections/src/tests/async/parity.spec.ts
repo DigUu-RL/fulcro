@@ -764,17 +764,27 @@ describe('cancellation', () => {
 	 * @param signal Signal the terminal is given.
 	 * @returns The sequence, with the signal already bound by the caller.
 	 */
-	function numbers(signal: AbortSignal) {
+	const numbers = (signal: AbortSignal): BoundTerminals => {
 		const sequence = AsyncSequenceCollection.from(streamOf([1, 2, 3]));
 
 		return {
-			sum: () => sequence.sum(undefined, { signal }),
-			average: () => sequence.average(undefined, { signal }),
-			countBy: <K>(keySelector: (value: number) => K) => sequence.countBy(keySelector, { signal }),
-			toMap: <K>(keySelector: (value: number) => K) => {
+			sum: (): Promise<number> => sequence.sum(undefined, { signal }),
+			average: (): Promise<number> => sequence.average(undefined, { signal }),
+			countBy: <K>(keySelector: (value: number) => K): Promise<Map<K, number>> =>
+				sequence.countBy(keySelector, { signal }),
+			toMap: <K>(keySelector: (value: number) => K): Promise<Map<K, number>> => {
 				return sequence.toMap(keySelector, undefined, { signal });
 			},
-			single: () => sequence.single({ signal }),
+			single: (): Promise<number> => sequence.single({ signal }),
 		};
-	}
+	};
 });
+
+/** The terminals of a sequence of numbers, each already handed the same signal. */
+interface BoundTerminals {
+	readonly sum: () => Promise<number>;
+	readonly average: () => Promise<number>;
+	readonly countBy: <K>(keySelector: (value: number) => K) => Promise<Map<K, number>>;
+	readonly toMap: <K>(keySelector: (value: number) => K) => Promise<Map<K, number>>;
+	readonly single: () => Promise<number>;
+}

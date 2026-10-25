@@ -69,7 +69,7 @@ const questionsFor = (text: string): { questions: number; refused: number } => {
 	typescript.getPreEmitDiagnostics(program);
 
 	const counting = new Proxy(checker, {
-		get: (target, key, receiver) => {
+		get: (target, key, receiver): unknown => {
 			const value: unknown = Reflect.get(target, key, receiver);
 
 			return typeof value === 'function'
@@ -83,7 +83,7 @@ const questionsFor = (text: string): { questions: number; refused: number } => {
 	});
 
 	const counted: typescript.Program = new Proxy(program, {
-		get: (target, key, receiver) => {
+		get: (target, key, receiver): unknown => {
 			return key === 'getTypeChecker'
 				? (): typescript.TypeChecker => counting
 				: Reflect.get(target, key, receiver);

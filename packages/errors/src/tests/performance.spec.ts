@@ -44,7 +44,7 @@ const countedDetails = (
 	const details = new Proxy(
 		{ operation: 'elementAt', index },
 		{
-			get: (target, field, receiver) => {
+			get: (target, field, receiver): unknown => {
 				reads++;
 
 				return Reflect.get(target, field, receiver);

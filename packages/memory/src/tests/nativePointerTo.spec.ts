@@ -463,10 +463,10 @@ describe('nativePointerTo an allocation', () => {
 	// the pool hands out the second 64-byte block.
 	it.each<[string, () => Allocator, number, number]>([
 		['managed', (): Allocator => createManagedAllocator(), 0, 16],
-		['arena', () => createArenaAllocator(256), 8, 256],
-		['stack', () => createStackAllocator(256), 8, 256],
-		['fixed buffer', () => createFixedBufferAllocator(new ArrayBuffer(256)), 8, 256],
-		['pool', () => createPoolAllocator(64, 4), 64, 256],
+		['arena', (): Allocator => createArenaAllocator(256), 8, 256],
+		['stack', (): Allocator => createStackAllocator(256), 8, 256],
+		['fixed buffer', (): Allocator => createFixedBufferAllocator(new ArrayBuffer(256)), 8, 256],
+		['pool', (): Allocator => createPoolAllocator(64, 4), 64, 256],
 	])(
 		'should point at the first byte of a %s allocation, and write the bytes the allocator lent',
 		(_, makeAllocator, address, memoryLength) => {

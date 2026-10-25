@@ -29,7 +29,7 @@ describe('typeOf', () => {
 		let reads = 0;
 
 		const watched = new Proxy(value, {
-			get(target, key, receiver) {
+			get(target, key, receiver): unknown {
 				reads++;
 				return Reflect.get(target, key, receiver);
 			},

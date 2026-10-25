@@ -15,7 +15,7 @@ export const sampleDetails = (): DetailsShape => {
 	return new Proxy<DetailsShape>(
 		{ operation: 'operation' },
 		{
-			get: (target, field) => {
+			get: (target, field): unknown => {
 				return typeof field === 'string' && !(field in target)
 					? 'value'
 					: Reflect.get(target, field);

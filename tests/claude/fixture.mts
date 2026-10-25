@@ -74,7 +74,7 @@ export const tree = (scripts: string[] = ['build', 'typecheck']): Tree => {
 	return {
 		root,
 		write,
-		skill: (name, frontmatter, body = `# ${name}\n`) => {
+		skill: (name, frontmatter, body = `# ${name}\n`): void => {
 			write(`.claude/skills/${name}/SKILL.md`, `---\n${frontmatter}\n---\n\n${body}`);
 		},
 	};

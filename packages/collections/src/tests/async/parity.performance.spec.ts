@@ -174,12 +174,29 @@ describe('the terminals that can stop, stop', () => {
 
 describe('the windows hold a window, not the stream', () => {
 	it.each([
-		['windowed', (sequence: AsyncSequenceOfNumbers) => sequence.windowed(3)],
-		['pairwise', (sequence: AsyncSequenceOfNumbers) => sequence.pairwise()],
-		['skipLast', (sequence: AsyncSequenceOfNumbers) => sequence.skipLast(3)],
+		[
+			'windowed',
+			(
+				sequence: AsyncSequenceOfNumbers,
+			): ReturnType<typeof AsyncSequenceCollection.from<unknown>> => sequence.windowed(3),
+		],
+		[
+			'pairwise',
+			(
+				sequence: AsyncSequenceOfNumbers,
+			): ReturnType<typeof AsyncSequenceCollection.from<unknown>> => sequence.pairwise(),
+		],
+		[
+			'skipLast',
+			(
+				sequence: AsyncSequenceOfNumbers,
+			): ReturnType<typeof AsyncSequenceCollection.from<unknown>> => sequence.skipLast(3),
+		],
 		[
 			'groupAdjacent',
-			(sequence: AsyncSequenceOfNumbers) => {
+			(
+				sequence: AsyncSequenceOfNumbers,
+			): ReturnType<typeof AsyncSequenceCollection.from<unknown>> => {
 				return sequence.groupAdjacent((value) => Math.floor(value / 2));
 			},
 		],
