@@ -46,6 +46,7 @@ import { buildExplainer } from '@/src/structural/explain';
  *
  * @template R Type a passing value is taken to be.
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- names the type the test vouches for, read by inference rather than by a member
 export interface TypeTest<R> {
 	/**
 	 * Decides whether a value is an `R`.
@@ -480,7 +481,7 @@ const checkFor = (
 	// reference has a name to call, and every mention of it — the first one
 	// included — becomes a call to that name.
 	if (generation.recursive.has(type)) {
-		return checkThroughFunction(type, value, generation, depth);
+		return checkThroughFunction(type, value, generation);
 	}
 
 	// Belt and braces. The cycle search above should have caught anything that
@@ -498,17 +499,18 @@ const checkFor = (
  * trick: the reference that closes the cycle is met while the body is still
  * being built, and it needs something to call.
  *
+ * The depth the caller had reached is deliberately not taken: the body starts
+ * again from zero, below.
+ *
  * @param type Type being checked for.
  * @param value Expression the check is applied to.
  * @param generation State of the generation.
- * @param depth How deep into the type this is.
  * @returns A call to the function, or `null` when the body cannot be written.
  */
 const checkThroughFunction = (
 	type: typescript.Type,
 	value: typescript.Expression,
 	generation: Generation,
-	depth: number,
 ): typescript.Expression | null => {
 	const { factory } = generation.context;
 

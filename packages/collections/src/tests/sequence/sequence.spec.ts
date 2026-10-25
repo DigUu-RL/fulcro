@@ -241,7 +241,7 @@ describe('SequenceCollection Unit Tests', () => {
 		expect(map.get('x')).toBe(100);
 		expect(map.get('y')).toBe(200);
 
-		expect(() => items.toMap((item) => 'same-key')).toThrow(
+		expect(() => items.toMap(() => 'same-key')).toThrow(
 			'An item with the same key has already been added.',
 		);
 	});

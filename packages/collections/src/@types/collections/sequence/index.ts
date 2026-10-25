@@ -9,7 +9,6 @@ import type {
 	Selector,
 	TypeNames,
 	TypeTest,
-	TypeToken,
 } from '@/src/@types';
 import type { Group } from '@/src/@types/collections/group';
 import type { OrderedSequence } from '@/src/@types/collections/ordered';

@@ -61,6 +61,7 @@ export interface TypePath {
  * @returns Every leaf, in the order the properties were declared.
  * @throws {Error} When the call was not resolved at compile time.
  */
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters, @typescript-eslint/no-unused-vars -- read by the transformer, which resolves the call from it
 export const pathsOf = <T>(paths?: readonly TypePath[]): readonly TypePath[] => {
 	if (paths === undefined) {
 		throw createError('FULCRO4005', { operation: 'pathsOf' });

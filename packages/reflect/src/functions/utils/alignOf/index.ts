@@ -20,6 +20,7 @@ import { unresolvedLayout, type WithLayout } from '@/src/functions/utils/layout'
  * @throws {Error} Always, when the transformer is not enabled or the type
  * argument is a generic parameter.
  */
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters, @typescript-eslint/no-unused-vars -- read by the transformer, which resolves the call from it
 export const alignOf = <T extends WithLayout>(): number => {
 	throw unresolvedLayout('alignOf<T>()');
 };

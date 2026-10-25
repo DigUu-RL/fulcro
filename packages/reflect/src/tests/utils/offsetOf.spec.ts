@@ -111,6 +111,7 @@ describe('offsetOf', () => {
 	});
 
 	it('should leave a generic parameter to throw, having nothing substituted yet', () => {
+		// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- forwarded to the call the transformer resolves from it
 		const locate = <T extends Mixed>(): number => offsetOf<T>('flag');
 
 		expect(() => locate<Mixed>()).toThrow(

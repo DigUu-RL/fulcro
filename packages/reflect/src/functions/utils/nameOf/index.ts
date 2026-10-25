@@ -78,6 +78,7 @@ const parseAccessedName = (accessor: NameAccessor): string | null => {
  * @param input Accessor naming a member, or a value to be named.
  * @returns The name that was read.
  */
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters, @typescript-eslint/no-unused-vars -- read by the transformer, which resolves the call from it
 export function nameOf<T>(): string;
 export function nameOf(input: unknown): string;
 

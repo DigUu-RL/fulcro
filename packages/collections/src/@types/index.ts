@@ -73,6 +73,7 @@ export type Constructor<T> = abstract new (...args: never[]) => T;
  *
  * @template R Type a passing value is taken to be.
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- names the type the test vouches for, read by inference rather than by a member
 export interface TypeTest<R> {
 	/**
 	 * Decides whether a value is an `R`.

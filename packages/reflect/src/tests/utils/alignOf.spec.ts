@@ -29,6 +29,7 @@ describe('alignOf', () => {
 	});
 
 	it('should leave a generic parameter to throw', () => {
+		// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- forwarded to the call the transformer resolves from it
 		const measure = <T extends WithLayout>(): number => alignOf<T>();
 
 		expect(() => measure<Declared>()).toThrow('only exists at compile time');

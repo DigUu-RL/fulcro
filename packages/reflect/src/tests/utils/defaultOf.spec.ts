@@ -105,6 +105,7 @@ describe('defaultOf', () => {
 		// The transformer only rewrites direct calls it can trace back to the
 		// module. Reached through a binding it cannot follow, the runtime
 		// implementation takes over — and throws rather than inventing a value.
+		// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- forwarded to the call the transformer resolves from it
 		const indirect: <T>() => T = defaultOf;
 
 		expect(() => indirect<string>()).toThrow(/only exists at compile time/);

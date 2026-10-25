@@ -228,6 +228,7 @@ export interface TypeOfSignature {
 	 * @returns Everything the compiler knows about it.
 	 * @throws {Error} When the call was not resolved at compile time.
 	 */
+	// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters, @typescript-eslint/no-unused-vars -- read by the transformer, which resolves the call from it
 	<T>(): TypeMetadata;
 
 	/**

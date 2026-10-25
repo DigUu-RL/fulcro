@@ -35,6 +35,7 @@ import { createError } from '@fulcro/errors';
  * @returns The default value of `T`.
  * @throws {Error} Always, when the transformer is not enabled.
  */
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- read by the transformer, which resolves the call from it
 export function defaultOf<T>(): T {
 	throw createError('FULCRO4003', { operation: 'defaultOf' });
 }
