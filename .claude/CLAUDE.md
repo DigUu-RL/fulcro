@@ -42,17 +42,17 @@ comes from its catalog, with a `FULCRO` code from that package's range. See
 Run from the repository root. These are the scripts that exist today — read
 `package.json` before trusting any command that is not on this list.
 
-| Command                                   | What it does                                                                |
-| ----------------------------------------- | --------------------------------------------------------------------------- |
-| `npm run build`                           | Builds `errors`, then `transform-core`, then every workspace                |
-| `npm run typecheck`                       | `tsc` per package, then the root `tsconfig.json` (suites, tooling, hooks)   |
-| `npm test`                                | Builds, then runs Vitest                                                    |
-| `npx vitest run --configLoader native`    | The suites without rebuilding                                               |
-| `npx eslint .`                            | Lint, including the local `brace-wrapped-branches` and `coded-errors` rules |
-| `npm run format:check` / `npm run format` | Prettier check / write                                                      |
-| `npx --yes markdownlint-cli2`             | Markdown lint (`.markdownlint-cli2.jsonc`)                                  |
-| `npm run validate:claude`                 | Structural validation of the `.claude` tree                                 |
-| `npm run changeset`                       | Records a version bump for a shipped change                                 |
+| Command                                   | What it does                                                               |
+| ----------------------------------------- | -------------------------------------------------------------------------- |
+| `npm run build`                           | Builds `errors`, then `transform-core`, then every workspace               |
+| `npm run typecheck`                       | `tsc` per package, then the root `tsconfig.json` (suites, tooling, hooks)  |
+| `npm test`                                | Builds, then runs Vitest                                                   |
+| `npx vitest run --configLoader native`    | The suites without rebuilding                                              |
+| `npx eslint .`                            | Lint under `eslint.config.ts`, with the four local rules in `tools/eslint` |
+| `npm run format:check` / `npm run format` | Prettier check / write                                                     |
+| `npx --yes markdownlint-cli2`             | Markdown lint (`.markdownlint-cli2.jsonc`)                                 |
+| `npm run validate:claude`                 | Structural validation of the `.claude` tree                                |
+| `npm run changeset`                       | Records a version bump for a shipped change                                |
 
 Every package is an ES module built by `tsdown` from its `tsdown.config.ts`,
 one output file per source module, with `tsconfig.build.json` for the

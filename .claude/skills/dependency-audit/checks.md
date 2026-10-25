@@ -27,12 +27,11 @@ A finding when:
   it, and the question the report has to answer is what it replaced;
 - something is imported but not declared. It resolves today from the workspace
   root or from a transitive install and breaks the first time the tree changes.
-  `eslint` is exactly this shape here: `eslint.config.mjs` is in the tree and
-  `npx eslint .` is in the contract's command table, while the root declares
-  `eslint-config-prettier`, `eslint-plugin-simple-import-sort` and
-  `typescript-eslint` and never `eslint` itself — `npm explain eslint` shows it
-  arriving as their peer. Report it at `MEDIUM` and say which declaration is
-  missing, not which version to add;
+  `eslint` was this shape here until it was declared: `eslint.config.ts`
+  imports `eslint/config` and `npx eslint .` is in the contract's command
+  table, while the root declared only the plugins and `typescript-eslint`, and
+  `npm explain eslint` showed it arriving as their peer. Report the shape at
+  `MEDIUM` and say which declaration is missing, not which version to add;
 - a declared edge is imported nowhere. Dead weight in `devDependencies`, a
   published install in `dependencies`;
 - a range loosened to `*`, `latest` or a git URL. A published package cannot

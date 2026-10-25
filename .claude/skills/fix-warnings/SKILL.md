@@ -72,7 +72,7 @@ with what still runs.
 | 1   | `npm run build`                                | `tsc` under every tsconfig flag, the alias rewrite, transformer notices                       |
 | 2   | `npm run typecheck`                            | the same checks without emit, plus the root `tsconfig.json`                                   |
 | 3   | `npx vitest run --configLoader native`         | runner and Vite warnings, config hints, `console.warn` from the suites, Node API deprecations |
-| 4   | `npx eslint .`                                 | the rules in `eslint.config.mjs`, including the local `local/brace-wrapped-branches`          |
+| 4   | `npx eslint .`                                 | the rules in `eslint.config.ts`, midnight-indigo-ui's and the four under `tools/eslint`       |
 | 5   | `npm run format:check`                         | files outside Prettier's format                                                               |
 | 6   | `npm run lint:md`                              | `markdownlint-cli2` under `.markdownlint-cli2.jsonc`                                          |
 | 7   | `npm run validate:claude`                      | the `.claude` tree: skill frontmatter, dangling references, eval coverage                     |
@@ -160,8 +160,8 @@ Only after the yes. In the order of the table, trivial to sensitive.
   (including "leave this one"), each saying what it buys and what it costs. The
   user may answer something else entirely — if they do, follow their answer.
 - Automatic `--fix` (`npx eslint . --fix`, `npm run format`) is allowed, but
-  **read the diff afterwards**. Prettier's and `simple-import-sort`'s rewrites
-  are safe; a rule that rewrites logic is not.
+  **read the diff afterwards**. Prettier's rewrites and the layout fixes of the
+  `@stylistic` and local rules are safe; a rule that rewrites logic is not.
 - Never silence, whatever the user is offered or answers about a single
   warning. A rule that seems wrong for a construct is met by a change that makes
   it hold — a truer type, a different structure — at no runtime cost.
