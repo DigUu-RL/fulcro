@@ -20,13 +20,19 @@ type StructFields = Readonly<Record<string, FieldDescriptor>>;
 type StructMethods = Readonly<Record<string, (...parameters: never[]) => unknown>>;
 
 /**
- * What a struct declared without methods is typed with: an object with no
- * method in it. It has to be an object type — the methods a struct is given
- * are typed against it before they are inferred — and an empty one would
- * stand for any value at all, so it carries one optional method slot, marked
- * with a tilde as `'~layout'` is, which `StructValue` reads as no methods. The
- * slot is typed as a method, so that methods in general and none at all stay
- * assignable to each other, as two structs' descriptors are compared.
+ * What `struct` types a struct declared without methods with: an object with
+ * no method in it.
+ *
+ * It has to be an object with no index signature. The methods a struct is given
+ * are typed against this before they are inferred, and against an index
+ * signature a method whose result depends on `this` is inferred as the
+ * signature rather than as itself. An empty object would stand for any value at
+ * all, so it carries one optional method slot instead, marked with a tilde as
+ * `'~layout'` is, which `StructValue` reads as no methods.
+ *
+ * It is only `struct`'s default. `StructType<TFields>` written without methods
+ * means methods in general — see there — so that it accepts every struct with
+ * those fields, with methods or without.
  */
 type NoMethods = Readonly<Partial<Record<'~noMethods', StructMethods[string]>>>;
 
@@ -119,11 +125,28 @@ type StructData<TFields extends StructFields> = {
  * struct without methods is its fields alone, exactly as before methods
  * existed, so nothing it inferred changes.
  */
-type StructValue<TFields extends StructFields, TMethods extends StructMethods = NoMethods> = [
-	keyof TMethods,
-] extends ['~noMethods']
-	? StructData<TFields>
-	: StructData<TFields> & Readonly<TMethods>;
+type StructValue<TFields extends StructFields, TMethods extends StructMethods = StructMethods> =
+	// Methods in general name none of their own, and neither does `NoMethods`:
+	// both are read here by the keys left once the index signature and the
+	// `'~noMethods'` slot are mapped away. Asking `string extends keyof
+	// TMethods` instead keeps two struct types from being compared by the
+	// variance of `TMethods`, and the member by member comparison that replaces
+	// it fails against `StructType<Record<string, any>>`, whose layout over any
+	// fields has a size of `never` — which is how `StructType<any>` came to
+	// refuse a struct with methods.
+	[
+		keyof {
+			[
+				TKey in keyof TMethods as string extends TKey
+					? never
+					: TKey extends '~noMethods'
+						? never
+						: TKey
+			]: unknown;
+		},
+	] extends [never]
+		? StructData<TFields>
+		: StructData<TFields> & Readonly<TMethods>;
 
 /** What a struct's `from` accepts: each field in what its own `from` accepts. */
 type StructSource<TFields extends StructFields> = {
@@ -135,11 +158,14 @@ type StructSource<TFields extends StructFields> = {
  * recognised, compared and stored.
  *
  * @template TFields Descriptors of the fields, by name.
- * @template TMethods Methods every value carries, by name; none by default.
+ * @template TMethods Methods every value carries, by name. Left out, methods in
+ * general, so that `StructType<TFields>` accepts every struct with those
+ * fields, with methods or without; `struct` types one declared without methods
+ * as having none.
  */
 export interface StructType<
 	TFields extends StructFields,
-	TMethods extends StructMethods = NoMethods,
+	TMethods extends StructMethods = StructMethods,
 > {
 	/** Name of the struct, as it reads in an error message. */
 	readonly name: string;
@@ -232,7 +258,7 @@ export interface StructType<
  *
  * @template TDescriptor Type of the descriptor `struct` returned.
  */
-export type Struct<TDescriptor extends StructType<StructFields, StructMethods>> =
+export type Struct<TDescriptor extends StructType<StructFields>> =
 	TDescriptor extends StructType<infer TFields, infer TMethods>
 		? StructValue<TFields, TMethods>
 		: never;
