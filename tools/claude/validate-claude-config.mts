@@ -21,6 +21,7 @@ import { pathToFileURL } from 'node:url';
 
 import type { Value } from './frontmatter.mts';
 import { matchedBy } from './glob.mts';
+import { isList, isRecord } from './json.mts';
 import type { Finding } from './report.mts';
 import { error, report, warning } from './report.mts';
 import type { Rule } from './tree.mts';
@@ -120,17 +121,24 @@ const proseParagraphs = (body: string): string[] => {
 const hooksIn = (
 	document: Record<string, unknown> | null,
 ): { event: string; matcher: string; command: string }[] => {
-	const found = [];
-	const events = document?.hooks ?? {};
+	const found: { event: string; matcher: string; command: string }[] = [];
+	const events: unknown = document?.hooks;
+
+	if (!isRecord(events)) return found;
 
 	for (const [event, entries] of Object.entries(events)) {
-		if (!Array.isArray(entries)) continue;
+		if (!isList(entries)) continue;
 
 		for (const entry of entries) {
-			const matcher = typeof entry?.matcher === 'string' ? entry.matcher : '';
+			if (!isRecord(entry)) continue;
 
-			for (const hook of entry?.hooks ?? []) {
-				if (typeof hook?.command !== 'string') continue;
+			const matcher = typeof entry.matcher === 'string' ? entry.matcher : '';
+			const hooks: unknown = entry.hooks;
+
+			if (!isList(hooks)) continue;
+
+			for (const hook of hooks) {
+				if (!isRecord(hook) || typeof hook.command !== 'string') continue;
 
 				found.push({ event, matcher, command: hook.command });
 			}

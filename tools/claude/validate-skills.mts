@@ -23,6 +23,7 @@ import { pathToFileURL } from 'node:url';
 import { review as destructive } from '../../.claude/hooks/block-destructive.mts';
 import { review as protectedOperation } from '../../.claude/hooks/protect-publish.mts';
 
+import { isList, isRecord } from './json.mts';
 import type { Finding } from './report.mts';
 import { error, report, warning } from './report.mts';
 import type { Evals, Skill } from './tree.mts';
@@ -683,19 +684,19 @@ const checkEvals = (
 
 	const cases = document.cases;
 
-	if (!Array.isArray(cases) || cases.length === 0) {
+	if (!isList(cases) || cases.length === 0) {
 		findings.push(error('eval-empty', where, 'There are no cases.'));
 
 		return findings;
 	}
 
-	const ids = new Set();
+	const ids = new Set<unknown>();
 	const kinds = new Set<string>();
 
 	for (const [index, entry] of cases.entries()) {
 		const position = `${where} (case ${String(index + 1)})`;
 
-		if (typeof entry !== 'object' || entry === null) {
+		if (!isRecord(entry)) {
 			findings.push(error('eval-case-shape', position, 'Not an object.'));
 			continue;
 		}
@@ -708,7 +709,7 @@ const checkEvals = (
 			findings.push(error('eval-case-prompt', position, '`prompt` is missing.'));
 		}
 
-		if (typeof expect !== 'object' || expect === null) {
+		if (!isRecord(expect)) {
 			findings.push(error('eval-case-expect', position, '`expect` is missing.'));
 			continue;
 		}
@@ -747,7 +748,7 @@ export const validateSkills = (root: string = repositoryRoot): Finding[] => {
 	const findings = [];
 	const skills = skillsOf(root);
 	const available = { scripts: scriptsOf(root), agents: agentsOf(root) };
-	const names = new Map();
+	const names = new Map<string, string>();
 
 	for (const skill of skills) {
 		const where = displayed(root, skill.path);
@@ -777,14 +778,14 @@ export const validateSkills = (root: string = repositoryRoot): Finding[] => {
 
 	for (const [name, directory] of names) {
 		const kinds = covered.get(name);
-		const where = `.claude/skills/${String(directory)}/SKILL.md`;
+		const where = `.claude/skills/${directory}/SKILL.md`;
 
 		if (kinds === undefined) {
 			findings.push(
 				warning(
 					'eval-absent',
 					where,
-					`No eval suite; write \`tools/claude/skill-evals/${String(name)}.eval.json\`.`,
+					`No eval suite; write \`tools/claude/skill-evals/${name}.eval.json\`.`,
 				),
 			);
 
@@ -797,7 +798,7 @@ export const validateSkills = (root: string = repositoryRoot): Finding[] => {
 			findings.push(
 				warning(
 					'eval-coverage',
-					`tools/claude/skill-evals/${String(name)}.eval.json`,
+					`tools/claude/skill-evals/${name}.eval.json`,
 					`No ${kind} case; a skill without one has no stated edge on that side.`,
 				),
 			);

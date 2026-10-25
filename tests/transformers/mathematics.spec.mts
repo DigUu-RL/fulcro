@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { compileFunction } from 'node:vm';
 
 import typescript from 'typescript';
 import { assert, beforeAll, describe, expect, it } from 'vitest';
@@ -47,8 +48,13 @@ interface Compiled {
  */
 const compile = (fileName: string): Compiled => {
 	const fixture: string = path.resolve(HERE, fileName);
-	const reflect = require('@fulcro/reflect/transformer').default as TransformerEntry;
-	const collections = require('@fulcro/collections/transformer').default as TransformerEntry;
+
+	const reflect = (require('@fulcro/reflect/transformer') as { readonly default: TransformerEntry })
+		.default;
+
+	const collections = (
+		require('@fulcro/collections/transformer') as { readonly default: TransformerEntry }
+	).default;
 
 	const program: typescript.Program = typescript.createProgram([fixture], {
 		target: typescript.ScriptTarget.ES2022,
@@ -94,17 +100,21 @@ const compile = (fileName: string): Compiled => {
 	const module = { exports: {} as Record<string, unknown> };
 
 	if (refused.length === 0) {
-		new Function(
-			'require',
-			'module',
-			'exports',
-			typescript.transpileModule(emitted, {
-				compilerOptions: {
-					target: typescript.ScriptTarget.ES2022,
-					module: typescript.ModuleKind.CommonJS,
-				},
-			}).outputText,
-		)(require, module, module.exports);
+		const runnable: string = typescript.transpileModule(emitted, {
+			compilerOptions: {
+				target: typescript.ScriptTarget.ES2022,
+				module: typescript.ModuleKind.CommonJS,
+			},
+		}).outputText;
+
+		// Compiled as the body of a CommonJS module, with the three names one sees.
+		const run = compileFunction(runnable, ['require', 'module', 'exports']) as (
+			require: NodeJS.Require,
+			module: { exports: Record<string, unknown> },
+			exports: Record<string, unknown>,
+		) => void;
+
+		run(require, module, module.exports);
 	}
 
 	return { emitted, refused, exports: module.exports };
@@ -170,7 +180,7 @@ describe('the mathematics types and constantOf across the package boundary', () 
 
 		const { line } = file.getLineAndCharacterOfPosition(refusal.start ?? 0);
 
-		expect(String(refusal.messageText)).toContain(
+		expect(typescript.flattenDiagnosticMessageText(refusal.messageText, '\n')).toContain(
 			"'Matrix' is only declared in a declaration file, whose value the compiler cannot see",
 		);
 

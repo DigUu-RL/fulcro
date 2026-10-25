@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { compileFunction } from 'node:vm';
 
 import typescript from 'typescript';
 
@@ -36,11 +37,17 @@ export interface CompiledStructs {
  * @throws {Error} When the fixture does not compile cleanly.
  */
 export const compileStructs = (): CompiledStructs => {
-	const reflect = require('@fulcro/reflect/transformer').default as (
-		program: typescript.Program,
-	) => typescript.TransformerFactory<typescript.SourceFile>;
+	const reflect = (
+		require('@fulcro/reflect/transformer') as {
+			readonly default: (
+				program: typescript.Program,
+			) => typescript.TransformerFactory<typescript.SourceFile>;
+		}
+	).default;
 
-	const collections = require('@fulcro/collections/transformer').default as typeof reflect;
+	const collections = (
+		require('@fulcro/collections/transformer') as { readonly default: typeof reflect }
+	).default;
 
 	const program: typescript.Program = typescript.createProgram([FIXTURE], {
 		target: typescript.ScriptTarget.ES2022,
@@ -87,7 +94,14 @@ export const compileStructs = (): CompiledStructs => {
 
 	const module = { exports: {} as Record<string, unknown> };
 
-	new Function('require', 'module', 'exports', runnable)(require, module, module.exports);
+	// Compiled as the body of a CommonJS module, with the three names one sees.
+	const run = compileFunction(runnable, ['require', 'module', 'exports']) as (
+		require: NodeJS.Require,
+		module: { exports: Record<string, unknown> },
+		exports: Record<string, unknown>,
+	) => void;
+
+	run(require, module, module.exports);
 
 	return { emitted, exports: module.exports };
 };

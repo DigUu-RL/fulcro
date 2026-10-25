@@ -2,6 +2,8 @@ import { createRequire } from 'node:module';
 
 import { beforeAll, describe, expect, it } from 'vitest';
 
+import type * as FulcroTypes from '@fulcro/types';
+
 import { type CompiledStructs, compileStructs } from '@/tests/transformers/struct.fixture.mts';
 
 /**
@@ -49,7 +51,7 @@ describe('layoutOf over the structs of @fulcro/types', () => {
 
 	it('should read a struct shipped as a declaration only, in its declared order', () => {
 		const { DoublePrecisionFloat, SinglePrecisionFloat, UnsignedInteger, struct } =
-			require('@fulcro/types') as typeof import('@fulcro/types');
+			require('@fulcro/types') as typeof FulcroTypes;
 
 		// The same fields in the same order as `struct.declared.d.ts`: what that
 		// declaration would have been built from.

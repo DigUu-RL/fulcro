@@ -38,14 +38,20 @@ let emitted = '';
  * @returns The emitted JavaScript.
  */
 const compileFixture = (): string => {
-	const reflect = require('@fulcro/reflect/transformer')
-		.default as typescript.TransformerFactory<typescript.SourceFile> extends never
-		? never
-		: (program: typescript.Program) => typescript.TransformerFactory<typescript.SourceFile>;
+	const reflect = (
+		require('@fulcro/reflect/transformer') as {
+			readonly default: (
+				program: typescript.Program,
+			) => typescript.TransformerFactory<typescript.SourceFile>;
+		}
+	).default;
 
-	const collections = require('@fulcro/collections/transformer').default as typeof reflect;
+	const collections = (
+		require('@fulcro/collections/transformer') as { readonly default: typeof reflect }
+	).default;
 
-	const memory = require('@fulcro/memory/transformer').default as typeof reflect;
+	const memory = (require('@fulcro/memory/transformer') as { readonly default: typeof reflect })
+		.default;
 
 	const program: typescript.Program = typescript.createProgram([FIXTURE], {
 		target: typescript.ScriptTarget.ES2022,
@@ -147,11 +153,16 @@ describe('the plugins on one file', () => {
 			'coexistence.rejected.sample.ts',
 		);
 
-		const reflect = require('@fulcro/reflect/transformer').default as (
-			program: typescript.Program,
-		) => typescript.TransformerFactory<typescript.SourceFile>;
+		const reflect = (
+			require('@fulcro/reflect/transformer') as {
+				readonly default: (
+					program: typescript.Program,
+				) => typescript.TransformerFactory<typescript.SourceFile>;
+			}
+		).default;
 
-		const memory = require('@fulcro/memory/transformer').default as typeof reflect;
+		const memory = (require('@fulcro/memory/transformer') as { readonly default: typeof reflect })
+			.default;
 
 		const program: typescript.Program = typescript.createProgram([rejected], {
 			target: typescript.ScriptTarget.ES2022,

@@ -2,6 +2,8 @@ import { createRequire } from 'node:module';
 
 import { beforeAll, describe, expect, it } from 'vitest';
 
+import type * as FulcroTypes from '@fulcro/types';
+
 import { type CompiledStructs, compileStructs } from '@/tests/transformers/struct.fixture.mts';
 
 /**
@@ -53,7 +55,7 @@ describe('offsetOf over the structs of @fulcro/types', () => {
 
 	it('should place a struct shipped as a declaration only by its declared order', () => {
 		const { DoublePrecisionFloat, SinglePrecisionFloat, UnsignedInteger, struct } =
-			require('@fulcro/types') as typeof import('@fulcro/types');
+			require('@fulcro/types') as typeof FulcroTypes;
 
 		const Shipped = struct('Shipped', {
 			small: SinglePrecisionFloat,

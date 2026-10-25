@@ -72,6 +72,15 @@ interface PackReport {
 	readonly files: readonly { readonly path: string }[];
 }
 
+/**
+ * Tells whether a value npm reported is a list, keeping its elements unknown:
+ * `Array.isArray` alone narrows to `any[]`.
+ *
+ * @param value The value.
+ * @returns `true` for an array.
+ */
+const isList = (value: unknown): value is readonly unknown[] => Array.isArray(value);
+
 /** Root of the workspace, which this file sits one level below. */
 const WORKSPACE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -114,7 +123,7 @@ const readPackedFiles = (): void => {
 	for (const report of reports) {
 		// A third shape would otherwise populate nothing and leave every
 		// assertion below passing over an empty map.
-		if (typeof report?.name !== 'string' || !Array.isArray(report.files)) {
+		if (typeof report?.name !== 'string' || !isList(report.files)) {
 			throw new Error(
 				`npm pack answered in a shape this suite does not recognise, which has happened before. The output began: ${output.slice(0, 200)}`,
 			);
@@ -365,12 +374,8 @@ describe('@fulcro/reflect', () => {
 		expect(() => alignOf()).toThrow('only exists at compile time');
 		expect(() => layoutOf()).toThrow('only exists at compile time');
 
-		expect(() => offsetOf('x')).toThrow(
-			expect.objectContaining({
-				code: 'FULCRO4009',
-				message: expect.stringContaining('offsetOf<T>("x")'),
-			}),
-		);
+		expect(() => offsetOf('x')).toThrow(expect.objectContaining({ code: 'FULCRO4009' }));
+		expect(() => offsetOf('x')).toThrow('offsetOf<T>("x")');
 	});
 });
 
@@ -531,9 +536,9 @@ describe('@fulcro/types', () => {
 			'@fulcro/types/unplugin',
 			'@fulcro/types/language-service',
 		]) {
-			expect(() => require(entry)).toThrow(
-				expect.objectContaining({ code: 'ERR_PACKAGE_PATH_NOT_EXPORTED' }),
-			);
+			expect(() => {
+				require(entry);
+			}).toThrow(expect.objectContaining({ code: 'ERR_PACKAGE_PATH_NOT_EXPORTED' }));
 		}
 	});
 
@@ -640,12 +645,10 @@ describe('@fulcro/errors', () => {
 		const { SignedInteger } = await import('@fulcro/types');
 		const Int32 = SignedInteger(32);
 
-		expect(() => Int32.add(Int32.maximum, Int32.from(1))).toThrow(
-			expect.objectContaining({
-				code: 'FULCRO6031',
-				message: expect.stringMatching(/^FULCRO6031: /),
-			}),
-		);
+		const overflow = (): unknown => Int32.add(Int32.maximum, Int32.from(1));
+
+		expect(overflow).toThrow(expect.objectContaining({ code: 'FULCRO6031' }));
+		expect(overflow).toThrow(/^FULCRO6031: /);
 	});
 
 	it("should reach a consumer through @fulcro/parallel's build", async () => {

@@ -15,6 +15,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { frontmatterOf } from './frontmatter.mts';
+import { isRecord, readJsonObject } from './json.mts';
 
 /**
  * The repository root, found from this file rather than from the process.
@@ -282,16 +283,7 @@ export const ruleFixturesOf = (root: string = repositoryRoot): RuleFixture[] => 
 		.map((file) => {
 			const full = path.join(base, file);
 
-			try {
-				return {
-					file,
-					path: full,
-					document: JSON.parse(fileSystem.readFileSync(full, 'utf8')),
-					problem: null,
-				};
-			} catch (failure) {
-				return { file, path: full, document: null, problem: String(failure) };
-			}
+			return { file, path: full, ...readJsonObject(full) };
 		});
 };
 
@@ -328,21 +320,7 @@ export const evalsOf = (root: string = repositoryRoot): Evals[] => {
 		.map((file) => {
 			const full = path.join(base, file);
 
-			try {
-				return {
-					file,
-					path: full,
-					document: JSON.parse(fileSystem.readFileSync(full, 'utf8')),
-					problem: null,
-				};
-			} catch (failure) {
-				return {
-					file,
-					path: full,
-					document: null,
-					problem: String(failure),
-				};
-			}
+			return { file, path: full, ...readJsonObject(full) };
 		});
 };
 
@@ -369,23 +347,7 @@ export const settingsOf = (
 		return { name, path: full, present: false, document: null, problem: null };
 	}
 
-	try {
-		return {
-			name,
-			path: full,
-			present: true,
-			document: JSON.parse(fileSystem.readFileSync(full, 'utf8')),
-			problem: null,
-		};
-	} catch (failure) {
-		return {
-			name,
-			path: full,
-			present: true,
-			document: null,
-			problem: String(failure),
-		};
-	}
+	return { name, path: full, present: true, ...readJsonObject(full) };
 };
 
 /**
@@ -399,9 +361,9 @@ export const scriptsOf = (root: string = repositoryRoot): Set<string> => {
 
 	if (!exists(manifest)) return new Set();
 
-	const document = JSON.parse(fileSystem.readFileSync(manifest, 'utf8'));
+	const scripts: unknown = readJsonObject(manifest).document?.scripts;
 
-	return new Set(Object.keys(document.scripts ?? {}));
+	return new Set(isRecord(scripts) ? Object.keys(scripts) : []);
 };
 
 /**

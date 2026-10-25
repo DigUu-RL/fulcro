@@ -28,9 +28,13 @@ const FIXTURE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'layo
 let emitted = '';
 
 beforeAll(() => {
-	const reflect = require('@fulcro/reflect/transformer').default as (
-		program: typescript.Program,
-	) => typescript.TransformerFactory<typescript.SourceFile>;
+	const reflect = (
+		require('@fulcro/reflect/transformer') as {
+			readonly default: (
+				program: typescript.Program,
+			) => typescript.TransformerFactory<typescript.SourceFile>;
+		}
+	).default;
 
 	const program: typescript.Program = typescript.createProgram([FIXTURE], {
 		target: typescript.ScriptTarget.ES2022,
