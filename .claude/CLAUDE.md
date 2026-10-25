@@ -60,7 +60,10 @@ declarations. `tsc` only type-checks: `tsconfig.base.json` sets `noEmit`. The
 configuration follows midnight-indigo-ui's to the letter, with two deliberate
 exceptions: `erasableSyntaxOnly` stays off, because the packages support their
 consumers' enums, and `lib` is `ES2024`, for `Promise.withResolvers` and
-resizable `ArrayBuffer`s. Imports go through the `@/` alias, which is the
+resizable `ArrayBuffer`s. Every package but `@fulcro/parallel`, which speaks to
+the browser's `Worker`, also leaves the DOM out of its `lib`: nothing else calls
+a browser API, and the DOM declarations made every program the transformers
+build over two times slower. Imports go through the `@/` alias, which is the
 package root (`@/src/...`).
 
 Node 22.12 is the floor: a compiler plugin loader that still calls `require`
