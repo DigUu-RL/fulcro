@@ -699,6 +699,18 @@ describe('@fulcro/parallel', () => {
 		expect(child.token.signal).toBeInstanceOf(AbortSignal);
 		expect(child.token.signal.reason).toBe('stop');
 	});
+
+	it('should resolve its worker entry by name, and refuse to run outside a worker', async () => {
+		// The pool hands this subpath to `new Worker`. Loaded anywhere else there
+		// is no parent to listen to, and it says so rather than waiting forever.
+		// That holds because Vitest runs this file in a child process, not a
+		// worker thread: there, `parentPort` would be Vitest's own.
+		expect(resolve('@fulcro/parallel/worker')).toMatch(/[\\/]dist[\\/]worker[\\/]entry\.js$/);
+
+		await expect(import('@fulcro/parallel/worker')).rejects.toMatchObject({
+			code: 'FULCRO3002',
+		});
+	});
 });
 
 describe('@fulcro/functions', () => {
@@ -1110,5 +1122,36 @@ describe('@fulcro/reflect/transformer', () => {
 		for (const bundler of BUNDLERS) {
 			expect(typeof adapters[bundler as keyof typeof adapters]).toBe('function');
 		}
+	});
+});
+
+describe('@fulcro/transform-core', () => {
+	it('should expose the machinery the transformers share, and nothing else', async () => {
+		const entry = await import('@fulcro/transform-core');
+
+		// The three transformers import it by name, so this is the list they
+		// depend on; anything else showing up here would be a surface nobody agreed.
+		expect(Object.keys(entry).sort()).toEqual([
+			'IDENTIFIER_PATTERN',
+			'buildStructuralTest',
+			'createFileTransformer',
+			'createTransformer',
+			'isOwnedCall',
+			'isTupleType',
+			'utilityModuleSegment',
+		]);
+	});
+
+	it('should expose the bundler adapter factory from its own subpath, as a .js module', async () => {
+		// `./unplugin` shipped as `.mjs` before every package became an ES
+		// module; a path left behind in the exports map would fail here.
+		expect(resolve('@fulcro/transform-core/unplugin')).toMatch(
+			/[\\/]dist[\\/]unplugin[\\/]index\.js$/,
+		);
+
+		const entry = await import('@fulcro/transform-core/unplugin');
+
+		expect(Object.keys(entry)).toEqual(['createTransformerUnplugin']);
+		expect(typeof entry.createTransformerUnplugin).toBe('function');
 	});
 });
