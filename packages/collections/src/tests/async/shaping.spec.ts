@@ -1,7 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import { AsyncSequenceCollection } from '@/src/collections/async';
 import { SequenceCollection } from '@/src/collections/sequence';
+import type { TypeTest } from '@/src/@types';
+import type { AsyncSequence } from '@/src/@types/collections/async';
 
 /**
  * Behavior suite for the shaping operators on the asynchronous sequence:
@@ -391,5 +393,35 @@ describe('tap', () => {
 			.toArray();
 
 		expect(positions).toEqual([0, 1, 2]);
+	});
+});
+
+describe('what ofType and cast infer', () => {
+	class Admin {
+		constructor(public readonly name: string) {}
+	}
+
+	interface Account {
+		readonly id: number;
+	}
+
+	const accountTest: TypeTest<Account> = {
+		matches: (value) => typeof value === 'object' && value !== null && 'id' in value,
+	};
+
+	const mixed = AsyncSequenceCollection.from<Admin | Account | string | number>([]);
+
+	it('should narrow ofType to the type each of its four forms names', () => {
+		expectTypeOf(mixed.ofType('string')).toEqualTypeOf<AsyncSequence<string>>();
+		expectTypeOf(mixed.ofType(Admin)).toEqualTypeOf<AsyncSequence<Admin>>();
+		expectTypeOf(mixed.ofType<Admin>()).toEqualTypeOf<AsyncSequence<Admin>>();
+		expectTypeOf(mixed.ofType(accountTest)).toEqualTypeOf<AsyncSequence<Account>>();
+	});
+
+	it('should re-type cast to the type each of its four forms names', () => {
+		expectTypeOf(mixed.cast('number')).toEqualTypeOf<AsyncSequence<number>>();
+		expectTypeOf(mixed.cast(Admin)).toEqualTypeOf<AsyncSequence<Admin>>();
+		expectTypeOf(mixed.cast<Admin>()).toEqualTypeOf<AsyncSequence<Admin>>();
+		expectTypeOf(mixed.cast(accountTest)).toEqualTypeOf<AsyncSequence<Account>>();
 	});
 });

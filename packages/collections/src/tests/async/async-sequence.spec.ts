@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import { AsyncSequenceCollection } from '@/src/collections/async';
+import type { AsyncSequence } from '@/src/@types/collections/async';
 
 /**
  * A source that produces over time and reports how far it has been pulled.
@@ -342,5 +343,31 @@ describe('cancellation', () => {
 		controller.abort();
 
 		await expect(sequence.toArray({ signal: controller.signal })).rejects.toThrow();
+	});
+});
+
+describe('what from infers', () => {
+	it('should take the element type of a synchronous source', () => {
+		expectTypeOf(AsyncSequenceCollection.from([1, 2])).toEqualTypeOf<AsyncSequence<number>>();
+	});
+
+	it('should take what the promises of a synchronous source resolve to', () => {
+		expectTypeOf(AsyncSequenceCollection.from([Promise.resolve('a')])).toEqualTypeOf<
+			AsyncSequence<string>
+		>();
+	});
+
+	it('should take one element type from values and promises mixed', () => {
+		const mixed: (number | Promise<number>)[] = [1, Promise.resolve(2)];
+
+		expectTypeOf(AsyncSequenceCollection.from(mixed)).toEqualTypeOf<AsyncSequence<number>>();
+	});
+
+	it('should take the element type of an asynchronous source', () => {
+		const produce = async function* (): AsyncGenerator<string> {
+			yield await Promise.resolve('a');
+		};
+
+		expectTypeOf(AsyncSequenceCollection.from(produce())).toEqualTypeOf<AsyncSequence<string>>();
 	});
 });

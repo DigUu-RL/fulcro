@@ -1,6 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import { SequenceCollection } from '@/src/collections/sequence';
+import type { TypeTest } from '@/src/@types';
+import type { Sequence } from '@/src/@types/collections/sequence';
 
 /**
  * Behaviour suite for the operators that shape a sequence rather than reduce
@@ -765,5 +767,35 @@ describe('tap', () => {
 		const values = SequenceCollection.from([1, 2, 3, 4]).tap(() => {});
 
 		expect(values.count()).toBe(4);
+	});
+});
+
+describe('what ofType and cast infer', () => {
+	class Admin {
+		constructor(public readonly name: string) {}
+	}
+
+	interface Account {
+		readonly id: number;
+	}
+
+	const accountTest: TypeTest<Account> = {
+		matches: (value) => typeof value === 'object' && value !== null && 'id' in value,
+	};
+
+	const mixed = SequenceCollection.from<Admin | Account | string | number>([]);
+
+	it('should narrow ofType to the type each of its four forms names', () => {
+		expectTypeOf(mixed.ofType('string')).toEqualTypeOf<Sequence<string>>();
+		expectTypeOf(mixed.ofType(Admin)).toEqualTypeOf<Sequence<Admin>>();
+		expectTypeOf(mixed.ofType<Admin>()).toEqualTypeOf<Sequence<Admin>>();
+		expectTypeOf(mixed.ofType(accountTest)).toEqualTypeOf<Sequence<Account>>();
+	});
+
+	it('should re-type cast to the type each of its four forms names', () => {
+		expectTypeOf(mixed.cast('number')).toEqualTypeOf<Sequence<number>>();
+		expectTypeOf(mixed.cast(Admin)).toEqualTypeOf<Sequence<Admin>>();
+		expectTypeOf(mixed.cast<Admin>()).toEqualTypeOf<Sequence<Admin>>();
+		expectTypeOf(mixed.cast(accountTest)).toEqualTypeOf<Sequence<Account>>();
 	});
 });

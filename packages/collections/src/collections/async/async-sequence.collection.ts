@@ -111,27 +111,18 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	}
 
 	/**
-	 * Creates a sequence over a source that produces over time.
+	 * Creates a sequence over a source that produces over time, or over a
+	 * synchronous one, so that it can be used where an asynchronous one is
+	 * wanted.
+	 *
+	 * Elements of a synchronous source that are promises are awaited on the way
+	 * through, which covers the common `ids.map(load)` shape.
 	 *
 	 * @template T Type of the elements contained in the sequence.
-	 * @param source Asynchronous iterable wrapped by the sequence.
+	 * @param source Asynchronous iterable, or iterable of values and promises,
+	 * wrapped by the sequence.
 	 * @returns The created sequence.
 	 */
-	static from<T>(source: AsyncIterable<T>): AsyncSequence<T>;
-
-	/**
-	 * Creates a sequence over a synchronous source, so that it can be used
-	 * where an asynchronous one is wanted.
-	 *
-	 * Elements that are promises are awaited on the way through, which covers
-	 * the common `ids.map(load)` shape.
-	 *
-	 * @template T Type of the elements contained in the sequence.
-	 * @param source Iterable wrapped by the sequence.
-	 * @returns The created sequence.
-	 */
-	static from<T>(source: Iterable<T | PromiseLike<T>>): AsyncSequence<T>;
-
 	static from<T>(source: AsyncIterable<T> | Iterable<T | PromiseLike<T>>): AsyncSequence<T> {
 		return new AsyncSequenceCollection<T>(AsyncSequenceCollection.normalize<T>(source));
 	}
@@ -798,30 +789,15 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	ofType<K extends keyof TypeNames>(type: K): AsyncSequence<Narrowed<T, TypeNames[K]>>;
 
 	/**
-	 * Keeps only the elements built from a given class.
-	 *
-	 * @template R Type produced by the constructor.
-	 * @param type Constructor the elements are tested against.
-	 * @returns A deferred sequence narrowed to that type.
-	 */
-	ofType<R>(type: Constructor<R>): AsyncSequence<Narrowed<T, R>>;
-
-	/**
-	 * Keeps only the elements passing a test over their shape.
-	 *
-	 * @template R Type a passing value is taken to be.
-	 * @param test Test over the shape of each element.
-	 * @returns A deferred sequence narrowed to that type.
-	 */
-	ofType<R>(test: TypeTest<R>): AsyncSequence<Narrowed<T, R>>;
-
-	/**
-	 * Keeps only the elements of the given type, written as a type.
+	 * Keeps only the elements of a class, of a shape, or of a type written as a
+	 * type argument.
 	 *
 	 * @template R Type to keep.
+	 * @param type Constructor the elements are tested against, or a test over
+	 * their shape; omitted when the type argument names the type.
 	 * @returns A deferred sequence narrowed to that type.
 	 */
-	ofType<R>(): AsyncSequence<Narrowed<T, R>>;
+	ofType<R>(type?: Constructor<R> | TypeTest<R>): AsyncSequence<Narrowed<T, R>>;
 
 	ofType(type?: TypeToken): AsyncSequence<unknown> {
 		const source: AsyncIterable<T> = this.source;
@@ -849,30 +825,16 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	cast<K extends keyof TypeNames>(type: K): AsyncSequence<TypeNames[K]>;
 
 	/**
-	 * Re-types the sequence to a class.
-	 *
-	 * @template R Type produced by the constructor.
-	 * @param type Constructor every element must be an instance of.
-	 * @returns A deferred sequence typed as that type.
-	 */
-	cast<R>(type: Constructor<R>): AsyncSequence<R>;
-
-	/**
-	 * Re-types the sequence, checking each element against a shape test.
+	 * Re-types the sequence to a class, to a shape, or to a type written as a
+	 * type argument.
 	 *
 	 * @template R Type every element must be.
-	 * @param test Test over the shape of each element.
+	 * @param type Constructor every element must be an instance of, or a test
+	 * over the shape of each element; omitted when the type argument names the
+	 * type.
 	 * @returns A deferred sequence typed as that type.
 	 */
-	cast<R>(test: TypeTest<R>): AsyncSequence<R>;
-
-	/**
-	 * Re-types the sequence to the given type, written as a type.
-	 *
-	 * @template R Type every element must be.
-	 * @returns A deferred sequence typed as that type.
-	 */
-	cast<R>(): AsyncSequence<R>;
+	cast<R>(type?: Constructor<R> | TypeTest<R>): AsyncSequence<R>;
 
 	cast(type?: TypeToken): AsyncSequence<unknown> {
 		const source: AsyncIterable<T> = this.source;

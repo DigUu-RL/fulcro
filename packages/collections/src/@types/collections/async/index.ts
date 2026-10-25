@@ -376,35 +376,22 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	ofType<K extends keyof TypeNames>(type: K): AsyncSequence<Narrowed<T, TypeNames[K]>>;
 
 	/**
-	 * Keeps only the elements built from a given class.
+	 * Keeps only the elements of a class, of a shape, or of a type written as a
+	 * type argument, narrowing the sequence to it.
 	 *
-	 * @template R Type produced by the constructor.
-	 * @param type Constructor the elements are tested against.
-	 * @returns A deferred sequence narrowed to that type.
-	 */
-	ofType<R>(type: Constructor<R>): AsyncSequence<Narrowed<T, R>>;
-
-	/**
-	 * Keeps only the elements passing a test over their shape.
-	 *
-	 * @template R Type a passing value is taken to be.
-	 * @param test Test over the shape of each element.
-	 * @returns A deferred sequence narrowed to that type.
-	 */
-	ofType<R>(test: TypeTest<R>): AsyncSequence<Narrowed<T, R>>;
-
-	/**
-	 * Keeps only the elements of the given type, written as a type.
-	 *
-	 * Needs the transformer of this package, which resolves the type argument
-	 * into a runtime test — writing an interface out as the checks its
-	 * properties imply.
+	 * The forms are those of `Sequence.ofType`: a constructor the elements are
+	 * tested against, a test over their shape, or nothing, with the type
+	 * argument resolved by the transformer of this package into a runtime test
+	 * — writing an interface out as the checks its properties imply.
 	 *
 	 * @template R Type to keep.
+	 * @param type Constructor the elements are tested against, or a test over
+	 * their shape; omitted when the type argument names the type.
 	 * @returns A deferred sequence narrowed to that type.
-	 * @throws {Error} When the call was not resolved at compile time.
+	 * @throws {Error} When the type was omitted and the call was not resolved at
+	 * compile time.
 	 */
-	ofType<R>(): AsyncSequence<Narrowed<T, R>>;
+	ofType<R>(type?: Constructor<R> | TypeTest<R>): AsyncSequence<Narrowed<T, R>>;
 
 	/**
 	 * Re-types the sequence, refusing any element that disagrees.
@@ -422,34 +409,19 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	cast<K extends keyof TypeNames>(type: K): AsyncSequence<TypeNames[K]>;
 
 	/**
-	 * Re-types the sequence to a class.
-	 *
-	 * @template R Type produced by the constructor.
-	 * @param type Constructor every element must be an instance of.
-	 * @returns A deferred sequence typed as that type.
-	 * @throws {TypeError} When an element is not an instance, as it is read.
-	 */
-	cast<R>(type: Constructor<R>): AsyncSequence<R>;
-
-	/**
-	 * Re-types the sequence, checking each element against a shape test.
+	 * Re-types the sequence to a class, to a shape, or to a type written as a
+	 * type argument, refusing any element that is not of it.
 	 *
 	 * @template R Type every element must be.
-	 * @param test Test over the shape of each element.
+	 * @param type Constructor every element must be an instance of, or a test
+	 * over the shape of each element; omitted when the type argument names the
+	 * type.
 	 * @returns A deferred sequence typed as that type.
-	 * @throws {TypeError} When an element fails the test, as it is read.
+	 * @throws {Error} When the type was omitted and the call was not resolved at
+	 * compile time.
+	 * @throws {TypeError} When an element is not of that type, as it is read.
 	 */
-	cast<R>(test: TypeTest<R>): AsyncSequence<R>;
-
-	/**
-	 * Re-types the sequence to the given type, written as a type.
-	 *
-	 * @template R Type every element must be.
-	 * @returns A deferred sequence typed as that type.
-	 * @throws {Error} When the call was not resolved at compile time.
-	 * @throws {TypeError} When an element fails the check, as it is read.
-	 */
-	cast<R>(): AsyncSequence<R>;
+	cast<R>(type?: Constructor<R> | TypeTest<R>): AsyncSequence<R>;
 
 	/**
 	 * Takes the elements with the largest keys, in descending order.

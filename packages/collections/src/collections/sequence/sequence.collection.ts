@@ -2147,22 +2147,17 @@ export class SequenceCollection<T> implements Sequence<T> {
 	ofType<K extends keyof TypeNames>(type: K): Sequence<Narrowed<T, TypeNames[K]>>;
 
 	/**
-	 * Keeps only the elements built from a given class.
-	 *
-	 * @template R Type produced by the constructor.
-	 * @param type Constructor the elements are tested against.
-	 * @returns A deferred sequence narrowed to that type.
-	 */
-	ofType<R>(type: Constructor<R>): Sequence<Narrowed<T, R>>;
-
-	/**
-	 * Keeps only the elements of the given type, written as a type.
+	 * Keeps only the elements of a class, of a shape, or of a type written as a
+	 * type argument.
 	 *
 	 * @template R Type to keep.
+	 * @param type Constructor the elements are tested against, or a test over
+	 * their shape; omitted when the type argument names the type.
 	 * @returns A deferred sequence narrowed to that type.
-	 * @throws {Error} When the call was not resolved at compile time.
+	 * @throws {Error} When the type was omitted and the call was not resolved at
+	 * compile time.
 	 */
-	ofType<R>(): Sequence<Narrowed<T, R>>;
+	ofType<R>(type?: Constructor<R> | TypeTest<R>): Sequence<Narrowed<T, R>>;
 
 	ofType(type?: TypeToken): Sequence<unknown> {
 		const source: Iterable<T> = this.source;
@@ -2195,23 +2190,19 @@ export class SequenceCollection<T> implements Sequence<T> {
 	cast<K extends keyof TypeNames>(type: K): Sequence<TypeNames[K]>;
 
 	/**
-	 * Re-types the whole sequence to a class.
-	 *
-	 * @template R Type produced by the constructor.
-	 * @param type Constructor every element must be an instance of.
-	 * @returns A deferred sequence typed as that type.
-	 * @throws {TypeError} When an element is not an instance, as it is read.
-	 */
-	cast<R>(type: Constructor<R>): Sequence<R>;
-
-	/**
-	 * Re-types the whole sequence to the given type, written as a type.
+	 * Re-types the whole sequence to a class, to a shape, or to a type written
+	 * as a type argument.
 	 *
 	 * @template R Type every element must be.
+	 * @param type Constructor every element must be an instance of, or a test
+	 * over the shape of each element; omitted when the type argument names the
+	 * type.
 	 * @returns A deferred sequence typed as that type.
-	 * @throws {Error} When the call was not resolved at compile time.
+	 * @throws {Error} When the type was omitted and the call was not resolved at
+	 * compile time.
+	 * @throws {TypeError} When an element is not an instance, as it is read.
 	 */
-	cast<R>(): Sequence<R>;
+	cast<R>(type?: Constructor<R> | TypeTest<R>): Sequence<R>;
 
 	cast(type?: TypeToken): Sequence<unknown> {
 		const source: Iterable<T> = this.source;
