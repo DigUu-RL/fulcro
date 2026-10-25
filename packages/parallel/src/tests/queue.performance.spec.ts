@@ -19,7 +19,13 @@ const TASKS = 50_000;
  *
  * @returns The entry.
  */
-const idleEntry = (): Waiting => ({ start: (): void => {} });
+const idleEntry = (): Waiting => {
+	return {
+		start: (): void => {
+			// The queue is what is measured; starting is the caller's business.
+		},
+	};
+};
 
 describe('what a queue that never empties keeps', () => {
 	it('should hold a bounded number of entries, not one per task ever started', () => {

@@ -381,25 +381,28 @@ describe('the shape check the transformer writes', () => {
 		// A ratio, not a budget: what is asserted is that the generated code is
 		// not doing something pathological, and a loaded machine scales both
 		// sides. The hand-written version below checks exactly the same clauses.
+		// Read as a check meets a record: every field possibly anything.
+		type Unchecked = { readonly [Key in keyof Shaped]?: unknown };
+		type UncheckedItem = { readonly [Key in keyof Shaped['items'][number]]?: unknown };
+
 		const byHand = (value: unknown): boolean => {
-			const order = value as Shaped;
+			if (value === null || typeof value !== 'object') return false;
+
+			const order = value as Unchecked;
 
 			return (
-				order !== null &&
-				typeof order === 'object' &&
 				typeof order.id === 'number' &&
 				typeof order.region === 'string' &&
 				(order.status === 'pending' || order.status === 'paid' || order.status === 'shipped') &&
 				typeof order.total === 'number' &&
 				order.placedAt instanceof Date &&
 				Array.isArray(order.items) &&
-				order.items.every((item) => {
-					return (
-						item !== null &&
-						typeof item === 'object' &&
-						typeof item.sku === 'string' &&
-						typeof item.quantity === 'number'
-					);
+				(order.items as readonly unknown[]).every((item) => {
+					if (item === null || typeof item !== 'object') return false;
+
+					const line = item as UncheckedItem;
+
+					return typeof line.sku === 'string' && typeof line.quantity === 'number';
 				}) &&
 				(order.reference === null || typeof order.reference === 'string')
 			);

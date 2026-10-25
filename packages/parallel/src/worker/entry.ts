@@ -41,7 +41,10 @@ type Incoming = InitMessage | TaskMessage;
 let task: ((value: unknown) => unknown) | null = null;
 
 /** Sends a message back to the pool. */
-let reply: (message: unknown) => void = () => {};
+let reply: (message: unknown) => void = () => {
+	// Replaced as soon as the worker knows how to reach the pool; nothing can be
+	// sent before then, since nothing has been asked.
+};
 
 /** One of this package's own errors, as it crosses to the pool. */
 type CodedFailure = {

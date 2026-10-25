@@ -88,7 +88,9 @@ export const createError = <TCode extends ErrorCode>(
 	// Without this the first frame of every stack would be this function, and
 	// the line a reader wants — where the error was thrown — would be the second.
 	// V8 only; elsewhere the stack keeps the extra frame and nothing else changes.
-	Error.captureStackTrace?.(error, createError);
+	// Asked with `in` because Node's types declare it on every `Error`, while
+	// Firefox and Safari have none.
+	if ('captureStackTrace' in Error) Error.captureStackTrace(error, createError);
 
 	// The class was chosen by the same code the return type is derived from, so
 	// the instance is the one `KindOf` names; the compiler cannot follow a value

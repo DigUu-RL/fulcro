@@ -141,7 +141,9 @@ describe('createFixedBufferStorage', () => {
 				name: 'T',
 				layout: { size: 4 },
 				read: (): number => 0,
-				write: (): void => {},
+				write: (): void => {
+					// Present only so that is is the one member missing.
+				},
 			},
 		],
 	])('should refuse an element type missing %s', (missing, element) => {

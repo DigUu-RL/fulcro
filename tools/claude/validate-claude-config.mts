@@ -264,7 +264,7 @@ const checkSettings = (root: string): Finding[] => {
 			.flatMap((hook) => hook.matcher.split('|').map((name) => name.trim())),
 	);
 
-	const permissions: unknown = settings.document?.permissions;
+	const permissions: unknown = settings.document.permissions;
 
 	const denied: unknown =
 		typeof permissions === 'object' && permissions !== null && 'deny' in permissions

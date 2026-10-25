@@ -251,7 +251,11 @@ describe('join', () => {
 
 			await flush();
 
-			expect(accepted && joined).toBe(false);
+			// Read through a call: both are set inside callbacks, which the compiler
+			// does not follow, so read directly it takes them for still `false`.
+			const acceptedAndJoined = (): boolean => accepted && joined;
+
+			expect(acceptedAndJoined()).toBe(false);
 
 			late.succeed(2);
 			await joining;
@@ -465,7 +469,7 @@ describe('await using', () => {
 			await flush();
 		}
 
-		expect(token?.isCancelled).toBe(true);
+		expect(token.isCancelled).toBe(true);
 		expect(work.token()?.isCancelled).toBe(true);
 	});
 
@@ -583,7 +587,7 @@ describe('types', () => {
 		const scope = createTaskScope();
 
 		expectTypeOf(scope.spawn(() => 1)).toEqualTypeOf<Task<number>>();
-		expectTypeOf(scope.spawn(async () => 'text')).toEqualTypeOf<Task<string>>();
+		expectTypeOf(scope.spawn(() => Promise.resolve('text'))).toEqualTypeOf<Task<string>>();
 
 		void scope.join();
 	});

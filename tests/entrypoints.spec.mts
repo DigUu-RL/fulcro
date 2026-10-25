@@ -106,14 +106,15 @@ const readPackedFiles = (): void => {
 	// died on `JSON.parse(...)` not being iterable.
 	const parsed: unknown = JSON.parse(output);
 
-	const reports: readonly PackReport[] = Array.isArray(parsed)
-		? (parsed as readonly PackReport[])
-		: Object.values(parsed as Record<string, PackReport>);
+	// Read as what an unknown shape would hand over: anything, or nothing.
+	const reports: readonly (Partial<PackReport> | null)[] = Array.isArray(parsed)
+		? (parsed as readonly (Partial<PackReport> | null)[])
+		: Object.values(parsed as Record<string, Partial<PackReport> | null>);
 
 	for (const report of reports) {
 		// A third shape would otherwise populate nothing and leave every
 		// assertion below passing over an empty map.
-		if (typeof report?.name !== 'string' || !Array.isArray(report?.files)) {
+		if (typeof report?.name !== 'string' || !Array.isArray(report.files)) {
 			throw new Error(
 				`npm pack answered in a shape this suite does not recognise, which has happened before. The output began: ${output.slice(0, 200)}`,
 			);
@@ -566,7 +567,7 @@ describe('@fulcro/collections/async', () => {
 		const { AsyncSequenceCollection } = await import('@fulcro/collections/async');
 
 		const result = await AsyncSequenceCollection.from([1, 2, 3, 4])
-			.where(async (value) => value % 2 === 0)
+			.where((value) => Promise.resolve(value % 2 === 0))
 			.select((value) => value * 10)
 			.toArray();
 
@@ -677,7 +678,7 @@ describe('@fulcro/parallel', () => {
 		const { createTaskScope } = await import('@fulcro/parallel');
 		const scope = createTaskScope({ concurrency: 2 });
 
-		const doubled = scope.spawn(async () => 21 * 2);
+		const doubled = scope.spawn(() => Promise.resolve(21 * 2));
 		const broken = scope.spawn(() => Promise.reject(new Error('broken')));
 
 		await expect(scope.join()).rejects.toThrow('broken');
@@ -717,7 +718,7 @@ describe('@fulcro/functions', () => {
 	it('should hand back a result that handles both variants', async () => {
 		const { tryCatch } = await import('@fulcro/functions');
 
-		const loaded = await tryCatch(async () => 21);
+		const loaded = await tryCatch(() => Promise.resolve(21));
 
 		expect(loaded.handle({ success: (value) => value * 2, failure: () => 0 })).toBe(42);
 		expect(loaded.value).toBe(21);
@@ -850,7 +851,7 @@ describe('@fulcro/memory', () => {
 			fixedBlock = scope.allocate(16, 8);
 		}
 
-		expect(() => reading?.get(0)).toThrow(expect.objectContaining({ code: 'FULCRO7024' }));
+		expect(() => reading.get(0)).toThrow(expect.objectContaining({ code: 'FULCRO7024' }));
 
 		expect(() => borrow(owner)).toThrow(
 			expect.objectContaining({
@@ -859,7 +860,7 @@ describe('@fulcro/memory', () => {
 			}),
 		);
 
-		expect([block?.isLive(), fixedBlock?.isLive()]).toEqual([false, false]);
+		expect([block.isLive(), fixedBlock.isLive()]).toEqual([false, false]);
 		expect(pool.allocate(16, 8).isLive()).toBe(true);
 	});
 

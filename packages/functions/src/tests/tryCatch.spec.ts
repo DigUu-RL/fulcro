@@ -31,7 +31,7 @@ describe('tryCatch', () => {
 	});
 
 	it('should run a callback that resolves asynchronously', async () => {
-		const result = await tryCatch(async () => 'value');
+		const result = await tryCatch(() => Promise.resolve('value'));
 
 		expect(result.error).toBeNull();
 		expect(result.value).toBe('value');
@@ -71,11 +71,9 @@ describe('tryCatch', () => {
 	});
 
 	it('should return a result that tells its variant by method', async () => {
-		const succeeded = await tryCatch(async () => 1);
+		const succeeded = await tryCatch(() => Promise.resolve(1));
 
-		const failed = await tryCatch(async () => {
-			throw new Error('x');
-		});
+		const failed = await tryCatch(() => Promise.reject(new Error('x')));
 
 		expect(succeeded.isSuccess()).toBe(true);
 		expect(failed.isFailure()).toBe(true);

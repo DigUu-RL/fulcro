@@ -48,11 +48,14 @@ const isStorage = (value: unknown): value is Storage<unknown> => {
  * @throws {Error} When the storage it returns already has an owner.
  */
 export const own = <T>(create: () => Storage<T>): Owned<T> => {
-	if (typeof create !== 'function') {
+	// Read as what a JavaScript caller can actually pass, which the type rules out.
+	const received: unknown = create;
+
+	if (typeof received !== 'function') {
 		throw createError('FULCRO7017', {
 			operation: 'own',
 			expected: 'a function that creates a storage',
-			received: create === null ? 'null' : typeof create,
+			received: received === null ? 'null' : typeof received,
 		});
 	}
 

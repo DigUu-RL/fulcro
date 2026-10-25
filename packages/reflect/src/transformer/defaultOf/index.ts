@@ -188,7 +188,7 @@ const buildBuiltInDefault = (
 	type: typescript.ObjectType,
 	factory: typescript.NodeFactory,
 ): typescript.Expression | null => {
-	const name: string | undefined = type.symbol?.getName();
+	const name: string | undefined = type.getSymbol()?.getName();
 
 	if (name === undefined) return null;
 
@@ -223,8 +223,9 @@ const buildObjectDefault = (
 	const deeper: BuildState = { ...state, depth: depth + 1 };
 
 	if (isTupleType(type)) {
-		const elements: readonly typescript.Type[] =
-			checker.getTypeArguments(type as typescript.TypeReference) ?? [];
+		const elements: readonly typescript.Type[] = checker.getTypeArguments(
+			type as typescript.TypeReference,
+		);
 
 		return factory.createArrayLiteralExpression(
 			elements.map((element) => buildDefaultExpression(element, deeper)),
@@ -270,7 +271,7 @@ const buildObjectDefault = (
 				property,
 				property.valueDeclaration ??
 					property.declarations?.[0] ??
-					(type.symbol?.declarations?.[0] as typescript.Node),
+					(type.getSymbol()?.declarations?.[0] as typescript.Node),
 			);
 
 			const name: string = property.getName();

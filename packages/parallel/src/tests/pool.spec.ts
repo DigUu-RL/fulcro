@@ -198,7 +198,7 @@ describe('spreading across workers', () => {
 		// two-core runner cannot produce a fourfold saving however correct it is,
 		// so the assertion is scaled to the machine rather than to a number that
 		// happened to hold on the one it was written on.
-		const cores: number = navigator?.hardwareConcurrency ?? 2;
+		const cores: number = navigator.hardwareConcurrency;
 		const workers: number = Math.min(4, cores);
 
 		if (workers < 2) {

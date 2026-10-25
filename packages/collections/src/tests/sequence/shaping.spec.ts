@@ -764,7 +764,9 @@ describe('tap', () => {
 	});
 
 	it('should keep the cardinality of its source', () => {
-		const values = SequenceCollection.from([1, 2, 3, 4]).tap(() => {});
+		const values = SequenceCollection.from([1, 2, 3, 4]).tap(() => {
+			// Nothing to observe: what is asserted is the count that comes out.
+		});
 
 		expect(values.count()).toBe(4);
 	});

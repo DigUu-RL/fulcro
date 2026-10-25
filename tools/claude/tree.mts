@@ -161,7 +161,7 @@ export const ignoredIn = (root: string, references: string[]): Set<string> => {
 	}
 
 	return new Set(
-		(asked.stdout ?? '')
+		asked.stdout
 			.split(/\r?\n/)
 			.map((line) => line.trim())
 			.filter((line) => line !== ''),

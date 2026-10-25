@@ -56,8 +56,10 @@ export const spawnWorker: SpawnWorker = (url: URL): WorkerHandle => {
 			};
 		},
 
-		terminate: async (): Promise<void> => {
+		terminate: (): Promise<void> => {
 			worker.terminate();
+
+			return Promise.resolve();
 		},
 	};
 };

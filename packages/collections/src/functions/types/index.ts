@@ -19,8 +19,13 @@ import type { Predicate, TypeNames, TypeTest, TypeToken } from '@/src/@types';
  * @returns `true` when the token carries its own test.
  */
 export const isTypeTest = <R>(type: TypeToken): type is TypeTest<R> => {
+	// Read as what a JavaScript caller can actually pass: `null` among it.
+	const received: unknown = type;
+
 	return (
-		typeof type === 'object' && type !== null && typeof (type as TypeTest<R>).matches === 'function'
+		typeof received === 'object' &&
+		received !== null &&
+		typeof (received as TypeTest<R>).matches === 'function'
 	);
 };
 

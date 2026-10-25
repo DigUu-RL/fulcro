@@ -426,7 +426,9 @@ const resolveName = (value: unknown, typeId: TypeId): string => {
 		return value.name.length > 0 ? value.name : ANONYMOUS_NAME;
 	}
 
-	const constructorName: unknown = (value as { constructor?: { name?: unknown } })?.constructor
+	// `null` and `undefined` were answered above, so the value has a constructor
+	// to ask about, unless its prototype chain was cut short.
+	const constructorName: unknown = (value as { constructor?: { name?: unknown } }).constructor
 		?.name;
 
 	if (typeof constructorName === 'string' && constructorName.length > 0) {

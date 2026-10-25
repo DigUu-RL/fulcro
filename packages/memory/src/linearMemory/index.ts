@@ -94,12 +94,15 @@ export const openLinearMemory = (
 		return memory;
 	}
 
-	// A typed array or a DataView has a `buffer` too, but it covers only part
-	// of it: taking the whole buffer would put address 0 somewhere other than
-	// where the caller's view starts.
+	// Read as what a JavaScript caller can actually pass, which the type rules
+	// out. A typed array or a DataView has a `buffer` too, but it covers only
+	// part of it: taking the whole buffer would put address 0 somewhere other
+	// than where the caller's view starts.
+	const received: unknown = backing;
+
 	const first: unknown =
-		typeof backing === 'object' && backing !== null && !ArrayBuffer.isView(backing)
-			? (backing as Partial<GrowableMemory>).buffer
+		typeof received === 'object' && received !== null && !ArrayBuffer.isView(received)
+			? (received as Partial<GrowableMemory>).buffer
 			: undefined;
 
 	if (!(first instanceof ArrayBuffer)) {

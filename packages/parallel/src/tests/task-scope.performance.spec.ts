@@ -119,7 +119,7 @@ describe('the concurrency limit', () => {
 			scope.spawn(meter.work(delayOf(index), index === 40));
 		}
 
-		await scope.join().catch(() => {});
+		await expect(scope.join()).rejects.toThrow();
 
 		expect(meter.peak()).toBe(4);
 	});
@@ -150,7 +150,7 @@ describe('work that is not started', () => {
 			scope.spawn(meter.untilCancelled);
 		}
 
-		await scope.join().catch(() => {});
+		await expect(scope.join()).rejects.toThrow();
 
 		expect(meter.started()).toBe(limit);
 	});
@@ -165,7 +165,7 @@ describe('work that is not started', () => {
 
 		await flush();
 		scope.cancel();
-		await scope.join().catch(() => {});
+		await expect(scope.join()).rejects.toThrow();
 
 		expect(meter.started()).toBe(2);
 	});
@@ -197,7 +197,7 @@ describe('what the scope keeps', () => {
 			scope.spawn(meter.untilCancelled);
 		}
 
-		await scope.join().catch(() => {});
+		await expect(scope.join()).rejects.toThrow();
 
 		expect(getEventListeners(scope.token.signal, 'abort')).toHaveLength(0);
 	});
@@ -212,7 +212,7 @@ describe('what the scope keeps', () => {
 
 		await flush();
 		scope.cancel();
-		await scope.join().catch(() => {});
+		await expect(scope.join()).rejects.toThrow();
 
 		expect(getEventListeners(scope.token.signal, 'abort')).toHaveLength(0);
 	});

@@ -157,8 +157,8 @@ describe('operators', () => {
 			.toArray();
 
 		const async = await AsyncSequenceCollection.from([1, 2, 3])
-			.where(async (value) => value > 1)
-			.select(async (value) => value * 2)
+			.where((value) => Promise.resolve(value > 1))
+			.select((value) => Promise.resolve(value * 2))
 			.toArray();
 
 		expect(sync).toEqual([4, 6]);

@@ -45,7 +45,9 @@ describe('what a parent keeps', () => {
 		const source = createCancellationSource();
 
 		for (let index = 0; index < CHILDREN; index++) {
-			using _registration = source.token.onCancelled(() => {});
+			using _registration = source.token.onCancelled(() => {
+				// Never reached: the registration is disposed before any cancellation.
+			});
 		}
 
 		expect(getEventListeners(source.token.signal, 'abort')).toHaveLength(0);

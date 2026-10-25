@@ -366,7 +366,11 @@ const guardedPower = (
 		}
 	}
 
-	return inexact
+	// Read through a call: `cut` sets it, and the compiler does not follow an
+	// assignment made inside a closure, so read directly it is always `false`.
+	const lostDigits = (): boolean => inexact;
+
+	return lostDigits()
 		? { coefficient: result[0] * 10n + 1n, exponent: result[1] - 1 }
 		: { coefficient: result[0], exponent: result[1] };
 };

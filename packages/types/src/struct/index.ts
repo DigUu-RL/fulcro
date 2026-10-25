@@ -286,11 +286,14 @@ const rethrowForField = (name: string, key: string, error: unknown): never => {
  * function, or a method is named like a field, an array index or `~layout`.
  */
 const methodPrototype = (name: string, fields: StructFields, methods: StructMethods): object => {
-	if (typeof methods !== 'object' || methods === null) {
+	// Read as what a JavaScript caller can actually pass, which the type rules out.
+	const received: unknown = methods;
+
+	if (typeof received !== 'object' || received === null) {
 		throw createError('FULCRO6008', {
 			operation: 'struct',
 			name,
-			received: describeKind(methods),
+			received: describeKind(received),
 		});
 	}
 
@@ -393,11 +396,14 @@ export const struct = <TFields extends StructFields, TMethods extends StructMeth
 		});
 	}
 
-	if (typeof fields !== 'object' || fields === null) {
+	// Read as what a JavaScript caller can actually pass, which the type rules out.
+	const receivedFields: unknown = fields;
+
+	if (typeof receivedFields !== 'object' || receivedFields === null) {
 		throw createError('FULCRO6013', {
 			operation: 'struct',
 			name,
-			received: describeKind(fields),
+			received: describeKind(receivedFields),
 		});
 	}
 
@@ -549,10 +555,14 @@ export const struct = <TFields extends StructFields, TMethods extends StructMeth
 		layout: layout as StructType<TFields, TMethods>['layout'],
 
 		from: (source) => {
-			if (typeof source !== 'object' || source === null) {
+			// Read as what a JavaScript caller can actually pass, which the type
+			// rules out.
+			const received: unknown = source;
+
+			if (typeof received !== 'object' || received === null) {
 				throw createError('FULCRO6019', {
 					operation: `${name}.from`,
-					received: describeKind(source),
+					received: describeKind(received),
 				});
 			}
 

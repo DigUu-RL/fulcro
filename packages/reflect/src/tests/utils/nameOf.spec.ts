@@ -7,7 +7,9 @@ class User {
 	email = 'a@b.c';
 	profile = { theme: 'dark' };
 
-	save(): void {}
+	save(): void {
+		// A method to be named, never called.
+	}
 
 	get displayName(): string {
 		return this.email;
@@ -58,7 +60,9 @@ describe('nameOf', () => {
 	});
 
 	it('should name an optionally chained access', () => {
-		const user: User | null = new User();
+		// Through a call, so the compiler keeps the `null` the chain is there for.
+		const find = (): User | null => new User();
+		const user: User | null = find();
 
 		expect(nameOf(() => user?.email)).toBe('email');
 	});

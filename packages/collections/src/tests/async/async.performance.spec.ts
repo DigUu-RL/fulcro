@@ -68,7 +68,7 @@ const delay = (milliseconds: number): Promise<void> => {
 };
 
 describe('laziness', () => {
-	it('should pull nothing while a chain is only described', async () => {
+	it('should pull nothing while a chain is only described', () => {
 		AsyncSequenceCollection.from(instrumentedSource(VOLUME))
 			.where((value) => value > 1)
 			.select((value) => value * 2)
@@ -197,7 +197,7 @@ describe('concurrency actually overlaps', () => {
 		let pulledAtFirstResult = 0;
 
 		const results = AsyncSequenceCollection.from(instrumentedSource(VOLUME)).selectAwait(
-			async (value) => value,
+			(value) => Promise.resolve(value),
 			{ concurrency: 4 },
 		);
 
@@ -214,12 +214,12 @@ describe('concurrency actually overlaps', () => {
 
 		const attempt = AsyncSequenceCollection.from([...Array(VOLUME).keys()])
 			.selectAwait(
-				async (value) => {
+				(value) => {
 					started++;
 
-					if (value === 1) throw new Error('boom');
+					if (value === 1) return Promise.reject(new Error('boom'));
 
-					return value;
+					return Promise.resolve(value);
 				},
 				{ concurrency: 2 },
 			)
@@ -320,7 +320,7 @@ describe('realistic records at volume', () => {
 		let pulledAtFirstResult = 0;
 
 		const enriched = AsyncSequenceCollection.from(readings(50_000)).selectAwait(
-			async (reading) => ({ ...reading, checked: true }),
+			(reading) => Promise.resolve({ ...reading, checked: true }),
 			{ concurrency: 8 },
 		);
 

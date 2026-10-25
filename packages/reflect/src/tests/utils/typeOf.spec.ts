@@ -7,7 +7,9 @@ class User {
 	email = 'a@b.c';
 	profile = { theme: 'dark' };
 
-	save(): void {}
+	save(): void {
+		// A method to be described, never called.
+	}
 
 	get displayName(): string {
 		return this.email;
@@ -84,12 +86,22 @@ describe('typeOf', () => {
 		expect(typeOf(User).typeId).toBe('class');
 
 		expect(typeOf(() => 1).typeId).toBe('function');
-		expect(typeOf(async () => 1).typeId).toBe('async-function');
-		expect(typeOf(function* (): Generator<number> {}).typeId).toBe('generator-function');
+		expect(
+			typeOf(async () => {
+				await Promise.resolve();
+			}).typeId,
+		).toBe('async-function');
+		expect(
+			typeOf(function* (): Generator<number> {
+				// Only the kind of function is asked about.
+			}).typeId,
+		).toBe('generator-function');
 
-		expect(typeOf(async function* (): AsyncGenerator<number> {}).typeId).toBe(
-			'async-generator-function',
-		);
+		expect(
+			typeOf(async function* (): AsyncGenerator<number> {
+				// Only the kind of function is asked about.
+			}).typeId,
+		).toBe('async-generator-function');
 	});
 
 	it('should tell a plain object apart from a class instance', () => {

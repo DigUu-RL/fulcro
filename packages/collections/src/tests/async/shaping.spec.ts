@@ -204,7 +204,7 @@ describe('ofType and cast', () => {
 		expect(await kept.toArray()).toEqual([{ id: 1 }]);
 	});
 
-	it('should refuse an unresolved type argument before reading anything', async () => {
+	it('should refuse an unresolved type argument before reading anything', () => {
 		const { source, pulled } = counted<unknown>([1, 2, 3]);
 
 		expect(() => {

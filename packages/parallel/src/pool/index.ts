@@ -167,6 +167,16 @@ export const createPool = <T, R>(
 	 */
 	let closed = false;
 
+	/**
+	 * Reads `closed` through a call, which control flow does not narrow. A run
+	 * checks it again after every wait, because a close that arrived meanwhile
+	 * is exactly what it is looking for — and read directly, the compiler keeps
+	 * the answer of the check before the wait.
+	 *
+	 * @returns `true` once `close` has been called.
+	 */
+	const isClosed = (): boolean => closed;
+
 	/** The close in progress or finished, which a second call shares. */
 	let closing: Promise<void> | null = null;
 
@@ -297,21 +307,21 @@ export const createPool = <T, R>(
 	const ready = async (operation: string): Promise<Member[]> => {
 		const refuse = (): Error => createError('FULCRO3010', { operation });
 
-		if (closed) throw refuse();
+		if (isClosed()) throw refuse();
 
 		const current: Promise<Member[]> | null = members;
 
 		if (current !== null) {
 			const running: Member[] = await current;
 
-			if (closed) throw refuse();
+			if (isClosed()) throw refuse();
 			if (running.every((member) => member.alive)) return running;
 
 			if (members === current) members = null;
 
 			await retire(running);
 
-			if (closed) throw refuse();
+			if (isClosed()) throw refuse();
 		}
 
 		const starting: Promise<Member[]> = start();
@@ -322,7 +332,7 @@ export const createPool = <T, R>(
 
 		// A close that arrived during the handshake has terminated these
 		// already, and a run handed them would wait on threads that are gone.
-		if (closed) throw refuse();
+		if (isClosed()) throw refuse();
 
 		return started;
 	};
@@ -405,6 +415,14 @@ export const createPool = <T, R>(
 
 		/** The termination of this run's workers, once one has begun. */
 		let discarding: Promise<void> | null = null;
+
+		/**
+		 * Reads `discarding` through a call, for the reason `failed` does: it is
+		 * set inside `discard`, which an abort reaches from its listener.
+		 *
+		 * @returns The termination under way, or `null` while there is none.
+		 */
+		const discardStarted = (): Promise<void> | null => discarding;
 
 		/**
 		 * Gives up every worker of this run.
@@ -490,7 +508,7 @@ export const createPool = <T, R>(
 
 			for (const stop of stops) stop();
 
-			if (outstanding.size > 0 || discarding !== null) await discard();
+			if (outstanding.size > 0 || discardStarted() !== null) await discard();
 		}
 	};
 

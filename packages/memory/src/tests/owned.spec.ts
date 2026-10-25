@@ -63,10 +63,10 @@ describe('Owned[Symbol.dispose]', () => {
 			expect(writing.get(0)).toBe(7);
 		}
 
-		expect(() => writing?.get(0)).toThrow(ended('View.get'));
+		expect(() => writing.get(0)).toThrow(ended('View.get'));
 
 		expect(() => {
-			writing?.set(0, 1);
+			writing.set(0, 1);
 		}).toThrow(ended('View.set'));
 	});
 
@@ -161,7 +161,7 @@ describe('Owned[Symbol.dispose]', () => {
 			kept = second;
 		}
 
-		expect(() => reading?.get(0)).toThrow(ended('ReadOnlyView.get'));
+		expect(() => reading.get(0)).toThrow(ended('ReadOnlyView.get'));
 		expect(() => borrow(kept)).toThrow(disposed('borrow'));
 	});
 
@@ -179,7 +179,7 @@ describe('Owned[Symbol.dispose]', () => {
 
 		// The borrow ended with its owner, and the frame gave back everything it
 		// lent: the stack allocates from its front again.
-		expect(() => writing?.get(0)).toThrow(ended('View.get'));
+		expect(() => writing.get(0)).toThrow(ended('View.get'));
 		expect(stack.allocate(8, 8).bytes.byteOffset).toBe(0);
 	});
 

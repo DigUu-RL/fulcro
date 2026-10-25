@@ -88,6 +88,14 @@ export const mapConcurrent = <T, R>(
 			let delivered = 0;
 			let exhausted = false;
 
+			/**
+			 * Reads `exhausted` back through a call, for the reason `failed` does:
+			 * it is set inside `fill`, which the compiler does not follow.
+			 *
+			 * @returns `true` once the source has nothing more to give.
+			 */
+			const sourceExhausted = (): boolean => exhausted;
+
 			/** Releases the loop, if it is waiting. */
 			const notify = (): void => {
 				const waiting: (() => void) | null = wake;
@@ -199,7 +207,7 @@ export const mapConcurrent = <T, R>(
 					}
 
 					// Nothing to hand over, and nothing left that could produce any.
-					if (exhausted && running.size === 0) return;
+					if (sourceExhausted() && running.size === 0) return;
 
 					// Parked until a completion calls `notify`. Nothing can settle
 					// between the check above and here, because neither awaits.

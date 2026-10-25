@@ -2,7 +2,9 @@ import type { CancellationSource, CancellationToken } from '@/src/@types/index.j
 
 /** What a registration returns when there is nothing left to remove. */
 const NOTHING_TO_RELEASE: Disposable = Object.freeze({
-	[Symbol.dispose]: (): void => {},
+	[Symbol.dispose]: (): void => {
+		// Nothing was registered, so there is nothing to take back.
+	},
 });
 
 /**

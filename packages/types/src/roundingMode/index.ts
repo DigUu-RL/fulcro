@@ -29,6 +29,17 @@ const ROUNDING_MODES: ReadonlySet<string> = new Set<RoundingMode>([
 ]);
 
 /**
+ * A value as JSON, when it has one.
+ *
+ * `undefined`, a function and a symbol have none, whatever the return type of
+ * `JSON.stringify` says; this one says so.
+ *
+ * @param value Value to write.
+ * @returns The JSON, or `undefined` when the value has none.
+ */
+const jsonOf = (value: unknown): string | undefined => JSON.stringify(value);
+
+/**
  * Refuses a mode that is not one of {@link RoundingMode}.
  *
  * A caller passing `'halfUp'` from untyped code would otherwise be rounded by
@@ -47,6 +58,6 @@ export const requireRoundingMode = (operation: string, mode: unknown): RoundingM
 	throw createError('FULCRO6007', {
 		operation,
 		modes: [...ROUNDING_MODES].join(', '),
-		received: JSON.stringify(mode) ?? String(mode),
+		received: jsonOf(mode) ?? String(mode),
 	});
 };

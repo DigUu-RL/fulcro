@@ -153,10 +153,15 @@ const isValueReference = (identifier: typescript.Identifier, root: typescript.No
 		return false;
 	}
 
+	// `parent` is declared as always present, and a source file has none: read
+	// through a call that says so, or the walk could run off the top of a tree
+	// it was handed without `root` in it.
+	const parentOf = (node: typescript.Node): typescript.Node | undefined => node.parent;
+
 	for (
-		let ancestor: typescript.Node = parent;
+		let ancestor: typescript.Node | undefined = parent;
 		ancestor !== root && ancestor !== undefined;
-		ancestor = ancestor.parent
+		ancestor = parentOf(ancestor)
 	) {
 		if (typescript.isTypeNode(ancestor)) return false;
 	}
@@ -246,7 +251,12 @@ const prove = (
 
 	walk(node);
 
-	if (failure !== null) return failure;
+	// Read through a call: `walk` sets it, and the compiler does not follow an
+	// assignment made inside a callback, so read directly it is always `null`.
+	const failed = (): Failure | null => failure;
+	const refused: Failure | null = failed();
+
+	if (refused !== null) return refused;
 
 	let text: string = source.text.slice(start, node.end);
 
