@@ -312,6 +312,16 @@ alignOf<SignedInteger<32>>(); // 4
 sizeOf<Decimal>(); // 16
 ```
 
+The answer is typed as the literal the layout declares, the same one
+`layoutOf<T>()` reports: `sizeOf<SignedInteger<32>>()` has the type `4`, not
+`number`. A variable that accumulates sizes says so:
+
+```ts
+let total: number = sizeOf<SignedInteger<32>>();
+
+total += sizeOf<Decimal>();
+```
+
 With the transformer, each call is replaced by the number, so it costs what a
 literal costs. The numbers describe the binary format of the type — the two
 bytes of a half precision float, the sixteen of a decimal128 — not what a
@@ -511,6 +521,10 @@ is<Settings>(value, {
 	matches: (v) => looksLikeSettings(v),
 });
 ```
+
+A test is typed by the type it vouches for: a `TypeTest<Account>` is not
+accepted where a `TypeTest<Settings>` is asked for, so a test written for one
+type cannot be handed to a check of another.
 
 ### Both need the transformer
 

@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { typeOf } from '@/src/functions/utils/typeOf';
+import { type TypeMetadata, typeOf } from '@/src/functions/utils/typeOf';
 
 /** Class instance, which the native `typeof` reports as a plain object. */
 class User {
@@ -257,5 +257,13 @@ describe('typeOf<T>()', () => {
 
 	it('should refuse the generic form when nothing resolved it', () => {
 		expect(() => (typeOf as () => unknown)()).toThrow(/was not resolved at compile time/);
+	});
+});
+
+describe('what typeOf declares for a type', () => {
+	it('should return metadata of the type it was asked about', () => {
+		expectTypeOf(typeOf<Order>).returns.toEqualTypeOf<TypeMetadata<Order>>();
+		expectTypeOf<TypeMetadata<Order>>().toExtend<TypeMetadata>();
+		expectTypeOf<TypeMetadata<Order>>().not.toExtend<TypeMetadata<User>>();
 	});
 });

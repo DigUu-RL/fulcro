@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import type { FieldOf } from '@/src/functions/utils/layout';
 import { offsetOf } from '@/src/functions/utils/offsetOf';
 
 /**
@@ -111,10 +112,9 @@ describe('offsetOf', () => {
 	});
 
 	it('should leave a generic parameter to throw, having nothing substituted yet', () => {
-		// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- forwarded to the call the transformer resolves from it
-		const locate = <T extends Mixed>(): number => offsetOf<T>('flag');
+		const locate = <T extends Mixed>(field: FieldOf<T>): number => offsetOf<T>(field);
 
-		expect(() => locate<Mixed>()).toThrow(
+		expect(() => locate<Mixed>('flag')).toThrow(
 			'a generic parameter has no layout until it is substituted',
 		);
 	});

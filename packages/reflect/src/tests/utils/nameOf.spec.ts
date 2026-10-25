@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { nameOf } from '@/src/functions/utils/nameOf';
+import { nameOf, type TypeName } from '@/src/functions/utils/nameOf';
 
 /** Shape carrying a property, a nested one, a method and an accessor. */
 class User {
@@ -103,5 +103,13 @@ describe('nameOf', () => {
 		expect(nameOf('x')).toBe('String');
 		expect(nameOf(new User())).toBe('User');
 		expect(nameOf(null)).toBe('null');
+	});
+});
+
+describe('what nameOf declares', () => {
+	it('should return a name carrying the type it names, usable as a string', () => {
+		expectTypeOf<ReturnType<typeof nameOf<User>>>().toEqualTypeOf<TypeName<User>>();
+		expectTypeOf<TypeName<User>>().toExtend<string>();
+		expectTypeOf<TypeName<User>>().not.toExtend<TypeName<number>>();
 	});
 });

@@ -1,4 +1,4 @@
-import { unresolvedLayout, type WithLayout } from '@/src/functions/utils/layout';
+import { type TypeLayout, unresolvedLayout, type WithLayout } from '@/src/functions/utils/layout';
 
 /**
  * The size of a type in memory, in bytes, as the type declares it.
@@ -22,11 +22,10 @@ import { unresolvedLayout, type WithLayout } from '@/src/functions/utils/layout'
  * which no type can know.
  *
  * @template T Type whose size is read; it must declare a layout.
- * @returns The size, in bytes.
+ * @returns The size, in bytes, typed as the number literal the layout of T`n * declares: the same answer {@link layoutOf} reports as size.
  * @throws {Error} Always, when the transformer is not enabled or the type
  * argument is a generic parameter.
  */
-// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters, @typescript-eslint/no-unused-vars -- read by the transformer, which resolves the call from it
-export const sizeOf = <T extends WithLayout>(): number => {
+export const sizeOf = <T extends WithLayout>(): TypeLayout<T>['size'] => {
 	throw unresolvedLayout('sizeOf<T>()');
 };

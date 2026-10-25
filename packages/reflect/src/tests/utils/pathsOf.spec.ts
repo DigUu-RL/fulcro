@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { pathsOf } from '@/src/functions/utils/pathsOf';
+import { pathsOf, type TypePath } from '@/src/functions/utils/pathsOf';
 
 /**
  * Behaviour suite for `pathsOf`.
@@ -97,5 +97,13 @@ describe('pathsOf', () => {
 		expect(() => (pathsOf as () => readonly unknown[])()).toThrow(
 			/was not resolved at compile time/,
 		);
+	});
+});
+
+describe('what pathsOf declares', () => {
+	it('should return paths of the type it was asked about', () => {
+		expectTypeOf<ReturnType<typeof pathsOf<Order>>>().toEqualTypeOf<readonly TypePath<Order>[]>();
+		expectTypeOf<TypePath<Order>>().toExtend<TypePath>();
+		expectTypeOf<TypePath<Order>>().not.toExtend<TypePath<number>>();
 	});
 });

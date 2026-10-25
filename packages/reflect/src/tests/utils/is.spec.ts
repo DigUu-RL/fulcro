@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { is } from '@/src/functions/utils/is';
+import { is, type TypeTest } from '@/src/functions/utils/is';
 
 /**
  * Behaviour suite for `is`.
@@ -120,5 +120,12 @@ describe('the escape hatch', () => {
 		expect(() => (is as (value: unknown) => boolean)({})).toThrow(
 			/was not resolved at compile time/,
 		);
+	});
+});
+
+describe('what a type test declares', () => {
+	it('should not let a test for one type pass for a test of another', () => {
+		expectTypeOf<TypeTest<Order>>().not.toExtend<TypeTest<string>>();
+		expectTypeOf<TypeTest<Order>>().toExtend<TypeTest<Order>>();
 	});
 });

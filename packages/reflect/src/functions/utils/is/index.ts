@@ -17,7 +17,6 @@ import { createError } from '@fulcro/errors';
  *
  * @template T Type a passing value is taken to be.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- names the type the test vouches for, read by inference rather than by a member
 export interface TypeTest<T> {
 	/**
 	 * Decides whether a value is a `T`.
@@ -41,6 +40,13 @@ export interface TypeTest<T> {
 
 	/** Name of the type, as it was written. */
 	readonly name?: string;
+
+	/**
+	 * The type a passing value is taken to be, carried in the type only: never
+	 * present on a test, it keeps a test for one type from passing for a test
+	 * of another.
+	 */
+	readonly '~type'?: T;
 }
 
 /**

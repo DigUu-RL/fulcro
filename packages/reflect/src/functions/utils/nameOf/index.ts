@@ -5,6 +5,15 @@ import { ANONYMOUS_NAME, resolveCallableId, typeOf } from '@/src/functions/utils
 /** Accessor returning the member whose name is being read. */
 export type NameAccessor = () => unknown;
 
+/**
+ * The name of a type, as `nameOf<T>()` reports it: a string, carrying in its
+ * type — never on the value — which type it names, so the name of one type
+ * does not pass for the name of another where that matters.
+ *
+ * @template T Type named.
+ */
+export type TypeName<T> = string & { readonly '~type'?: T };
+
 /** Strips the parameter list of an arrow function from its source. */
 const ARROW_BODY_PATTERN = /^[^=]*=>\s*/;
 
@@ -78,8 +87,7 @@ const parseAccessedName = (accessor: NameAccessor): string | null => {
  * @param input Accessor naming a member, or a value to be named.
  * @returns The name that was read.
  */
-// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters, @typescript-eslint/no-unused-vars -- read by the transformer, which resolves the call from it
-export function nameOf<T>(): string;
+export function nameOf<T>(): TypeName<T>;
 export function nameOf(input: unknown): string;
 
 export function nameOf(input?: unknown): string {

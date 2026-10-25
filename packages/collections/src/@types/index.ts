@@ -73,7 +73,6 @@ export type Constructor<T> = abstract new (...args: never[]) => T;
  *
  * @template R Type a passing value is taken to be.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- names the type the test vouches for, read by inference rather than by a member
 export interface TypeTest<R> {
 	/**
 	 * Decides whether a value is an `R`.
@@ -93,6 +92,13 @@ export interface TypeTest<R> {
 
 	/** Present so a structural test cannot be mistaken for anything else. */
 	readonly __fulcroTypeTest?: true;
+
+	/**
+	 * The type a passing value is taken to be, carried in the type only: never
+	 * present on a test, it keeps a test for one type from passing for a test
+	 * of another.
+	 */
+	readonly '~type'?: R;
 }
 
 /**

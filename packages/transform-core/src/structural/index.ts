@@ -46,7 +46,6 @@ import { buildExplainer } from '@/src/structural/explain';
  *
  * @template R Type a passing value is taken to be.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- names the type the test vouches for, read by inference rather than by a member
 export interface TypeTest<R> {
 	/**
 	 * Decides whether a value is an `R`.
@@ -71,6 +70,13 @@ export interface TypeTest<R> {
 
 	/** Name of the type, as it was written. */
 	readonly name?: string;
+
+	/**
+	 * The type a passing value is taken to be, carried in the type only: never
+	 * present on a test, it keeps a test for one type from passing for a test
+	 * of another.
+	 */
+	readonly '~type'?: R;
 }
 
 /** What a caller wants emitted beyond the yes-or-no check. */

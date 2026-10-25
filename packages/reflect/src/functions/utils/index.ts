@@ -9,12 +9,12 @@
 export { alignOf } from '@/src/functions/utils/alignOf';
 export { as } from '@/src/functions/utils/as';
 export { type Constant, constantOf } from '@/src/functions/utils/constantOf';
-export { defaultOf } from '@/src/functions/utils/defaultOf';
+export { type Defaulted, defaultOf } from '@/src/functions/utils/defaultOf';
 export { is, type TypeTest } from '@/src/functions/utils/is';
 export { keysOf } from '@/src/functions/utils/keysOf';
 export { type TypeLayout } from '@/src/functions/utils/layout';
 export { layoutOf } from '@/src/functions/utils/layoutOf';
-export { type NameAccessor, nameOf } from '@/src/functions/utils/nameOf';
+export { type NameAccessor, nameOf, type TypeName } from '@/src/functions/utils/nameOf';
 export { offsetOf } from '@/src/functions/utils/offsetOf';
 export { type PathAccessor, pathOf } from '@/src/functions/utils/pathOf';
 export { pathsOf, type TypePath } from '@/src/functions/utils/pathsOf';

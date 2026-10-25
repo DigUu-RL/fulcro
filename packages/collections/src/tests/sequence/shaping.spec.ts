@@ -792,6 +792,7 @@ describe('what ofType and cast infer', () => {
 		expectTypeOf(mixed.ofType(Admin)).toEqualTypeOf<Sequence<Admin>>();
 		expectTypeOf(mixed.ofType<Admin>()).toEqualTypeOf<Sequence<Admin>>();
 		expectTypeOf(mixed.ofType(accountTest)).toEqualTypeOf<Sequence<Account>>();
+		expectTypeOf<TypeTest<Account>>().not.toExtend<TypeTest<Admin>>();
 	});
 
 	it('should re-type cast to the type each of its four forms names', () => {

@@ -178,8 +178,17 @@ export interface DeclaredMember {
  * describes what a type *says*. They answer different questions and are not
  * interchangeable: a value cannot tell you its members are optional, and a type
  * cannot tell you whether the thing in front of you is `NaN`.
+ *
+ * @template T Type described; `unknown` when it was not named.
  */
-export interface TypeMetadata {
+export interface TypeMetadata<T = unknown> {
+	/**
+	 * The type described, carried in the type only: never present on the
+	 * metadata itself, it keeps the metadata of one type from passing for the
+	 * metadata of another.
+	 */
+	readonly '~type'?: T;
+
 	/** The type exactly as the compiler renders it. */
 	readonly text: string;
 
@@ -228,8 +237,7 @@ export interface TypeOfSignature {
 	 * @returns Everything the compiler knows about it.
 	 * @throws {Error} When the call was not resolved at compile time.
 	 */
-	// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters, @typescript-eslint/no-unused-vars -- read by the transformer, which resolves the call from it
-	<T>(): TypeMetadata;
+	<T>(): TypeMetadata<T>;
 
 	/**
 	 * Describes a value.
