@@ -130,8 +130,12 @@ export const createTransformer = (
 			const report = (node: typescript.Node, message: string): void => {
 				const diagnostic: typescript.Diagnostic = diagnosticAt(node, message);
 
-				if (extras.addDiagnostic === undefined) refused.push(diagnostic);
-				else extras.addDiagnostic(diagnostic);
+				if (extras.addDiagnostic !== undefined) {
+					extras.addDiagnostic(diagnostic);
+					return;
+				}
+
+				refused.push(diagnostic);
 			};
 
 			const visit = (node: typescript.Node): typescript.Node => {

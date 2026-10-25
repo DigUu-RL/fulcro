@@ -221,22 +221,18 @@ export const remainderParts = (left: DecimalParts, right: DecimalParts): Decimal
 	// A dividend smaller than the divisor is its own remainder.
 	if (adjustedExponent(left) < adjustedExponent(right)) return left;
 
-	let remainder: bigint;
-	let exponent: number;
+	// Whichever last place is the finer one is where the remainder is counted.
+	const exponent: number = Math.min(left.exponent, right.exponent);
 
-	if (left.exponent >= right.exponent) {
-		// The dividend is coefficient × 10^gap in units of the divisor's last
-		// place, and the gap can be twelve thousand: reduce the power instead.
-		const gap: number = left.exponent - right.exponent;
-
-		remainder = (left.coefficient * powerOfTenModulo(gap, right.coefficient)) % right.coefficient;
-		exponent = right.exponent;
-	} else {
-		// The divisor's last place is the coarser one. Since the dividend is at
-		// least as large, the gap is under thirty-four places.
-		remainder = left.coefficient % (right.coefficient * powerOfTen(right.exponent - left.exponent));
-		exponent = left.exponent;
-	}
+	const remainder: bigint =
+		left.exponent >= right.exponent
+			? // The dividend is coefficient × 10^gap in units of the divisor's last
+				// place, and the gap can be twelve thousand: reduce the power instead.
+				(left.coefficient * powerOfTenModulo(left.exponent - right.exponent, right.coefficient)) %
+				right.coefficient
+			: // The divisor's last place is the coarser one. Since the dividend is at
+				// least as large, the gap is under thirty-four places.
+				left.coefficient % (right.coefficient * powerOfTen(right.exponent - left.exponent));
 
 	if (remainder === 0n) return zero(left.negative);
 

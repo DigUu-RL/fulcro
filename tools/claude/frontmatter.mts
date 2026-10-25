@@ -233,15 +233,19 @@ export const frontmatterOf = (content: string): Frontmatter & { body: string } =
 
 		if (raw.trim() === '') {
 			values[key] = [];
-		} else if (raw.trim().startsWith('[') && raw.trim().endsWith(']')) {
-			values[key] = inlineList(raw.trim());
-		} else {
-			const read = scalar(raw, key);
-
-			values[key] = read.value;
-
-			if (read.problem !== null) problems.push(read.problem);
+			continue;
 		}
+
+		if (raw.trim().startsWith('[') && raw.trim().endsWith(']')) {
+			values[key] = inlineList(raw.trim());
+			continue;
+		}
+
+		const read = scalar(raw, key);
+
+		values[key] = read.value;
+
+		if (read.problem !== null) problems.push(read.problem);
 	}
 
 	return { present: true, values, order, problems, body };

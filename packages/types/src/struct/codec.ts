@@ -3,6 +3,7 @@ import { formatDecimal } from '@/src/decimal/format';
 import { parseDecimal } from '@/src/decimal/parse';
 import { type DecimalParts, powerOfTen } from '@/src/decimal/parts';
 import { DoublePrecisionFloat } from '@/src/doublePrecisionFloat';
+import { binaryExponentOf } from '@/src/float/binaryExponent';
 import { HalfPrecisionFloat } from '@/src/halfPrecisionFloat';
 import type { IntegerType, IntegerWidth } from '@/src/integer';
 import { SignedInteger } from '@/src/signedInteger';
@@ -187,12 +188,7 @@ const encodeHalf = (value: number): number => {
 		return sign | (magnitude / HALF_SUBNORMAL_SPACING);
 	}
 
-	// `Math.log2` is not exact next to a power of two, so the estimate is
-	// corrected against the power itself.
-	let exponent: number = Math.floor(Math.log2(magnitude));
-
-	if (2 ** exponent > magnitude) exponent--;
-	else if (2 ** (exponent + 1) <= magnitude) exponent++;
+	const exponent: number = binaryExponentOf(magnitude);
 
 	return sign | ((exponent + 15) << 10) | ((magnitude / 2 ** exponent - 1) * 1024);
 };

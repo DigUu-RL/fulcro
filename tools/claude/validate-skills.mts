@@ -303,6 +303,102 @@ export const missingReferences = (
 };
 
 /**
+ * Checks the name a skill declares, and claims it for that skill.
+ *
+ * @param name The `name` value, as read.
+ * @param skill The skill.
+ * @param where The path as a report spells it.
+ * @param names Names already taken, to the directory; gains this one when it
+ * is free.
+ * @returns What was found.
+ */
+const checkName = (
+	name: unknown,
+	skill: Skill,
+	where: string,
+	names: Map<string, string>,
+): Finding[] => {
+	if (typeof name !== 'string' || name === '') {
+		return [error('name-missing', where, '`name` is not set.')];
+	}
+
+	const findings = [];
+
+	if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(name)) {
+		findings.push(error('name-shape', `${where} (name)`, `\`${name}\` is not kebab case.`));
+	}
+
+	if (name !== skill.directory) {
+		findings.push(
+			error(
+				'name-directory',
+				`${where} (name)`,
+				`\`${name}\` does not match the directory \`${skill.directory}\`.`,
+			),
+		);
+	}
+
+	if (RESERVED.has(name)) {
+		findings.push(
+			error(
+				'name-reserved',
+				`${where} (name)`,
+				`\`${name}\` is a built-in Claude Code command; a skill with this name is never reached.`,
+			),
+		);
+	}
+
+	const owner: string | undefined = names.get(name);
+
+	if (owner !== undefined) {
+		findings.push(
+			error('name-duplicate', `${where} (name)`, `\`${name}\` is already used by \`${owner}\`.`),
+		);
+	}
+
+	// The first skill to claim a name keeps it, so every later one is reported
+	// against the same owner.
+	names.set(name, owner ?? skill.directory);
+
+	if (BUNDLED.has(name) && !/replac/i.test(skill.manifest ?? '')) {
+		findings.push(
+			warning(
+				'name-shadows-bundled',
+				`${where} (name)`,
+				`\`${name}\` is the name of a skill Claude Code ships; say in the file that replacing it is the point, or prefix the name.`,
+			),
+		);
+	}
+
+	return findings;
+};
+
+/**
+ * Checks the description a skill declares.
+ *
+ * @param description The `description` value, as read.
+ * @param where The path as a report spells it.
+ * @returns What was found.
+ */
+const checkDescription = (description: unknown, where: string): Finding[] => {
+	if (typeof description !== 'string' || description.trim() === '') {
+		return [error('description-missing', where, '`description` is not set.')];
+	}
+
+	if (!/\b(use|when|usar|quando)\b/i.test(description)) {
+		return [
+			warning(
+				'description-trigger',
+				`${where} (description)`,
+				'Says what the skill does but never when to use it, which is where triggering is won or lost.',
+			),
+		];
+	}
+
+	return [];
+};
+
+/**
  * Checks the frontmatter of one skill.
  *
  * @param skill The skill.
@@ -334,71 +430,10 @@ const checkFrontmatter = (skill: Skill, where: string, names: Map<string, string
 		}
 	}
 
-	const name = block.values.name;
-
-	if (typeof name !== 'string' || name === '') {
-		findings.push(error('name-missing', where, '`name` is not set.'));
-	} else {
-		if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(name)) {
-			findings.push(error('name-shape', `${where} (name)`, `\`${name}\` is not kebab case.`));
-		}
-
-		if (name !== skill.directory) {
-			findings.push(
-				error(
-					'name-directory',
-					`${where} (name)`,
-					`\`${name}\` does not match the directory \`${skill.directory}\`.`,
-				),
-			);
-		}
-
-		if (RESERVED.has(name)) {
-			findings.push(
-				error(
-					'name-reserved',
-					`${where} (name)`,
-					`\`${name}\` is a built-in Claude Code command; a skill with this name is never reached.`,
-				),
-			);
-		}
-
-		if (names.has(name)) {
-			findings.push(
-				error(
-					'name-duplicate',
-					`${where} (name)`,
-					`\`${name}\` is already used by \`${String(names.get(name))}\`.`,
-				),
-			);
-		} else {
-			names.set(name, skill.directory);
-		}
-
-		if (BUNDLED.has(name) && !/replac/i.test(skill.manifest ?? '')) {
-			findings.push(
-				warning(
-					'name-shadows-bundled',
-					`${where} (name)`,
-					`\`${name}\` is the name of a skill Claude Code ships; say in the file that replacing it is the point, or prefix the name.`,
-				),
-			);
-		}
-	}
-
-	const description = block.values.description;
-
-	if (typeof description !== 'string' || description.trim() === '') {
-		findings.push(error('description-missing', where, '`description` is not set.'));
-	} else if (!/\b(use|when|usar|quando)\b/i.test(description)) {
-		findings.push(
-			warning(
-				'description-trigger',
-				`${where} (description)`,
-				'Says what the skill does but never when to use it, which is where triggering is won or lost.',
-			),
-		);
-	}
+	findings.push(
+		...checkName(block.values.name, skill, where, names),
+		...checkDescription(block.values.description, where),
+	);
 
 	for (const key of ['disable-model-invocation', 'user-invocable']) {
 		if (key in block.values && typeof block.values[key] !== 'boolean') {
@@ -534,6 +569,74 @@ const checkBody = (
 };
 
 /**
+ * Checks the `id` of one eval case, and claims it for the suite.
+ *
+ * @param id The `id` value, as read.
+ * @param ids The ids the suite has already used; gains this one when it is
+ * new.
+ * @param position The case as a report spells it.
+ * @returns What was found.
+ */
+const checkCaseId = (id: unknown, ids: Set<unknown>, position: string): Finding[] => {
+	if (typeof id !== 'string' || id === '') {
+		return [error('eval-case-id', position, '`id` is missing.')];
+	}
+
+	if (ids.has(id)) return [error('eval-case-id', position, `\`${id}\` is used twice.`)];
+
+	ids.add(id);
+
+	return [];
+};
+
+/**
+ * Checks the `kind` of one eval case, and counts it towards the suite's
+ * coverage.
+ *
+ * @param kind The `kind` value, as read.
+ * @param kinds The kinds the suite covers; gains this one when it is known.
+ * @param position The case as a report spells it.
+ * @returns What was found.
+ */
+const checkCaseKind = (kind: unknown, kinds: Set<string>, position: string): Finding[] => {
+	if (kind !== 'positive' && kind !== 'negative' && kind !== 'edge') {
+		return [
+			error('eval-case-kind', position, '`kind` is one of `positive`, `negative` or `edge`.'),
+		];
+	}
+
+	kinds.add(kind);
+
+	return [];
+};
+
+/**
+ * Checks that what a case expects to invoke agrees with its kind.
+ *
+ * @param invokes The `expect.invokes` value, as read.
+ * @param kind The `kind` value, as read.
+ * @param position The case as a report spells it.
+ * @returns What was found.
+ */
+const checkInvokes = (invokes: unknown, kind: unknown, position: string): Finding[] => {
+	if (typeof invokes !== 'boolean') {
+		return [error('eval-case-expect', position, '`expect.invokes` is `true` or `false`.')];
+	}
+
+	if (kind === 'positive' && !invokes) {
+		return [error('eval-case-expect', position, 'A positive case is one that invokes the skill.')];
+	}
+
+	if (kind === 'negative' && invokes) {
+		return [
+			error('eval-case-expect', position, 'A negative case is one that does not invoke the skill.'),
+		];
+	}
+
+	return [];
+};
+
+/**
  * Checks one eval suite, and reports the coverage it gives its skill.
  *
  * @param suite The suite.
@@ -599,21 +702,7 @@ const checkEvals = (
 
 		const { id, kind, prompt, expect } = entry;
 
-		if (typeof id !== 'string' || id === '') {
-			findings.push(error('eval-case-id', position, '`id` is missing.'));
-		} else if (ids.has(id)) {
-			findings.push(error('eval-case-id', position, `\`${id}\` is used twice.`));
-		} else {
-			ids.add(id);
-		}
-
-		if (kind !== 'positive' && kind !== 'negative' && kind !== 'edge') {
-			findings.push(
-				error('eval-case-kind', position, '`kind` is one of `positive`, `negative` or `edge`.'),
-			);
-		} else {
-			kinds.add(kind);
-		}
+		findings.push(...checkCaseId(id, ids, position), ...checkCaseKind(kind, kinds, position));
 
 		if (typeof prompt !== 'string' || prompt.trim() === '') {
 			findings.push(error('eval-case-prompt', position, '`prompt` is missing.'));
@@ -626,21 +715,7 @@ const checkEvals = (
 
 		const expectation = expect;
 
-		if (typeof expectation.invokes !== 'boolean') {
-			findings.push(error('eval-case-expect', position, '`expect.invokes` is `true` or `false`.'));
-		} else if (kind === 'positive' && !expectation.invokes) {
-			findings.push(
-				error('eval-case-expect', position, 'A positive case is one that invokes the skill.'),
-			);
-		} else if (kind === 'negative' && expectation.invokes) {
-			findings.push(
-				error(
-					'eval-case-expect',
-					position,
-					'A negative case is one that does not invoke the skill.',
-				),
-			);
-		}
+		findings.push(...checkInvokes(expectation.invokes, kind, position));
 
 		if (expectation.invokes === true && typeof expectation.output !== 'string') {
 			findings.push(

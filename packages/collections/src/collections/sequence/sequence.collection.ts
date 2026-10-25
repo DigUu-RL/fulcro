@@ -489,8 +489,12 @@ export class SequenceCollection<T> implements Sequence<T> {
 						// `has` followed by a `get` would cost.
 						const bucket = map.get(key);
 
-						if (bucket === undefined) map.set(key, [element]);
-						else bucket.push(element);
+						if (bucket !== undefined) {
+							bucket.push(element);
+							continue;
+						}
+
+						map.set(key, [element]);
 					}
 
 					for (const [key, elements] of map.entries()) {
@@ -857,8 +861,12 @@ export class SequenceCollection<T> implements Sequence<T> {
 						const key = innerKeySelector(innerItem);
 						const bucket = map.get(key);
 
-						if (bucket === undefined) map.set(key, [innerItem]);
-						else bucket.push(innerItem);
+						if (bucket !== undefined) {
+							bucket.push(innerItem);
+							continue;
+						}
+
+						map.set(key, [innerItem]);
 					}
 
 					for (const outerItem of source) {
@@ -1648,8 +1656,12 @@ export class SequenceCollection<T> implements Sequence<T> {
 						const key: K = innerKeySelector(item);
 						const bucket: I[] | undefined = lookup.get(key);
 
-						if (bucket === undefined) lookup.set(key, [item]);
-						else bucket.push(item);
+						if (bucket !== undefined) {
+							bucket.push(item);
+							continue;
+						}
+
+						lookup.set(key, [item]);
 					}
 
 					for (const item of source) {
@@ -1688,8 +1700,12 @@ export class SequenceCollection<T> implements Sequence<T> {
 
 			const bucket: R[] | undefined = lookup.get(key);
 
-			if (bucket === undefined) lookup.set(key, [value]);
-			else bucket.push(value);
+			if (bucket !== undefined) {
+				bucket.push(value);
+				continue;
+			}
+
+			lookup.set(key, [value]);
 		}
 
 		return lookup;

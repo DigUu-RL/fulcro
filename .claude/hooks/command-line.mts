@@ -115,10 +115,10 @@ export const commandsOf = (line: string): string[][] => {
 		if (quote !== null) {
 			if (character === quote) {
 				quote = null;
-			} else {
-				token += character;
+				continue;
 			}
 
+			token += character;
 			continue;
 		}
 

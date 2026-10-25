@@ -69,9 +69,10 @@ export const filesUnder = (directory: string, prefix: string = ''): string[] => 
 
 		if (entry.isDirectory()) {
 			found.push(...filesUnder(path.join(directory, entry.name), relative));
-		} else {
-			found.push(relative);
+			continue;
 		}
+
+		found.push(relative);
 	}
 
 	return found;

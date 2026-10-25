@@ -1,5 +1,6 @@
 import type { Branded } from '@/src/brand';
 import { createFloatType } from '@/src/float';
+import { binaryExponentOf } from '@/src/float/binaryExponent';
 import type { Layout } from '@/src/layout';
 import type { BoundedNumericType } from '@/src/numericType';
 
@@ -48,12 +49,7 @@ const roundToHalfPrecision = (value: number): number => {
 
 	if (magnitude >= OVERFLOW_THRESHOLD) return sign * Infinity;
 
-	// `Math.log2` is not exact next to a power of two, so the estimate is
-	// corrected against the power itself.
-	let exponent: number = Math.floor(Math.log2(magnitude));
-
-	if (2 ** exponent > magnitude) exponent--;
-	else if (2 ** (exponent + 1) <= magnitude) exponent++;
+	const exponent: number = binaryExponentOf(magnitude);
 
 	// Below the normal range the spacing stops shrinking: that is what makes
 	// the subnormals evenly spaced at 2^-24.
