@@ -1,7 +1,7 @@
 import * as path from 'node:path';
 
 import * as typescript from 'typescript';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { assert, beforeAll, describe, expect, it } from 'vitest';
 
 import { constantOf } from '@/src/functions/utils/constantOf';
 import transformer from '@/src/transformer';
@@ -116,7 +116,10 @@ const deeplyFrozen = (value: unknown): boolean => {
  * @returns The source line.
  */
 const lineOf = (diagnostic: typescript.Diagnostic): string => {
-	const file = diagnostic.file as typescript.SourceFile;
+	const file: typescript.SourceFile | undefined = diagnostic.file;
+
+	assert.isDefined(file);
+
 	const { line } = file.getLineAndCharacterOfPosition(diagnostic.start ?? 0);
 
 	return (file.text.split(/\r?\n/)[line] ?? '').trim();
@@ -129,12 +132,9 @@ const lineOf = (diagnostic: typescript.Diagnostic): string => {
  * @returns The message.
  */
 const refusalOf = (binding: string): string => {
+	const file: typescript.SourceFile | undefined = rejected.refused[0]?.file;
 	const declaration: number =
-		rejected.refused.length === 0
-			? -1
-			: (rejected.refused[0]?.file as typescript.SourceFile).text.indexOf(
-					`export const ${binding} =`,
-				);
+		file === undefined ? -1 : file.text.indexOf(`export const ${binding} =`);
 
 	const found: typescript.Diagnostic | undefined = rejected.refused.find((diagnostic) => {
 		return (

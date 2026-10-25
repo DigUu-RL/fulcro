@@ -1,4 +1,4 @@
-import { describe, expect, expectTypeOf, it } from 'vitest';
+import { assert, describe, expect, expectTypeOf, it } from 'vitest';
 
 import { Decimal } from '@/src/decimal';
 import type { RoundingMode } from '@/src/roundingMode';
@@ -67,7 +67,7 @@ const referenceRound = (value: Exact, mode: RoundingMode): string => {
 	if (digits.length <= 34) return `${sign}${digits}e${String(value.exponent)}`;
 
 	const kept: bigint = BigInt(digits.slice(0, 34));
-	const first = digits[34] as string;
+	const first: string = digits.charAt(34);
 	const rest: boolean = /[1-9]/.test(digits.slice(35));
 	const inexact: boolean = first !== '0' || rest;
 
@@ -349,10 +349,14 @@ describe('Decimal', () => {
 			for (let index = 0; index < 3_000; index++) {
 				// Spreads from a few places to a hundred, so both the aligned
 				// path and the far-operand path are exercised.
-				const spread = [4, 40, 80, 200][index % 4] as number;
+				const spread: number | undefined = [4, 40, 80, 200][index % 4];
+				const mode: RoundingMode | undefined = MODES[index % MODES.length];
+
+				assert.isDefined(spread);
+				assert.isDefined(mode);
+
 				const left: Exact = operand(random, spread);
 				const right: Exact = operand(random, spread);
-				const mode = MODES[index % MODES.length] as RoundingMode;
 				const sum: Exact = exactSum(left, right);
 
 				if (sum.coefficient === 0n) continue;
@@ -414,7 +418,9 @@ describe('Decimal', () => {
 			for (let index = 0; index < 2_000; index++) {
 				const left: Exact = operand(random, 60);
 				const right: Exact = operand(random, 60);
-				const mode = MODES[index % MODES.length] as RoundingMode;
+				const mode: RoundingMode | undefined = MODES[index % MODES.length];
+
+				assert.isDefined(mode);
 
 				const product: Exact = {
 					negative: left.negative !== right.negative,
@@ -869,7 +875,9 @@ describe('Decimal', () => {
 			for (let index = 0; index < 1_500; index++) {
 				const base: Exact = operand(random, 20);
 				const power: number = Math.floor(random() * 9);
-				const mode = MODES[index % MODES.length] as RoundingMode;
+				const mode: RoundingMode | undefined = MODES[index % MODES.length];
+
+				assert.isDefined(mode);
 
 				const exact: Exact = {
 					negative: base.negative && power % 2 === 1,

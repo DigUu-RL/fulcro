@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, assert, describe, expect, it, vi } from 'vitest';
 
 import type { Allocation } from '@/src/allocator';
 import { createStackAllocator, type StackAllocator } from '@/src/stackAllocator';
@@ -55,12 +55,19 @@ describe('createStackAllocator, counted', () => {
 				allocations.push(frame.allocate(16, 8));
 			}
 
-			(allocations[FRAMES - 1] as Allocation).bytes.setFloat64(0, 42);
+			const written: Allocation | undefined = allocations[FRAMES - 1];
+
+			assert.isDefined(written);
+			written.bytes.setFloat64(0, 42);
 		}
+
+		const last: Allocation | undefined = allocations[FRAMES - 1];
+
+		assert.isDefined(last);
 
 		// Nothing was zeroed on the way out: the bytes are cleared when they are
 		// handed out again, by the allocation that needs them.
-		expect((allocations[FRAMES - 1] as Allocation).bytes.getFloat64(0)).toBe(42);
+		expect(last.bytes.getFloat64(0)).toBe(42);
 		expect(allocations.every((allocation) => !allocation.isLive())).toBe(true);
 	});
 });

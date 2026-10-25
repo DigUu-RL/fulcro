@@ -1,3 +1,5 @@
+import { assert } from 'vitest';
+
 import type { Storage } from '@/src/storage';
 
 /** How often a counted source was read and written. */
@@ -27,7 +29,11 @@ export const countedStorage = (
 			get: (index: number): number => {
 				counts.reads++;
 
-				return values[index] as number;
+				const value: number | undefined = values[index];
+
+				assert.isDefined(value);
+
+				return value;
 			},
 			set: (index: number, value: number): void => {
 				counts.writes++;

@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { assert, beforeAll, describe, expect, it } from 'vitest';
 
 import { SequenceCollection } from '@/src/collections/sequence';
 
@@ -70,11 +70,17 @@ beforeAll(() => {
 	// Built once. A dataset rebuilt per test would make every budget below a
 	// measurement of the builder rather than of the operator.
 	orders = Array.from({ length: ORDERS }, (_, index) => {
+		const region: Region | undefined = REGIONS[index % REGIONS.length];
+		const status: Status | undefined = STATUSES[index % STATUSES.length];
+
+		assert.isDefined(region);
+		assert.isDefined(status);
+
 		return {
 			id: index,
 			customerId: index % CUSTOMERS,
-			region: REGIONS[index % REGIONS.length] as Region,
-			status: STATUSES[index % STATUSES.length] as Status,
+			region,
+			status,
 			total: (index % 997) + (index % 13) / 10,
 			placedAt: new Date(2020, 0, 1 + (index % 1_000)),
 			items: Array.from({ length: ITEMS_PER_ORDER }, (_slot, line) => {
@@ -88,10 +94,14 @@ beforeAll(() => {
 	});
 
 	customers = Array.from({ length: CUSTOMERS }, (_, index) => {
+		const region: Region | undefined = REGIONS[index % REGIONS.length];
+
+		assert.isDefined(region);
+
 		return {
 			id: index,
 			name: `customer-${String(index)}`,
-			region: REGIONS[index % REGIONS.length] as Region,
+			region,
 		};
 	});
 }, 60_000);

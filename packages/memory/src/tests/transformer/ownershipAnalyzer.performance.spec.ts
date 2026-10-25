@@ -1,7 +1,7 @@
 import * as path from 'node:path';
 
 import * as typescript from 'typescript';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { assert, beforeAll, describe, expect, it } from 'vitest';
 
 import transformer from '@/src/transformer';
 
@@ -91,11 +91,12 @@ const questionsFor = (text: string): { questions: number; refused: number } => {
 	});
 
 	let refused = 0;
+	const source: typescript.SourceFile | undefined = program.getSourceFile(fileName);
+
+	assert.isDefined(source);
 
 	typescript
-		.transform(program.getSourceFile(fileName) as typescript.SourceFile, [
-			transformer(counted, undefined, { addDiagnostic: () => refused++ }),
-		])
+		.transform(source, [transformer(counted, undefined, { addDiagnostic: () => refused++ })])
 		.dispose();
 
 	return { questions, refused };

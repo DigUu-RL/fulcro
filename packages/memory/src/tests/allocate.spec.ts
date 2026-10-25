@@ -1,4 +1,4 @@
-import { describe, expect, expectTypeOf, it } from 'vitest';
+import { assert, describe, expect, expectTypeOf, it } from 'vitest';
 
 import {
 	DoublePrecisionFloat,
@@ -145,7 +145,11 @@ describe('allocate', () => {
 		arena.reset();
 		fixed.reset();
 		frame[Symbol.dispose]();
-		pool.deallocate(leases[0] as Allocation);
+
+		const [lease] = leases;
+
+		assert.isDefined(lease);
+		pool.deallocate(lease);
 
 		for (const particles of released) {
 			expect(() => particles.get(0)).toThrow(

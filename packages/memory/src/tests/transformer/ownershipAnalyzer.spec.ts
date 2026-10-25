@@ -1,7 +1,7 @@
 import * as path from 'node:path';
 
 import * as typescript from 'typescript';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { assert, beforeAll, describe, expect, it } from 'vitest';
 
 import transformer from '@/src/transformer';
 
@@ -48,7 +48,10 @@ const compile = (...fileNames: string[]): Compiled[] => {
 	const program: typescript.Program = typescript.createProgram(fixtures, COMPILER_OPTIONS);
 
 	return fixtures.map((fixture) => {
-		const source = program.getSourceFile(fixture) as typescript.SourceFile;
+		const source: typescript.SourceFile | undefined = program.getSourceFile(fixture);
+
+		assert.isDefined(source);
+
 		const refused: typescript.Diagnostic[] = [];
 		let emitted = '';
 
@@ -83,10 +86,9 @@ const compile = (...fileNames: string[]): Compiled[] => {
  * @returns `line: FULCROnnnn`, the line counted from 1.
  */
 const located = (diagnostic: typescript.Diagnostic): string => {
-	const { line } = typescript.getLineAndCharacterOfPosition(
-		diagnostic.file as typescript.SourceFile,
-		diagnostic.start ?? 0,
-	);
+	assert.isDefined(diagnostic.file);
+
+	const { line } = typescript.getLineAndCharacterOfPosition(diagnostic.file, diagnostic.start ?? 0);
 
 	return `${String(line + 1)}: FULCRO${String(diagnostic.code)}`;
 };

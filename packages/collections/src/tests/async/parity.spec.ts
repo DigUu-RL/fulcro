@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { assert, describe, expect, it } from 'vitest';
 
 import { AsyncSequenceCollection } from '@/src/collections/async';
 import { SequenceCollection } from '@/src/collections/sequence';
@@ -77,9 +77,13 @@ interface Order {
 
 /** The dataset both halves are run over. */
 const ORDERS: readonly Order[] = Array.from({ length: 200 }, (_, index) => {
+	const region: string | undefined = ['north', 'south', 'east', 'west'][index % 4];
+
+	assert.isDefined(region);
+
 	return {
 		id: index,
-		region: ['north', 'south', 'east', 'west'][index % 4] as string,
+		region,
 		total: (index * 37) % 500,
 	};
 });

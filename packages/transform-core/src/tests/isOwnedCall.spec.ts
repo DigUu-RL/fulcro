@@ -1,7 +1,7 @@
 import * as path from 'node:path';
 
 import typescript from 'typescript';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, assert, beforeAll, describe, expect, it } from 'vitest';
 
 import { type CallTarget, isOwnedCall } from '@/src/shared';
 import { createWorkspace } from '@/src/tests/workspace';
@@ -55,9 +55,11 @@ afterAll(() => {
  * @returns Its call expression.
  */
 const callIn = (name: string): typescript.CallExpression => {
-	const source = program.getSourceFile(
+	const source: typescript.SourceFile | undefined = program.getSourceFile(
 		path.join(workspace.root, 'src', name).split(path.sep).join('/'),
-	) as typescript.SourceFile;
+	);
+
+	assert.isDefined(source);
 
 	const statement = source.statements[1] as typescript.ExpressionStatement;
 

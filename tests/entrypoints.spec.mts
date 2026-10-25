@@ -4,7 +4,7 @@ import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { beforeAll, describe, expect, it } from 'vitest';
+import { assert, beforeAll, describe, expect, it } from 'vitest';
 
 /**
  * Entry point suite.
@@ -231,12 +231,11 @@ describe.each(PACKAGE_NAMES)('%s, as a consumer sees it', (name) => {
 		const shipped: readonly string[] = packedFiles(name);
 
 		for (const field of [manifest.main, manifest.types]) {
-			expect(field).toBeDefined();
+			assert.isDefined(field, `${name} declares no main or types`);
 
-			expect(
-				shipped,
-				`${name} declares ${String(field)}, which its tarball does not contain`,
-			).toContain(asPackedPath(field as string));
+			expect(shipped, `${name} declares ${field}, which its tarball does not contain`).toContain(
+				asPackedPath(field),
+			);
 		}
 	});
 

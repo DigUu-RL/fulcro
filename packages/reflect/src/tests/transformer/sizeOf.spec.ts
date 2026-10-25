@@ -1,7 +1,7 @@
 import * as path from 'node:path';
 
 import * as typescript from 'typescript';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { assert, beforeAll, describe, expect, it } from 'vitest';
 
 import transformer from '@/src/transformer';
 
@@ -105,12 +105,11 @@ describe('sizeOf at compile time', () => {
 		const refused: string[] = rejected.errors
 			.filter((error) => error.code === 2344)
 			.map((error) => {
-				const { line } = typescript.getLineAndCharacterOfPosition(
-					error.file as typescript.SourceFile,
-					error.start ?? 0,
-				);
+				assert.isDefined(error.file);
 
-				return ((error.file as typescript.SourceFile).text.split(/\r?\n/)[line] ?? '').trim();
+				const { line } = typescript.getLineAndCharacterOfPosition(error.file, error.start ?? 0);
+
+				return (error.file.text.split(/\r?\n/)[line] ?? '').trim();
 			});
 
 		expect(refused).toEqual([

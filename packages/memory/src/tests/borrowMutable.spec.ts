@@ -1,4 +1,4 @@
-import { describe, expect, expectTypeOf, it } from 'vitest';
+import { assert, describe, expect, expectTypeOf, it } from 'vitest';
 
 import { asView } from '@/src/asView';
 import { borrow } from '@/src/borrow';
@@ -29,7 +29,13 @@ describe('borrowMutable', () => {
 		const owner: Owned<number> = own((): Storage<number> => {
 			return {
 				length: 3,
-				get: (index: number): number => values[index] as number,
+				get: (index: number): number => {
+					const value: number | undefined = values[index];
+
+					assert.isDefined(value);
+
+					return value;
+				},
 				set: (index: number, value: number): void => {
 					values[index] = value;
 				},

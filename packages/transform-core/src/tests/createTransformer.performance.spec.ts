@@ -1,7 +1,7 @@
 import * as path from 'node:path';
 
 import typescript from 'typescript';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, assert, beforeAll, describe, expect, it } from 'vitest';
 
 import type { FileAnalyzer } from '@/src/shared';
 import { createWorkspace } from '@/src/tests/workspace';
@@ -67,10 +67,11 @@ describe('createTransformer with analyzers, counted', () => {
 		const transformer = createTransformer([], [counting(0), counting(1)])(program);
 
 		for (const fileName of fileNames) {
-			const source = program.getSourceFile(
+			const source: typescript.SourceFile | undefined = program.getSourceFile(
 				fileName.split(path.sep).join('/'),
-			) as typescript.SourceFile;
+			);
 
+			assert.isDefined(source);
 			typescript.transform(source, [transformer]).dispose();
 		}
 

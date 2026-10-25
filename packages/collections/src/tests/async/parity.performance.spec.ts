@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { assert, beforeAll, describe, expect, it } from 'vitest';
 
 import { AsyncSequenceCollection } from '@/src/collections/async';
 
@@ -39,9 +39,13 @@ beforeAll(() => {
 	// Built once. A dataset rebuilt per test would make every count below a
 	// measurement of the builder.
 	orders = Array.from({ length: SIZE }, (_, index) => {
+		const region: string | undefined = ['north', 'south', 'east', 'west'][index % 4];
+
+		assert.isDefined(region);
+
 		return {
 			id: index,
-			region: ['north', 'south', 'east', 'west'][index % 4] as string,
+			region,
 			total: (index * 7919) % 50_000,
 			items: [
 				{ sku: `sku-${String(index % 97)}`, quantity: (index % 5) + 1 },
@@ -135,8 +139,11 @@ describe('the terminals read the source once', () => {
 describe('the terminals that can stop, stop', () => {
 	it('should leave contains where it found the value', async () => {
 		const { source, pulled } = counted(orders);
+		const third: Order | undefined = orders[2];
 
-		await AsyncSequenceCollection.from(source).contains(orders[2] as Order);
+		assert.isDefined(third);
+
+		await AsyncSequenceCollection.from(source).contains(third);
 
 		expect(pulled()).toBe(3);
 	});
@@ -151,12 +158,12 @@ describe('the terminals that can stop, stop', () => {
 
 	it('should leave sequenceEqual at the first difference', async () => {
 		const { source, pulled } = counted(orders);
+		const [first, second] = orders;
 
-		const different: readonly Order[] = [
-			orders[0] as Order,
-			{ ...(orders[1] as Order), id: -1 },
-			...orders.slice(2),
-		];
+		assert.isDefined(first);
+		assert.isDefined(second);
+
+		const different: readonly Order[] = [first, { ...second, id: -1 }, ...orders.slice(2)];
 
 		await AsyncSequenceCollection.from(source).sequenceEqual(different);
 

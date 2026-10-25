@@ -1,6 +1,6 @@
 import process from 'node:process';
 
-import { afterEach, describe, expect, expectTypeOf, it } from 'vitest';
+import { afterEach, assert, describe, expect, expectTypeOf, it } from 'vitest';
 
 import { isFulcroError } from '@fulcro/errors';
 import { createWorkerPool, type WorkerPool } from '@fulcro/parallel';
@@ -128,8 +128,11 @@ describe('running work on workers', () => {
 		// as they land would put it last.
 		const results = await poolFor<number, number>('burn', 4).map([5_000_000, 1, 1, 1]);
 
+		const [slowest, fastest] = results;
+
 		expect(results).toHaveLength(4);
-		expect(results[0]).toBeGreaterThan(results[1] as number);
+		assert.isDefined(fastest);
+		expect(slowest).toBeGreaterThan(fastest);
 	});
 
 	it('should carry structured records across the boundary', async () => {

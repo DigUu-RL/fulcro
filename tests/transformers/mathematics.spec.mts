@@ -3,7 +3,7 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import typescript from 'typescript';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { assert, beforeAll, describe, expect, it } from 'vitest';
 
 /**
  * The mathematics types and `constantOf` across the package boundary.
@@ -160,8 +160,14 @@ describe('the mathematics types and constantOf across the package boundary', () 
 	it('should refuse a constant that calls into another package, at its call', () => {
 		expect(rejected.refused).toHaveLength(1);
 
-		const refusal = rejected.refused[0] as typescript.Diagnostic;
-		const file = refusal.file as typescript.SourceFile;
+		const [refusal] = rejected.refused;
+
+		assert.isDefined(refusal);
+
+		const { file } = refusal;
+
+		assert.isDefined(file);
+
 		const { line } = file.getLineAndCharacterOfPosition(refusal.start ?? 0);
 
 		expect(String(refusal.messageText)).toContain(

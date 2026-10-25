@@ -1,4 +1,4 @@
-import { describe, expect, expectTypeOf, it } from 'vitest';
+import { assert, describe, expect, expectTypeOf, it } from 'vitest';
 
 import { HalfPrecisionFloat } from '@/src/halfPrecisionFloat';
 
@@ -62,8 +62,12 @@ describe('HalfPrecisionFloat', () => {
 		const wrong: number[] = [];
 
 		for (let index = 0; index + 1 < POSITIVE_FINITE.length; index++) {
-			const low = POSITIVE_FINITE[index] as (typeof POSITIVE_FINITE)[number];
-			const high = POSITIVE_FINITE[index + 1] as (typeof POSITIVE_FINITE)[number];
+			const low = POSITIVE_FINITE[index];
+			const high = POSITIVE_FINITE[index + 1];
+
+			assert.isDefined(low);
+			assert.isDefined(high);
+
 			const midpoint: number = (low.value + high.value) / 2;
 			const even: number = low.bits % 2 === 0 ? low.value : high.value;
 
@@ -78,8 +82,14 @@ describe('HalfPrecisionFloat', () => {
 		const wrong: number[] = [];
 
 		for (let index = 0; index + 1 < POSITIVE_FINITE.length; index += 7) {
-			const low = (POSITIVE_FINITE[index] as (typeof POSITIVE_FINITE)[number]).value;
-			const high = (POSITIVE_FINITE[index + 1] as (typeof POSITIVE_FINITE)[number]).value;
+			const lowNeighbour = POSITIVE_FINITE[index];
+			const highNeighbour = POSITIVE_FINITE[index + 1];
+
+			assert.isDefined(lowNeighbour);
+			assert.isDefined(highNeighbour);
+
+			const low: number = lowNeighbour.value;
+			const high: number = highNeighbour.value;
 			const step: number = (high - low) / 4;
 
 			if (HalfPrecisionFloat.from(low + step) !== low) wrong.push(low + step);

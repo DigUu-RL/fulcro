@@ -28,8 +28,14 @@ const timed = (inputs: readonly number[], convert: (value: number) => number): n
 	let sink = 0;
 	const started: number = performance.now();
 
-	for (let index = 0; index < CONVERSIONS; index++) {
-		sink += convert(inputs[index % inputs.length] as number);
+	// Cycles through the inputs by iterating them rather than by index, so the
+	// timed loop carries no check that an element exists.
+	for (let done = 0; done < CONVERSIONS;) {
+		for (const input of inputs) {
+			if (done++ === CONVERSIONS) break;
+
+			sink += convert(input);
+		}
 	}
 
 	const elapsed: number = performance.now() - started;

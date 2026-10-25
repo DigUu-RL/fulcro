@@ -1,7 +1,7 @@
 import * as path from 'node:path';
 
 import * as typescript from 'typescript';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { assert, beforeAll, describe, expect, it } from 'vitest';
 
 import transformer from '@/src/transformer';
 
@@ -54,7 +54,10 @@ const compile = (...fileNames: string[]): Compiled[] => {
 	const transform = transformer(program, { projectRoot: PROJECT_ROOT });
 
 	return fixtures.map((fixture) => {
-		const source = program.getSourceFile(fixture) as typescript.SourceFile;
+		const source: typescript.SourceFile | undefined = program.getSourceFile(fixture);
+
+		assert.isDefined(source);
+
 		let emitted = '';
 
 		program.emit(
@@ -129,12 +132,11 @@ describe('offsetOf at compile time', () => {
 		const refused: string[] = rejected.errors
 			.filter((error) => error.code === 2344 || error.code === 2345)
 			.map((error) => {
-				const { line } = typescript.getLineAndCharacterOfPosition(
-					error.file as typescript.SourceFile,
-					error.start ?? 0,
-				);
+				assert.isDefined(error.file);
 
-				return ((error.file as typescript.SourceFile).text.split(/\r?\n/)[line] ?? '').trim();
+				const { line } = typescript.getLineAndCharacterOfPosition(error.file, error.start ?? 0);
+
+				return (error.file.text.split(/\r?\n/)[line] ?? '').trim();
 			})
 			.filter((line) => line.includes('offsetOf'));
 

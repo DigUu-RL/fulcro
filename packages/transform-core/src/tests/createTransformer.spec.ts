@@ -1,7 +1,7 @@
 import * as path from 'node:path';
 
 import typescript from 'typescript';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, assert, beforeAll, describe, expect, it } from 'vitest';
 
 import type { CallRewriter, FileAnalyzer } from '@/src/shared';
 import { createWorkspace } from '@/src/tests/workspace';
@@ -38,7 +38,12 @@ beforeAll(() => {
 		strict: true,
 	});
 
-	fixture = program.getSourceFile(fileName.split(path.sep).join('/')) as typescript.SourceFile;
+	const source: typescript.SourceFile | undefined = program.getSourceFile(
+		fileName.split(path.sep).join('/'),
+	);
+
+	assert.isDefined(source);
+	fixture = source;
 });
 
 afterAll(() => {
@@ -110,9 +115,11 @@ const run = (
 		),
 	]);
 
-	const printed: string = typescript
-		.createPrinter()
-		.printFile(result.transformed[0] as typescript.SourceFile);
+	const [transformed] = result.transformed;
+
+	assert.isDefined(transformed);
+
+	const printed: string = typescript.createPrinter().printFile(transformed);
 
 	result.dispose();
 

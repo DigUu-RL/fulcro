@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { assert, beforeAll, describe, expect, it } from 'vitest';
 
 import { SequenceCollection } from '@/src/collections/sequence';
 
@@ -45,10 +45,18 @@ beforeAll(() => {
 	// Built once: a dataset rebuilt per test would make every count below a
 	// measurement of the builder.
 	orders = Array.from({ length: SIZE }, (_, index) => {
+		const region: string | undefined = ['north', 'south', 'east', 'west'][index % 4];
+		const status: Order['status'] | undefined = (['pending', 'paid', 'shipped'] as const)[
+			index % 3
+		];
+
+		assert.isDefined(region);
+		assert.isDefined(status);
+
 		return {
 			id: index,
-			region: ['north', 'south', 'east', 'west'][index % 4] as string,
-			status: (['pending', 'paid', 'shipped'] as const)[index % 3] as Order['status'],
+			region,
+			status,
 			// Spread by a prime so the ranking cannot be satisfied by arrival order,
 			// and so the best elements are not clustered at either end.
 			total: (index * 7919) % 50_000,

@@ -61,22 +61,32 @@ describe.each([8, 16, 32] as const)('SignedInteger<%i>, carried by a number', (w
 		// Built before counting: the descriptor computes its range once, in
 		// `bigint`, and that is not the cost being asserted on.
 		const type = SignedInteger(width);
-		const values = [type.from(3), type.from(-5), type.from(7)] as const;
+		const [first, second, third] = [type.from(3), type.from(-5), type.from(7)] as const;
+
+		// Each operand next to the one after it, wrapping around: the pairs are
+		// iterated rather than indexed, so the loop carries no existence check.
+		const pairs = [
+			[first, second],
+			[second, third],
+			[third, first],
+		] as const;
 
 		conversions = 0;
 
-		for (let index = 0; index < OPERATIONS; index++) {
-			const left = values[index % 3] as (typeof values)[number];
-			const right = values[(index + 1) % 3] as (typeof values)[number];
+		for (let index = 0; index < OPERATIONS;) {
+			for (const [left, right] of pairs) {
+				if (index === OPERATIONS) break;
 
-			type.add(left, right);
-			type.subtract(left, right);
-			type.multiply(left, right);
-			type.divide(left, right);
-			type.remainder(left, right);
-			type.wrap(index * 1_000_003);
-			type.from(index % 100);
-			type.is(left);
+				type.add(left, right);
+				type.subtract(left, right);
+				type.multiply(left, right);
+				type.divide(left, right);
+				type.remainder(left, right);
+				type.wrap(index * 1_000_003);
+				type.from(index % 100);
+				type.is(left);
+				index++;
+			}
 		}
 
 		expect(conversions).toBe(0);
