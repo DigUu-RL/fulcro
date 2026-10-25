@@ -310,8 +310,8 @@ describe('allocate', () => {
 			Storage<Particle>
 		>();
 
-		// eslint-disable-next-line @typescript-eslint/unbound-method -- read for its type, never called
-		expectTypeOf(allocate(Particle, 1, createManagedAllocator()).set)
+		expectTypeOf(allocate(Particle, 1, createManagedAllocator()))
+			.toHaveProperty('set')
 			.parameter(1)
 			.toEqualTypeOf<Particle>();
 

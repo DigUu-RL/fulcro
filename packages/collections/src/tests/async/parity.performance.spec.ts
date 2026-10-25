@@ -1,6 +1,7 @@
 import { assert, beforeAll, describe, expect, it } from 'vitest';
 
 import { AsyncSequenceCollection } from '@/src/collections/async';
+import { asyncSourceOf } from '@/src/tests/async/asyncSourceOf';
 
 /**
  * Performance suite for the operators brought over from the synchronous
@@ -65,25 +66,25 @@ const counted = <T>(values: readonly T[]): { source: AsyncIterable<T>; pulled: (
 	let pulled = 0;
 
 	return {
-		source: {
-			async *[Symbol.asyncIterator](): AsyncIterator<T> {
+		source: asyncSourceOf({
+			*[Symbol.iterator](): Iterator<T> {
 				for (const value of values) {
 					pulled++;
 					yield value;
 				}
 			},
-		},
+		}),
 		pulled: () => pulled,
 	};
 };
 
 /** A source that never ends, for proving an operator yields before it. */
 const endless = (): AsyncIterable<number> => {
-	return {
-		async *[Symbol.asyncIterator](): AsyncIterator<number> {
+	return asyncSourceOf({
+		*[Symbol.iterator](): Iterator<number> {
 			for (let value = 0; ; value++) yield value;
 		},
-	};
+	});
 };
 
 describe('the terminals read the source once', () => {

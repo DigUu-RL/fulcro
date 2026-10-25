@@ -165,8 +165,10 @@ describe('createFixedBufferStorage', () => {
 
 	it('should infer the struct it stores', () => {
 		expectTypeOf(createFixedBufferStorage(Point, 1)).toEqualTypeOf<Storage<Point>>();
-		// eslint-disable-next-line @typescript-eslint/unbound-method -- read for its type, never called
-		expectTypeOf(createFixedBufferStorage(Point, 1).set).parameter(1).toEqualTypeOf<Point>();
+		expectTypeOf(createFixedBufferStorage(Point, 1))
+			.toHaveProperty('set')
+			.parameter(1)
+			.toEqualTypeOf<Point>();
 		expectTypeOf<{ x: number; y: number }>().not.toExtend<Point>();
 
 		expectTypeOf<typeof SinglePrecisionFloat>().not.toExtend<

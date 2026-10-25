@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { AsyncSequenceCollection } from '@/src/collections/async';
+import { asyncSourceOf } from '@/src/tests/async/asyncSourceOf';
 
 /**
  * Performance suite for the asynchronous sequence and its concurrent
@@ -33,26 +34,26 @@ beforeEach(() => {
  * @returns The instrumented source.
  */
 const instrumentedSource = (size: number): AsyncIterable<number> => {
-	return {
-		async *[Symbol.asyncIterator](): AsyncIterator<number> {
+	return asyncSourceOf({
+		*[Symbol.iterator](): Iterator<number> {
 			for (let index = 0; index < size; index++) {
 				pulled++;
 				yield index;
 			}
 		},
-	};
+	});
 };
 
 /** A source that never ends, for proving an operator stops pulling. */
 const endless = (): AsyncIterable<number> => {
-	return {
-		async *[Symbol.asyncIterator](): AsyncIterator<number> {
+	return asyncSourceOf({
+		*[Symbol.iterator](): Iterator<number> {
 			for (let index = 0; ; index++) {
 				pulled++;
 				yield index;
 			}
 		},
-	};
+	});
 };
 
 /**
@@ -251,8 +252,8 @@ describe('realistic records at volume', () => {
 	 * @returns The source.
 	 */
 	const readings = (size: number): AsyncIterable<Reading> => {
-		return {
-			async *[Symbol.asyncIterator](): AsyncIterator<Reading> {
+		return asyncSourceOf({
+			*[Symbol.iterator](): Iterator<Reading> {
 				for (let index = 0; index < size; index++) {
 					pulled++;
 
@@ -264,7 +265,7 @@ describe('realistic records at volume', () => {
 					};
 				}
 			},
-		};
+		});
 	};
 
 	it('should stream fifty thousand records without collecting them', async () => {

@@ -1,6 +1,7 @@
 import { assert, describe, expect, it } from 'vitest';
 
 import { AsyncSequenceCollection } from '@/src/collections/async';
+import { asyncSourceOf } from '@/src/tests/async/asyncSourceOf';
 import { SequenceCollection } from '@/src/collections/sequence';
 
 /**
@@ -52,20 +53,16 @@ const counted = <T>(values: readonly T[]): { source: AsyncIterable<T>; pulled: (
  * @returns The sequence.
  */
 const streamOf = <T>(values: readonly T[]): AsyncIterable<T> => {
-	return {
-		async *[Symbol.asyncIterator](): AsyncIterator<T> {
-			yield* values;
-		},
-	};
+	return asyncSourceOf(values);
 };
 
 /** A source that never ends, for proving an operator stops pulling. */
 const endless = (): AsyncIterable<number> => {
-	return {
-		async *[Symbol.asyncIterator](): AsyncIterator<number> {
+	return asyncSourceOf({
+		*[Symbol.iterator](): Iterator<number> {
 			for (let value = 0; ; value++) yield value;
 		},
-	};
+	});
 };
 
 /** Records the suites query, so the assertions are not all about numbers. */

@@ -1,6 +1,7 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import { AsyncSequenceCollection } from '@/src/collections/async';
+import { asyncSourceOf } from '@/src/tests/async/asyncSourceOf';
 import { SequenceCollection } from '@/src/collections/sequence';
 import type { TypeTest } from '@/src/@types';
 import type { AsyncSequence } from '@/src/@types/collections/async';
@@ -50,11 +51,7 @@ const counted = <T>(values: readonly T[]): { source: AsyncIterable<T>; pulled: (
  * @returns The sequence.
  */
 const streamOf = <T>(values: readonly T[]): AsyncIterable<T> => {
-	return {
-		async *[Symbol.asyncIterator](): AsyncIterator<T> {
-			yield* values;
-		},
-	};
+	return asyncSourceOf(values);
 };
 
 describe('choose', () => {
@@ -350,14 +347,14 @@ describe('tap', () => {
 		// behind the elements it is meant to be observing.
 		const order: string[] = [];
 
-		const source: AsyncIterable<number> = {
-			async *[Symbol.asyncIterator](): AsyncIterator<number> {
+		const source: AsyncIterable<number> = asyncSourceOf({
+			*[Symbol.iterator](): Iterator<number> {
 				for (const value of [1, 2]) {
 					order.push(`pulled ${String(value)}`);
 					yield value;
 				}
 			},
-		};
+		});
 
 		await AsyncSequenceCollection.from(source)
 			.tap(async (value) => {

@@ -62,19 +62,17 @@ describe('HalfPrecisionFloat', () => {
 
 		const large: readonly number[] = Array.from({ length: 1_000 }, (_, index) => 60_000 + index);
 
-		// eslint-disable-next-line @typescript-eslint/unbound-method -- a descriptor works off its object, which is what this passes
-		const smallCost: number = timed(small, HalfPrecisionFloat.from);
-		// eslint-disable-next-line @typescript-eslint/unbound-method -- a descriptor works off its object, which is what this passes
-		const largeCost: number = timed(large, HalfPrecisionFloat.from);
+		const smallCost: number = timed(small, (value) => HalfPrecisionFloat.from(value));
+		const largeCost: number = timed(large, (value) => HalfPrecisionFloat.from(value));
 
 		expect(largeCost).toBeLessThan(smallCost * 5);
 		expect(smallCost).toBeLessThan(largeCost * 5);
 	});
 
 	it('should cost a small multiple of the platform rounding to single precision', () => {
-		const baseline: number = timed(INPUTS, Math.fround);
-		// eslint-disable-next-line @typescript-eslint/unbound-method -- a descriptor works off its object, which is what this passes
-		const rounded: number = timed(INPUTS, HalfPrecisionFloat.from);
+		// Both called through an arrow, so the two sides pay the same call.
+		const baseline: number = timed(INPUTS, (value) => Math.fround(value));
+		const rounded: number = timed(INPUTS, (value) => HalfPrecisionFloat.from(value));
 
 		expect(rounded).toBeLessThan(baseline * 50);
 	});

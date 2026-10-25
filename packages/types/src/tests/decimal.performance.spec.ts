@@ -25,20 +25,39 @@ import { Decimal } from '@/src/decimal';
 /** Digits of the largest integer printed or parsed since the test started. */
 let largest = 0;
 
-// eslint-disable-next-line @typescript-eslint/unbound-method -- kept to be called with apply, on its own receiver
-const nativeToString = BigInt.prototype.toString;
+/** The prototype's own `toString`, restored after each test. */
+const nativeToString: PropertyDescriptor | undefined = Object.getOwnPropertyDescriptor(
+	BigInt.prototype,
+	'toString',
+);
+
 const nativeBigInt: BigIntConstructor = globalThis.BigInt;
+
+/**
+ * Prints a bigint the way the platform does, recording how long the text was.
+ *
+ * Calls the platform's own function, from the descriptor kept above, on the
+ * bigint itself: while this one is installed, `BigInt.prototype.toString` is
+ * this one, so it cannot be reached through the prototype.
+ *
+ * @param radix Base to print in.
+ * @returns The text.
+ */
+const recordingToString = function (this: bigint, ...radix: [number?]): string {
+	const text: string = (nativeToString?.value as (radix?: number) => string).apply(this, radix);
+
+	largest = Math.max(largest, text.length);
+
+	return text;
+};
 
 beforeEach(() => {
 	largest = 0;
 
-	BigInt.prototype.toString = function (this: bigint, ...radix: [number?]): string {
-		const text: string = nativeToString.apply(this, radix);
-
-		largest = Math.max(largest, text.length);
-
-		return text;
-	};
+	Object.defineProperty(BigInt.prototype, 'toString', {
+		...nativeToString,
+		value: recordingToString,
+	});
 
 	globalThis.BigInt = new Proxy(nativeBigInt, {
 		apply: (target, receiver, argumentsList: unknown[]): unknown => {
@@ -52,7 +71,9 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-	BigInt.prototype.toString = nativeToString;
+	if (nativeToString !== undefined)
+		Object.defineProperty(BigInt.prototype, 'toString', nativeToString);
+
 	globalThis.BigInt = nativeBigInt;
 });
 

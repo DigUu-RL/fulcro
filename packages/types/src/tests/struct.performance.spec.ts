@@ -68,14 +68,15 @@ const countingView = (size: number): { view: DataView; accesses: () => number } 
 	let accesses = 0;
 
 	for (const accessor of ACCESSORS) {
-		// eslint-disable-next-line @typescript-eslint/unbound-method -- kept to be called with apply, on its own receiver
-		const original = DataView.prototype[accessor] as (...parameters: unknown[]) => unknown;
-
 		Object.defineProperty(view, accessor, {
 			value: (...parameters: unknown[]): unknown => {
 				accesses++;
 
-				return original.apply(view, parameters);
+				// The prototype's own accessor, called on this view as its receiver.
+				return (DataView.prototype[accessor] as (...parameters: unknown[]) => unknown).apply(
+					view,
+					parameters,
+				);
 			},
 		});
 	}
