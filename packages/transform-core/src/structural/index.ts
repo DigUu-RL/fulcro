@@ -41,8 +41,8 @@ import { buildExplainer } from '@/src/structural/explain';
  *
  * What this module emits, and what the runtime halves of `ofType`, `cast`, `is`
  * and `as` receive. Declared here because more than one library consumes it;
- * each also re-exports a structurally identical one of its own, so nothing a
- * consumer imports depends on this package.
+ * each also declares one of its own, assignable to this one both ways, so
+ * nothing a consumer imports depends on this package.
  *
  * @template R Type a passing value is taken to be.
  */
