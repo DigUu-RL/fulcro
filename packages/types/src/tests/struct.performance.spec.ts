@@ -233,16 +233,29 @@ describe('struct', () => {
 			return Math.max(performance.now() - started, 1);
 		};
 
-		const baseline: number = timed((offset) => {
+		const byHand = (offset: number): void => {
 			view.setFloat32(offset, value.x, true);
 			view.setFloat32(offset + 4, value.y, true);
 			view.setFloat32(offset + 8, value.z, true);
-		});
+		};
 
-		const described: number = timed((offset) => {
+		const described = (offset: number): void => {
 			Vector3.write(view, offset, value);
-		});
+		};
 
-		expect(described).toBeLessThan(baseline * 25);
+		// Interleaved, with the fastest round of each side compared. These windows
+		// last a few milliseconds, and one pause during a full run of the
+		// workspace once outlasted the baseline thirty times over. Interference
+		// only ever adds time, so the minimum is the one estimate it cannot reach,
+		// while a write that really cost more would raise every round alike.
+		const baselines: number[] = [];
+		const measured: number[] = [];
+
+		for (let round = 0; round < 5; round++) {
+			baselines.push(timed(byHand));
+			measured.push(timed(described));
+		}
+
+		expect(Math.min(...measured)).toBeLessThan(Math.min(...baselines) * 25);
 	});
 });
