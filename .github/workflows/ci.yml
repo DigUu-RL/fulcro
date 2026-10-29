@@ -102,10 +102,17 @@ jobs:
       - name: Install
         run: npm ci
 
-      # Neither reads the built output, so this job skips the build entirely and
-      # runs once rather than once per matrix entry.
+      # Runs once rather than once per matrix entry. Formatting reads only the
+      # files, so it goes first and fails fast.
       - name: Formatting
         run: npm run format:check
+
+      # The lint is type-aware, and the suites import the packages by name, which
+      # resolves to their built output. Without it every such import is an
+      # unresolved type, and the rules about `any` report each use of one —
+      # 1,713 findings on the first run that skipped this step.
+      - name: Build
+        run: npm run build
 
       - name: Lint
         run: npx eslint .
