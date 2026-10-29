@@ -3,7 +3,7 @@ import process from 'node:process';
 import { afterEach, assert, describe, expect, expectTypeOf, it } from 'vitest';
 
 import { isFulcroError } from '@fulcro/errors';
-import { createWorkerPool, type WorkerPool } from '@fulcro/parallel';
+import { createWorkerPool, type RunOptions, type WorkerPool } from '@fulcro/parallel';
 
 import { createPool } from '@/src/pool/index.js';
 import { createFakeWorkers, type FakeWorkers, NOWHERE, until } from '@/src/tests/fake-worker';
@@ -150,6 +150,29 @@ describe('running work on workers', () => {
 			{ id: 1, total: 60 },
 			{ id: 2, total: 5 },
 		]);
+	});
+
+	it('should move a buffer listed for transfer, and copy one that is not', async () => {
+		// A transferred buffer is detached on the sending side, which is how a
+		// move rather than a copy shows from here: the worker still reads all of it.
+		const pool = poolFor<ArrayBuffer, number>('byteLengthOf', 1);
+		const moved = new ArrayBuffer(1024);
+		const copied = new ArrayBuffer(1024);
+
+		expect(await pool.map([moved], { transfer: (buffer) => [buffer as ArrayBuffer] })).toEqual([
+			1024,
+		]);
+
+		expect(await pool.map([copied])).toEqual([1024]);
+		expect([moved.detached, copied.detached]).toEqual([true, false]);
+	});
+
+	it('should name what it transfers without the DOM library', () => {
+		// `Transferable` is the browser's, and a Node project without the DOM
+		// library could not compile a declaration naming it.
+		expectTypeOf<RunOptions['transfer']>().toEqualTypeOf<
+			((value: unknown) => readonly object[]) | undefined
+		>();
 	});
 
 	it('should hand back an empty result for no elements', async () => {

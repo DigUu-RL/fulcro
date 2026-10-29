@@ -20,7 +20,9 @@ export const spawnWorker: SpawnWorker = (url: URL): WorkerHandle => {
 	const worker = new Worker(url, { type: 'module' });
 
 	return {
-		post: (message: unknown, transfer?: readonly Transferable[]): void => {
+		post: (message: unknown, transfer?: readonly object[]): void => {
+			// The pool takes any object to transfer; this platform's own list is
+			// what `postMessage` checks it against.
 			worker.postMessage(message, (transfer ?? []) as Transferable[]);
 		},
 

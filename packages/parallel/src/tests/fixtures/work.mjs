@@ -28,6 +28,15 @@ export const totalOf = (record) => ({
 });
 
 /**
+ * Measures a buffer from inside the worker, so the transfer assertions can tell
+ * the bytes arrived whether they were moved or copied.
+ *
+ * @param {ArrayBuffer} buffer Buffer that crossed the boundary.
+ * @returns {number} How many bytes it holds here.
+ */
+export const byteLengthOf = (buffer) => buffer.byteLength;
+
+/**
  * Burns CPU, which is the only kind of work threads help with.
  *
  * @param {number} rounds How much to burn.

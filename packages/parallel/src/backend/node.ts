@@ -18,10 +18,11 @@ export const spawnWorker: SpawnWorker = (url: URL): WorkerHandle => {
 	const worker = new Worker(url);
 
 	return {
-		post: (message: unknown, transfer?: readonly Transferable[]): void => {
-			// Node calls its transfer list `TransferListItem`, the browser calls it
-			// `Transferable`. Same values, two names; the pool speaks the portable one.
-			worker.postMessage(message, transfer as unknown as readonly ArrayBuffer[]);
+		post: (message: unknown, transfer?: readonly object[]): void => {
+			// The pool takes any object to transfer; Node's own list is what
+			// `postMessage` checks it against. Named through `postMessage` itself,
+			// because `@types/node` has renamed that list between majors.
+			worker.postMessage(message, transfer as Parameters<Worker['postMessage']>[1]);
 		},
 
 		listen: (handler): (() => void) => {

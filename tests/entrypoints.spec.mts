@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import typescript from 'typescript';
 import { assert, beforeAll, describe, expect, it } from 'vitest';
 
 /**
@@ -183,6 +184,51 @@ const exportedPaths = (node: unknown): string[] => {
 
 	return Object.values(node as Record<string, unknown>).flatMap(exportedPaths);
 };
+
+describe('the declarations, as a Node project without the DOM compiles them', () => {
+	it('should compile every entry point with the library declarations checked', () => {
+		// `@fulcro/parallel` once named the browser's `Transferable` in a
+		// published type, and a project like this one got TS2304 from inside the
+		// package. Only `@fulcro/parallel` compiles against the DOM, so only a
+		// consumer without it notices a type borrowed from there.
+		const sample: string = path.join(WORKSPACE_ROOT, 'tests', 'declarations.sample.ts');
+
+		const program: typescript.Program = typescript.createProgram([sample], {
+			target: typescript.ScriptTarget.ES2022,
+			module: typescript.ModuleKind.NodeNext,
+			moduleResolution: typescript.ModuleResolutionKind.NodeNext,
+			lib: ['lib.es2024.d.ts'],
+			types: ['node'],
+			strict: true,
+			skipLibCheck: false,
+			noEmit: true,
+		});
+
+		const ours = (fileName: string): boolean => {
+			return /[\\/]packages[\\/][^\\/]+[\\/]dist[\\/]|declarations\.sample\.ts$/.test(fileName);
+		};
+
+		// Ours only: `unplugin`'s declarations import the types of every bundler
+		// it adapts, and this project installs none of them.
+		const found: string[] = typescript.getPreEmitDiagnostics(program).flatMap((diagnostic) => {
+			return diagnostic.file !== undefined && ours(diagnostic.file.fileName)
+				? [
+						`${path.relative(WORKSPACE_ROOT, diagnostic.file.fileName)}: TS${String(diagnostic.code)} ${typescript.flattenDiagnosticMessageText(diagnostic.messageText, ' ')}`,
+					]
+				: [];
+		});
+
+		expect(found).toEqual([]);
+
+		// A guard on the guard: a sample that resolved none of the packages would
+		// report nothing from them.
+		expect(
+			program
+				.getSourceFiles()
+				.filter((file) => /[\\/]packages[\\/]parallel[\\/]dist[\\/]/.test(file.fileName)),
+		).not.toEqual([]);
+	}, 120_000);
+});
 
 describe('the repository as someone else clones it', () => {
 	it('should not be ignoring a file the sources need', () => {
