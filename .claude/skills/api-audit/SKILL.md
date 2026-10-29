@@ -220,10 +220,13 @@ the ones a test would.
 
 **Packaging** — what is in the tarball.
 
-1. `files` still covers every path the `exports` map names. `files: ["dist"]` and
-   an `exports` target outside `dist/` is a package that resolves here and fails
-   on `npm install`.
-2. Nothing unintended is added: sources, fixtures, `.tsbuildinfo`, test output.
+1. `files` still covers every path the `exports` map names. `files` carries
+   `dist` and the sources, so an `exports` target outside `dist/` resolves here
+   and fails on `npm install`.
+2. Nothing unintended is added: suites, fixtures, `.tsbuildinfo`, test output.
+   The sources under `src`, without `src/tests`, are intended — they are what the
+   declaration maps point at — and every map a `.d.ts` names is packed with
+   every source it names.
 3. `main`, `types`, `engines`, `peerDependencies` and their `Meta` entries match
    what the package actually requires. A peer that became mandatory is a break
    even though no exported name moved.

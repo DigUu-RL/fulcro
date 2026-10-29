@@ -17,7 +17,10 @@ const buildConfiguration: UserConfig = defineConfig({
 	unbundle: true,
 	// `.js` and `.d.ts` for every entry, `.mts` sources included, so the `exports` map reads the same throughout.
 	fixedExtension: false,
-	dts: true,
+	// Declaration maps, so a consumer's Go to Definition lands in the TypeScript source, which `files` ships beside
+	// `dist` for that alone. Without them every declaration still names a map, since `sourcemap` is the whole build's,
+	// and nothing would have emitted it.
+	dts: { sourcemap: true },
 	sourcemap: true,
 	clean: true,
 });

@@ -246,8 +246,9 @@ one that gets missed:
 - the target does not exist in `dist/` — a build that emitted a different layout
   than the map claims;
 - the target exists and `files` does not carry it. Every package here declares
-  `files: ["dist"]`, so a target emitted anywhere else resolves locally, passes
-  check 7, and is absent from the consumer's install.
+  `files: ["dist", "src", "!src/tests"]` — the sources ship only for the
+  declaration maps to point at — so a target emitted anywhere else resolves
+  locally, passes check 7, and is absent from the consumer's install.
 
 **A blocking failure** is a `types` condition pointing at a `.d.ts` that is not
 packed, or at one that does not itself resolve its imports. A declaration that

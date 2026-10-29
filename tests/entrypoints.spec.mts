@@ -249,6 +249,54 @@ describe.each(PACKAGE_NAMES)('%s, as a consumer sees it', (name) => {
 		}
 	});
 
+	it('should publish the declaration maps its declarations name, and the sources they point at', () => {
+		// A declaration naming a map the tarball lacks is a missing file for every
+		// tool that reads declaration maps, and a map whose source is absent sends
+		// a consumer's Go to Definition back to the `.d.ts`. The build once named
+		// 95 maps it never emitted, and nothing else here would have noticed.
+		const { root } = manifestOf(name);
+		const shipped: readonly string[] = packedFiles(name);
+		const declarations: readonly string[] = shipped.filter((file) => file.endsWith('.d.ts'));
+		let maps = 0;
+
+		for (const declaration of declarations) {
+			const text: string = readFileSync(path.join(root, declaration), 'utf8');
+			const named: string | undefined = /\/\/# sourceMappingURL=(\S+)\s*$/.exec(text)?.[1];
+
+			if (named === undefined) continue;
+
+			const map: string = path.posix.join(path.posix.dirname(declaration), named);
+
+			expect(
+				shipped,
+				`${declaration} names ${named}, which the tarball does not contain`,
+			).toContain(map);
+
+			const { sources } = JSON.parse(readFileSync(path.join(root, map), 'utf8')) as {
+				readonly sources: readonly string[];
+			};
+
+			for (const source of sources) {
+				expect(shipped, `${map} points at ${source}, which the tarball does not contain`).toContain(
+					path.posix.join(path.posix.dirname(map), source),
+				);
+			}
+
+			maps += 1;
+		}
+
+		// A guard on the guard: a pattern that matched no declaration would make
+		// every assertion above pass without checking anything.
+		expect(maps).toBeGreaterThan(0);
+	});
+
+	it('should publish its sources without its suites', () => {
+		const shipped: readonly string[] = packedFiles(name);
+
+		expect(shipped.filter((file) => file.startsWith('src/tests/'))).toEqual([]);
+		expect(shipped.filter((file) => /\.(spec|sample|fixture)\.ts$/.test(file))).toEqual([]);
+	});
+
 	it('should be publishable under its scope', () => {
 		// A scoped package defaults to restricted, and `npm publish` then fails
 		// on an account without a paid plan.
