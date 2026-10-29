@@ -11,7 +11,17 @@ npm install @fulcro/functions
 ```
 
 ```ts
-import { failure, none, optionOf, some, success, switchFor, tryCatch } from '@fulcro/functions';
+import {
+	failure,
+	none,
+	type Option,
+	optionOf,
+	type Result,
+	some,
+	success,
+	switchFor,
+	tryCatch,
+} from '@fulcro/functions';
 ```
 
 ## `switchFor`

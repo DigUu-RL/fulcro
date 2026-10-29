@@ -7,6 +7,7 @@ Shared machinery behind the Fulcro compile time transformers.
 a transformer will too. It is published
 because they depend on it, not because it is meant to be used directly, and its
 shape is theirs to change without notice.
+🇧🇷 [Leia a documentação em português](../../docs/pt-BR/README.md).
 
 If you are looking for the compiler plugin, it lives in the package whose calls
 it rewrites:
@@ -44,7 +45,17 @@ Everything with nothing to do with any particular utility:
 | `createTransformer`         | Walks a source file once and hands each call to the rewriter that claims it                                                            |
 | `FileAnalyzer`              | Checks a whole file as written, once, before any rewriter — for a rule no single call decides                                          |
 | `createFileTransformer`     | Builds and keeps a program, for the bundlers that have no checker                                                                      |
-| `createTransformerUnplugin` | The adapter surface Vite, Rollup, Webpack, Rspack, esbuild and Farm expect                                                             |
+| `createTransformerUnplugin` | The adapter surface Vite, Rollup, Webpack, Rspack, esbuild and Farm expect, from `./unplugin`                                          |
+| `buildStructuralTest`       | Writes out the shape test for a type the compiler can prove completely, or declines — what `ofType<T>()` and `as<T>()` receive         |
+| `isTupleType`               | Tells a tuple from a plain array, for every transformer that describes or fills one                                                    |
+| `utilityModuleSegment`      | The path segment a declaration has to sit under for a call to be claimed                                                               |
+| `IDENTIFIER_PATTERN`        | Which property names can be emitted unquoted                                                                                           |
+
+The types exported beside them — `CallRewriter`, `CallTarget`, `CallForm`,
+`RewriteContext`, `AnalysisContext`, `TransformerOptions`, `TransformerExtras`,
+`TransformerFactory`, `FileTransformer`, `TransformCoreOptions`, `TypeTest`,
+`StructuralOptions`, and `TransformerUnplugin` and `PluginOptions` from
+`./unplugin` — are what those functions take and return.
 
 What lives in each library instead is the part that knows what to **emit** — how
 `defaultOf` fills a tuple, how a type argument becomes a runtime test. That
