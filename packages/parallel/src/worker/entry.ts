@@ -149,7 +149,7 @@ const receive = async (message: Incoming): Promise<void> => {
 };
 
 /** Wires the worker to whichever messaging the runtime provides. */
-const listen = async (): Promise<void> => {
+const listen = (): void => {
 	// A browser worker. `self` is the global scope, and there is no
 	// `parentPort` to import.
 	if (typeof self !== 'undefined' && typeof self.postMessage === 'function') {
@@ -164,7 +164,11 @@ const listen = async (): Promise<void> => {
 		return;
 	}
 
-	const { parentPort } = await import('node:worker_threads');
+	// Node. Reached through `getBuiltinModule` rather than an import, so a
+	// browser bundle never pulls `node:worker_threads` in — and synchronously,
+	// so this module needs no top-level await, which `require` refuses: loaded
+	// that way outside a worker it would report the await, not this refusal.
+	const { parentPort } = process.getBuiltinModule('node:worker_threads');
 
 	if (parentPort === null) {
 		throw createError('FULCRO3002', { operation: 'listen' });
@@ -179,4 +183,4 @@ const listen = async (): Promise<void> => {
 	});
 };
 
-await listen();
+listen();

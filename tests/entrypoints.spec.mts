@@ -336,6 +336,23 @@ describe.each(PACKAGE_NAMES)('%s, as a consumer sees it', (name) => {
 		expect(maps).toBeGreaterThan(0);
 	});
 
+	it('should use no top-level await, which require refuses', () => {
+		// A compiler plugin loader that calls `require` reaches these packages
+		// through Node's `require` of an ES module, and that refuses a module
+		// graph with a top-level await. The build emits top-level statements
+		// unindented, so one would start a line.
+		const { root } = manifestOf(name);
+		const modules: readonly string[] = packedFiles(name).filter((file) => file.endsWith('.js'));
+
+		expect(modules.length).toBeGreaterThan(0);
+
+		for (const file of modules) {
+			expect(readFileSync(path.join(root, file), 'utf8'), `${name} ${file}`).not.toMatch(
+				/^(?:await\b|for await\b|(?:const|let|var)\s[^=]*=\s*await\b)/m,
+			);
+		}
+	});
+
 	it('should publish its sources without its suites', () => {
 		const shipped: readonly string[] = packedFiles(name);
 
@@ -800,6 +817,12 @@ describe('@fulcro/parallel', () => {
 		// That holds because Vitest runs this file in a child process, not a
 		// worker thread: there, `parentPort` would be Vitest's own.
 		expect(resolve('@fulcro/parallel/worker')).toMatch(/[\\/]dist[\\/]worker[\\/]entry\.js$/);
+
+		// Through `require` first, which refuses a module with a top-level await
+		// outright — the refusal would then name the await rather than the worker.
+		expect(() => {
+			createRequire(import.meta.url)('@fulcro/parallel/worker');
+		}).toThrow(expect.objectContaining({ code: 'FULCRO3002' }));
 
 		await expect(import('@fulcro/parallel/worker')).rejects.toMatchObject({
 			code: 'FULCRO3002',
