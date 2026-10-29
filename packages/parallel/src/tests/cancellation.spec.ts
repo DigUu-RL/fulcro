@@ -1,10 +1,7 @@
 import { describe, expect, expectTypeOf, it, vi } from 'vitest';
 
-import {
-	type CancellationSource,
-	type CancellationToken,
-} from '@/@types/index.js';
-import { createCancellationSource } from '@/cancellation/index.js';
+import { type CancellationSource, type CancellationToken } from '@/src/@types/index.js';
+import { createCancellationSource } from '@/src/cancellation/index.js';
 
 /**
  * Cancellation source suite.
@@ -21,7 +18,10 @@ describe('a fresh source', () => {
 		expect(token.isCancelled).toBe(false);
 		expect(token.reason).toBeUndefined();
 		expect(token.signal.aborted).toBe(false);
-		expect(() => token.throwIfCancelled()).not.toThrow();
+
+		expect(() => {
+			token.throwIfCancelled();
+		}).not.toThrow();
 	});
 });
 
@@ -62,7 +62,9 @@ describe('cancel', () => {
 
 		source.cancel(reason);
 
-		expect(() => source.token.throwIfCancelled()).toThrow(reason);
+		expect(() => {
+			source.token.throwIfCancelled();
+		}).toThrow(reason);
 	});
 });
 
@@ -119,26 +121,24 @@ describe('onCancelled', () => {
 		const error = new Error('from the handler');
 		const deferred: (() => void)[] = [];
 
-		const spy = vi
-			.spyOn(globalThis, 'queueMicrotask')
-			.mockImplementation((callback) => {
-				deferred.push(callback);
-			});
+		const spy = vi.spyOn(globalThis, 'queueMicrotask').mockImplementation((callback) => {
+			deferred.push(callback);
+		});
 
 		source.cancel();
 
 		try {
-			expect(() =>
-				source.token.onCancelled(() => {
+			expect(() => {
+				return source.token.onCancelled(() => {
 					throw error;
-				}),
-			).not.toThrow();
+				});
+			}).not.toThrow();
 		} finally {
 			spy.mockRestore();
 		}
 
 		expect(deferred).toHaveLength(1);
-		expect(() => deferred[0]()).toThrow(error);
+		expect(() => deferred[0]?.()).toThrow(error);
 	});
 
 	it('should run handlers before cancel returns', () => {
@@ -224,7 +224,10 @@ describe('values taken off their object', () => {
 		onCancelled(handler);
 		cancel('detached');
 
-		expect(() => throwIfCancelled()).toThrow();
+		expect(() => {
+			throwIfCancelled();
+		}).toThrow();
+
 		expect(handler).toHaveBeenCalledWith('detached');
 	});
 
@@ -240,9 +243,7 @@ describe('types', () => {
 	it('should be disposable, so using releases the parent', () => {
 		expectTypeOf<CancellationSource>().toExtend<Disposable>();
 
-		expectTypeOf(
-			createCancellationSource,
-		).returns.toEqualTypeOf<CancellationSource>();
+		expectTypeOf(createCancellationSource).returns.toEqualTypeOf<CancellationSource>();
 	});
 
 	it('should hand the platform a real AbortSignal', () => {
@@ -250,8 +251,6 @@ describe('types', () => {
 	});
 
 	it('should accept a parent token and nothing else', () => {
-		expectTypeOf(createCancellationSource).parameters.toEqualTypeOf<
-			[parent?: CancellationToken]
-		>();
+		expectTypeOf(createCancellationSource).parameters.toEqualTypeOf<[parent?: CancellationToken]>();
 	});
 });

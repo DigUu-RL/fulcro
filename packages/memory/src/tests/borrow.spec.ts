@@ -1,15 +1,14 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { asReadOnlyView } from '@/asReadOnlyView';
-import { borrow } from '@/borrow';
-import type { Borrowed } from '@/borrowed';
-import { createManagedStorage } from '@/managedStorage';
-import { own } from '@/own';
-import type { Owned } from '@/owned';
-import { pointerTo } from '@/pointerTo';
-import type { ReadOnlyView } from '@/view';
-
-import { coded } from './coded';
+import { asReadOnlyView } from '@/src/asReadOnlyView';
+import { borrow } from '@/src/borrow';
+import type { Borrowed } from '@/src/borrowed';
+import { createManagedStorage } from '@/src/managedStorage';
+import { own } from '@/src/own';
+import type { Owned } from '@/src/owned';
+import { pointerTo } from '@/src/pointerTo';
+import { coded } from '@/src/tests/coded';
+import type { ReadOnlyView } from '@/src/view';
 
 /**
  * Behaviour suite for `borrow`, and for the `Borrowed<T>` it returns.
@@ -25,14 +24,15 @@ import { coded } from './coded';
  * @param length How many values.
  * @returns The owner.
  */
-const counting = (length: number): Owned<number> =>
-	own(() => {
+const counting = (length: number): Owned<number> => {
+	return own(() => {
 		const storage = createManagedStorage(length, 0);
 
 		for (let index = 0; index < length; index++) storage.set(index, index);
 
 		return storage;
 	});
+};
 
 describe('borrow', () => {
 	it('should read every value of the owner, in place', () => {
@@ -40,9 +40,7 @@ describe('borrow', () => {
 		const values: Borrowed<number> = borrow(owner);
 
 		expect(values.length).toBe(4);
-		expect([0, 1, 2, 3].map((index) => values.get(index))).toEqual([
-			0, 1, 2, 3,
-		]);
+		expect([0, 1, 2, 3].map((index) => values.get(index))).toEqual([0, 1, 2, 3]);
 	});
 
 	it('should let shared borrows of one owner read at once', () => {
@@ -66,6 +64,7 @@ describe('borrow', () => {
 		expect('set' in values).toBe(false);
 		expect(Object.isFrozen(values)).toBe(true);
 		expect(asReadOnlyView(values, 1).get(0)).toBe(1);
+
 		// A pointer can write, so it is refused over a borrow that cannot.
 		expect(() => pointerTo(values as never, 1)).toThrow(
 			expect.objectContaining({ code: 'FULCRO7017' }),
@@ -81,9 +80,7 @@ describe('borrow', () => {
 	it('should refuse something that is not an owner', () => {
 		expect(() => borrow({ length: 1 } as never)).toThrow(
 			coded(
-				new TypeError(
-					'FULCRO7017: borrow: expected an owner from own or move, received object.',
-				),
+				new TypeError('FULCRO7017: borrow: expected an owner from own or move, received object.'),
 				{
 					operation: 'borrow',
 					expected: 'an owner from own or move',

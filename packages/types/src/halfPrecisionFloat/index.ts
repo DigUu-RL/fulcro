@@ -1,7 +1,8 @@
-import type { Branded } from '@/brand';
-import { createFloatType } from '@/float';
-import type { Layout } from '@/layout';
-import type { BoundedNumericType } from '@/numericType';
+import type { Branded } from '@/src/brand';
+import { createFloatType } from '@/src/float';
+import { binaryExponentOf } from '@/src/float/binaryExponent';
+import type { Layout } from '@/src/layout';
+import type { BoundedNumericType } from '@/src/numericType';
 
 /**
  * An IEEE 754 binary16 value: 11 bits of precision, 5 of exponent, finite from
@@ -10,8 +11,7 @@ import type { BoundedNumericType } from '@/numericType';
  * Carried by a `number` holding a value the format can represent exactly.
  * Converting rounds to the nearest such value, ties to even.
  */
-export type HalfPrecisionFloat = Branded<number, 'HalfPrecisionFloat'> &
-	Layout<2, 2>;
+export type HalfPrecisionFloat = Branded<number, 'HalfPrecisionFloat'> & Layout<2, 2>;
 
 /**
  * The point from which a double rounds to infinity rather than to 65504, the
@@ -49,17 +49,11 @@ const roundToHalfPrecision = (value: number): number => {
 
 	if (magnitude >= OVERFLOW_THRESHOLD) return sign * Infinity;
 
-	// `Math.log2` is not exact next to a power of two, so the estimate is
-	// corrected against the power itself.
-	let exponent: number = Math.floor(Math.log2(magnitude));
-
-	if (2 ** exponent > magnitude) exponent--;
-	else if (2 ** (exponent + 1) <= magnitude) exponent++;
+	const exponent: number = binaryExponentOf(magnitude);
 
 	// Below the normal range the spacing stops shrinking: that is what makes
 	// the subnormals evenly spaced at 2^-24.
-	const spacing: number =
-		2 ** (Math.max(exponent, MINIMUM_NORMAL_EXPONENT) - FRACTION_BITS);
+	const spacing: number = 2 ** (Math.max(exponent, MINIMUM_NORMAL_EXPONENT) - FRACTION_BITS);
 	const units: number = magnitude / spacing;
 
 	// `Math.round` breaks a tie upwards; a tie on an odd count goes back down,
@@ -79,7 +73,8 @@ const roundToHalfPrecision = (value: number): number => {
  * HalfPrecisionFloat.from(65520); // Infinity
  * ```
  */
-export const HalfPrecisionFloat: BoundedNumericType<
-	HalfPrecisionFloat,
-	number
-> = createFloatType('HalfPrecisionFloat', 65504, roundToHalfPrecision);
+export const HalfPrecisionFloat: BoundedNumericType<HalfPrecisionFloat, number> = createFloatType(
+	'HalfPrecisionFloat',
+	65504,
+	roundToHalfPrecision,
+);

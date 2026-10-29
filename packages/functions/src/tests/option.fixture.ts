@@ -22,8 +22,7 @@ export const handled: number = option.handle({
 });
 
 /** Narrows by method. Must compile. */
-export const narrowedBySome = (): string | null =>
-	option.isSome() ? option.value : null;
+export const narrowedBySome = (): string | null => (option.isSome() ? option.value : null);
 
 /** Narrows by the absent method. Must compile. */
 export const narrowedByNone = (): null | string =>

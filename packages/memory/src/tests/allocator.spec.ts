@@ -1,13 +1,12 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import type { Allocation, Allocator } from '@/allocator';
-import { createArenaAllocator } from '@/arenaAllocator';
-import { createFixedBufferAllocator } from '@/fixedBufferAllocator';
-import { createManagedAllocator } from '@/managedAllocator';
-import { createPoolAllocator } from '@/poolAllocator';
-import { createStackAllocator } from '@/stackAllocator';
-
-import { coded } from './coded';
+import type { Allocation, Allocator } from '@/src/allocator';
+import { createArenaAllocator } from '@/src/arenaAllocator';
+import { createFixedBufferAllocator } from '@/src/fixedBufferAllocator';
+import { createManagedAllocator } from '@/src/managedAllocator';
+import { createPoolAllocator } from '@/src/poolAllocator';
+import { createStackAllocator } from '@/src/stackAllocator';
+import { coded } from '@/src/tests/coded';
 
 /**
  * Behaviour suite for the `Allocator` contract.
@@ -24,16 +23,8 @@ import { coded } from './coded';
 /** Each strategy: its name, the operation its errors name, and a factory. */
 const STRATEGIES = [
 	['ManagedAllocator', 'ManagedAllocator.allocate', createManagedAllocator],
-	[
-		'ArenaAllocator',
-		'ArenaAllocator.allocate',
-		(): Allocator => createArenaAllocator(256),
-	],
-	[
-		'StackAllocator',
-		'StackAllocator.allocate',
-		(): Allocator => createStackAllocator(4096),
-	],
+	['ArenaAllocator', 'ArenaAllocator.allocate', (): Allocator => createArenaAllocator(256)],
+	['StackAllocator', 'StackAllocator.allocate', (): Allocator => createStackAllocator(4096)],
 	[
 		'a frame of StackAllocator',
 		'StackAllocator.enter().allocate',
@@ -44,11 +35,7 @@ const STRATEGIES = [
 		'FixedBufferAllocator.allocate',
 		(): Allocator => createFixedBufferAllocator(new ArrayBuffer(4096)),
 	],
-	[
-		'PoolAllocator',
-		'PoolAllocator.allocate',
-		(): Allocator => createPoolAllocator(64, 32),
-	],
+	['PoolAllocator', 'PoolAllocator.allocate', (): Allocator => createPoolAllocator(64, 32)],
 ] as const;
 
 /**
@@ -57,14 +44,15 @@ const STRATEGIES = [
  * @param allocation Allocation to read.
  * @returns Its bytes, in order.
  */
-const bytesOf = (allocation: Allocation): number[] =>
-	Array.from(
+const bytesOf = (allocation: Allocation): number[] => {
+	return Array.from(
 		new Uint8Array(
 			allocation.bytes.buffer,
 			allocation.bytes.byteOffset,
 			allocation.bytes.byteLength,
 		),
 	);
+};
 
 /**
  * A consumer that knows nothing but the contract.
@@ -76,7 +64,9 @@ const bytesOf = (allocation: Allocation): number[] =>
 const roundTrip = (allocator: Allocator, values: number[]): number[] => {
 	const { bytes } = allocator.allocate(values.length * 8, 8);
 
-	values.forEach((value, index) => bytes.setFloat64(index * 8, value));
+	values.forEach((value, index) => {
+		bytes.setFloat64(index * 8, value);
+	});
 
 	return values.map((_, index) => bytes.getFloat64(index * 8));
 };
@@ -107,11 +97,7 @@ describe.each(STRATEGIES)('%s, as an Allocator', (_name, operation, create) => {
 		const first: Allocation = allocator.allocate(32, 4);
 		const second: Allocation = allocator.allocate(32, 4);
 
-		new Uint8Array(
-			first.bytes.buffer,
-			first.bytes.byteOffset,
-			first.bytes.byteLength,
-		).fill(0xff);
+		new Uint8Array(first.bytes.buffer, first.bytes.byteOffset, first.bytes.byteLength).fill(0xff);
 
 		expect(bytesOf(second).every((byte) => byte === 0)).toBe(true);
 	});
@@ -148,7 +134,7 @@ describe.each(STRATEGIES)('%s, as an Allocator', (_name, operation, create) => {
 		[Number.NaN, 'NaN'],
 		[2 ** 53, String(2 ** 53)],
 	])('should refuse a size of %s', (size, shown) => {
-		expect(() => create().allocate(size, 1)).toThrowError(
+		expect(() => create().allocate(size, 1)).toThrow(
 			coded(
 				new RangeError(
 					`FULCRO7005: ${operation}: expected a size in bytes that is a non-negative safe integer, received ${shown}.`,
@@ -165,7 +151,7 @@ describe.each(STRATEGIES)('%s, as an Allocator', (_name, operation, create) => {
 		[1.5, '1.5'],
 		[Number.NaN, 'NaN'],
 	])('should refuse an alignment of %s', (alignment, shown) => {
-		expect(() => create().allocate(8, alignment)).toThrowError(
+		expect(() => create().allocate(8, alignment)).toThrow(
 			coded(
 				new RangeError(
 					`FULCRO7006: ${operation}: expected an alignment that is a positive power of two, received ${shown}.`,
@@ -176,7 +162,7 @@ describe.each(STRATEGIES)('%s, as an Allocator', (_name, operation, create) => {
 	});
 
 	it('should describe a request that is not a number', () => {
-		expect(() => create().allocate('8' as unknown as number, 1)).toThrowError(
+		expect(() => create().allocate('8' as unknown as number, 1)).toThrow(
 			coded(
 				new RangeError(
 					`FULCRO7005: ${operation}: expected a size in bytes that is a non-negative safe integer, received string.`,
@@ -187,7 +173,7 @@ describe.each(STRATEGIES)('%s, as an Allocator', (_name, operation, create) => {
 	});
 
 	it('should satisfy the contract by type', () => {
-		expectTypeOf(create()).toMatchTypeOf<Allocator>();
+		expectTypeOf(create()).toExtend<Allocator>();
 		expectTypeOf(create().allocate(8, 8)).toEqualTypeOf<Allocation>();
 	});
 });

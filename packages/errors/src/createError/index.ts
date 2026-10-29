@@ -1,6 +1,7 @@
-import { Catalog, catalog } from '@/catalog';
-import { DetailsShape, ErrorDefinition } from '@/definition';
-import type { FulcroError } from '@/fulcroError';
+import type { Catalog } from '@/src/catalog';
+import { catalog } from '@/src/catalog';
+import type { DetailsShape, ErrorDefinition } from '@/src/definition';
+import type { FulcroError } from '@/src/fulcroError';
 
 /**
  * Every code a `@fulcro` package can throw, `FULCRO` followed by four digits.
@@ -26,19 +27,7 @@ export type ErrorCode = keyof Catalog;
  *
  * @template TCode The code.
  */
-export type DetailsOf<TCode extends ErrorCode> = Readonly<
-	Parameters<Catalog[TCode]['message']>[0]
->;
-
-/**
- * An error thrown by a `@fulcro` package, as it was named before it carried
- * its details.
- *
- * @deprecated Use {@link FulcroError}, which also carries `details`. Removed
- * in the next major version.
- * @template TError The class the error is an instance of.
- */
-export type CodedError<TError extends Error = Error> = TError & FulcroError;
+export type DetailsOf<TCode extends ErrorCode> = Readonly<Parameters<Catalog[TCode]['message']>[0]>;
 
 /** The class the error of a code is created as. */
 type KindOf<TCode extends ErrorCode> = InstanceType<Catalog[TCode]['kind']>;
@@ -49,19 +38,14 @@ type KindOf<TCode extends ErrorCode> = InstanceType<Catalog[TCode]['kind']>;
  * catalog's constraint, and would give its code no `operation` to report.
  */
 type WithoutDetails = {
-	[TCode in ErrorCode]: Parameters<Catalog[TCode]['message']> extends [
-		DetailsShape,
-	]
+	[TCode in ErrorCode]: Parameters<Catalog[TCode]['message']> extends [DetailsShape]
 		? never
 		: TCode;
 }[ErrorCode];
 
 // Fails to compile, naming the code, when a template takes no details.
-const everyTemplateTakesDetails: [WithoutDetails] extends [never]
-	? true
-	: WithoutDetails = true;
-
-void everyTemplateTakesDetails;
+// Named with a leading underscore because it exists only to be type checked.
+const _everyTemplateTakesDetails: [WithoutDetails] extends [never] ? true : WithoutDetails = true;
 
 /**
  * Creates the error a code names, ready to be thrown.
@@ -97,15 +81,15 @@ export const createError = <TCode extends ErrorCode>(
 
 	const error: Error = new definition.kind(
 		`${code}: ${text}`,
-		definition.cause === undefined
-			? undefined
-			: { cause: definition.cause(fields) },
+		definition.cause === undefined ? undefined : { cause: definition.cause(fields) },
 	);
 
 	// Without this the first frame of every stack would be this function, and
 	// the line a reader wants — where the error was thrown — would be the second.
 	// V8 only; elsewhere the stack keeps the extra frame and nothing else changes.
-	Error.captureStackTrace?.(error, createError);
+	// Asked with `in` because Node's types declare it on every `Error`, while
+	// Firefox and Safari have none.
+	if ('captureStackTrace' in Error) Error.captureStackTrace(error, createError);
 
 	// The class was chosen by the same code the return type is derived from, so
 	// the instance is the one `KindOf` names; the compiler cannot follow a value

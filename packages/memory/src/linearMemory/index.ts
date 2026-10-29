@@ -1,6 +1,6 @@
 import { createError } from '@fulcro/errors';
 
-import { describeBuffer } from '@/storage/describeBuffer';
+import { describeBuffer } from '@/src/storage/describeBuffer';
 
 /**
  * One contiguous block of bytes, in which an address is a byte offset: address
@@ -50,8 +50,9 @@ const currentBytes = new WeakMap<LinearMemory, () => DataView>();
  * @param value Value to inspect.
  * @returns `true` when it is.
  */
-export const isLinearMemory = (value: unknown): value is LinearMemory =>
-	currentBytes.has(value as LinearMemory);
+export const isLinearMemory = (value: unknown): value is LinearMemory => {
+	return currentBytes.has(value as LinearMemory);
+};
 
 /**
  * The bytes of a linear memory as they are now, every address in it valid in
@@ -60,8 +61,9 @@ export const isLinearMemory = (value: unknown): value is LinearMemory =>
  * @param memory A linear memory made by this package.
  * @returns A view over all of it.
  */
-export const bytesOf = (memory: LinearMemory): DataView =>
-	(currentBytes.get(memory) as () => DataView)();
+export const bytesOf = (memory: LinearMemory): DataView => {
+	return (currentBytes.get(memory) as () => DataView)();
+};
 
 /**
  * Builds a linear memory, naming the caller's operation if the backing is
@@ -80,6 +82,7 @@ export const openLinearMemory = (
 		// A view made without a length follows a resizable buffer as it resizes,
 		// so one view serves for the whole life of the memory.
 		const view = new DataView(backing);
+
 		const memory: LinearMemory = Object.freeze({
 			get byteLength(): number {
 				return backing.byteLength;
@@ -91,22 +94,22 @@ export const openLinearMemory = (
 		return memory;
 	}
 
-	// A typed array or a DataView has a `buffer` too, but it covers only part
-	// of it: taking the whole buffer would put address 0 somewhere other than
-	// where the caller's view starts.
+	// Read as what a JavaScript caller can actually pass, which the type rules
+	// out. A typed array or a DataView has a `buffer` too, but it covers only
+	// part of it: taking the whole buffer would put address 0 somewhere other
+	// than where the caller's view starts.
+	const received: unknown = backing;
+
 	const first: unknown =
-		typeof backing === 'object' &&
-		backing !== null &&
-		!ArrayBuffer.isView(backing)
-			? (backing as Partial<GrowableMemory>).buffer
+		typeof received === 'object' && received !== null && !ArrayBuffer.isView(received)
+			? (received as Partial<GrowableMemory>).buffer
 			: undefined;
 
 	if (!(first instanceof ArrayBuffer)) {
 		throw createError('FULCRO7018', {
 			operation,
 			received:
-				typeof SharedArrayBuffer === 'function' &&
-				first instanceof SharedArrayBuffer
+				typeof SharedArrayBuffer === 'function' && first instanceof SharedArrayBuffer
 					? `${describeBuffer(backing)} over a SharedArrayBuffer`
 					: describeBuffer(backing),
 		});
@@ -167,6 +170,6 @@ export const openLinearMemory = (
  * @throws {TypeError} When the backing is neither an `ArrayBuffer` nor an
  * object with one as its `buffer`, or when it is shared.
  */
-export const createLinearMemory = (
-	backing: ArrayBuffer | GrowableMemory,
-): LinearMemory => openLinearMemory('createLinearMemory', backing);
+export const createLinearMemory = (backing: ArrayBuffer | GrowableMemory): LinearMemory => {
+	return openLinearMemory('createLinearMemory', backing);
+};

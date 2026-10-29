@@ -4,7 +4,8 @@ import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { beforeAll, describe, expect, it } from 'vitest';
+import typescript from 'typescript';
+import { assert, beforeAll, describe, expect, it } from 'vitest';
 
 /**
  * Entry point suite.
@@ -72,11 +73,17 @@ interface PackReport {
 	readonly files: readonly { readonly path: string }[];
 }
 
+/**
+ * Tells whether a value npm reported is a list, keeping its elements unknown:
+ * `Array.isArray` alone narrows to `any[]`.
+ *
+ * @param value The value.
+ * @returns `true` for an array.
+ */
+const isList = (value: unknown): value is readonly unknown[] => Array.isArray(value);
+
 /** Root of the workspace, which this file sits one level below. */
-const WORKSPACE_ROOT = path.resolve(
-	path.dirname(fileURLToPath(import.meta.url)),
-	'..',
-);
+const WORKSPACE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 /** Tarball contents per package name, filled once before the suite runs. */
 const packed = new Map<string, readonly string[]>();
@@ -109,14 +116,15 @@ const readPackedFiles = (): void => {
 	// died on `JSON.parse(...)` not being iterable.
 	const parsed: unknown = JSON.parse(output);
 
-	const reports: readonly PackReport[] = Array.isArray(parsed)
-		? (parsed as readonly PackReport[])
-		: Object.values(parsed as Record<string, PackReport>);
+	// Read as what an unknown shape would hand over: anything, or nothing.
+	const reports: readonly (Partial<PackReport> | null)[] = Array.isArray(parsed)
+		? (parsed as readonly (Partial<PackReport> | null)[])
+		: Object.values(parsed as Record<string, Partial<PackReport> | null>);
 
 	for (const report of reports) {
 		// A third shape would otherwise populate nothing and leave every
 		// assertion below passing over an empty map.
-		if (typeof report?.name !== 'string' || !Array.isArray(report?.files)) {
+		if (typeof report?.name !== 'string' || !isList(report.files)) {
 			throw new Error(
 				`npm pack answered in a shape this suite does not recognise, which has happened before. The output began: ${output.slice(0, 200)}`,
 			);
@@ -139,9 +147,7 @@ const packedFiles = (name: string): readonly string[] => {
 	const files: readonly string[] | undefined = packed.get(name);
 
 	if (files === undefined) {
-		throw new Error(
-			`npm pack reported nothing for ${name}. Is it still a workspace?`,
-		);
+		throw new Error(`npm pack reported nothing for ${name}. Is it still a workspace?`);
 	}
 
 	return files;
@@ -157,8 +163,9 @@ beforeAll(readPackedFiles, 120_000);
  * @param declared Path as written in the manifest, such as `./dist/index.js`.
  * @returns The same path without its leading `./`, with forward slashes.
  */
-const asPackedPath = (declared: string): string =>
-	declared.replace(/^\.\//, '').split(path.sep).join('/');
+const asPackedPath = (declared: string): string => {
+	return declared.replace(/^\.\//, '').split(path.sep).join('/');
+};
 
 /**
  * Collects every relative path an exports map points at.
@@ -178,6 +185,51 @@ const exportedPaths = (node: unknown): string[] => {
 	return Object.values(node as Record<string, unknown>).flatMap(exportedPaths);
 };
 
+describe('the declarations, as a Node project without the DOM compiles them', () => {
+	it('should compile every entry point with the library declarations checked', () => {
+		// `@fulcro/parallel` once named the browser's `Transferable` in a
+		// published type, and a project like this one got TS2304 from inside the
+		// package. Only `@fulcro/parallel` compiles against the DOM, so only a
+		// consumer without it notices a type borrowed from there.
+		const sample: string = path.join(WORKSPACE_ROOT, 'tests', 'declarations.sample.ts');
+
+		const program: typescript.Program = typescript.createProgram([sample], {
+			target: typescript.ScriptTarget.ES2022,
+			module: typescript.ModuleKind.NodeNext,
+			moduleResolution: typescript.ModuleResolutionKind.NodeNext,
+			lib: ['lib.es2024.d.ts'],
+			types: ['node'],
+			strict: true,
+			skipLibCheck: false,
+			noEmit: true,
+		});
+
+		const ours = (fileName: string): boolean => {
+			return /[\\/]packages[\\/][^\\/]+[\\/]dist[\\/]|declarations\.sample\.ts$/.test(fileName);
+		};
+
+		// Ours only: `unplugin`'s declarations import the types of every bundler
+		// it adapts, and this project installs none of them.
+		const found: string[] = typescript.getPreEmitDiagnostics(program).flatMap((diagnostic) => {
+			return diagnostic.file !== undefined && ours(diagnostic.file.fileName)
+				? [
+						`${path.relative(WORKSPACE_ROOT, diagnostic.file.fileName)}: TS${String(diagnostic.code)} ${typescript.flattenDiagnosticMessageText(diagnostic.messageText, ' ')}`,
+					]
+				: [];
+		});
+
+		expect(found).toEqual([]);
+
+		// A guard on the guard: a sample that resolved none of the packages would
+		// report nothing from them.
+		expect(
+			program
+				.getSourceFiles()
+				.filter((file) => /[\\/]packages[\\/]parallel[\\/]dist[\\/]/.test(file.fileName)),
+		).not.toEqual([]);
+	}, 120_000);
+});
+
 describe('the repository as someone else clones it', () => {
 	it('should not be ignoring a file the sources need', () => {
 		// A `.gitignore` rule written to block build output beside sources once
@@ -188,10 +240,11 @@ describe('the repository as someone else clones it', () => {
 		//
 		// This asks git directly: what is on disk under a package's sources, and
 		// not in the repository? The answer has to be nothing.
-		const everything: string = execSync(
-			'git ls-files --others --ignored --exclude-standard',
-			{ cwd: WORKSPACE_ROOT, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 },
-		);
+		const everything: string = execSync('git ls-files --others --ignored --exclude-standard', {
+			cwd: WORKSPACE_ROOT,
+			encoding: 'utf8',
+			maxBuffer: 32 * 1024 * 1024,
+		});
 
 		// Filtered here rather than through a pathspec: `packages/*/src` does not
 		// match as a git pathspec, and passing one that silently matches nothing
@@ -224,10 +277,9 @@ describe.each(PACKAGE_NAMES)('%s, as a consumer sees it', (name) => {
 		const shipped: readonly string[] = packedFiles(name);
 
 		for (const exported of paths) {
-			expect(
-				shipped,
-				`${name} exports ${exported}, which its tarball does not contain`,
-			).toContain(asPackedPath(exported));
+			expect(shipped, `${name} exports ${exported}, which its tarball does not contain`).toContain(
+				asPackedPath(exported),
+			);
 		}
 	});
 
@@ -235,12 +287,77 @@ describe.each(PACKAGE_NAMES)('%s, as a consumer sees it', (name) => {
 		const shipped: readonly string[] = packedFiles(name);
 
 		for (const field of [manifest.main, manifest.types]) {
-			expect(field).toBeDefined();
+			assert.isDefined(field, `${name} declares no main or types`);
+
+			expect(shipped, `${name} declares ${field}, which its tarball does not contain`).toContain(
+				asPackedPath(field),
+			);
+		}
+	});
+
+	it('should publish the declaration maps its declarations name, and the sources they point at', () => {
+		// A declaration naming a map the tarball lacks is a missing file for every
+		// tool that reads declaration maps, and a map whose source is absent sends
+		// a consumer's Go to Definition back to the `.d.ts`. The build once named
+		// 95 maps it never emitted, and nothing else here would have noticed.
+		const { root } = manifestOf(name);
+		const shipped: readonly string[] = packedFiles(name);
+		const declarations: readonly string[] = shipped.filter((file) => file.endsWith('.d.ts'));
+		let maps = 0;
+
+		for (const declaration of declarations) {
+			const text: string = readFileSync(path.join(root, declaration), 'utf8');
+			const named: string | undefined = /\/\/# sourceMappingURL=(\S+)\s*$/.exec(text)?.[1];
+
+			if (named === undefined) continue;
+
+			const map: string = path.posix.join(path.posix.dirname(declaration), named);
+
 			expect(
 				shipped,
-				`${name} declares ${field}, which its tarball does not contain`,
-			).toContain(asPackedPath(field as string));
+				`${declaration} names ${named}, which the tarball does not contain`,
+			).toContain(map);
+
+			const { sources } = JSON.parse(readFileSync(path.join(root, map), 'utf8')) as {
+				readonly sources: readonly string[];
+			};
+
+			for (const source of sources) {
+				expect(shipped, `${map} points at ${source}, which the tarball does not contain`).toContain(
+					path.posix.join(path.posix.dirname(map), source),
+				);
+			}
+
+			maps += 1;
 		}
+
+		// A guard on the guard: a pattern that matched no declaration would make
+		// every assertion above pass without checking anything.
+		expect(maps).toBeGreaterThan(0);
+	});
+
+	it('should use no top-level await, which require refuses', () => {
+		// A compiler plugin loader that calls `require` reaches these packages
+		// through Node's `require` of an ES module, and that refuses a module
+		// graph with a top-level await. The build emits top-level statements
+		// unindented, so one would start a line.
+		const { root } = manifestOf(name);
+		const modules: readonly string[] = packedFiles(name).filter((file) => file.endsWith('.js'));
+
+		expect(modules.length).toBeGreaterThan(0);
+
+		for (const file of modules) {
+			expect(readFileSync(path.join(root, file), 'utf8'), `${name} ${file}`).not.toMatch(
+				/^(?:await\b|for await\b|(?:const|let|var)\s[^=]*=\s*await\b)/m,
+			);
+		}
+	});
+
+	it('should publish its sources without its suites', () => {
+		const shipped: readonly string[] = packedFiles(name);
+
+		expect(shipped.filter((file) => file.startsWith('src/tests/'))).toEqual([]);
+		expect(shipped.filter((file) => /\.(spec|sample|fixture)\.ts$/.test(file))).toEqual([]);
 	});
 
 	it('should be publishable under its scope', () => {
@@ -287,7 +404,7 @@ describe('@fulcro/collections', () => {
 			.toArray();
 
 		expect(groups.map((group) => group.key)).toEqual(['a', 'b']);
-		expect(groups[0].toArray()).toEqual(['aa', 'ab']);
+		expect(groups[0]?.toArray()).toEqual(['aa', 'ab']);
 	});
 
 	it('should keep the concrete subclasses and the registry unexported', async () => {
@@ -299,10 +416,7 @@ describe('@fulcro/collections', () => {
 		// The factory registry is wiring, not API. It carries no runtime value
 		// to assert on, so the declarations are what gets checked.
 		const { root } = manifestOf('@fulcro/collections');
-		const declarations: string = readFileSync(
-			path.join(root, 'dist/index.d.ts'),
-			'utf8',
-		);
+		const declarations: string = readFileSync(path.join(root, 'dist/index.d.ts'), 'utf8');
 
 		expect(declarations).not.toContain('factories');
 	});
@@ -356,26 +470,23 @@ describe('@fulcro/reflect', () => {
 
 		expect(table).toEqual([1, 4, 9]);
 		expect(Object.isFrozen(table)).toBe(true);
+
 		expect(() => constantOf(() => new Map() as never)).toThrow(
 			expect.objectContaining({ code: 'FULCRO4011' }),
 		);
 	});
 
 	it('should refuse to guess a layout without the transformer', async () => {
-		const { alignOf, layoutOf, offsetOf, sizeOf } =
-			await import('@fulcro/reflect');
+		const { alignOf, layoutOf, offsetOf, sizeOf } = await import('@fulcro/reflect');
 
 		// A layout is declared on a type and never on a value, so there is
 		// nothing at runtime to read it from.
 		expect(() => sizeOf()).toThrow('only exists at compile time');
 		expect(() => alignOf()).toThrow('only exists at compile time');
 		expect(() => layoutOf()).toThrow('only exists at compile time');
-		expect(() => offsetOf('x' as never)).toThrow(
-			expect.objectContaining({
-				code: 'FULCRO4009',
-				message: expect.stringContaining('offsetOf<T>("x")'),
-			}),
-		);
+
+		expect(() => offsetOf('x')).toThrow(expect.objectContaining({ code: 'FULCRO4009' }));
+		expect(() => offsetOf('x')).toThrow('offsetOf<T>("x")');
 	});
 });
 
@@ -383,19 +494,9 @@ describe('@fulcro/types', () => {
 	it('should expose one value per numeric and mathematics type, and struct', async () => {
 		const entry = await import('@fulcro/types');
 
-		// The package is CommonJS, and Node's interop adds these to the
-		// namespace of an `import`; they are not names the package exports.
-		const interop: readonly string[] = [
-			'__esModule',
-			'default',
-			'module.exports',
-		];
-
-		expect(
-			Object.keys(entry)
-				.filter((key) => !interop.includes(key))
-				.sort(),
-		).toEqual([
+		// An ES module's namespace holds exactly what it exports, so the list
+		// is compared whole.
+		expect(Object.keys(entry).sort()).toEqual([
 			'BigInteger',
 			'ComplexNumber',
 			'Decimal',
@@ -425,6 +526,7 @@ describe('@fulcro/types', () => {
 
 		const Transform = Matrix(DoublePrecisionFloat, 2, 3);
 		const Point = Vector(DoublePrecisionFloat, 3, 1);
+
 		const moved = Transform.multiply(
 			Transform.from([
 				[1, 0, 5],
@@ -436,9 +538,9 @@ describe('@fulcro/types', () => {
 		expect([...moved]).toEqual([7, 10]);
 
 		const Complex = ComplexNumber(DoublePrecisionFloat);
-		const i = Complex.from({ real: 0, imaginary: 1 });
+		const item = Complex.from({ real: 0, imaginary: 1 });
 
-		expect(Complex.multiply(i, i)).toEqual({ real: -1, imaginary: 0 });
+		expect(Complex.multiply(item, item)).toEqual({ real: -1, imaginary: 0 });
 
 		const Rotation = Quaternion(DoublePrecisionFloat);
 
@@ -469,6 +571,7 @@ describe('@fulcro/types', () => {
 				},
 			},
 		);
+
 		const view = new DataView(new ArrayBuffer(Point.layout.size));
 
 		Point.write(view, 0, Point.from({ x: 3, y: 4 }));
@@ -478,13 +581,13 @@ describe('@fulcro/types', () => {
 	});
 
 	it('should declare, store and read back a struct through the published entry point', async () => {
-		const { SinglePrecisionFloat, UnsignedInteger, struct } =
-			await import('@fulcro/types');
+		const { SinglePrecisionFloat, UnsignedInteger, struct } = await import('@fulcro/types');
 
 		const Particle = struct('Particle', {
 			mass: SinglePrecisionFloat,
 			charge: UnsignedInteger(8),
 		});
+
 		const view = new DataView(new ArrayBuffer(Particle.layout.size));
 		const value = Particle.from({ mass: 0.5, charge: 3 });
 
@@ -498,12 +601,12 @@ describe('@fulcro/types', () => {
 				charge: { offset: 4, size: 1, alignment: 1 },
 			},
 		});
+
 		expect(Particle.equals(Particle.read(view, 0), value)).toBe(true);
 	});
 
 	it('should work end to end through the published entry point', async () => {
-		const { Decimal, HalfPrecisionFloat, SignedInteger } =
-			await import('@fulcro/types');
+		const { Decimal, HalfPrecisionFloat, SignedInteger } = await import('@fulcro/types');
 
 		const Int32 = SignedInteger(32);
 
@@ -544,9 +647,9 @@ describe('@fulcro/types', () => {
 			'@fulcro/types/unplugin',
 			'@fulcro/types/language-service',
 		]) {
-			expect(() => require(entry)).toThrow(
-				expect.objectContaining({ code: 'ERR_PACKAGE_PATH_NOT_EXPORTED' }),
-			);
+			expect(() => {
+				require(entry);
+			}).toThrow(expect.objectContaining({ code: 'ERR_PACKAGE_PATH_NOT_EXPORTED' }));
 		}
 	});
 
@@ -577,11 +680,10 @@ describe('@fulcro/collections/async', () => {
 	});
 
 	it('should work end to end through the published subpath', async () => {
-		const { AsyncSequenceCollection } =
-			await import('@fulcro/collections/async');
+		const { AsyncSequenceCollection } = await import('@fulcro/collections/async');
 
 		const result = await AsyncSequenceCollection.from([1, 2, 3, 4])
-			.where(async (value) => value % 2 === 0)
+			.where((value) => Promise.resolve(value % 2 === 0))
 			.select((value) => value * 10)
 			.toArray();
 
@@ -601,23 +703,18 @@ describe('@fulcro/errors', () => {
 	it('should expose its functions and FulcroError, and nothing of the catalog', async () => {
 		const entry = await import('@fulcro/errors');
 
-		// The package is CommonJS; see `@fulcro/types` above for these.
-		const interop: readonly string[] = [
-			'__esModule',
-			'default',
-			'module.exports',
-		];
-
-		expect(
-			Object.keys(entry)
-				.filter((key) => !interop.includes(key))
-				.sort(),
-		).toEqual(['FulcroError', 'createError', 'isFulcroError', 'prefixError']);
+		// An ES module's namespace holds exactly what it exports.
+		expect(Object.keys(entry).sort()).toEqual([
+			'FulcroError',
+			'createError',
+			'isFulcroError',
+			'prefixError',
+		]);
 	});
 
 	it('should create a coded error through the published entry point', async () => {
-		const { createError, FulcroError, isFulcroError } =
-			await import('@fulcro/errors');
+		const { createError, FulcroError, isFulcroError } = await import('@fulcro/errors');
+
 		const error = createError('FULCRO6021', {
 			operation: 'Vector3.from',
 			field: 'x',
@@ -647,6 +744,7 @@ describe('@fulcro/errors', () => {
 		expect(caught).toBeInstanceOf(FulcroError);
 		expect(caught).toBeInstanceOf(RangeError);
 		expect(isFulcroError(caught, 'FULCRO6031')).toBe(true);
+
 		expect((caught as { details: unknown }).details).toEqual({
 			operation: 'SignedInteger<8>.from',
 			received: '300',
@@ -654,30 +752,28 @@ describe('@fulcro/errors', () => {
 		});
 	});
 
-	it("should reach a consumer through another package's CommonJS build", async () => {
+	it("should reach a consumer through @fulcro/types' build", async () => {
 		const { SignedInteger } = await import('@fulcro/types');
 		const Int32 = SignedInteger(32);
 
-		expect(() => Int32.add(Int32.maximum, Int32.from(1))).toThrow(
-			expect.objectContaining({
-				code: 'FULCRO6031',
-				message: expect.stringMatching(/^FULCRO6031: /),
-			}),
-		);
+		const overflow = (): unknown => Int32.add(Int32.maximum, Int32.from(1));
+
+		expect(overflow).toThrow(expect.objectContaining({ code: 'FULCRO6031' }));
+		expect(overflow).toThrow(/^FULCRO6031: /);
 	});
 
-	it("should reach a consumer through another package's ES module build", async () => {
-		// `@fulcro/parallel` is an ES module importing this CommonJS package by
-		// name, which only works if Node can see the named exports statically.
+	it("should reach a consumer through @fulcro/parallel's build", async () => {
+		// `@fulcro/parallel` imports this package by name, so the error has to
+		// survive the hop between two built packages.
 		const { createWorkerPool } = await import('@fulcro/parallel');
 
-		expect(() =>
-			createWorkerPool({
+		expect(() => {
+			return createWorkerPool({
 				module: 'file:///nowhere.mjs',
 				export: 'task',
 				workers: 0,
-			}),
-		).toThrow(expect.objectContaining({ code: 'FULCRO3003' }));
+			});
+		}).toThrow(expect.objectContaining({ code: 'FULCRO3003' }));
 	});
 });
 
@@ -696,7 +792,7 @@ describe('@fulcro/parallel', () => {
 		const { createTaskScope } = await import('@fulcro/parallel');
 		const scope = createTaskScope({ concurrency: 2 });
 
-		const doubled = scope.spawn(async () => 21 * 2);
+		const doubled = scope.spawn(() => Promise.resolve(21 * 2));
 		const broken = scope.spawn(() => Promise.reject(new Error('broken')));
 
 		await expect(scope.join()).rejects.toThrow('broken');
@@ -713,6 +809,24 @@ describe('@fulcro/parallel', () => {
 
 		expect(child.token.signal).toBeInstanceOf(AbortSignal);
 		expect(child.token.signal.reason).toBe('stop');
+	});
+
+	it('should resolve its worker entry by name, and refuse to run outside a worker', async () => {
+		// The pool hands this subpath to `new Worker`. Loaded anywhere else there
+		// is no parent to listen to, and it says so rather than waiting forever.
+		// That holds because Vitest runs this file in a child process, not a
+		// worker thread: there, `parentPort` would be Vitest's own.
+		expect(resolve('@fulcro/parallel/worker')).toMatch(/[\\/]dist[\\/]worker[\\/]entry\.js$/);
+
+		// Through `require` first, which refuses a module with a top-level await
+		// outright — the refusal would then name the await rather than the worker.
+		expect(() => {
+			createRequire(import.meta.url)('@fulcro/parallel/worker');
+		}).toThrow(expect.objectContaining({ code: 'FULCRO3002' }));
+
+		await expect(import('@fulcro/parallel/worker')).rejects.toMatchObject({
+			code: 'FULCRO3002',
+		});
 	});
 });
 
@@ -736,11 +850,9 @@ describe('@fulcro/functions', () => {
 	it('should hand back a result that handles both variants', async () => {
 		const { tryCatch } = await import('@fulcro/functions');
 
-		const loaded = await tryCatch(async () => 21);
+		const loaded = await tryCatch(() => Promise.resolve(21));
 
-		expect(
-			loaded.handle({ success: (value) => value * 2, failure: () => 0 }),
-		).toBe(42);
+		expect(loaded.handle({ success: (value) => value * 2, failure: () => 0 })).toBe(42);
 		expect(loaded.value).toBe(21);
 	});
 
@@ -766,7 +878,11 @@ describe('@fulcro/functions', () => {
 		const { switchFor } = await import('@fulcro/functions');
 
 		expect(
-			switchFor(10, [{ when: (n) => n > 5, then: () => 'big' }], () => 'small'),
+			switchFor(
+				10,
+				[{ when: (value): boolean => value > 5, then: (): string => 'big' }],
+				() => 'small',
+			),
 		).toBe('big');
 	});
 
@@ -836,6 +952,7 @@ describe('@fulcro/memory', () => {
 		const second = move(first);
 
 		expect(borrow(second).get(1)).toBe(7);
+
 		expect(() => borrow(first)).toThrow(
 			expect.objectContaining({
 				code: 'FULCRO7023',
@@ -845,13 +962,8 @@ describe('@fulcro/memory', () => {
 	});
 
 	it('should end what a using scope declared: an owner, a pooled block, a fixed buffer', async () => {
-		const {
-			borrow,
-			createFixedBufferAllocator,
-			createManagedStorage,
-			createPoolAllocator,
-			own,
-		} = await import('@fulcro/memory');
+		const { borrow, createFixedBufferAllocator, createManagedStorage, createPoolAllocator, own } =
+			await import('@fulcro/memory');
 
 		const pool = createPoolAllocator(16, 1);
 		const fixed = createFixedBufferAllocator(new ArrayBuffer(16));
@@ -871,49 +983,44 @@ describe('@fulcro/memory', () => {
 			fixedBlock = scope.allocate(16, 8);
 		}
 
-		expect(() => reading?.get(0)).toThrow(
-			expect.objectContaining({ code: 'FULCRO7024' }),
-		);
-		expect(() => borrow(owner as NonNullable<typeof owner>)).toThrow(
+		expect(() => reading.get(0)).toThrow(expect.objectContaining({ code: 'FULCRO7024' }));
+
+		expect(() => borrow(owner)).toThrow(
 			expect.objectContaining({
 				code: 'FULCRO7030',
 				details: { operation: 'borrow' },
 			}),
 		);
-		expect([block?.isLive(), fixedBlock?.isLive()]).toEqual([false, false]);
+
+		expect([block.isLive(), fixedBlock.isLive()]).toEqual([false, false]);
 		expect(pool.allocate(16, 8).isLive()).toBe(true);
 	});
 
 	it('should write a field of a published struct at its bytes through a native pointer, and refuse it once released', async () => {
 		const { createArenaAllocator, createLinearMemory, nativePointerTo } =
 			await import('@fulcro/memory');
+
 		const { SinglePrecisionFloat, struct } = await import('@fulcro/types');
 
 		const Point = struct('Point', {
 			x: SinglePrecisionFloat,
 			y: SinglePrecisionFloat,
 		});
+
 		const Particle = struct('Particle', { position: Point, velocity: Point });
 
 		// Without the transformers, the velocity still sits at bytes 8–15 of a
 		// particle, and the pointer writes exactly those.
 		const buffer = new ArrayBuffer(32);
 		const raw = new DataView(buffer);
-		const velocity = nativePointerTo(
-			createLinearMemory(buffer),
-			8,
-			Particle,
-		).at(8, Point);
+		const velocity = nativePointerTo(createLinearMemory(buffer), 8, Particle).at(8, Point);
 
 		velocity.set(Point.from({ x: 3, y: -4 }));
 
-		expect([raw.getFloat32(16, true), raw.getFloat32(20, true)]).toEqual([
-			3, -4,
-		]);
+		expect([raw.getFloat32(16, true), raw.getFloat32(20, true)]).toEqual([3, -4]);
+
 		expect(
-			Array.from(new Uint8Array(buffer)).flatMap((byte, address) =>
-				byte === 0 ? [] : [address],
-			),
+			Array.from(new Uint8Array(buffer)).flatMap((byte, address) => (byte === 0 ? [] : [address])),
 		).toEqual([18, 19, 22, 23]);
 
 		const arena = createArenaAllocator(64);
@@ -937,6 +1044,7 @@ describe('@fulcro/memory', () => {
 			x: SinglePrecisionFloat,
 			y: SinglePrecisionFloat,
 		});
+
 		const stack = createStackAllocator(64);
 		const frame = stack.enter();
 		const particles = allocate(Particle, 2, frame);
@@ -956,14 +1064,14 @@ describe('@fulcro/memory', () => {
 	});
 
 	it('should store a struct from the published types package', async () => {
-		const { createFixedBufferStorage, createManagedStorage } =
-			await import('@fulcro/memory');
+		const { createFixedBufferStorage, createManagedStorage } = await import('@fulcro/memory');
 		const { SinglePrecisionFloat, struct } = await import('@fulcro/types');
 
 		const Point = struct('Point', {
 			x: SinglePrecisionFloat,
 			y: SinglePrecisionFloat,
 		});
+
 		const points = createFixedBufferStorage(Point, 2);
 		const names = createManagedStorage(2, '');
 
@@ -975,13 +1083,8 @@ describe('@fulcro/memory', () => {
 	});
 
 	it('should view, point into and reference values, copying nothing', async () => {
-		const {
-			asReadOnlyView,
-			asView,
-			createManagedStorage,
-			pointerTo,
-			referenceTo,
-		} = await import('@fulcro/memory');
+		const { asReadOnlyView, asView, createManagedStorage, pointerTo, referenceTo } =
+			await import('@fulcro/memory');
 
 		const scores = createManagedStorage(4, 0);
 		const middle = asView(scores, 1, 2);
@@ -993,6 +1096,7 @@ describe('@fulcro/memory', () => {
 		expect('set' in asReadOnlyView(middle)).toBe(false);
 		expect('set' in middle.readOnly()).toBe(false);
 		expect(asView(referenceTo(5)).get(0)).toBe(5);
+
 		expect(() => middle.subview(1, 2)).toThrow(
 			expect.objectContaining({
 				code: 'FULCRO7014',
@@ -1019,14 +1123,7 @@ describe('@fulcro/memory', () => {
 });
 
 /** Bundlers every `/unplugin` entry point claims to serve. */
-const BUNDLERS = [
-	'vite',
-	'rollup',
-	'webpack',
-	'rspack',
-	'esbuild',
-	'farm',
-] as const;
+const BUNDLERS = ['vite', 'rollup', 'webpack', 'rspack', 'esbuild', 'farm'] as const;
 
 describe('@fulcro/collections/transformer', () => {
 	it('should expose the compiler plugin as its default export', async () => {
@@ -1044,9 +1141,7 @@ describe('@fulcro/collections/transformer', () => {
 		const adapters = await import('@fulcro/collections/unplugin');
 
 		for (const bundler of BUNDLERS) {
-			expect(typeof adapters[bundler as keyof typeof adapters]).toBe(
-				'function',
-			);
+			expect(typeof adapters[bundler as keyof typeof adapters]).toBe('function');
 		}
 	});
 
@@ -1059,10 +1154,7 @@ describe('@fulcro/collections/transformer', () => {
 
 		const values: unknown[] = ['a', 1, 'b'];
 
-		expect(SequenceCollection.from(values).ofType('string').toArray()).toEqual([
-			'a',
-			'b',
-		]);
+		expect(SequenceCollection.from(values).ofType('string').toArray()).toEqual(['a', 'b']);
 	});
 
 	it('should refuse the type argument form when nothing resolved it', async () => {
@@ -1070,13 +1162,13 @@ describe('@fulcro/collections/transformer', () => {
 
 		// Compiled without the plugin, so this call arrives with no token. It has
 		// to say so rather than quietly keeping everything or nothing.
-		expect(() =>
-			(
+		expect(() => {
+			return (
 				SequenceCollection.from(['a']) as unknown as {
 					ofType: () => unknown;
 				}
-			).ofType(),
-		).toThrow(/was not resolved at compile time/);
+			).ofType();
+		}).toThrow(/was not resolved at compile time/);
 	});
 });
 
@@ -1096,9 +1188,7 @@ describe('@fulcro/memory/transformer', () => {
 		const adapters = await import('@fulcro/memory/unplugin');
 
 		for (const bundler of BUNDLERS) {
-			expect(typeof adapters[bundler as keyof typeof adapters]).toBe(
-				'function',
-			);
+			expect(typeof adapters[bundler as keyof typeof adapters]).toBe('function');
 		}
 	});
 
@@ -1107,9 +1197,12 @@ describe('@fulcro/memory/transformer', () => {
 		// installs it, so the main entry point must not reach the transformer.
 		const { manifest } = manifestOf('@fulcro/memory');
 
-		expect(manifest.peerDependencies).toEqual({ typescript: '>=5.3.3 <7' });
+		expect(manifest.peerDependencies).toEqual({ typescript: '>=5.9 <7' });
+
+		// Every way a module can load another: the build is ES modules, so a check
+		// for `require(` alone would pass whatever the entry point imported.
 		expect(readFileSync(resolve('@fulcro/memory'), 'utf8')).not.toMatch(
-			/require\(["'][^"']*(transformer|typescript)/,
+			/(?:\bfrom\s*|\bimport\s*\(\s*|\brequire\(\s*)["'][^"']*(transformer|typescript)/,
 		);
 	});
 });
@@ -1137,18 +1230,45 @@ describe('@fulcro/reflect/transformer', () => {
 		// with no way to resolve them. There is nothing left to miss.
 		const { manifest } = manifestOf('@fulcro/reflect');
 
-		expect(manifest.peerDependencies ?? {}).not.toHaveProperty(
-			'@fulcro/transformer',
-		);
+		expect(manifest.peerDependencies ?? {}).not.toHaveProperty('@fulcro/transformer');
 	});
 
 	it('should expose an adapter for every bundler it claims to serve', async () => {
 		const adapters = await import('@fulcro/reflect/unplugin');
 
 		for (const bundler of BUNDLERS) {
-			expect(typeof adapters[bundler as keyof typeof adapters]).toBe(
-				'function',
-			);
+			expect(typeof adapters[bundler as keyof typeof adapters]).toBe('function');
 		}
+	});
+});
+
+describe('@fulcro/transform-core', () => {
+	it('should expose the machinery the transformers share, and nothing else', async () => {
+		const entry = await import('@fulcro/transform-core');
+
+		// The three transformers import it by name, so this is the list they
+		// depend on; anything else showing up here would be a surface nobody agreed.
+		expect(Object.keys(entry).sort()).toEqual([
+			'IDENTIFIER_PATTERN',
+			'buildStructuralTest',
+			'createFileTransformer',
+			'createTransformer',
+			'isOwnedCall',
+			'isTupleType',
+			'utilityModuleSegment',
+		]);
+	});
+
+	it('should expose the bundler adapter factory from its own subpath, as a .js module', async () => {
+		// `./unplugin` shipped as `.mjs` before every package became an ES
+		// module; a path left behind in the exports map would fail here.
+		expect(resolve('@fulcro/transform-core/unplugin')).toMatch(
+			/[\\/]dist[\\/]unplugin[\\/]index\.js$/,
+		);
+
+		const entry = await import('@fulcro/transform-core/unplugin');
+
+		expect(Object.keys(entry)).toEqual(['createTransformerUnplugin']);
+		expect(typeof entry.createTransformerUnplugin).toBe('function');
 	});
 });

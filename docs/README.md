@@ -1,5 +1,7 @@
 # Documentation
 
+🇧🇷 Português (Brasil): [Leia esta documentação em português](./pt-BR/README.md)
+
 Guides for using the `@fulcro` packages. Each one is written to be read on its
 own — install command, real examples, and the scenarios the feature exists for.
 
@@ -25,7 +27,7 @@ const orders = SequenceCollection.from(rows).cast<Order>(); // over many
 `response.json()` hands back `any`. That line is the last place the data is
 unchecked, and there is no schema to keep in step with the type, because it _is_
 the type. See [Reflection](./reflect.md) for a single value and
-[Sequences](./sequences.md#validating-by-type-oftypet-and-castt) for a
+[Sequences](./sequences.md#oftype-and-cast--the-same-question-two-answers) for a
 collection.
 
 ## Guides

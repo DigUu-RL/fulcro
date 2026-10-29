@@ -1,9 +1,9 @@
 import * as path from 'node:path';
 
-import * as ts from 'typescript';
+import * as typescript from 'typescript';
 import { beforeAll, describe, expect, it } from 'vitest';
 
-import transformer from '@/transformer';
+import transformer from '@/src/transformer';
 
 /**
  * Transformer suite.
@@ -33,14 +33,14 @@ let emitted = '';
  * @returns The emitted JavaScript.
  */
 const compileFixture = (): string => {
-	const program: ts.Program = ts.createProgram([FIXTURE_PATH], {
-		target: ts.ScriptTarget.ES2022,
-		module: ts.ModuleKind.ESNext,
+	const program: typescript.Program = typescript.createProgram([FIXTURE_PATH], {
+		target: typescript.ScriptTarget.ES2022,
+		module: typescript.ModuleKind.ESNext,
 		// Required: an ESNext module defaults to the classic resolution, which
 		// never looks for an `index.ts` inside a directory, and every import of
 		// the fixture would silently resolve to nothing — leaving the
 		// transformer with symbols it cannot trace back to our modules.
-		moduleResolution: ts.ModuleResolutionKind.Node10,
+		moduleResolution: typescript.ModuleResolutionKind.Node10,
 		strict: true,
 		noEmitOnError: false,
 		skipLibCheck: true,
@@ -48,7 +48,7 @@ const compileFixture = (): string => {
 
 	let output = '';
 
-	const result: ts.EmitResult = program.emit(
+	const result: typescript.EmitResult = program.emit(
 		program.getSourceFile(FIXTURE_PATH),
 		(fileName, text) => {
 			if (fileName.endsWith('.js')) output = text;
@@ -60,13 +60,13 @@ const compileFixture = (): string => {
 		},
 	);
 
-	const errors: readonly ts.Diagnostic[] = result.diagnostics.filter(
-		(diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error,
+	const errors: readonly typescript.Diagnostic[] = result.diagnostics.filter(
+		(diagnostic) => diagnostic.category === typescript.DiagnosticCategory.Error,
 	);
 
 	if (errors.length > 0) {
 		throw new Error(
-			ts.formatDiagnostics(errors, {
+			typescript.formatDiagnostics(errors, {
 				getCanonicalFileName: (name) => name,
 				getCurrentDirectory: () => PROJECT_ROOT,
 				getNewLine: () => '\n',
@@ -116,9 +116,7 @@ describe('typeOf at compile time', () => {
 	});
 
 	it('should inject the declaration site as a project relative path', () => {
-		expect(emitted).toMatch(
-			/path: "src\/tests\/transformer\/fixture\.sample\.ts"/,
-		);
+		expect(emitted).toMatch(/path: "src\/tests\/transformer\/fixture\.sample\.ts"/);
 		expect(emitted).toMatch(/line: \d+/);
 		expect(emitted).toMatch(/column: \d+/);
 	});
@@ -144,13 +142,13 @@ describe('defaultOf at compile time', () => {
 	 * @returns The emitted expression, with its whitespace collapsed.
 	 */
 	const emittedValueOf = (binding: string): string => {
-		const match: RegExpMatchArray | null = emitted.match(
-			new RegExp(`export const ${binding} = ([\\s\\S]*?);\\n`),
-		);
+		const match: RegExpMatchArray | null = new RegExp(
+			`export const ${binding} = ([\\s\\S]*?);\\n`,
+		).exec(emitted);
 
 		if (match === null) throw new Error(`${binding} was not emitted`);
 
-		return match[1].replace(/\s+/g, ' ');
+		return (match[1] ?? '').replace(/\s+/g, ' ');
 	};
 
 	it('should resolve the primitives to their empty value', () => {

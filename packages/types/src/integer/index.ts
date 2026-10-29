@@ -1,6 +1,6 @@
 import { createError } from '@fulcro/errors';
 
-import type { BoundedNumericType } from '@/numericType';
+import type { BoundedNumericType } from '@/src/numericType';
 
 /**
  * Machinery shared by `SignedInteger` and `UnsignedInteger`.
@@ -44,9 +44,7 @@ export type ByteSize<N extends IntegerWidth> = ByteSizes[N];
  *
  * @template N Width, in bits.
  */
-export type IntegerRepresentation<N extends IntegerWidth> = N extends 64 | 128
-	? bigint
-	: number;
+export type IntegerRepresentation<N extends IntegerWidth> = N extends 64 | 128 ? bigint : number;
 
 /**
  * Descriptor of a fixed-width integer type.
@@ -174,8 +172,9 @@ export interface IntegerType<T> extends BoundedNumericType<T, number | bigint> {
  * @param maximum Largest value.
  * @returns The range, as `[minimum, maximum]`.
  */
-const describeRange = (minimum: bigint, maximum: bigint): string =>
-	`[${minimum}, ${maximum}]`;
+const describeRange = (minimum: bigint, maximum: bigint): string => {
+	return `[${String(minimum)}, ${String(maximum)}]`;
+};
 
 /**
  * Describes a value for an error message without letting a stray `-0` read as
@@ -185,7 +184,7 @@ const describeRange = (minimum: bigint, maximum: bigint): string =>
  * @returns The value as the caller wrote it.
  */
 const describeValue = (value: unknown): string => {
-	if (typeof value === 'bigint') return `${value}n`;
+	if (typeof value === 'bigint') return `${String(value)}n`;
 	if (Object.is(value, -0)) return '-0';
 
 	return String(value);
@@ -214,11 +213,7 @@ const rejectKind = (name: string, operation: string, value: unknown): never => {
  * @param value Value it was handed.
  * @returns Never.
  */
-const rejectFraction = (
-	name: string,
-	operation: string,
-	value: number,
-): never => {
+const rejectFraction = (name: string, operation: string, value: number): never => {
 	throw createError('FULCRO6002', {
 		operation: `${name}.${operation}`,
 		received: describeValue(value),
@@ -248,12 +243,7 @@ const rejectNegativeExponent = (name: string, exponent: unknown): never => {
  * @param count Count it was handed.
  * @returns Never.
  */
-const rejectCount = (
-	name: string,
-	operation: string,
-	width: number,
-	count: unknown,
-): never => {
+const rejectCount = (name: string, operation: string, width: number, count: unknown): never => {
 	throw createError('FULCRO6029', {
 		operation: `${name}.${operation}`,
 		maximum: width - 1,
@@ -293,9 +283,7 @@ export const createIntegerType = <T>(
 	}
 
 	const minimum: bigint = signed ? -(1n << BigInt(width - 1)) : 0n;
-	const maximum: bigint = signed
-		? (1n << BigInt(width - 1)) - 1n
-		: (1n << BigInt(width)) - 1n;
+	const maximum: bigint = signed ? (1n << BigInt(width - 1)) - 1n : (1n << BigInt(width)) - 1n;
 
 	return width >= 64
 		? createBigIntegerType<T>(signed, width, name, minimum, maximum)
@@ -351,11 +339,11 @@ const createNumberIntegerType = <T>(
 	const truncate: (value: number) => number =
 		width === 32
 			? signed
-				? (value) => value | 0
-				: (value) => value >>> 0
+				? (value): number => value | 0
+				: (value): number => value >>> 0
 			: signed
-				? (value) => (value << (32 - width)) >> (32 - width)
-				: (value) => value & (2 ** width - 1);
+				? (value): number => (value << (32 - width)) >> (32 - width)
+				: (value): number => value & (2 ** width - 1);
 
 	/**
 	 * Refuses a zero divisor.
@@ -417,9 +405,7 @@ const createNumberIntegerType = <T>(
 
 		wrap: (value: number | bigint): T => {
 			if (typeof value === 'bigint') {
-				return Number(
-					signed ? BigInt.asIntN(width, value) : BigInt.asUintN(width, value),
-				) as T;
+				return Number(signed ? BigInt.asIntN(width, value) : BigInt.asUintN(width, value)) as T;
 			}
 
 			if (typeof value !== 'number') return rejectKind(name, 'wrap', value);
@@ -430,23 +416,18 @@ const createNumberIntegerType = <T>(
 			return (wrapped === 0 ? 0 : wrapped) as T;
 		},
 
-		is: (value: unknown): value is T =>
-			typeof value === 'number' &&
-			Number.isInteger(value) &&
-			value >= low &&
-			value <= high,
+		is: (value: unknown): value is T => {
+			return typeof value === 'number' && Number.isInteger(value) && value >= low && value <= high;
+		},
 
-		add: (left: T, right: T): T =>
-			accept('add', (left as number) + (right as number)),
+		add: (left: T, right: T): T => accept('add', (left as number) + (right as number)),
 
-		subtract: (left: T, right: T): T =>
-			accept('subtract', (left as number) - (right as number)),
+		subtract: (left: T, right: T): T => accept('subtract', (left as number) - (right as number)),
 
 		// Exact below 2^53, and any product at or beyond it is already out of
 		// every range carried by a `number`, rounded or not — so checking the
 		// rounded product decides the exact one correctly.
-		multiply: (left: T, right: T): T =>
-			accept('multiply', (left as number) * (right as number)),
+		multiply: (left: T, right: T): T => accept('multiply', (left as number) * (right as number)),
 
 		// For operands under 2^32 the quotient sits at least 1/|dividend| away
 		// from the next integer, which is further than a double can round, so
@@ -503,19 +484,17 @@ const createNumberIntegerType = <T>(
 		// Two values in range combine, through the engine's 32-bit operators,
 		// into a value whose low `width` bits are the answer; truncating keeps
 		// exactly those, sign-extended or masked as the type is.
-		bitwiseAnd: (left: T, right: T): T =>
-			truncate((left as number) & (right as number)) as T,
+		bitwiseAnd: (left: T, right: T): T => truncate((left as number) & (right as number)) as T,
 
-		bitwiseOr: (left: T, right: T): T =>
-			truncate((left as number) | (right as number)) as T,
+		bitwiseOr: (left: T, right: T): T => truncate((left as number) | (right as number)) as T,
 
-		bitwiseXor: (left: T, right: T): T =>
-			truncate((left as number) ^ (right as number)) as T,
+		bitwiseXor: (left: T, right: T): T => truncate((left as number) ^ (right as number)) as T,
 
 		bitwiseNot: (value: T): T => truncate(~(value as number)) as T,
 
-		shiftLeft: (value: T, count: T): T =>
-			truncate((value as number) << requireCount('shiftLeft', count)) as T,
+		shiftLeft: (value: T, count: T): T => {
+			return truncate((value as number) << requireCount('shiftLeft', count)) as T;
+		},
 
 		// Arithmetic on a signed type, whose values are already sign-correct
 		// numbers; on an unsigned one the value is non-negative, so the two
@@ -523,15 +502,12 @@ const createNumberIntegerType = <T>(
 		shiftRight: (value: T, count: T): T => {
 			const places: number = requireCount('shiftRight', count);
 
-			return (
-				signed ? (value as number) >> places : (value as number) >>> places
-			) as T;
+			return (signed ? (value as number) >> places : (value as number) >>> places) as T;
 		},
 
 		shiftRightLogical: (value: T, count: T): T => {
 			const places: number = requireCount('shiftRightLogical', count);
-			const bits: number =
-				width === 32 ? (value as number) >>> 0 : (value as number) & mask;
+			const bits: number = width === 32 ? (value as number) >>> 0 : (value as number) & mask;
 
 			return truncate(bits >>> places) as T;
 		},
@@ -566,11 +542,7 @@ const createBigIntegerType = <T>(
 	 * `number` and was converted: the message repeats what was passed.
 	 * @returns The value, as this type.
 	 */
-	const accept = (
-		operation: string,
-		value: bigint,
-		reported: number | bigint = value,
-	): T => {
+	const accept = (operation: string, value: bigint, reported: number | bigint = value): T => {
 		if (value < minimum || value > maximum) {
 			throw createError('FULCRO6031', {
 				operation: `${name}.${operation}`,
@@ -617,8 +589,9 @@ const createBigIntegerType = <T>(
 	 * @param value Result of a bit operation, of any size.
 	 * @returns The value, as this type.
 	 */
-	const wrapBits = (value: bigint): T =>
-		(signed ? BigInt.asIntN(width, value) : BigInt.asUintN(width, value)) as T;
+	const wrapBits = (value: bigint): T => {
+		return (signed ? BigInt.asIntN(width, value) : BigInt.asUintN(width, value)) as T;
+	};
 
 	/**
 	 * Accepts a shift count within the width.
@@ -644,28 +617,23 @@ const createBigIntegerType = <T>(
 		minimum: minimum as T,
 		maximum: maximum as T,
 
-		from: (value: number | bigint): T =>
-			accept('from', toBigInt('from', value), value),
+		from: (value: number | bigint): T => accept('from', toBigInt('from', value), value),
 
 		wrap: (value: number | bigint): T => {
 			const integer: bigint = toBigInt('wrap', value);
 
-			return (
-				signed ? BigInt.asIntN(width, integer) : BigInt.asUintN(width, integer)
-			) as T;
+			return (signed ? BigInt.asIntN(width, integer) : BigInt.asUintN(width, integer)) as T;
 		},
 
-		is: (value: unknown): value is T =>
-			typeof value === 'bigint' && value >= minimum && value <= maximum,
+		is: (value: unknown): value is T => {
+			return typeof value === 'bigint' && value >= minimum && value <= maximum;
+		},
 
-		add: (left: T, right: T): T =>
-			accept('add', (left as bigint) + (right as bigint)),
+		add: (left: T, right: T): T => accept('add', (left as bigint) + (right as bigint)),
 
-		subtract: (left: T, right: T): T =>
-			accept('subtract', (left as bigint) - (right as bigint)),
+		subtract: (left: T, right: T): T => accept('subtract', (left as bigint) - (right as bigint)),
 
-		multiply: (left: T, right: T): T =>
-			accept('multiply', (left as bigint) * (right as bigint)),
+		multiply: (left: T, right: T): T => accept('multiply', (left as bigint) * (right as bigint)),
 
 		// `bigint` division already truncates towards zero.
 		divide: (left: T, right: T): T => {
@@ -717,29 +685,28 @@ const createBigIntegerType = <T>(
 		greaterThan: (left: T, right: T): boolean => left > right,
 		greaterThanOrEqual: (left: T, right: T): boolean => left >= right,
 
-		bitwiseAnd: (left: T, right: T): T =>
-			wrapBits((left as bigint) & (right as bigint)),
+		bitwiseAnd: (left: T, right: T): T => wrapBits((left as bigint) & (right as bigint)),
 
-		bitwiseOr: (left: T, right: T): T =>
-			wrapBits((left as bigint) | (right as bigint)),
+		bitwiseOr: (left: T, right: T): T => wrapBits((left as bigint) | (right as bigint)),
 
-		bitwiseXor: (left: T, right: T): T =>
-			wrapBits((left as bigint) ^ (right as bigint)),
+		bitwiseXor: (left: T, right: T): T => wrapBits((left as bigint) ^ (right as bigint)),
 
 		bitwiseNot: (value: T): T => wrapBits(~(value as bigint)),
 
-		shiftLeft: (value: T, count: T): T =>
-			wrapBits((value as bigint) << requireCount('shiftLeft', count)),
+		shiftLeft: (value: T, count: T): T => {
+			return wrapBits((value as bigint) << requireCount('shiftLeft', count));
+		},
 
 		// `bigint` shifts are arithmetic, which is right for a signed type and,
 		// for the non-negative values of an unsigned one, the same as logical.
-		shiftRight: (value: T, count: T): T =>
-			((value as bigint) >> requireCount('shiftRight', count)) as T,
+		shiftRight: (value: T, count: T): T => {
+			return ((value as bigint) >> requireCount('shiftRight', count)) as T;
+		},
 
-		shiftRightLogical: (value: T, count: T): T =>
-			wrapBits(
-				BigInt.asUintN(width, value as bigint) >>
-					requireCount('shiftRightLogical', count),
-			),
+		shiftRightLogical: (value: T, count: T): T => {
+			return wrapBits(
+				BigInt.asUintN(width, value as bigint) >> requireCount('shiftRightLogical', count),
+			);
+		},
 	};
 };

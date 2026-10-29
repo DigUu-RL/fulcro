@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { DoublePrecisionFloat } from '@/doublePrecisionFloat';
-import { Quaternion } from '@/quaternion';
+import { DoublePrecisionFloat } from '@/src/doublePrecisionFloat';
+import { Quaternion } from '@/src/quaternion';
 
 /**
  * Performance suite for `Quaternion`.
@@ -33,9 +33,7 @@ describe('Quaternion', () => {
 		for (let index = 0; index < VOLUME; index++) Rotation.multiply(left, right);
 
 		expect(multiply).toHaveBeenCalledTimes(16 * VOLUME);
-		expect(add.mock.calls.length + subtract.mock.calls.length).toBe(
-			12 * VOLUME,
-		);
+		expect(add.mock.calls.length + subtract.mock.calls.length).toBe(12 * VOLUME);
 	});
 
 	it('should divide with one squared norm, one product and four divisions', () => {

@@ -1,17 +1,12 @@
 import { createError } from '@fulcro/errors';
 
-import type { Allocation } from '@/allocator';
-import { requireAlignment } from '@/allocator/requireRequest';
-import { type AlignedElement, requireElement } from '@/element';
-import {
-	bytesOf,
-	isLinearMemory,
-	type LinearMemory,
-	openLinearMemory,
-} from '@/linearMemory';
-import type { NativePointer } from '@/nativePointer';
-import { describeBuffer } from '@/storage/describeBuffer';
-import { describeValue } from '@/storage/describeValue';
+import type { Allocation } from '@/src/allocator';
+import { requireAlignment } from '@/src/allocator/requireRequest';
+import { type AlignedElement, requireElement } from '@/src/element';
+import { bytesOf, isLinearMemory, type LinearMemory, openLinearMemory } from '@/src/linearMemory';
+import type { NativePointer } from '@/src/nativePointer';
+import { describeBuffer } from '@/src/storage/describeBuffer';
+import { describeValue } from '@/src/storage/describeValue';
 
 /**
  * Where the pointers made by one call may point, and every pointer moved from
@@ -43,11 +38,14 @@ interface Region {
  * @param value Value to inspect.
  * @returns `true` when it has `bytes` and `isLive`.
  */
-const isAllocation = (value: unknown): value is Allocation =>
-	typeof value === 'object' &&
-	value !== null &&
-	(value as Partial<Allocation>).bytes instanceof DataView &&
-	typeof (value as Partial<Allocation>).isLive === 'function';
+const isAllocation = (value: unknown): value is Allocation => {
+	return (
+		typeof value === 'object' &&
+		value !== null &&
+		(value as Partial<Allocation>).bytes instanceof DataView &&
+		typeof (value as Partial<Allocation>).isLive === 'function'
+	);
+};
 
 /**
  * Refuses an element type a pointer cannot read and write at an address.
@@ -57,12 +55,12 @@ const isAllocation = (value: unknown): value is Allocation =>
  * @throws {TypeError} When it cannot be stored as bytes.
  * @throws {RangeError} When its alignment is not a power of two.
  */
-const requirePointerElement = (operation: string, element: unknown): void => {
+const requirePointerElement: <T>(
+	operation: string,
+	element: AlignedElement<T> | undefined,
+) => asserts element is AlignedElement<T> = (operation, element) => {
 	requireElement(operation, element);
-	requireAlignment(
-		operation,
-		(element as AlignedElement<unknown>).layout.alignment,
-	);
+	requireAlignment(operation, (element as AlignedElement<unknown>).layout.alignment);
 };
 
 /**
@@ -74,7 +72,8 @@ const requirePointerElement = (operation: string, element: unknown): void => {
  * @param operation Operation being performed, for the error message.
  * @param region Where the pointer may point.
  * @param address Address asked for.
- * @param element Type of the value there.
+ * @param element Type of the value there; only its name and layout are read,
+ * so an element of any type is accepted.
  * @throws {RangeError} When the address is not an integer inside the region,
  * or is not a multiple of the element's alignment.
  */
@@ -82,7 +81,7 @@ const requireAddress = (
 	operation: string,
 	region: Region,
 	address: unknown,
-	element: AlignedElement<unknown>,
+	element: Pick<AlignedElement<unknown>, 'name' | 'layout'>,
 ): void => {
 	const end: number = region.end(region.bytes());
 
@@ -159,17 +158,15 @@ const createNativePointer = <T>(
 	 * @param other Type of the value at the new address, when it changes.
 	 * @returns The pointer there.
 	 */
-	const at = <TOther>(
+	const pointerAt = <TOther>(
 		byteOffset: number,
 		other?: AlignedElement<TOther>,
 	): NativePointer<TOther> => {
-		const next: AlignedElement<TOther> =
-			other ?? (element as unknown as AlignedElement<TOther>);
+		const next: AlignedElement<TOther> = other ?? (element as unknown as AlignedElement<TOther>);
 
 		if (other !== undefined) requirePointerElement('NativePointer.at', other);
 
-		const target: unknown =
-			typeof byteOffset === 'number' ? address + byteOffset : byteOffset;
+		const target: unknown = typeof byteOffset === 'number' ? address + byteOffset : byteOffset;
 
 		requireAddress('NativePointer.at', region, target, next);
 
@@ -195,8 +192,8 @@ const createNativePointer = <T>(
 			element.write(bytes, address, value);
 		},
 
-		at,
-	}) as NativePointer<T>;
+		at: pointerAt,
+	});
 };
 
 /**
@@ -274,7 +271,8 @@ export function nativePointerTo<T>(
 	third?: AlignedElement<T>,
 ): NativePointer<T> {
 	if (isLinearMemory(target)) {
-		const element = third as AlignedElement<T>;
+		const element = third;
+
 		const region: Region = {
 			memory: target,
 			bytes: () => bytesOf(target),
@@ -298,10 +296,8 @@ export function nativePointerTo<T>(
 
 	const element = second as AlignedElement<T>;
 	const { buffer, byteOffset, byteLength } = target.bytes;
-	const memory: LinearMemory = openLinearMemory(
-		'nativePointerTo',
-		buffer as ArrayBuffer,
-	);
+	const memory: LinearMemory = openLinearMemory('nativePointerTo', buffer as ArrayBuffer);
+
 	const region: Region = {
 		memory,
 		bytes: () => bytesOf(memory),
@@ -309,8 +305,7 @@ export function nativePointerTo<T>(
 		// The buffer may have shrunk or been transferred since: then the end is
 		// where its bytes stop, and an access past it is refused with a code
 		// rather than with the engine's own error.
-		end: (bytes: DataView): number =>
-			Math.min(byteOffset + byteLength, bytes.byteLength),
+		end: (bytes: DataView): number => Math.min(byteOffset + byteLength, bytes.byteLength),
 		allocation: target,
 	};
 

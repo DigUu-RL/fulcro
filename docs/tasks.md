@@ -214,10 +214,7 @@ code:
 ```ts
 import type { CancellationToken } from '@fulcro/parallel';
 
-const loadUserName = async (
-	id: string,
-	token: CancellationToken,
-): Promise<string> => {
+const loadUserName = async (id: string, token: CancellationToken): Promise<string> => {
 	const response = await fetch(`/users/${id}`, { signal: token.signal });
 
 	return response.text();

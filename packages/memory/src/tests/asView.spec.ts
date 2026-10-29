@@ -2,19 +2,18 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import { SinglePrecisionFloat, type Struct, struct } from '@fulcro/types';
 
-import { allocate } from '@/allocate';
-import { createArenaAllocator } from '@/arenaAllocator';
-import { asReadOnlyView } from '@/asReadOnlyView';
-import { asView } from '@/asView';
-import { createFixedBufferStorage } from '@/fixedBufferStorage';
-import { createManagedStorage } from '@/managedStorage';
-import type { MemoryReference } from '@/memoryReference';
-import { pointerTo } from '@/pointerTo';
-import { referenceTo } from '@/referenceTo';
-import type { Storage } from '@/storage';
-import type { ReadOnlyView, View } from '@/view';
-
-import { coded } from './coded';
+import { allocate } from '@/src/allocate';
+import { createArenaAllocator } from '@/src/arenaAllocator';
+import { asReadOnlyView } from '@/src/asReadOnlyView';
+import { asView } from '@/src/asView';
+import { createFixedBufferStorage } from '@/src/fixedBufferStorage';
+import { createManagedStorage } from '@/src/managedStorage';
+import type { MemoryReference } from '@/src/memoryReference';
+import { pointerTo } from '@/src/pointerTo';
+import { referenceTo } from '@/src/referenceTo';
+import type { Storage } from '@/src/storage';
+import { coded } from '@/src/tests/coded';
+import type { ReadOnlyView, View } from '@/src/view';
 
 /**
  * Behaviour suite for `asView`, and for the `View<T>` it returns.
@@ -29,6 +28,7 @@ const Point = struct('Point', {
 	x: SinglePrecisionFloat,
 	y: SinglePrecisionFloat,
 });
+
 type Point = Struct<typeof Point>;
 
 /**
@@ -51,8 +51,9 @@ const counting = (length: number): Storage<number> => {
  * @param view The view.
  * @returns Its values.
  */
-const valuesOf = <T>(view: ReadOnlyView<T>): T[] =>
-	Array.from({ length: view.length }, (_, index) => view.get(index));
+const valuesOf = <T>(view: ReadOnlyView<T>): T[] => {
+	return Array.from({ length: view.length }, (_, index) => view.get(index));
+};
 
 describe('asView over a storage', () => {
 	it('should observe the whole storage when given no bounds', () => {
@@ -113,10 +114,10 @@ describe('asView over a storage', () => {
 	])(
 		'should refuse start %s and length %s on a source of 3',
 		(start, length, shownStart, shownLength) => {
-			expect(() => asView(counting(3), start, length)).toThrowError(
+			expect(() => asView(counting(3), start, length)).toThrow(
 				coded(
 					new RangeError(
-						`FULCRO7014: asView: ${shownLength} values from position ${shownStart} do not fit in a source of 3.`,
+						`FULCRO7014: asView: ${String(shownLength)} values from position ${String(shownStart)} do not fit in a source of 3.`,
 					),
 					{
 						operation: 'asView',
@@ -158,7 +159,8 @@ describe('asView over an array', () => {
 		names.length = 2;
 
 		expect(view.get(0)).toBe('b');
-		expect(() => view.get(1)).toThrowError(
+
+		expect(() => view.get(1)).toThrow(
 			coded(
 				new RangeError(
 					'FULCRO7015: View.get: position 2 is past the end of the array, which now holds 2 values; it shrank after it was viewed.',
@@ -166,7 +168,10 @@ describe('asView over an array', () => {
 				{ operation: 'View.get', index: 2, length: 2 },
 			),
 		);
-		expect(() => view.set(1, 'z')).toThrowError(
+
+		expect(() => {
+			view.set(1, 'z');
+		}).toThrow(
 			coded(
 				new RangeError(
 					'FULCRO7015: View.set: position 2 is past the end of the array, which now holds 2 values; it shrank after it was viewed.',
@@ -174,6 +179,7 @@ describe('asView over an array', () => {
 				{ operation: 'View.set', index: 2, length: 2 },
 			),
 		);
+
 		expect(names).toEqual(['a', 'b']);
 	});
 });
@@ -201,15 +207,14 @@ describe('asView over a pointer or a reference', () => {
 	});
 
 	it('should refuse a region running past the end of the pointer', () => {
-		expect(() => asView(pointerTo(counting(5), 3), 3)).toThrowError(
+		expect(() => asView(pointerTo(counting(5), 3), 3)).toThrow(
 			coded(
-				new RangeError(
-					'FULCRO7014: asView: 3 values from position 3 do not fit in a source of 5.',
-				),
+				new RangeError('FULCRO7014: asView: 3 values from position 3 do not fit in a source of 5.'),
 				{ operation: 'asView', start: 3, length: 3, available: 5 },
 			),
 		);
-		expect(() => asView(pointerTo(counting(2), 2))).toThrowError(RangeError);
+
+		expect(() => asView(pointerTo(counting(2), 2))).toThrow(RangeError);
 	});
 
 	it('should observe a reference as a view of length 1, both ways', () => {
@@ -220,11 +225,12 @@ describe('asView over a pointer or a reference', () => {
 
 		expect(view.length).toBe(1);
 		expect(total.get()).toBe(8);
-		expect(() => view.get(1)).toThrowError(RangeError);
+		expect(() => view.get(1)).toThrow(RangeError);
 	});
 
 	it('should observe a reference written outside the package', () => {
 		let held = 'a';
+
 		const view: View<string> = asView({
 			get: () => held,
 			set: (value: string) => {
@@ -259,15 +265,14 @@ describe('asView refusals', () => {
 		[{}, 'an object without get'],
 		[{ length: 2 }, 'an object without get'],
 	])('should refuse %s as a source', (source, received) => {
-		expect(() => asView(source as unknown as Storage<number>)).toThrowError(
+		expect(() => asView(source as unknown as Storage<number>)).toThrow(
 			coded(
 				new TypeError(
 					`FULCRO7017: asView: expected a storage, a view, an array, a pointer or a memory reference, received ${received}.`,
 				),
 				{
 					operation: 'asView',
-					expected:
-						'a storage, a view, an array, a pointer or a memory reference',
+					expected: 'a storage, a view, an array, a pointer or a memory reference',
 					received,
 				},
 			),
@@ -277,15 +282,14 @@ describe('asView refusals', () => {
 	it('should refuse a read-only view, which has nothing to write with', () => {
 		const readOnly: ReadOnlyView<number> = asReadOnlyView(counting(3));
 
-		expect(() => asView(readOnly as unknown as Storage<number>)).toThrowError(
+		expect(() => asView(readOnly as unknown as Storage<number>)).toThrow(
 			coded(
 				new TypeError(
 					'FULCRO7017: asView: expected a storage, a view, an array, a pointer or a memory reference, received an object with get but no set.',
 				),
 				{
 					operation: 'asView',
-					expected:
-						'a storage, a view, an array, a pointer or a memory reference',
+					expected: 'a storage, a view, an array, a pointer or a memory reference',
 					received: 'an object with get but no set',
 				},
 			),
@@ -299,41 +303,31 @@ describe('View<T>', () => {
 		[2, '2'],
 		[0.5, '0.5'],
 		[Number.NaN, 'NaN'],
-	])(
-		'should refuse index %s, inside the source but outside the view',
-		(index, shown) => {
-			const view: View<number> = asView(counting(10), 4, 2);
+	])('should refuse index %s, inside the source but outside the view', (index, shown) => {
+		const view: View<number> = asView(counting(10), 4, 2);
 
-			expect(() => view.get(index)).toThrowError(
-				coded(
-					new RangeError(
-						`FULCRO7002: View.get: index ${shown} is outside a storage of length 2.`,
-					),
-					{ operation: 'View.get', index, length: 2 },
-				),
-			);
-			expect(() => view.set(index, 0)).toThrowError(
-				coded(
-					new RangeError(
-						`FULCRO7002: View.set: index ${shown} is outside a storage of length 2.`,
-					),
-					{ operation: 'View.set', index, length: 2 },
-				),
-			);
-		},
-	);
+		expect(() => view.get(index)).toThrow(
+			coded(
+				new RangeError(`FULCRO7002: View.get: index ${shown} is outside a storage of length 2.`),
+				{ operation: 'View.get', index, length: 2 },
+			),
+		);
+
+		expect(() => {
+			view.set(index, 0);
+		}).toThrow(
+			coded(
+				new RangeError(`FULCRO7002: View.set: index ${shown} is outside a storage of length 2.`),
+				{ operation: 'View.set', index, length: 2 },
+			),
+		);
+	});
 
 	it('should be frozen, with nothing to release and no source to reach', () => {
 		const view: View<number> = asView(counting(2));
 
 		expect(Object.isFrozen(view)).toBe(true);
-		expect(Object.keys(view).sort()).toEqual([
-			'get',
-			'length',
-			'readOnly',
-			'set',
-			'subview',
-		]);
+		expect(Object.keys(view).sort()).toEqual(['get', 'length', 'readOnly', 'set', 'subview']);
 	});
 
 	it('should work with its methods taken off the object', () => {
@@ -354,7 +348,7 @@ describe('View<T>', () => {
 		arena.reset();
 		allocate(Point, 4, arena).set(1, Point.from({ x: 9, y: 9 }));
 
-		expect(() => view.get(0)).toThrowError(
+		expect(() => view.get(0)).toThrow(
 			coded(
 				new Error(
 					'FULCRO7009: Storage.get: the memory was released by its allocator, and may already hold other values.',
@@ -362,7 +356,10 @@ describe('View<T>', () => {
 				{ operation: 'Storage.get' },
 			),
 		);
-		expect(() => view.set(0, Point.from({ x: 2, y: 2 }))).toThrowError(
+
+		expect(() => {
+			view.set(0, Point.from({ x: 2, y: 2 }));
+		}).toThrow(
 			coded(
 				new Error(
 					'FULCRO7009: Storage.set: the memory was released by its allocator, and may already hold other values.',
@@ -391,7 +388,7 @@ describe('View.subview', () => {
 	it('should stay inside the view, even where the source goes on', () => {
 		const view: View<number> = asView(counting(10), 0, 4);
 
-		expect(() => view.subview(2, 3)).toThrowError(
+		expect(() => view.subview(2, 3)).toThrow(
 			coded(
 				new RangeError(
 					'FULCRO7014: View.subview: 3 values from position 2 do not fit in a source of 4.',
@@ -399,8 +396,9 @@ describe('View.subview', () => {
 				{ operation: 'View.subview', start: 2, length: 3, available: 4 },
 			),
 		);
-		expect(() => view.subview(5)).toThrowError(RangeError);
-		expect(() => view.subview(-1)).toThrowError(RangeError);
+
+		expect(() => view.subview(5)).toThrow(RangeError);
+		expect(() => view.subview(-1)).toThrow(RangeError);
 	});
 
 	it('should nest, each level shifted onto the original source', () => {
@@ -434,12 +432,8 @@ describe('asView types', () => {
 	it('should infer the type of the values from its source', () => {
 		expectTypeOf(asView(counting(1))).toEqualTypeOf<View<number>>();
 		expectTypeOf(asView(['a'])).toEqualTypeOf<View<string>>();
-		expectTypeOf(asView(createFixedBufferStorage(Point, 1))).toEqualTypeOf<
-			View<Point>
-		>();
-		expectTypeOf(asView(pointerTo([true], 0), 1)).toEqualTypeOf<
-			View<boolean>
-		>();
+		expectTypeOf(asView(createFixedBufferStorage(Point, 1))).toEqualTypeOf<View<Point>>();
+		expectTypeOf(asView(pointerTo([true], 0), 1)).toEqualTypeOf<View<boolean>>();
 		expectTypeOf(asView(referenceTo(1n))).toEqualTypeOf<View<bigint>>();
 	});
 
@@ -451,15 +445,14 @@ describe('asView types', () => {
 	});
 
 	it('should accept what it can write, and not a read-only array or view', () => {
-		expectTypeOf(asView).toBeCallableWith([1, 2]);
-		expectTypeOf(asView).toBeCallableWith(counting(2), 0, 1);
-		expectTypeOf(asView).toBeCallableWith(pointerTo(counting(2), 0), 2);
-		expectTypeOf(asView).toBeCallableWith(referenceTo(0));
-		expectTypeOf<readonly number[]>().not.toExtend<
-			Storage<number> | number[]
-		>();
-		expectTypeOf<ReadOnlyView<number>>().not.toExtend<
-			Storage<number> | number[]
-		>();
+		// Called, rather than asked of with `toBeCallableWith`: that one reads the
+		// overloads with their type parameter as `unknown`, and a storage of
+		// numbers is not a storage of anything, since it cannot take a string.
+		expectTypeOf(asView([1, 2])).toEqualTypeOf<View<number>>();
+		expectTypeOf(asView(counting(2), 0, 1)).toEqualTypeOf<View<number>>();
+		expectTypeOf(asView(pointerTo(counting(2), 0), 2)).toEqualTypeOf<View<number>>();
+		expectTypeOf(asView(referenceTo(0))).toEqualTypeOf<View<number>>();
+		expectTypeOf<readonly number[]>().not.toExtend<Storage<number> | number[]>();
+		expectTypeOf<ReadOnlyView<number>>().not.toExtend<Storage<number> | number[]>();
 	});
 });

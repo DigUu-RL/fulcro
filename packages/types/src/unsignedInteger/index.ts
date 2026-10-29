@@ -1,12 +1,12 @@
-import type { Branded } from '@/brand';
+import type { Branded } from '@/src/brand';
 import {
 	type ByteSize,
 	createIntegerType,
 	type IntegerRepresentation,
 	type IntegerType,
 	type IntegerWidth,
-} from '@/integer';
-import type { Layout } from '@/layout';
+} from '@/src/integer';
+import type { Layout } from '@/src/layout';
 
 /**
  * An integer of `N` bits with no sign: from 0 to 2^N - 1.
@@ -54,7 +54,7 @@ export const UnsignedInteger = <N extends IntegerWidth>(
 	let descriptor: IntegerType<unknown> | undefined = descriptors.get(width);
 
 	if (descriptor === undefined) {
-		descriptor = createIntegerType(false, width, `UnsignedInteger<${width}>`);
+		descriptor = createIntegerType(false, width, `UnsignedInteger<${String(width)}>`);
 		descriptors.set(width, descriptor);
 	}
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { switchFor } from '@/switchFor';
-import { tryCatch } from '@/tryCatch';
+import { switchFor } from '@/src/switchFor';
+import { tryCatch } from '@/src/tryCatch';
 
 /**
  * Performance suite.
@@ -30,13 +30,15 @@ describe('switchFor, exhaustive form', () => {
 		const run: number[] = [];
 
 		const cases = Object.fromEntries(
-			[...Array(BRANCHES).keys()].map((key) => [
-				key,
-				() => {
-					run.push(key);
-					return key;
-				},
-			]),
+			[...Array(BRANCHES).keys()].map((key) => {
+				return [
+					key,
+					(): number => {
+						run.push(key);
+						return key;
+					},
+				];
+			}),
 		) as Record<number, () => number>;
 
 		const matched: number = switchFor(BRANCHES - 1, cases);
@@ -47,7 +49,7 @@ describe('switchFor, exhaustive form', () => {
 
 	it('should cost the same for the first branch as for the last', () => {
 		const cases = Object.fromEntries(
-			[...Array(BRANCHES).keys()].map((key) => [key, () => key]),
+			[...Array(BRANCHES).keys()].map((key) => [key, (): number => key]),
 		) as Record<number, () => number>;
 
 		// Typed as `number` rather than left as the literal `0`, which would ask
@@ -77,13 +79,15 @@ describe('switchFor, predicate form', () => {
 	it('should stop testing conditions at the first match', () => {
 		let tested = 0;
 
-		const cases = [...Array(BRANCHES).keys()].map((key) => ({
-			when: (): boolean => {
-				tested++;
-				return key === 2;
-			},
-			then: (): number => key,
-		}));
+		const cases = [...Array(BRANCHES).keys()].map((key) => {
+			return {
+				when: (): boolean => {
+					tested++;
+					return key === 2;
+				},
+				then: (): number => key,
+			};
+		});
 
 		switchFor(0, cases, () => -1);
 
@@ -96,13 +100,15 @@ describe('switchFor, predicate form', () => {
 
 		switchFor(
 			0,
-			[...Array(BRANCHES).keys()].map((key) => ({
-				when: (): boolean => key === 0,
-				then: (): number => {
-					run++;
-					return key;
-				},
-			})),
+			[...Array(BRANCHES).keys()].map((key) => {
+				return {
+					when: (): boolean => key === 0,
+					then: (): number => {
+						run++;
+						return key;
+					},
+				};
+			}),
 			() => -1,
 		);
 
@@ -114,13 +120,15 @@ describe('switchFor, predicate form', () => {
 
 		switchFor(
 			0,
-			[...Array(BRANCHES).keys()].map(() => ({
-				when: (): boolean => {
-					tested++;
-					return false;
-				},
-				then: (): number => 0,
-			})),
+			[...Array(BRANCHES).keys()].map(() => {
+				return {
+					when: (): boolean => {
+						tested++;
+						return false;
+					},
+					then: (): number => 0,
+				};
+			}),
 			() => -1,
 		);
 
@@ -132,9 +140,9 @@ describe('tryCatch', () => {
 	it('should call the operation exactly once', () => {
 		let calls = 0;
 
-		void tryCatch(async () => {
+		void tryCatch(() => {
 			calls++;
-			return 1;
+			return Promise.resolve(1);
 		});
 
 		expect(calls).toBe(1);
@@ -143,9 +151,9 @@ describe('tryCatch', () => {
 	it('should not retry a failing operation', async () => {
 		let calls = 0;
 
-		await tryCatch(async () => {
+		await tryCatch(() => {
 			calls++;
-			throw new Error('once');
+			return Promise.reject(new Error('once'));
 		});
 
 		expect(calls).toBe(1);
@@ -154,10 +162,9 @@ describe('tryCatch', () => {
 	it('should add no allocation beyond the outcome itself', async () => {
 		// The shape is fixed: two properties, whatever happened. The methods
 		// are inherited, not carried by every outcome.
-		const succeeded = await tryCatch(async () => 1);
-		const failed = await tryCatch(async () => {
-			throw new Error('x');
-		});
+		const succeeded = await tryCatch(() => Promise.resolve(1));
+
+		const failed = await tryCatch(() => Promise.reject(new Error('x')));
 
 		expect(Reflect.ownKeys(succeeded).sort()).toEqual(['error', 'value']);
 		expect(Reflect.ownKeys(failed).sort()).toEqual(['error', 'value']);
@@ -183,7 +190,7 @@ describe('wall clock ceilings', () => {
 		const started: number = performance.now();
 
 		await Promise.all(
-			[...Array(10_000).keys()].map((value) => tryCatch(async () => value)),
+			[...Array(10_000).keys()].map((value) => tryCatch(() => Promise.resolve(value))),
 		);
 
 		expect(performance.now() - started).toBeLessThan(2_000);

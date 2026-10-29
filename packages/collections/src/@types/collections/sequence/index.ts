@@ -1,4 +1,4 @@
-import {
+import type {
 	Accumulator,
 	Action,
 	Constructor,
@@ -9,10 +9,9 @@ import {
 	Selector,
 	TypeNames,
 	TypeTest,
-	TypeToken,
-} from '@/@types';
-import { Group } from '@/@types/collections/group';
-import { OrderedSequence } from '@/@types/collections/ordered';
+} from '@/src/@types';
+import type { Group } from '@/src/@types/collections/group';
+import type { OrderedSequence } from '@/src/@types/collections/ordered';
 
 /**
  * A lazily evaluated sequence of elements exposing the query operators.
@@ -175,7 +174,7 @@ export interface Sequence<T> extends Iterable<T> {
 	 *
 	 * @returns A new array holding every element of the sequence.
 	 */
-	toArray(): Array<T>;
+	toArray(): T[];
 
 	/**
 	 * Removes the duplicated elements of the sequence using reference or value
@@ -251,10 +250,7 @@ export interface Sequence<T> extends Iterable<T> {
 	 * @returns A new map holding every element of the sequence.
 	 * @throws {Error} When two elements produce the same key.
 	 */
-	toMap<K, R = T>(
-		keySelector: Selector<T, K>,
-		elementSelector?: Selector<T, R>,
-	): Map<K, R>;
+	toMap<K, R = T>(keySelector: Selector<T, K>, elementSelector?: Selector<T, R>): Map<K, R>;
 
 	/**
 	 * Runs an action for every element of the sequence.
@@ -496,10 +492,7 @@ export interface Sequence<T> extends Iterable<T> {
 	 * @param resultSelector Projection merging each pair.
 	 * @returns A deferred sequence with one result per pair.
 	 */
-	zip<S, R>(
-		second: Iterable<S>,
-		resultSelector: ResultSelector<T, S, R>,
-	): Sequence<R>;
+	zip<S, R>(second: Iterable<S>, resultSelector: ResultSelector<T, S, R>): Sequence<R>;
 
 	/**
 	 * Adds elements to the end of the sequence.
@@ -643,10 +636,7 @@ export interface Sequence<T> extends Iterable<T> {
 	 * @param elementSelector Optional projection applied to each element.
 	 * @returns A map of key to the elements sharing it, in first-seen order.
 	 */
-	toLookup<K, R = T>(
-		keySelector: Selector<T, K>,
-		elementSelector?: Selector<T, R>,
-	): Map<K, R[]>;
+	toLookup<K, R = T>(keySelector: Selector<T, K>, elementSelector?: Selector<T, R>): Map<K, R[]>;
 
 	/**
 	 * Materializes the sequence into a set, discarding duplicates.
@@ -857,56 +847,38 @@ export interface Sequence<T> extends Iterable<T> {
 	 * @param type Name of the type to keep.
 	 * @returns A deferred sequence narrowed to that type.
 	 */
-	ofType<K extends keyof TypeNames>(
-		type: K,
-	): Sequence<Narrowed<T, TypeNames[K]>>;
+	ofType<K extends keyof TypeNames>(type: K): Sequence<Narrowed<T, TypeNames[K]>>;
 
 	/**
-	 * Keeps only the elements built from a given class, narrowing the sequence
-	 * to it.
+	 * Keeps only the elements of a class, of a shape, or of a type written as a
+	 * type argument, narrowing the sequence to it.
 	 *
-	 * @template R Type produced by the constructor.
-	 * @param type Constructor the elements are tested against with
-	 * `instanceof`.
-	 * @returns A deferred sequence narrowed to that type.
-	 */
-	ofType<R>(type: Constructor<R>): Sequence<Narrowed<T, R>>;
-
-	/**
-	 * Keeps only the elements of the given type, written as a type.
+	 * - **A class** — `ofType(Admin)` tests each element with `instanceof`.
+	 * - **A shape test** — what the transformer emits for a type with no single
+	 *   runtime token, and writable by hand for one it refuses:
 	 *
-	 * Needs the transformer of this package, which resolves the type argument
-	 * into the same token the other two forms take. It is the only part of
-	 * `@fulcro/collections` that does, and it refuses at runtime rather than
-	 * guessing when the transformer has not run.
+	 *   ```ts
+	 *   values.ofType<Account>({
+	 *   	matches: (value) => typeof (value as Account)?.id === 'number',
+	 *   });
+	 *   ```
 	 *
-	 * Only a type with a runtime form can be resolved: a primitive, or a class.
-	 * An interface leaves nothing behind to test for, so filter by a class, by a
-	 * `typeof` name, or with a predicate through {@link Sequence.where}.
+	 * - **Nothing, with a type argument** — `ofType<Admin>()` needs the
+	 *   transformer of this package, which resolves the type argument into one
+	 *   of the two forms above. It is the only part of `@fulcro/collections`
+	 *   that does, and it refuses at runtime rather than guessing when the
+	 *   transformer has not run. Only a type with a runtime form can be
+	 *   resolved: a primitive, a class, or a shape it can write a test for.
 	 *
 	 * @template R Type to keep.
+	 * @param type Constructor the elements are tested against with
+	 * `instanceof`, or a test over their shape; omitted when the type argument
+	 * names the type.
 	 * @returns A deferred sequence narrowed to that type.
-	 * @throws {Error} When the call was not resolved at compile time.
+	 * @throws {Error} When the type was omitted and the call was not resolved at
+	 * compile time.
 	 */
-	ofType<R>(): Sequence<Narrowed<T, R>>;
-
-	/**
-	 * Keeps only the elements passing a test over their shape.
-	 *
-	 * What the transformer emits for a type with no single runtime token, and
-	 * writable by hand for one it refuses:
-	 *
-	 * ```ts
-	 * values.ofType<Account>({
-	 * 	matches: (value) => typeof (value as Account)?.id === 'number',
-	 * });
-	 * ```
-	 *
-	 * @template R Type a passing value is taken to be.
-	 * @param test Test over the shape of each element.
-	 * @returns A deferred sequence narrowed to that type.
-	 */
-	ofType<R>(test: TypeTest<R>): Sequence<Narrowed<T, R>>;
+	ofType<R>(type?: Constructor<R> | TypeTest<R>): Sequence<Narrowed<T, R>>;
 
 	/**
 	 * Re-types the whole sequence, refusing to do so if any element disagrees.
@@ -929,38 +901,24 @@ export interface Sequence<T> extends Iterable<T> {
 	cast<K extends keyof TypeNames>(type: K): Sequence<TypeNames[K]>;
 
 	/**
-	 * Re-types the whole sequence to a class, refusing to do so if any element
-	 * is not an instance of it.
+	 * Re-types the whole sequence to a class, to a shape, or to a type written
+	 * as a type argument, refusing any element that is not of it.
 	 *
-	 * @template R Type produced by the constructor.
-	 * @param type Constructor every element must be an instance of.
-	 * @returns A deferred sequence typed as that type.
-	 * @throws {TypeError} When an element is not an instance, as it is read.
-	 */
-	cast<R>(type: Constructor<R>): Sequence<R>;
-
-	/**
-	 * Re-types the whole sequence to the given type, written as a type.
-	 *
-	 * Needs the transformer of this package, exactly as {@link Sequence.ofType}
-	 * does, and refuses at runtime the same way when it has not run.
+	 * The three forms are those of {@link Sequence.ofType}: a constructor every
+	 * element must be an instance of, a test over the shape of each element,
+	 * or nothing, with the type argument resolved by the transformer of this
+	 * package — refused at runtime the same way when it has not run.
 	 *
 	 * @template R Type every element must be.
+	 * @param type Constructor every element must be an instance of, or a test
+	 * over the shape of each element; omitted when the type argument names the
+	 * type.
 	 * @returns A deferred sequence typed as that type.
-	 * @throws {Error} When the call was not resolved at compile time.
+	 * @throws {Error} When the type was omitted and the call was not resolved at
+	 * compile time.
 	 * @throws {TypeError} When an element is not of that type, as it is read.
 	 */
-	cast<R>(): Sequence<R>;
-
-	/**
-	 * Re-types the whole sequence, refusing any element failing a shape test.
-	 *
-	 * @template R Type every element must be.
-	 * @param test Test over the shape of each element.
-	 * @returns A deferred sequence typed as that type.
-	 * @throws {TypeError} When an element fails the test, as it is read.
-	 */
-	cast<R>(test: TypeTest<R>): Sequence<R>;
+	cast<R>(type?: Constructor<R> | TypeTest<R>): Sequence<R>;
 
 	/**
 	 * Takes the elements with the largest keys, in descending order.

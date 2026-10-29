@@ -2,10 +2,9 @@ import { getEventListeners } from 'node:events';
 
 import { describe, expect, it } from 'vitest';
 
-import { type TaskWork } from '@/@types/index.js';
-import { createTaskScope } from '@/task/index.js';
-
-import { flush } from './controlled-work.js';
+import { type TaskWork } from '@/src/@types/index.js';
+import { createTaskScope } from '@/src/task/index.js';
+import { flush } from '@/src/tests/controlled-work';
 
 /**
  * What a task scope costs, counted rather than timed.
@@ -51,9 +50,8 @@ const createMeter = (): Meter => {
 	let started = 0;
 
 	return {
-		work:
-			(delay, fails = false) =>
-			async () => {
+		work: (delay, fails = false) => {
+			return async () => {
 				started++;
 				current++;
 				peak = Math.max(peak, current);
@@ -67,8 +65,9 @@ const createMeter = (): Meter => {
 				} finally {
 					current--;
 				}
-			},
-		untilCancelled: (token) => {
+			};
+		},
+		untilCancelled: (token): Promise<number> => {
 			started++;
 
 			return new Promise<number>((_resolve, reject) => {
@@ -120,7 +119,7 @@ describe('the concurrency limit', () => {
 			scope.spawn(meter.work(delayOf(index), index === 40));
 		}
 
-		await scope.join().catch(() => {});
+		await expect(scope.join()).rejects.toThrow();
 
 		expect(meter.peak()).toBe(4);
 	});
@@ -151,7 +150,7 @@ describe('work that is not started', () => {
 			scope.spawn(meter.untilCancelled);
 		}
 
-		await scope.join().catch(() => {});
+		await expect(scope.join()).rejects.toThrow();
 
 		expect(meter.started()).toBe(limit);
 	});
@@ -166,7 +165,7 @@ describe('work that is not started', () => {
 
 		await flush();
 		scope.cancel();
-		await scope.join().catch(() => {});
+		await expect(scope.join()).rejects.toThrow();
 
 		expect(meter.started()).toBe(2);
 	});
@@ -181,9 +180,7 @@ describe('what the scope keeps', () => {
 			scope.spawn(meter.work(delayOf(index)));
 		}
 
-		expect(
-			getEventListeners(scope.token.signal, 'abort').length,
-		).toBeGreaterThanOrEqual(TASKS);
+		expect(getEventListeners(scope.token.signal, 'abort').length).toBeGreaterThanOrEqual(TASKS);
 
 		await scope.join();
 
@@ -200,7 +197,7 @@ describe('what the scope keeps', () => {
 			scope.spawn(meter.untilCancelled);
 		}
 
-		await scope.join().catch(() => {});
+		await expect(scope.join()).rejects.toThrow();
 
 		expect(getEventListeners(scope.token.signal, 'abort')).toHaveLength(0);
 	});
@@ -215,7 +212,7 @@ describe('what the scope keeps', () => {
 
 		await flush();
 		scope.cancel();
-		await scope.join().catch(() => {});
+		await expect(scope.join()).rejects.toThrow();
 
 		expect(getEventListeners(scope.token.signal, 'abort')).toHaveLength(0);
 	});
@@ -224,9 +221,7 @@ describe('what the scope keeps', () => {
 		const meter = createMeter();
 		const scope = createTaskScope();
 
-		const tasks = Array.from({ length: TASKS }, () =>
-			scope.spawn(meter.untilCancelled),
-		);
+		const tasks = Array.from({ length: TASKS }, () => scope.spawn(meter.untilCancelled));
 
 		await flush();
 

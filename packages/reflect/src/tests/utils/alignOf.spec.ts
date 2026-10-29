@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { alignOf } from '@/functions/utils/alignOf';
-import type { WithLayout } from '@/functions/utils/layout';
+import { alignOf } from '@/src/functions/utils/alignOf';
+import type { TypeLayout, WithLayout } from '@/src/functions/utils/layout';
 
 /**
  * Behaviour suite for `alignOf`.
@@ -29,8 +29,15 @@ describe('alignOf', () => {
 	});
 
 	it('should leave a generic parameter to throw', () => {
-		const measure = <T extends WithLayout>(): number => alignOf<T>();
+		const measure = <T extends WithLayout>(): TypeLayout<T>['alignment'] => alignOf<T>();
 
 		expect(() => measure<Declared>()).toThrow('only exists at compile time');
+	});
+});
+
+describe('what alignOf declares', () => {
+	it('should return the alignment the layout declares, as its literal', () => {
+		expectTypeOf<ReturnType<typeof alignOf<Declared>>>().toEqualTypeOf<4>();
+		expectTypeOf<ReturnType<typeof alignOf<Declared>>>().toExtend<number>();
 	});
 });

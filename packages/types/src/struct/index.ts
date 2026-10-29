@@ -1,8 +1,8 @@
 import { createError, prefixError } from '@fulcro/errors';
 
-import type { Layout } from '@/layout';
-import type { Add, LargestAlignment, RoundUp } from '@/struct/arithmetic';
-import { codecOf, type FieldCodec, registerCodec } from '@/struct/codec';
+import type { Layout } from '@/src/layout';
+import type { Add, LargestAlignment, RoundUp } from '@/src/struct/arithmetic';
+import { codecOf, type FieldCodec, registerCodec } from '@/src/struct/codec';
 
 /**
  * What a field of a struct may be declared with: the descriptor of a type that
@@ -14,15 +14,27 @@ interface FieldDescriptor {
 }
 
 /** The fields of a struct, by name, in declaration order. */
-type StructFields = { readonly [field: string]: FieldDescriptor };
+type StructFields = Readonly<Record<string, FieldDescriptor>>;
 
 /** The methods of a struct, by name. */
-type StructMethods = {
-	readonly [method: string]: (...parameters: never[]) => unknown;
-};
+type StructMethods = Readonly<Record<string, (...parameters: never[]) => unknown>>;
 
-/** What a struct declared without methods has: none. */
-type NoMethods = Record<never, never>;
+/**
+ * What `struct` types a struct declared without methods with: an object with
+ * no method in it.
+ *
+ * It has to be an object with no index signature. The methods a struct is given
+ * are typed against this before they are inferred, and against an index
+ * signature a method whose result depends on `this` is inferred as the
+ * signature rather than as itself. An empty object would stand for any value at
+ * all, so it carries one optional method slot instead, marked with a tilde as
+ * `'~layout'` is, which `StructValue` reads as no methods.
+ *
+ * It is only `struct`'s default. `StructType<TFields>` written without methods
+ * means methods in general — see there — so that it accepts every struct with
+ * those fields, with methods or without.
+ */
+type NoMethods = Readonly<Partial<Record<'~noMethods', StructMethods[string]>>>;
 
 /** The type of the values a descriptor recognises. */
 type ValueOf<TDescriptor> = TDescriptor extends {
@@ -45,16 +57,14 @@ type FieldLayout<TDescriptor> =
 		: never;
 
 /** A union, as a tuple in no particular order — enough to sum over it. */
-type UnionToTuple<TUnion, TTuple extends unknown[] = []> = [TUnion] extends [
-	never,
-]
+type UnionToTuple<TUnion, TTuple extends unknown[] = []> = [TUnion] extends [never]
 	? TTuple
 	: UnionToTuple<Exclude<TUnion, LastOf<TUnion>>, [LastOf<TUnion>, ...TTuple]>;
 
 /** One member of a union, picked by how TypeScript orders overloads. */
-type LastOf<TUnion> = (
-	TUnion extends unknown ? (member: () => TUnion) => void : never
-) extends (member: infer TIntersection) => void
+type LastOf<TUnion> = (TUnion extends unknown ? (member: () => TUnion) => void : never) extends (
+	member: infer TIntersection,
+) => void
 	? TIntersection extends () => infer TMember
 		? TMember
 		: never
@@ -115,12 +125,28 @@ type StructData<TFields extends StructFields> = {
  * struct without methods is its fields alone, exactly as before methods
  * existed, so nothing it inferred changes.
  */
-type StructValue<
-	TFields extends StructFields,
-	TMethods extends StructMethods = NoMethods,
-> = [keyof TMethods] extends [never]
-	? StructData<TFields>
-	: StructData<TFields> & Readonly<TMethods>;
+type StructValue<TFields extends StructFields, TMethods extends StructMethods = StructMethods> =
+	// Methods in general name none of their own, and neither does `NoMethods`:
+	// both are read here by the keys left once the index signature and the
+	// `'~noMethods'` slot are mapped away. Asking `string extends keyof
+	// TMethods` instead keeps two struct types from being compared by the
+	// variance of `TMethods`, and the member by member comparison that replaces
+	// it fails against `StructType<Record<string, any>>`, whose layout over any
+	// fields has a size of `never` — which is how `StructType<any>` came to
+	// refuse a struct with methods.
+	[
+		keyof {
+			[
+				TKey in keyof TMethods as string extends TKey
+					? never
+					: TKey extends '~noMethods'
+						? never
+						: TKey
+			]: unknown;
+		},
+	] extends [never]
+		? StructData<TFields>
+		: StructData<TFields> & Readonly<TMethods>;
 
 /** What a struct's `from` accepts: each field in what its own `from` accepts. */
 type StructSource<TFields extends StructFields> = {
@@ -132,11 +158,14 @@ type StructSource<TFields extends StructFields> = {
  * recognised, compared and stored.
  *
  * @template TFields Descriptors of the fields, by name.
- * @template TMethods Methods every value carries, by name; none by default.
+ * @template TMethods Methods every value carries, by name. Left out, methods in
+ * general, so that `StructType<TFields>` accepts every struct with those
+ * fields, with methods or without; `struct` types one declared without methods
+ * as having none.
  */
 export interface StructType<
 	TFields extends StructFields,
-	TMethods extends StructMethods = NoMethods,
+	TMethods extends StructMethods = StructMethods,
 > {
 	/** Name of the struct, as it reads in an error message. */
 	readonly name: string;
@@ -192,10 +221,7 @@ export interface StructType<
 	 * @param right Second value.
 	 * @returns `true` when every field is equal.
 	 */
-	equals(
-		left: StructValue<TFields, TMethods>,
-		right: StructValue<TFields, TMethods>,
-	): boolean;
+	equals(left: StructValue<TFields, TMethods>, right: StructValue<TFields, TMethods>): boolean;
 
 	/**
 	 * Reads a value from bytes, in the layout of {@link StructType.layout},
@@ -219,11 +245,7 @@ export interface StructType<
 	 * @throws {RangeError} When the struct does not fit in the view at that
 	 * offset.
 	 */
-	write(
-		view: DataView,
-		offset: number,
-		value: StructValue<TFields, TMethods>,
-	): void;
+	write(view: DataView, offset: number, value: StructValue<TFields, TMethods>): void;
 }
 
 /**
@@ -236,9 +258,7 @@ export interface StructType<
  *
  * @template TDescriptor Type of the descriptor `struct` returned.
  */
-export type Struct<
-	TDescriptor extends StructType<StructFields, StructMethods>,
-> =
+export type Struct<TDescriptor extends StructType<StructFields>> =
 	TDescriptor extends StructType<infer TFields, infer TMethods>
 		? StructValue<TFields, TMethods>
 		: never;
@@ -267,8 +287,7 @@ const ARRAY_INDEX = /^(?:0|[1-9]\d*)$/;
  * @param value Value being reported.
  * @returns Its kind.
  */
-const describeKind = (value: unknown): string =>
-	value === null ? 'null' : typeof value;
+const describeKind = (value: unknown): string => (value === null ? 'null' : typeof value);
 
 /**
  * Re-throws the error a field's own conversion raised, naming the field.
@@ -300,16 +319,15 @@ const rethrowForField = (name: string, key: string, error: unknown): never => {
  * @throws {TypeError} When `methods` is not an object, a method is not a
  * function, or a method is named like a field, an array index or `~layout`.
  */
-const methodPrototype = (
-	name: string,
-	fields: StructFields,
-	methods: StructMethods,
-): object => {
-	if (typeof methods !== 'object' || methods === null) {
+const methodPrototype = (name: string, fields: StructFields, methods: StructMethods): object => {
+	// Read as what a JavaScript caller can actually pass, which the type rules out.
+	const received: unknown = methods;
+
+	if (typeof received !== 'object' || received === null) {
 		throw createError('FULCRO6008', {
 			operation: 'struct',
 			name,
-			received: describeKind(methods),
+			received: describeKind(received),
 		});
 	}
 
@@ -327,10 +345,7 @@ const methodPrototype = (
 			});
 		}
 
-		if (
-			typeof key === 'string' &&
-			(ARRAY_INDEX.test(key) || key === '~layout')
-		) {
+		if (typeof key === 'string' && (ARRAY_INDEX.test(key) || key === '~layout')) {
 			throw createError('FULCRO6010', {
 				operation: 'struct',
 				name,
@@ -403,10 +418,7 @@ const methodPrototype = (
  * layout, a field is named like an array index or `~layout`, or a method is
  * not a function or is named like a field, an array index or `~layout`.
  */
-export const struct = <
-	TFields extends StructFields,
-	TMethods extends StructMethods = NoMethods,
->(
+export const struct = <TFields extends StructFields, TMethods extends StructMethods = NoMethods>(
 	name: string,
 	fields: TFields,
 	methods?: TMethods & ThisType<StructValue<TFields, TMethods>>,
@@ -418,11 +430,14 @@ export const struct = <
 		});
 	}
 
-	if (typeof fields !== 'object' || fields === null) {
+	// Read as what a JavaScript caller can actually pass, which the type rules out.
+	const receivedFields: unknown = fields;
+
+	if (typeof receivedFields !== 'object' || receivedFields === null) {
 		throw createError('FULCRO6013', {
 			operation: 'struct',
 			name,
-			received: describeKind(fields),
+			received: describeKind(receivedFields),
 		});
 	}
 
@@ -464,46 +479,55 @@ export const struct = <
 	 *
 	 * @returns The object, still empty and not yet frozen.
 	 */
-	const blank = (): Record<string, unknown> =>
-		prototype === undefined ? {} : Object.create(prototype);
+	const blank = (): Record<string, unknown> => {
+		return prototype === undefined ? {} : (Object.create(prototype) as Record<string, unknown>);
+	};
 
 	// Largest alignment first, so that every field lands aligned without padding
 	// before it: each size is a multiple of its own alignment. `sort` is stable,
-	// which keeps declaration order among equals.
-	const offsets = new Map<string, number>();
+	// which keeps declaration order among equals. Each field is placed as its
+	// offset is found, carrying its declaration index back to that order, so no
+	// offset has to be looked up again afterwards.
+	const placed: { readonly index: number; readonly field: PlacedField }[] = [];
 	let end = 0;
 
-	for (const field of [...declared].sort(
-		(left, right) => right.codec.alignment - left.codec.alignment,
+	for (const [index, field] of [...declared.entries()].sort(
+		([, left], [, right]) => right.codec.alignment - left.codec.alignment,
 	)) {
-		offsets.set(field.key, end);
+		placed.push({
+			index,
+			field: {
+				...field,
+				descriptor: field.descriptor as unknown as PlacedField['descriptor'],
+				offset: end,
+			},
+		});
+
 		end += field.codec.size;
 	}
 
-	const alignment: number = Math.max(
-		...declared.map((field) => field.codec.alignment),
-	);
+	const alignment: number = Math.max(...declared.map((field) => field.codec.alignment));
 	const size: number = Math.ceil(end / alignment) * alignment;
 
-	const plan: readonly PlacedField[] = declared.map((field) => ({
-		...field,
-		descriptor: field.descriptor as unknown as PlacedField['descriptor'],
-		offset: offsets.get(field.key) as number,
-	}));
+	const plan: readonly PlacedField[] = placed
+		.sort((left, right) => left.index - right.index)
+		.map((entry) => entry.field);
 
 	const layout = Object.freeze({
 		size,
 		alignment,
 		fields: Object.freeze(
 			Object.fromEntries(
-				plan.map((field) => [
-					field.key,
-					Object.freeze({
-						offset: field.offset,
-						size: field.codec.size,
-						alignment: field.codec.alignment,
-					}),
-				]),
+				plan.map((field) => {
+					return [
+						field.key,
+						Object.freeze({
+							offset: field.offset,
+							size: field.codec.size,
+							alignment: field.codec.alignment,
+						}),
+					];
+				}),
 			),
 		),
 	});
@@ -516,11 +540,7 @@ export const struct = <
 	 * @param view View handed in.
 	 * @param offset Offset handed in.
 	 */
-	const requireRoom = (
-		operation: string,
-		view: DataView,
-		offset: number,
-	): void => {
+	const requireRoom = (operation: string, view: DataView, offset: number): void => {
 		if (!(view instanceof DataView)) {
 			throw createError('FULCRO6017', {
 				operation: `${name}.${operation}`,
@@ -528,11 +548,7 @@ export const struct = <
 			});
 		}
 
-		if (
-			!Number.isInteger(offset) ||
-			offset < 0 ||
-			offset + size > view.byteLength
-		) {
+		if (!Number.isInteger(offset) || offset < 0 || offset + size > view.byteLength) {
 			throw createError('FULCRO6018', {
 				operation: `${name}.${operation}`,
 				size,
@@ -552,27 +568,20 @@ export const struct = <
 		return Object.freeze(value);
 	};
 
-	const writeFields = (
-		view: DataView,
-		offset: number,
-		value: unknown,
-	): void => {
+	const writeFields = (view: DataView, offset: number, value: unknown): void => {
 		for (const field of plan) {
-			field.codec.write(
-				view,
-				offset + field.offset,
-				(value as Record<string, unknown>)[field.key],
-			);
+			field.codec.write(view, offset + field.offset, (value as Record<string, unknown>)[field.key]);
 		}
 	};
 
-	const equals = (left: unknown, right: unknown): boolean =>
-		plan.every((field) =>
-			field.codec.equals(
+	const equals = (left: unknown, right: unknown): boolean => {
+		return plan.every((field) => {
+			return field.codec.equals(
 				(left as Record<string, unknown>)[field.key],
 				(right as Record<string, unknown>)[field.key],
-			),
-		);
+			);
+		});
+	};
 
 	type Value = StructValue<TFields, TMethods>;
 
@@ -581,10 +590,14 @@ export const struct = <
 		layout: layout as StructType<TFields, TMethods>['layout'],
 
 		from: (source) => {
-			if (typeof source !== 'object' || source === null) {
+			// Read as what a JavaScript caller can actually pass, which the type
+			// rules out.
+			const received: unknown = source;
+
+			if (typeof received !== 'object' || received === null) {
 				throw createError('FULCRO6019', {
 					operation: `${name}.from`,
-					received: describeKind(source),
+					received: describeKind(received),
 				});
 			}
 
@@ -609,9 +622,7 @@ export const struct = <
 				}
 
 				try {
-					value[field.key] = field.descriptor.from(
-						(source as Record<string, unknown>)[field.key],
-					);
+					value[field.key] = field.descriptor.from((source as Record<string, unknown>)[field.key]);
 				} catch (error) {
 					rethrowForField(name, field.key, error);
 				}
@@ -620,17 +631,21 @@ export const struct = <
 			return Object.freeze(value) as Value;
 		},
 
-		is: (value): value is Value =>
-			typeof value === 'object' &&
-			value !== null &&
-			(prototype === undefined || Object.getPrototypeOf(value) === prototype) &&
-			Object.isFrozen(value) &&
-			Object.keys(value).length === plan.length &&
-			plan.every(
-				(field) =>
-					Object.hasOwn(value, field.key) &&
-					field.descriptor.is((value as Record<string, unknown>)[field.key]),
-			),
+		is: (value): value is Value => {
+			return (
+				typeof value === 'object' &&
+				value !== null &&
+				(prototype === undefined || Object.getPrototypeOf(value) === prototype) &&
+				Object.isFrozen(value) &&
+				Object.keys(value).length === plan.length &&
+				plan.every((field) => {
+					return (
+						Object.hasOwn(value, field.key) &&
+						field.descriptor.is((value as Record<string, unknown>)[field.key])
+					);
+				})
+			);
+		},
 
 		equals,
 

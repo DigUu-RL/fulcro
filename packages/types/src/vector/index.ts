@@ -1,19 +1,14 @@
 import { createError } from '@fulcro/errors';
 
-import { sumOfProducts } from '@/componentwise';
-import {
-	describeKind,
-	type ElementDescriptor,
-	type SourceOf,
-	type ValueOf,
-} from '@/element';
+import { sumOfProducts } from '@/src/componentwise';
+import { describeKind, type ElementDescriptor, type SourceOf, type ValueOf } from '@/src/element';
 import {
 	convertElements,
 	createMatrixOperations,
 	createValue,
 	type Matrix,
 	type MatrixOperations,
-} from '@/matrix';
+} from '@/src/matrix';
 
 /**
  * A vector: a matrix with one row or one column.
@@ -110,11 +105,7 @@ export interface VectorType<
  * @throws {RangeError} When a dimension is not a positive integer, or neither
  * is 1.
  */
-export const Vector = <
-	TElement extends ElementDescriptor,
-	R extends number,
-	C extends number,
->(
+export const Vector = <TElement extends ElementDescriptor, R extends number, C extends number>(
 	element: TElement,
 	rows: R,
 	columns: C & VectorShapeCheck<R, C>,
@@ -153,7 +144,7 @@ export const Vector = <
 			if (elements.length !== count) {
 				throw createError('FULCRO6038', {
 					operation: `${name}.from`,
-					expected: `${count} elements`,
+					expected: `${String(count)} elements`,
 					received: String(elements.length),
 				});
 			}
@@ -167,7 +158,7 @@ export const Vector = <
 					[elements],
 					1,
 					count,
-					(_row, column) => `element ${column}`,
+					(_row, column) => `element ${String(column)}`,
 				),
 				rows,
 				columns,

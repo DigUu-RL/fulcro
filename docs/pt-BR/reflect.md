@@ -316,6 +316,16 @@ alignOf<SignedInteger<32>>(); // 4
 sizeOf<Decimal>(); // 16
 ```
 
+A resposta é tipada como o literal que o layout declara, o mesmo que
+`layoutOf<T>()` reporta: `sizeOf<SignedInteger<32>>()` tem o tipo `4`, e não
+`number`. Uma variável que acumula tamanhos diz isso:
+
+```ts
+let total: number = sizeOf<SignedInteger<32>>();
+
+total += sizeOf<Decimal>();
+```
+
 Com o transformer, cada chamada é substituída pelo número, então custa o que um
 literal custa. Os números descrevem o formato binário do tipo — os dois bytes
 de um float de meia precisão, os dezesseis de um decimal128 —, não o que um
@@ -518,6 +528,10 @@ is<Settings>(value, {
 });
 ```
 
+Um teste é tipado pelo tipo que ele garante: um `TypeTest<Account>` não é aceito
+onde se pede um `TypeTest<Settings>`, então um teste escrito para um tipo não
+pode ser entregue à verificação de outro.
+
 ### Os dois precisam do transformer
 
 Sem ele a chamada recusa em vez de chutar. Uma checagem que responde `true` para
@@ -562,9 +576,7 @@ npm install --save-dev ts-patch
 // tsconfig.json
 {
 	"compilerOptions": {
-		"plugins": [
-			{ "transform": "@fulcro/reflect/transformer", "type": "program" },
-		],
+		"plugins": [{ "transform": "@fulcro/reflect/transformer", "type": "program" }],
 	},
 }
 ```
@@ -588,11 +600,13 @@ nomes e aceitam as mesmas opções. O plugin declara `enforce: 'pre'`, o que
 importa — depois que o esbuild ou o swc apagou os tipos, não sobra nada para
 ler.
 
-### Só TypeScript 5, até o 7 exclusive
+### TypeScript 5.9 ou mais recente, até o 7 exclusive
 
-O 7.x é o port nativo, e o pacote dele não expõe mais a API do compilador sobre
-a qual isto é construído. A faixa de peer diz isso, em vez de deixar uma
-instalação dar certo e acabar num transformer que não consegue iniciar. O
+O 5.9 é a versão em que o compilador marca um import só de tipos do jeito que o
+transformer lê. O 7.x é o port nativo, e o pacote dele não expõe mais a API do
+compilador sobre a qual isto é construído. A faixa de peer diz isso, em vez de
+deixar uma instalação dar certo e acabar num transformer que não consegue
+iniciar. O
 `@fulcro/reflect` em si não é afetado e roda em qualquer lugar, no seu
 comportamento de fallback.
 

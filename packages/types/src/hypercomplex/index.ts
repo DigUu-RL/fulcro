@@ -1,4 +1,4 @@
-import { createComponentRecord } from '@/components';
+import { createComponentRecord } from '@/src/components';
 import {
 	addEach,
 	divideEach,
@@ -7,8 +7,8 @@ import {
 	scaleEach,
 	subtractEach,
 	sumOfProducts,
-} from '@/componentwise';
-import { describeType, elementOf, type ElementType } from '@/element';
+} from '@/src/componentwise';
+import { describeType, elementOf, type ElementType } from '@/src/element';
 
 /**
  * The descriptor of a hypercomplex number type — a real part and some
@@ -146,10 +146,13 @@ export const createHypercomplexType = <T, TValue, TSource, TComponents>(
 ): HypercomplexType<T, TValue, TSource, TComponents> => {
 	const element: ElementType<T> = elementOf<T>(elementDescriptor, family);
 	const name: string = describeType(family, element.name);
-	const { make, convert, isRecord, register } = createComponentRecord<
-		T,
-		TValue
-	>(components, element, elementDescriptor);
+
+	const { make, convert, isRecord, register } = createComponentRecord<T, TValue>(
+		components,
+		element,
+		elementDescriptor,
+	);
+
 	const count: number = components.length;
 
 	let zero: T | undefined;
@@ -158,20 +161,21 @@ export const createHypercomplexType = <T, TValue, TSource, TComponents>(
 	 * @param value A value.
 	 * @returns Its components, in declared order.
 	 */
-	const componentsOf = (value: TValue): T[] =>
-		components.map((key) => (value as Record<string, T>)[key]);
+	const componentsOf = (value: TValue): T[] => {
+		return components.map((key) => (value as Record<string, T>)[key] as T);
+	};
 
 	/**
 	 * @param value Components of a value.
 	 * @returns The same real part, and every imaginary part negated.
 	 */
-	const conjugateOf = (value: readonly T[]): T[] => [
-		value[0],
-		...negateEach(element, value.slice(1)),
-	];
+	const conjugateOf = (value: readonly T[]): T[] => {
+		return [value[0] as T, ...negateEach(element, value.slice(1))];
+	};
 
-	const equals = (left: TValue, right: TValue): boolean =>
-		equalsEach(element, componentsOf(left), componentsOf(right));
+	const equals = (left: TValue, right: TValue): boolean => {
+		return equalsEach(element, componentsOf(left), componentsOf(right));
+	};
 
 	const descriptor: HypercomplexType<T, TValue, TSource, TComponents> = {
 		name,
@@ -183,43 +187,26 @@ export const createHypercomplexType = <T, TValue, TSource, TComponents>(
 
 			zero ??= element.from(0);
 
-			return make(
-				element.from(value as number),
-				...new Array<T>(count - 1).fill(zero),
-			);
+			return make(element.from(value as number), ...new Array<T>(count - 1).fill(zero));
 		},
 
 		is: isRecord,
 		equals,
 
-		add: (left, right) =>
-			make(...addEach(element, componentsOf(left), componentsOf(right))),
+		add: (left, right) => make(...addEach(element, componentsOf(left), componentsOf(right))),
 
-		subtract: (left, right) =>
-			make(...subtractEach(element, componentsOf(left), componentsOf(right))),
+		subtract: (left, right) => {
+			return make(...subtractEach(element, componentsOf(left), componentsOf(right)));
+		},
 
-		multiply: (left, right) =>
-			make(...product(element, componentsOf(left), componentsOf(right))),
+		multiply: (left, right) => make(...product(element, componentsOf(left), componentsOf(right))),
 
 		divide: (left, right) => {
 			const divisor: T[] = componentsOf(right);
-			const norm: T = sumOfProducts(
-				element,
-				count,
-				divisor,
-				0,
-				1,
-				divisor,
-				0,
-				1,
-			);
+			const norm: T = sumOfProducts(element, count, divisor, 0, 1, divisor, 0, 1);
 
 			return make(
-				...divideEach(
-					element,
-					product(element, componentsOf(left), conjugateOf(divisor)),
-					norm,
-				),
+				...divideEach(element, product(element, componentsOf(left), conjugateOf(divisor)), norm),
 			);
 		},
 
@@ -227,8 +214,7 @@ export const createHypercomplexType = <T, TValue, TSource, TComponents>(
 
 		conjugate: (value) => make(...conjugateOf(componentsOf(value))),
 
-		scale: (value, factor) =>
-			make(...scaleEach(element, componentsOf(value), factor)),
+		scale: (value, factor) => make(...scaleEach(element, componentsOf(value), factor)),
 	};
 
 	register(descriptor, equals);

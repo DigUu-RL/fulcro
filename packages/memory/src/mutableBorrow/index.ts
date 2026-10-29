@@ -1,4 +1,4 @@
-import type { View } from '@/view';
+import type { View } from '@/src/view';
 
 /**
  * Marks the type as an exclusive borrow. Declared, never created: it exists

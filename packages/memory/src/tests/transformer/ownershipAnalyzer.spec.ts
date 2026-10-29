@@ -1,9 +1,9 @@
 import * as path from 'node:path';
 
-import * as ts from 'typescript';
-import { beforeAll, describe, expect, it } from 'vitest';
+import * as typescript from 'typescript';
+import { assert, beforeAll, describe, expect, it } from 'vitest';
 
-import transformer from '@/transformer';
+import transformer from '@/src/transformer';
 
 /**
  * Transformer suite for the ownership rules.
@@ -19,10 +19,10 @@ import transformer from '@/transformer';
  */
 
 /** Options every fixture compiles with. */
-const COMPILER_OPTIONS: ts.CompilerOptions = {
-	target: ts.ScriptTarget.ES2022,
-	module: ts.ModuleKind.ESNext,
-	moduleResolution: ts.ModuleResolutionKind.Bundler,
+const COMPILER_OPTIONS: typescript.CompilerOptions = {
+	target: typescript.ScriptTarget.ES2022,
+	module: typescript.ModuleKind.ESNext,
+	moduleResolution: typescript.ModuleResolutionKind.Bundler,
 	strict: true,
 	noEmitOnError: false,
 	skipLibCheck: true,
@@ -30,10 +30,10 @@ const COMPILER_OPTIONS: ts.CompilerOptions = {
 
 /** What compiling one fixture produced. */
 interface Compiled {
-	readonly source: ts.SourceFile;
+	readonly source: typescript.SourceFile;
 	readonly emitted: string;
-	readonly errors: readonly ts.Diagnostic[];
-	readonly refused: readonly ts.Diagnostic[];
+	readonly errors: readonly typescript.Diagnostic[];
+	readonly refused: readonly typescript.Diagnostic[];
 }
 
 /**
@@ -44,14 +44,15 @@ interface Compiled {
  * the compiler and the refusals of the transformer.
  */
 const compile = (...fileNames: string[]): Compiled[] => {
-	const fixtures: string[] = fileNames.map((fileName) =>
-		path.resolve(__dirname, fileName),
-	);
-	const program: ts.Program = ts.createProgram(fixtures, COMPILER_OPTIONS);
+	const fixtures: string[] = fileNames.map((fileName) => path.resolve(__dirname, fileName));
+	const program: typescript.Program = typescript.createProgram(fixtures, COMPILER_OPTIONS);
 
 	return fixtures.map((fixture) => {
-		const source = program.getSourceFile(fixture) as ts.SourceFile;
-		const refused: ts.Diagnostic[] = [];
+		const source: typescript.SourceFile | undefined = program.getSourceFile(fixture);
+
+		assert.isDefined(source);
+
+		const refused: typescript.Diagnostic[] = [];
 		let emitted = '';
 
 		program.emit(
@@ -70,11 +71,9 @@ const compile = (...fileNames: string[]): Compiled[] => {
 			},
 		);
 
-		const errors: readonly ts.Diagnostic[] = ts
+		const errors: readonly typescript.Diagnostic[] = typescript
 			.getPreEmitDiagnostics(program, source)
-			.filter(
-				(diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error,
-			);
+			.filter((diagnostic) => diagnostic.category === typescript.DiagnosticCategory.Error);
 
 		return { source, emitted, errors, refused };
 	});
@@ -86,51 +85,47 @@ const compile = (...fileNames: string[]): Compiled[] => {
  * @param diagnostic The diagnostic.
  * @returns `line: FULCROnnnn`, the line counted from 1.
  */
-const located = (diagnostic: ts.Diagnostic): string => {
-	const { line } = ts.getLineAndCharacterOfPosition(
-		diagnostic.file as ts.SourceFile,
-		diagnostic.start ?? 0,
-	);
+const located = (diagnostic: typescript.Diagnostic): string => {
+	assert.isDefined(diagnostic.file);
 
-	return `${line + 1}: FULCRO${diagnostic.code}`;
+	const { line } = typescript.getLineAndCharacterOfPosition(diagnostic.file, diagnostic.start ?? 0);
+
+	return `${String(line + 1)}: FULCRO${String(diagnostic.code)}`;
 };
 
 let accepted: Compiled;
 let rejected: Compiled;
 
 beforeAll(() => {
-	[accepted, rejected] = compile(
-		'ownership.sample.ts',
-		'ownership.rejected.fixture.ts',
-	);
+	[accepted, rejected] = compile('ownership.sample.ts', 'ownership.rejected.fixture.ts') as [
+		Compiled,
+		Compiled,
+	];
 });
 
 describe('ownership rules at compile time', () => {
 	it('should compile both fixtures without type errors', () => {
 		expect(
-			[...accepted.errors, ...rejected.errors].map((error) =>
-				ts.flattenDiagnosticMessageText(error.messageText, '\n'),
-			),
+			[...accepted.errors, ...rejected.errors].map((error) => {
+				return typescript.flattenDiagnosticMessageText(error.messageText, '\n');
+			}),
 		).toEqual([]);
 	});
 
 	it('should refuse nothing a correct program does', () => {
 		expect(
-			accepted.refused.map(
-				(diagnostic) =>
-					`${located(diagnostic)} ${ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')}`,
-			),
+			accepted.refused.map((diagnostic) => {
+				return `${located(diagnostic)} ${typescript.flattenDiagnosticMessageText(diagnostic.messageText, '\n')}`;
+			}),
 		).toEqual([]);
 	});
 
 	it('should refuse exactly the lines the fixture marks, with their codes', () => {
-		const marked: string[] = rejected.source.text
-			.split(/\r?\n/)
-			.flatMap((line, index) => {
-				const code: string | undefined = /\/\/ (FULCRO\d{4})$/.exec(line)?.[1];
+		const marked: string[] = rejected.source.text.split(/\r?\n/).flatMap((line, index) => {
+			const code: string | undefined = /\/\/ (FULCRO\d{4})$/.exec(line)?.[1];
 
-				return code === undefined ? [] : [`${index + 1}: ${code}`];
-			});
+			return code === undefined ? [] : [`${String(index + 1)}: ${code}`];
+		});
 
 		expect(marked.length).toBeGreaterThan(10);
 		expect(rejected.refused.map(located)).toEqual(marked);
@@ -140,24 +135,24 @@ describe('ownership rules at compile time', () => {
 		const [first] = rejected.refused;
 		const start: number = first?.start ?? -1;
 
-		expect(rejected.source.text.slice(start, start + 'owner'.length)).toBe(
-			'owner',
-		);
+		expect(rejected.source.text.slice(start, start + 'owner'.length)).toBe('owner');
+
 		expect(first?.messageText).toBe(
-			"FULCRO7027: move: 'owner' is used after it was moved at line 24; use the owner move returned.",
+			"FULCRO7027: move: 'owner' is used after it was moved at line 17; use the owner move returned.",
 		);
 	});
 
 	it('should name the conflicting borrow and the owner of an ended one', () => {
-		const messages: string[] = rejected.refused.map((diagnostic) =>
-			String(diagnostic.messageText),
+		const messages: string[] = rejected.refused.map((diagnostic) => {
+			return typescript.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
+		});
+
+		expect(messages).toContain(
+			"FULCRO7028: borrow: the borrow 'reading' is used after borrowMutable(owner) at line 40 ended it.",
 		);
 
 		expect(messages).toContain(
-			"FULCRO7028: borrow: the borrow 'reading' is used after borrowMutable(owner) at line 47 ended it.",
-		);
-		expect(messages).toContain(
-			"FULCRO7029: borrow: the borrow 'reading' is used after its owner 'owner' was moved at line 74.",
+			"FULCRO7029: borrow: the borrow 'reading' is used after its owner 'owner' was moved at line 67.",
 		);
 	});
 

@@ -1,7 +1,7 @@
 import { createError } from '@fulcro/errors';
 
-import type { MemoryReference } from '@/memoryReference';
-import type { Storage } from '@/storage';
+import type { MemoryReference } from '@/src/memoryReference';
+import type { Storage } from '@/src/storage';
 
 /**
  * What a view or a pointer reads and writes through, whatever it was made
@@ -48,14 +48,15 @@ export interface Source<T> {
  * @param storage The storage.
  * @returns The source.
  */
-export const storageSource = <T>(storage: Storage<T>): Source<T> =>
-	Object.freeze({
+export const storageSource = <T>(storage: Storage<T>): Source<T> => {
+	return Object.freeze({
 		length: (): number => storage.length,
 		read: (_operation: string, index: number): T => storage.get(index),
 		write: (_operation: string, index: number, value: T): void => {
 			storage.set(index, value);
 		},
 	});
+};
 
 /**
  * An array as a source, read in place.
@@ -105,11 +106,12 @@ export const arraySource = <T>(array: readonly T[]): Source<T> => {
  * @param reference The reference.
  * @returns The source.
  */
-export const referenceSource = <T>(reference: MemoryReference<T>): Source<T> =>
-	Object.freeze({
+export const referenceSource = <T>(reference: MemoryReference<T>): Source<T> => {
+	return Object.freeze({
 		length: (): number => 1,
 		read: (): T => reference.get(),
 		write: (_operation: string, _index: number, value: T): void => {
 			reference.set(value);
 		},
 	});
+};

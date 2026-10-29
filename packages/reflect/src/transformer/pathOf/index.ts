@@ -1,10 +1,7 @@
 import typescript from 'typescript';
 
-import {
-	CallRewriter,
-	RewriteContext,
-	utilityModuleSegment,
-} from '@fulcro/transform-core';
+import type { CallRewriter, RewriteContext } from '@fulcro/transform-core';
+import { utilityModuleSegment } from '@fulcro/transform-core';
 
 /**
  * Rewriter of `pathOf`.
@@ -28,10 +25,7 @@ import {
  * @param into Segments gathered so far, innermost first.
  * @returns `true` when the whole expression is a path.
  */
-const collect = (
-	expression: typescript.Expression,
-	into: string[],
-): boolean => {
+const collect = (expression: typescript.Expression, into: string[]): boolean => {
 	if (typescript.isParenthesizedExpression(expression)) {
 		return collect(expression.expression, into);
 	}
@@ -84,9 +78,7 @@ const collect = (
  * @returns The path, or `null` when the argument does not walk one.
  */
 const pathOfAccessor = (argument: typescript.Expression): string | null => {
-	const body: typescript.Expression | null = typescript.isArrowFunction(
-		argument,
-	)
+	const body: typescript.Expression | null = typescript.isArrowFunction(argument)
 		? typescript.isBlock(argument.body)
 			? returnedBy(argument.body)
 			: argument.body

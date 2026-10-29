@@ -2,9 +2,8 @@ import * as path from 'node:path';
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { packageNameOf } from '@/shared';
-
-import { createWorkspace } from './workspace';
+import { packageNameOf } from '@/src/shared';
+import { createWorkspace } from '@/src/tests/workspace';
 
 /**
  * Behaviour suite for `packageNameOf`.
@@ -39,30 +38,27 @@ afterAll(() => {
  * @param relative Path below the root, `/`-separated.
  * @returns Its absolute path, in the platform's spelling.
  */
-const at = (relative: string): string =>
-	path.join(workspace.root, ...relative.split('/'));
+const position = (relative: string): string => path.join(workspace.root, ...relative.split('/'));
 
 describe('packageNameOf', () => {
 	it('should name the package of a file deep below its manifest', () => {
-		expect(
-			packageNameOf(at('node_modules/@scope/library/dist/move/index.d.ts')),
-		).toBe('@scope/library');
+		expect(packageNameOf(position('node_modules/@scope/library/dist/move/index.d.ts'))).toBe(
+			'@scope/library',
+		);
 	});
 
 	it("should tell a consumer's own file of the same layout apart", () => {
-		expect(packageNameOf(at('src/move/index.ts'))).toBe('consumer');
+		expect(packageNameOf(position('src/move/index.ts'))).toBe('consumer');
 	});
 
 	it('should stop at the nearest manifest, even one without a name', () => {
-		expect(packageNameOf(at('node_modules/nameless/index.d.ts'))).toBeNull();
+		expect(packageNameOf(position('node_modules/nameless/index.d.ts'))).toBeNull();
 	});
 
 	it('should accept the compiler spelling, with forward slashes', () => {
 		expect(
 			packageNameOf(
-				at('node_modules/@scope/library/dist/move/index.d.ts')
-					.split(path.sep)
-					.join('/'),
+				position('node_modules/@scope/library/dist/move/index.d.ts').split(path.sep).join('/'),
 			),
 		).toBe('@scope/library');
 	});

@@ -1,7 +1,7 @@
-import { describe, expect, expectTypeOf, it } from 'vitest';
+import { assert, describe, expect, expectTypeOf, it } from 'vitest';
 
-import { Decimal } from '@/decimal';
-import type { RoundingMode } from '@/roundingMode';
+import { Decimal } from '@/src/decimal';
+import type { RoundingMode } from '@/src/roundingMode';
 
 /**
  * Behaviour suite for `Decimal`.
@@ -15,7 +15,7 @@ import type { RoundingMode } from '@/roundingMode';
  * implementation avoids, and so is the independent answer to compare it with.
  */
 
-const D = Decimal.from;
+const decimalFrom = Decimal.from;
 
 /** Every rounding mode, for the checks that run under each. */
 const MODES: readonly RoundingMode[] = [
@@ -64,34 +64,34 @@ const referenceRound = (value: Exact, mode: RoundingMode): string => {
 	const digits: string = value.coefficient.toString();
 	const sign: string = value.negative ? '-' : '';
 
-	if (digits.length <= 34) return `${sign}${digits}e${value.exponent}`;
+	if (digits.length <= 34) return `${sign}${digits}e${String(value.exponent)}`;
 
 	const kept: bigint = BigInt(digits.slice(0, 34));
-	const first: string = digits[34];
+	const first: string = digits.charAt(34);
 	const rest: boolean = /[1-9]/.test(digits.slice(35));
 	const inexact: boolean = first !== '0' || rest;
 
-	let up: boolean;
+	let roundsUp: boolean;
 
 	switch (mode) {
 		case 'truncate':
-			up = false;
+			roundsUp = false;
 			break;
 		case 'ceiling':
-			up = inexact && !value.negative;
+			roundsUp = inexact && !value.negative;
 			break;
 		case 'floor':
-			up = inexact && value.negative;
+			roundsUp = inexact && value.negative;
 			break;
 		case 'halfAwayFromZero':
-			up = first >= '5';
+			roundsUp = first >= '5';
 			break;
 		case 'halfEven':
-			up = first > '5' || (first === '5' && (rest || kept % 2n === 1n));
+			roundsUp = first > '5' || (first === '5' && (rest || kept % 2n === 1n));
 			break;
 	}
 
-	return `${sign}${up ? kept + 1n : kept}e${value.exponent + digits.length - 34}`;
+	return `${sign}${String(roundsUp ? kept + 1n : kept)}e${String(value.exponent + digits.length - 34)}`;
 };
 
 /**
@@ -106,7 +106,7 @@ const operand = (random: () => number, exponentSpread: number): Exact => {
 	let digits = '';
 
 	for (let index = 0; index < length; index++) {
-		digits += Math.floor(random() * 10);
+		digits += String(Math.floor(random() * 10));
 	}
 
 	// Nines and trailing zeros are where carries and ties live, and a power of
@@ -114,6 +114,7 @@ const operand = (random: () => number, exponentSpread: number): Exact => {
 	// drawn far more often than chance would.
 	if (random() < 0.2) digits = '9'.repeat(length);
 	if (random() < 0.2) digits = `1${'0'.repeat(length - 1)}`;
+
 	if (random() < 0.2) {
 		digits = `${digits.slice(0, Math.max(1, length - 3))}500`.slice(0, length);
 	}
@@ -131,8 +132,9 @@ const operand = (random: () => number, exponentSpread: number): Exact => {
  * @param value Exact value.
  * @returns Its literal.
  */
-const literal = (value: Exact): string =>
-	`${value.negative ? '-' : ''}${value.coefficient}e${value.exponent}`;
+const literal = (value: Exact): string => {
+	return `${value.negative ? '-' : ''}${String(value.coefficient)}e${String(value.exponent)}`;
+};
 
 /**
  * The exact sum of two values, by aligning them in full.
@@ -143,10 +145,13 @@ const literal = (value: Exact): string =>
  */
 const exactSum = (left: Exact, right: Exact): Exact => {
 	const exponent: number = Math.min(left.exponent, right.exponent);
-	const signed = (value: Exact): bigint =>
-		(value.negative ? -1n : 1n) *
-		value.coefficient *
-		10n ** BigInt(value.exponent - exponent);
+
+	const signed = (value: Exact): bigint => {
+		return (
+			(value.negative ? -1n : 1n) * value.coefficient * 10n ** BigInt(value.exponent - exponent)
+		);
+	};
+
 	const sum: bigint = signed(left) + signed(right);
 
 	return { negative: sum < 0n, coefficient: sum < 0n ? -sum : sum, exponent };
@@ -170,7 +175,7 @@ describe('Decimal', () => {
 			['+Infinity', 'Infinity'],
 			['-Infinity', '-Infinity'],
 		])('should read %s as %s', (text, expected) => {
-			expect(D(text).toString()).toBe(expected);
+			expect(decimalFrom(text).toString()).toBe(expected);
 		});
 
 		it.each([
@@ -188,84 +193,84 @@ describe('Decimal', () => {
 			'inf',
 			'1_000',
 		])('should refuse %j', (text) => {
-			expect(() => D(text)).toThrow(SyntaxError);
+			expect(() => decimalFrom(text)).toThrow(SyntaxError);
 		});
 
 		it('should shorten a long input in the message', () => {
-			expect(() => D(`${'1'.repeat(100)}x`)).toThrow(`"${'1'.repeat(40)}…"`);
+			expect(() => decimalFrom(`${'1'.repeat(100)}x`)).toThrow(`"${'1'.repeat(40)}…"`);
 		});
 
 		it('should round past thirty-four digits half to even', () => {
 			const ones = '1234567890123456789012345678901234';
 
-			expect(D(`${ones}.5`).toString()).toBe(
-				'1.234567890123456789012345678901234e+33',
-			);
-			expect(D(`${ones.slice(0, 33)}5.5`).toString()).toBe(
+			expect(decimalFrom(`${ones}.5`).toString()).toBe('1.234567890123456789012345678901234e+33');
+
+			expect(decimalFrom(`${ones.slice(0, 33)}5.5`).toString()).toBe(
 				'1.234567890123456789012345678901236e+33',
 			);
 		});
 
 		it('should round a tie buried past many digits by what follows it', () => {
-			expect(D(`1.${'0'.repeat(33)}5`).toString()).toBe('1');
-			expect(D(`1.${'0'.repeat(33)}5${'0'.repeat(500)}1`).toString()).toBe(
+			expect(decimalFrom(`1.${'0'.repeat(33)}5`).toString()).toBe('1');
+
+			expect(decimalFrom(`1.${'0'.repeat(33)}5${'0'.repeat(500)}1`).toString()).toBe(
 				`1.${'0'.repeat(32)}1`,
 			);
 		});
 
 		it('should read a hundred thousand digits', () => {
-			expect(D(`0.${'3'.repeat(100_000)}`).toString()).toBe(
-				`0.${'3'.repeat(34)}`,
-			);
+			expect(decimalFrom(`0.${'3'.repeat(100_000)}`).toString()).toBe(`0.${'3'.repeat(34)}`);
 		});
 
 		it('should overflow and underflow on the exponent alone', () => {
-			expect(D('1e999999999999').toString()).toBe('Infinity');
-			expect(D('-1e999999999999').toString()).toBe('-Infinity');
-			expect(D('1e-999999999999').toString()).toBe('0');
-			expect(D('-1e-999999999999').toString()).toBe('-0');
+			expect(decimalFrom('1e999999999999').toString()).toBe('Infinity');
+			expect(decimalFrom('-1e999999999999').toString()).toBe('-Infinity');
+			expect(decimalFrom('1e-999999999999').toString()).toBe('0');
+			expect(decimalFrom('-1e-999999999999').toString()).toBe('-0');
 		});
 
 		it('should hold the limits of decimal128', () => {
-			expect(D('9.999999999999999999999999999999999e6144').toString()).toBe(
+			expect(decimalFrom('9.999999999999999999999999999999999e6144').toString()).toBe(
 				'9.999999999999999999999999999999999e+6144',
 			);
-			expect(D('1e6145').toString()).toBe('Infinity');
-			expect(D('1e-6176').toString()).toBe('1e-6176');
-			expect(D('1e-6177').toString()).toBe('0');
-			expect(D('1.5e-6176').toString()).toBe('2e-6176');
-			expect(D('1.23e-6175').toString()).toBe('1.2e-6175');
+
+			expect(decimalFrom('1e6145').toString()).toBe('Infinity');
+			expect(decimalFrom('1e-6176').toString()).toBe('1e-6176');
+			expect(decimalFrom('1e-6177').toString()).toBe('0');
+			expect(decimalFrom('1.5e-6176').toString()).toBe('2e-6176');
+			expect(decimalFrom('1.23e-6175').toString()).toBe('1.2e-6175');
 		});
 	});
 
 	describe('from a number, a bigint or a Decimal', () => {
 		it('should read a number as its shortest text, not its binary value', () => {
-			expect(D(0.1).toString()).toBe('0.1');
-			expect(D(1e21).toString()).toBe('1e+21');
-			expect(D(5e-324).toString()).toBe('5e-324');
-			expect(D(-0).toString()).toBe('-0');
-			expect(D(Number.NaN).isNaN()).toBe(true);
-			expect(D(-Infinity).toString()).toBe('-Infinity');
+			expect(decimalFrom(0.1).toString()).toBe('0.1');
+			expect(decimalFrom(1e21).toString()).toBe('1e+21');
+			expect(decimalFrom(5e-324).toString()).toBe('5e-324');
+			expect(decimalFrom(-0).toString()).toBe('-0');
+			expect(decimalFrom(Number.NaN).isNaN()).toBe(true);
+			expect(decimalFrom(-Infinity).toString()).toBe('-Infinity');
 		});
 
 		it('should read a bigint exactly, rounding past thirty-four digits', () => {
-			expect(D(123n).toString()).toBe('123');
-			expect(D(10n ** 40n).toString()).toBe('1e+40');
-			expect(D(10n ** 34n + 1n).toString()).toBe('1e+34');
-			expect(D(10n ** 34n + 5n).toString()).toBe('1e+34');
-			expect(D(10n ** 34n + 15n).toString()).toBe(
+			expect(decimalFrom(123n).toString()).toBe('123');
+			expect(decimalFrom(10n ** 40n).toString()).toBe('1e+40');
+			expect(decimalFrom(10n ** 34n + 1n).toString()).toBe('1e+34');
+			expect(decimalFrom(10n ** 34n + 5n).toString()).toBe('1e+34');
+
+			expect(decimalFrom(10n ** 34n + 15n).toString()).toBe(
 				'1.000000000000000000000000000000002e+34',
 			);
 		});
 
 		it('should return a Decimal as is', () => {
-			const value = D('1');
+			const value = decimalFrom('1');
 
-			expect(D(value)).toBe(value);
+			expect(decimalFrom(value)).toBe(value);
 		});
 
 		it('should refuse any other kind of value', () => {
-			expect(() => D(true as unknown as number)).toThrow(
+			expect(() => decimalFrom(true as unknown as number)).toThrow(
 				'Decimal.from: expected a Decimal, a string, a number or a bigint, received boolean.',
 			);
 		});
@@ -273,42 +278,49 @@ describe('Decimal', () => {
 
 	describe('addition and subtraction', () => {
 		it('should add decimal fractions exactly', () => {
-			expect(D('0.1').add(D('0.2')).equals(D('0.3'))).toBe(true);
-			expect(D('19.99').subtract(D('0.99')).toString()).toBe('19');
+			expect(decimalFrom('0.1').add(decimalFrom('0.2')).equals(decimalFrom('0.3'))).toBe(true);
+			expect(decimalFrom('19.99').subtract(decimalFrom('0.99')).toString()).toBe('19');
 		});
 
 		it('should round a tie on the thirty-fourth digit by the mode', () => {
-			const nines = D('9'.repeat(34));
-			const half = D('0.5');
+			const nines = decimalFrom('9'.repeat(34));
+			const half = decimalFrom('0.5');
 
 			expect(nines.add(half).toString()).toBe('1e+34');
+
 			expect(nines.add(half, 'truncate').toString()).toBe(
 				'9.999999999999999999999999999999999e+33',
 			);
+
 			expect(
-				D(`${'9'.repeat(33)}8`)
+				decimalFrom(`${'9'.repeat(33)}8`)
 					.add(half)
 					.toString(),
 			).toBe('9.999999999999999999999999999999998e+33');
+
 			expect(
-				D(`${'9'.repeat(33)}8`)
+				decimalFrom(`${'9'.repeat(33)}8`)
 					.add(half, 'halfAwayFromZero')
 					.toString(),
 			).toBe('9.999999999999999999999999999999999e+33');
 		});
 
 		it('should let an operand far below the other decide only the rounding', () => {
-			const large = D('1e6000');
-			const tiny = D('1e-6000');
+			const large = decimalFrom('1e6000');
+			const tiny = decimalFrom('1e-6000');
 
 			expect(large.add(tiny).toString()).toBe('1e+6000');
+
 			expect(large.add(tiny, 'ceiling').toString()).toBe(
 				'1.000000000000000000000000000000001e+6000',
 			);
+
 			expect(large.subtract(tiny).toString()).toBe('1e+6000');
+
 			expect(large.subtract(tiny, 'truncate').toString()).toBe(
 				'9.999999999999999999999999999999999e+5999',
 			);
+
 			expect(large.negate().subtract(tiny, 'floor').toString()).toBe(
 				'-1.000000000000000000000000000000001e+6000',
 			);
@@ -317,14 +329,17 @@ describe('Decimal', () => {
 		it('should round correctly across a borrow', () => {
 			// Past the borrow the last kept place moves down one: 1 - 7e-36 is
 			// 0.99…9 followed by 93, which rounds up to 1 and truncates to 34 nines.
-			expect(D('1').subtract(D('7e-36')).toString()).toBe('1');
-			expect(D('1').subtract(D('7e-36'), 'truncate').toString()).toBe(
+			expect(decimalFrom('1').subtract(decimalFrom('7e-36')).toString()).toBe('1');
+
+			expect(decimalFrom('1').subtract(decimalFrom('7e-36'), 'truncate').toString()).toBe(
 				`0.${'9'.repeat(34)}`,
 			);
-			expect(D('1').subtract(D('7e-35')).toString()).toBe(
+
+			expect(decimalFrom('1').subtract(decimalFrom('7e-35')).toString()).toBe(
 				`0.${'9'.repeat(34)}`,
 			);
-			expect(D('1').subtract(D('4e-35')).toString()).toBe('1');
+
+			expect(decimalFrom('1').subtract(decimalFrom('4e-35')).toString()).toBe('1');
 		});
 
 		it('should agree with an exact reference, in every mode', () => {
@@ -334,23 +349,26 @@ describe('Decimal', () => {
 			for (let index = 0; index < 3_000; index++) {
 				// Spreads from a few places to a hundred, so both the aligned
 				// path and the far-operand path are exercised.
-				const spread: number = [4, 40, 80, 200][index % 4];
+				const spread: number | undefined = [4, 40, 80, 200][index % 4];
+				const mode: RoundingMode | undefined = MODES[index % MODES.length];
+
+				assert.isDefined(spread);
+				assert.isDefined(mode);
+
 				const left: Exact = operand(random, spread);
 				const right: Exact = operand(random, spread);
-				const mode: RoundingMode = MODES[index % MODES.length];
 				const sum: Exact = exactSum(left, right);
 
 				if (sum.coefficient === 0n) continue;
 
-				const expected: string = D(referenceRound(sum, mode)).toString();
-				const actual: string = D(literal(left))
-					.add(D(literal(right)), mode)
+				const expected: string = decimalFrom(referenceRound(sum, mode)).toString();
+
+				const actual: string = decimalFrom(literal(left))
+					.add(decimalFrom(literal(right)), mode)
 					.toString();
 
 				if (actual !== expected) {
-					wrong.push(
-						`${literal(left)} + ${literal(right)} (${mode}): ${actual} ≠ ${expected}`,
-					);
+					wrong.push(`${literal(left)} + ${literal(right)} (${mode}): ${actual} ≠ ${expected}`);
 				}
 			}
 
@@ -358,30 +376,29 @@ describe('Decimal', () => {
 		});
 
 		it('should give the zeros the signs IEEE 754 gives them', () => {
-			expect(D('0').add(D('-0')).toString()).toBe('0');
-			expect(D('-0').add(D('-0')).toString()).toBe('-0');
-			expect(D('0').add(D('-0'), 'floor').toString()).toBe('-0');
-			expect(D('1').subtract(D('1')).toString()).toBe('0');
-			expect(D('1').subtract(D('1'), 'floor').toString()).toBe('-0');
+			expect(decimalFrom('0').add(decimalFrom('-0')).toString()).toBe('0');
+			expect(decimalFrom('-0').add(decimalFrom('-0')).toString()).toBe('-0');
+			expect(decimalFrom('0').add(decimalFrom('-0'), 'floor').toString()).toBe('-0');
+			expect(decimalFrom('1').subtract(decimalFrom('1')).toString()).toBe('0');
+			expect(decimalFrom('1').subtract(decimalFrom('1'), 'floor').toString()).toBe('-0');
 		});
 
 		it('should combine the special values as IEEE 754 does', () => {
-			expect(D('Infinity').add(D('Infinity')).toString()).toBe('Infinity');
-			expect(D('Infinity').subtract(D('Infinity')).isNaN()).toBe(true);
-			expect(D('-Infinity').add(D('1e6144')).toString()).toBe('-Infinity');
-			expect(D('NaN').add(D('1')).isNaN()).toBe(true);
-			expect(D('1').add(D('0')).toString()).toBe('1');
+			expect(decimalFrom('Infinity').add(decimalFrom('Infinity')).toString()).toBe('Infinity');
+			expect(decimalFrom('Infinity').subtract(decimalFrom('Infinity')).isNaN()).toBe(true);
+			expect(decimalFrom('-Infinity').add(decimalFrom('1e6144')).toString()).toBe('-Infinity');
+			expect(decimalFrom('NaN').add(decimalFrom('1')).isNaN()).toBe(true);
+			expect(decimalFrom('1').add(decimalFrom('0')).toString()).toBe('1');
 		});
 
 		it('should overflow to infinity, or stop at the largest value in a directed mode', () => {
-			const largest = D('9.999999999999999999999999999999999e6144');
-			const place = D('1e6111');
+			const largest = decimalFrom('9.999999999999999999999999999999999e6144');
+			const place = decimalFrom('1e6111');
 
 			expect(largest.add(place).toString()).toBe('Infinity');
-			expect(largest.add(place, 'truncate').toString()).toBe(
-				largest.toString(),
-			);
+			expect(largest.add(place, 'truncate').toString()).toBe(largest.toString());
 			expect(largest.add(place, 'floor').toString()).toBe(largest.toString());
+
 			expect(largest.negate().subtract(place, 'ceiling').toString()).toBe(
 				largest.negate().toString(),
 			);
@@ -390,8 +407,8 @@ describe('Decimal', () => {
 
 	describe('multiplication', () => {
 		it('should multiply exactly when the product fits', () => {
-			expect(D('19.99').multiply(D('3')).toString()).toBe('59.97');
-			expect(D('-1.5').multiply(D('2')).toString()).toBe('-3');
+			expect(decimalFrom('19.99').multiply(decimalFrom('3')).toString()).toBe('59.97');
+			expect(decimalFrom('-1.5').multiply(decimalFrom('2')).toString()).toBe('-3');
 		});
 
 		it('should agree with an exact reference, in every mode', () => {
@@ -401,22 +418,24 @@ describe('Decimal', () => {
 			for (let index = 0; index < 2_000; index++) {
 				const left: Exact = operand(random, 60);
 				const right: Exact = operand(random, 60);
-				const mode: RoundingMode = MODES[index % MODES.length];
+				const mode: RoundingMode | undefined = MODES[index % MODES.length];
+
+				assert.isDefined(mode);
+
 				const product: Exact = {
 					negative: left.negative !== right.negative,
 					coefficient: left.coefficient * right.coefficient,
 					exponent: left.exponent + right.exponent,
 				};
 
-				const expected: string = D(referenceRound(product, mode)).toString();
-				const actual: string = D(literal(left))
-					.multiply(D(literal(right)), mode)
+				const expected: string = decimalFrom(referenceRound(product, mode)).toString();
+
+				const actual: string = decimalFrom(literal(left))
+					.multiply(decimalFrom(literal(right)), mode)
 					.toString();
 
 				if (actual !== expected) {
-					wrong.push(
-						`${literal(left)} × ${literal(right)} (${mode}): ${actual} ≠ ${expected}`,
-					);
+					wrong.push(`${literal(left)} × ${literal(right)} (${mode}): ${actual} ≠ ${expected}`);
 				}
 			}
 
@@ -424,43 +443,49 @@ describe('Decimal', () => {
 		});
 
 		it('should overflow and underflow at the ends of the format', () => {
-			expect(D('1e6144').multiply(D('10')).toString()).toBe('Infinity');
-			expect(D('1e6144').multiply(D('10'), 'truncate').toString()).toBe(
+			expect(decimalFrom('1e6144').multiply(decimalFrom('10')).toString()).toBe('Infinity');
+
+			expect(decimalFrom('1e6144').multiply(decimalFrom('10'), 'truncate').toString()).toBe(
 				'9.999999999999999999999999999999999e+6144',
 			);
-			expect(D('1e-6176').multiply(D('0.1')).toString()).toBe('0');
-			expect(D('-1e-6176').multiply(D('0.5')).toString()).toBe('-0');
-			expect(D('-1e-6176').multiply(D('0.5'), 'floor').toString()).toBe(
+
+			expect(decimalFrom('1e-6176').multiply(decimalFrom('0.1')).toString()).toBe('0');
+			expect(decimalFrom('-1e-6176').multiply(decimalFrom('0.5')).toString()).toBe('-0');
+
+			expect(decimalFrom('-1e-6176').multiply(decimalFrom('0.5'), 'floor').toString()).toBe(
 				'-1e-6176',
 			);
 		});
 
 		it('should combine the special values as IEEE 754 does', () => {
-			expect(D('Infinity').multiply(D('0')).isNaN()).toBe(true);
-			expect(D('-Infinity').multiply(D('-2')).toString()).toBe('Infinity');
-			expect(D('-0').multiply(D('5')).toString()).toBe('-0');
+			expect(decimalFrom('Infinity').multiply(decimalFrom('0')).isNaN()).toBe(true);
+			expect(decimalFrom('-Infinity').multiply(decimalFrom('-2')).toString()).toBe('Infinity');
+			expect(decimalFrom('-0').multiply(decimalFrom('5')).toString()).toBe('-0');
 		});
 	});
 
 	describe('division', () => {
 		it('should divide to thirty-four digits', () => {
-			expect(D('1').divide(D('3')).toString()).toBe(`0.${'3'.repeat(34)}`);
-			expect(D('2').divide(D('3')).toString()).toBe(`0.${'6'.repeat(33)}7`);
-			expect(D('1').divide(D('8')).toString()).toBe('0.125');
-			expect(D('1e-6000').divide(D('1e6000')).toString()).toBe('0');
+			expect(decimalFrom('1').divide(decimalFrom('3')).toString()).toBe(`0.${'3'.repeat(34)}`);
+			expect(decimalFrom('2').divide(decimalFrom('3')).toString()).toBe(`0.${'6'.repeat(33)}7`);
+			expect(decimalFrom('1').divide(decimalFrom('8')).toString()).toBe('0.125');
+			expect(decimalFrom('1e-6000').divide(decimalFrom('1e6000')).toString()).toBe('0');
 		});
 
 		it('should round an inexact quotient by the mode', () => {
-			expect(D('2').divide(D('3'), 'truncate').toString()).toBe(
+			expect(decimalFrom('2').divide(decimalFrom('3'), 'truncate').toString()).toBe(
 				`0.${'6'.repeat(34)}`,
 			);
-			expect(D('2').divide(D('3'), 'floor').toString()).toBe(
+
+			expect(decimalFrom('2').divide(decimalFrom('3'), 'floor').toString()).toBe(
 				`0.${'6'.repeat(34)}`,
 			);
-			expect(D('-2').divide(D('3'), 'floor').toString()).toBe(
+
+			expect(decimalFrom('-2').divide(decimalFrom('3'), 'floor').toString()).toBe(
 				`-0.${'6'.repeat(33)}7`,
 			);
-			expect(D('-2').divide(D('3'), 'ceiling').toString()).toBe(
+
+			expect(decimalFrom('-2').divide(decimalFrom('3'), 'ceiling').toString()).toBe(
 				`-0.${'6'.repeat(34)}`,
 			);
 		});
@@ -476,12 +501,14 @@ describe('Decimal', () => {
 				for (const mode of ['halfEven', 'truncate'] as const) {
 					// Always thirty-four digits, so the last one printed is the
 					// unit the quotient was rounded to.
-					const quotient: string = D(literal(left))
-						.divide(D(literal(right)), mode)
+					const quotient: string = decimalFrom(literal(left))
+						.divide(decimalFrom(literal(right)), mode)
 						.toExponential(33);
-					const [mantissa, power] = quotient.split('e');
+
+					const [mantissa = '', power] = quotient.split('e');
 					const digits: string = mantissa.replace('.', '');
-					const q: Exact = {
+
+					const exactQuotient: Exact = {
 						negative: false,
 						coefficient: BigInt(digits),
 						exponent: Number(power) - (digits.length - 1),
@@ -489,34 +516,27 @@ describe('Decimal', () => {
 
 					// Scale everything to integers at a common exponent and
 					// compare q × right with left, exactly.
-					const base: number = Math.min(
-						q.exponent + right.exponent,
-						left.exponent,
-					);
-					const scale = (value: bigint, exponent: number): bigint =>
-						value * 10n ** BigInt(exponent - base);
+					const base: number = Math.min(exactQuotient.exponent + right.exponent, left.exponent);
+
+					const scale = (value: bigint, exponent: number): bigint => {
+						return value * 10n ** BigInt(exponent - base);
+					};
+
 					const product: bigint = scale(
-						q.coefficient * right.coefficient,
-						q.exponent + right.exponent,
+						exactQuotient.coefficient * right.coefficient,
+						exactQuotient.exponent + right.exponent,
 					);
+
 					const target: bigint = scale(left.coefficient, left.exponent);
-					const unit: bigint = scale(
-						right.coefficient,
-						q.exponent + right.exponent,
-					);
+					const unit: bigint = scale(right.coefficient, exactQuotient.exponent + right.exponent);
 
-					const error: bigint =
-						product > target ? product - target : target - product;
+					const error: bigint = product > target ? product - target : target - product;
 
-					const ok: boolean =
-						mode === 'halfEven'
-							? 2n * error <= unit
-							: product <= target && target < product + unit;
+					const correct: boolean =
+						mode === 'halfEven' ? 2n * error <= unit : product <= target && target < product + unit;
 
-					if (!ok) {
-						wrong.push(
-							`${literal(left)} / ${literal(right)} (${mode}) = ${quotient}`,
-						);
+					if (!correct) {
+						wrong.push(`${literal(left)} / ${literal(right)} (${mode}) = ${quotient}`);
 					}
 				}
 			}
@@ -525,14 +545,14 @@ describe('Decimal', () => {
 		});
 
 		it('should follow IEEE 754 on a zero or an infinite operand', () => {
-			expect(D('1').divide(D('0')).toString()).toBe('Infinity');
-			expect(D('-1').divide(D('0')).toString()).toBe('-Infinity');
-			expect(D('1').divide(D('-0')).toString()).toBe('-Infinity');
-			expect(D('0').divide(D('0')).isNaN()).toBe(true);
-			expect(D('0').divide(D('5')).toString()).toBe('0');
-			expect(D('-1').divide(D('Infinity')).toString()).toBe('-0');
-			expect(D('Infinity').divide(D('-Infinity')).isNaN()).toBe(true);
-			expect(D('Infinity').divide(D('-2')).toString()).toBe('-Infinity');
+			expect(decimalFrom('1').divide(decimalFrom('0')).toString()).toBe('Infinity');
+			expect(decimalFrom('-1').divide(decimalFrom('0')).toString()).toBe('-Infinity');
+			expect(decimalFrom('1').divide(decimalFrom('-0')).toString()).toBe('-Infinity');
+			expect(decimalFrom('0').divide(decimalFrom('0')).isNaN()).toBe(true);
+			expect(decimalFrom('0').divide(decimalFrom('5')).toString()).toBe('0');
+			expect(decimalFrom('-1').divide(decimalFrom('Infinity')).toString()).toBe('-0');
+			expect(decimalFrom('Infinity').divide(decimalFrom('-Infinity')).isNaN()).toBe(true);
+			expect(decimalFrom('Infinity').divide(decimalFrom('-2')).toString()).toBe('-Infinity');
 		});
 	});
 
@@ -551,7 +571,7 @@ describe('Decimal', () => {
 			['Infinity', '1', 'NaN'],
 			['NaN', '1', 'NaN'],
 		])('should give %s %% %s as %s', (left, right, expected) => {
-			expect(D(left).remainder(D(right)).toString()).toBe(expected);
+			expect(decimalFrom(left).remainder(decimalFrom(right)).toString()).toBe(expected);
 		});
 
 		it('should agree with a - trunc(a / b) × b, computed exactly', () => {
@@ -562,27 +582,25 @@ describe('Decimal', () => {
 				const left: Exact = operand(random, 30);
 				const right: Exact = operand(random, 30);
 				const base: number = Math.min(left.exponent, right.exponent);
-				const a: bigint =
-					(left.negative ? -1n : 1n) *
-					left.coefficient *
-					10n ** BigInt(left.exponent - base);
-				const b: bigint =
-					(right.negative ? -1n : 1n) *
-					right.coefficient *
-					10n ** BigInt(right.exponent - base);
-				const r: bigint = a % b;
 
-				const expected: string = D(
-					`${r < 0n || (r === 0n && left.negative) ? '-' : ''}${r < 0n ? -r : r}e${base}`,
+				const leftScaled: bigint =
+					(left.negative ? -1n : 1n) * left.coefficient * 10n ** BigInt(left.exponent - base);
+
+				const rightScaled: bigint =
+					(right.negative ? -1n : 1n) * right.coefficient * 10n ** BigInt(right.exponent - base);
+
+				const remainder: bigint = leftScaled % rightScaled;
+
+				const expected: string = decimalFrom(
+					`${remainder < 0n || (remainder === 0n && left.negative) ? '-' : ''}${String(remainder < 0n ? -remainder : remainder)}e${String(base)}`,
 				).toString();
-				const actual: string = D(literal(left))
-					.remainder(D(literal(right)))
+
+				const actual: string = decimalFrom(literal(left))
+					.remainder(decimalFrom(literal(right)))
 					.toString();
 
 				if (actual !== expected) {
-					wrong.push(
-						`${literal(left)} % ${literal(right)}: ${actual} ≠ ${expected}`,
-					);
+					wrong.push(`${literal(left)} % ${literal(right)}: ${actual} ≠ ${expected}`);
 				}
 			}
 
@@ -608,23 +626,22 @@ describe('Decimal', () => {
 			['9.99', 1, 'halfEven', '10'],
 			['1.5', 5, 'halfEven', '1.5'],
 			['Infinity', 2, 'halfEven', 'Infinity'],
-		] as const)(
-			'should round %s to %i places, %s, as %s',
-			(value, places, mode, expected) => {
-				expect(D(value).round(places, mode).toString()).toBe(expected);
-			},
-		);
+		] as const)('should round %s to %i places, %s, as %s', (value, places, mode, expected) => {
+			expect(decimalFrom(value).round(places, mode).toString()).toBe(expected);
+		});
 
 		it('should round to an integer, half to even, by default', () => {
-			expect(D('2.5').round().toString()).toBe('2');
+			expect(decimalFrom('2.5').round().toString()).toBe('2');
 		});
 
 		it('should refuse places that are not an integer, and an unknown mode', () => {
-			expect(() => D('1').round(1.5)).toThrow(RangeError);
-			expect(() => D('1').round(2, 'halfUp' as RoundingMode)).toThrow(
+			expect(() => decimalFrom('1').round(1.5)).toThrow(RangeError);
+
+			expect(() => decimalFrom('1').round(2, 'halfUp' as RoundingMode)).toThrow(
 				'Decimal.round: expected a rounding mode of ceiling, floor, truncate, halfEven, halfAwayFromZero, received "halfUp".',
 			);
-			expect(() => D('1').add(D('1'), 'up' as RoundingMode)).toThrow(
+
+			expect(() => decimalFrom('1').add(decimalFrom('1'), 'up' as RoundingMode)).toThrow(
 				RangeError,
 			);
 		});
@@ -632,41 +649,43 @@ describe('Decimal', () => {
 
 	describe('comparison', () => {
 		it('should order values by magnitude and sign', () => {
-			expect(D('1').compare(D('2'))).toBe(-1);
-			expect(D('-1').compare(D('-2'))).toBe(1);
-			expect(D('1.0').compare(D('1'))).toBe(0);
-			expect(D('1e-6176').compare(D('0'))).toBe(1);
-			expect(D('-1e-6176').compare(D('0'))).toBe(-1);
-			expect(D('99').compare(D('1e2'))).toBe(-1);
-			expect(D('1.000000000000000000000000000000001').compare(D('1'))).toBe(1);
+			expect(decimalFrom('1').compare(decimalFrom('2'))).toBe(-1);
+			expect(decimalFrom('-1').compare(decimalFrom('-2'))).toBe(1);
+			expect(decimalFrom('1.0').compare(decimalFrom('1'))).toBe(0);
+			expect(decimalFrom('1e-6176').compare(decimalFrom('0'))).toBe(1);
+			expect(decimalFrom('-1e-6176').compare(decimalFrom('0'))).toBe(-1);
+			expect(decimalFrom('99').compare(decimalFrom('1e2'))).toBe(-1);
+			expect(decimalFrom('1.000000000000000000000000000000001').compare(decimalFrom('1'))).toBe(1);
 		});
 
 		it('should treat the zeros as equal and NaN as ordered against nothing', () => {
-			expect(D('0').compare(D('-0'))).toBe(0);
-			expect(D('0').equals(D('-0'))).toBe(true);
-			expect(D('NaN').compare(D('1'))).toBeUndefined();
-			expect(D('NaN').equals(D('NaN'))).toBe(false);
-			expect(D('NaN').lessThan(D('1'))).toBe(false);
-			expect(D('NaN').greaterThanOrEqual(D('1'))).toBe(false);
+			expect(decimalFrom('0').compare(decimalFrom('-0'))).toBe(0);
+			expect(decimalFrom('0').equals(decimalFrom('-0'))).toBe(true);
+			expect(decimalFrom('NaN').compare(decimalFrom('1'))).toBeUndefined();
+			expect(decimalFrom('NaN').equals(decimalFrom('NaN'))).toBe(false);
+			expect(decimalFrom('NaN').lessThan(decimalFrom('1'))).toBe(false);
+			expect(decimalFrom('NaN').greaterThanOrEqual(decimalFrom('1'))).toBe(false);
 		});
 
 		it('should place the infinities beyond every finite value', () => {
 			expect(
-				D('Infinity').greaterThan(
-					D('9.999999999999999999999999999999999e6144'),
+				decimalFrom('Infinity').greaterThan(
+					decimalFrom('9.999999999999999999999999999999999e6144'),
 				),
 			).toBe(true);
+
 			expect(
-				D('-Infinity').lessThan(D('-9.999999999999999999999999999999999e6144')),
+				decimalFrom('-Infinity').lessThan(decimalFrom('-9.999999999999999999999999999999999e6144')),
 			).toBe(true);
-			expect(D('Infinity').equals(D('Infinity'))).toBe(true);
-			expect(D('-Infinity').compare(D('Infinity'))).toBe(-1);
+
+			expect(decimalFrom('Infinity').equals(decimalFrom('Infinity'))).toBe(true);
+			expect(decimalFrom('-Infinity').compare(decimalFrom('Infinity'))).toBe(-1);
 		});
 
 		it('should answer each comparison method consistently with compare', () => {
-			const values = ['-Infinity', '-1', '-0', '0', '0.5', '1', 'Infinity'].map(
-				(text) => D(text),
-			);
+			const values = ['-Infinity', '-1', '-0', '0', '0.5', '1', 'Infinity'].map((text) => {
+				return decimalFrom(text);
+			});
 
 			for (const left of values) {
 				for (const right of values) {
@@ -684,31 +703,31 @@ describe('Decimal', () => {
 
 	describe('sign and kind', () => {
 		it('should report each kind of value', () => {
-			expect(D('NaN').isNaN()).toBe(true);
-			expect(D('Infinity').isFinite()).toBe(false);
-			expect(D('1').isFinite()).toBe(true);
-			expect(D('-0').isZero()).toBe(true);
-			expect(D('-0').isNegative()).toBe(true);
-			expect(D('0').isNegative()).toBe(false);
-			expect(D('-Infinity').isNegative()).toBe(true);
+			expect(decimalFrom('NaN').isNaN()).toBe(true);
+			expect(decimalFrom('Infinity').isFinite()).toBe(false);
+			expect(decimalFrom('1').isFinite()).toBe(true);
+			expect(decimalFrom('-0').isZero()).toBe(true);
+			expect(decimalFrom('-0').isNegative()).toBe(true);
+			expect(decimalFrom('0').isNegative()).toBe(false);
+			expect(decimalFrom('-Infinity').isNegative()).toBe(true);
 		});
 
 		it('should negate and take the absolute value, zeros included', () => {
-			expect(D('1.5').negate().toString()).toBe('-1.5');
-			expect(D('0').negate().toString()).toBe('-0');
-			expect(D('-0').absolute().toString()).toBe('0');
-			expect(D('-Infinity').absolute().toString()).toBe('Infinity');
-			expect(D('NaN').negate().isNaN()).toBe(true);
+			expect(decimalFrom('1.5').negate().toString()).toBe('-1.5');
+			expect(decimalFrom('0').negate().toString()).toBe('-0');
+			expect(decimalFrom('-0').absolute().toString()).toBe('0');
+			expect(decimalFrom('-Infinity').absolute().toString()).toBe('Infinity');
+			expect(decimalFrom('NaN').negate().isNaN()).toBe(true);
 		});
 	});
 
 	describe('text', () => {
 		it('should switch to exponential notation where Number does', () => {
-			expect(D('1e20').toString()).toBe('100000000000000000000');
-			expect(D('1e21').toString()).toBe('1e+21');
-			expect(D('0.000001').toString()).toBe('0.000001');
-			expect(D('0.0000001').toString()).toBe('1e-7');
-			expect(D('-1.5e300').toString()).toBe('-1.5e+300');
+			expect(decimalFrom('1e20').toString()).toBe('100000000000000000000');
+			expect(decimalFrom('1e21').toString()).toBe('1e+21');
+			expect(decimalFrom('0.000001').toString()).toBe('0.000001');
+			expect(decimalFrom('0.0000001').toString()).toBe('1e-7');
+			expect(decimalFrom('-1.5e300').toString()).toBe('-1.5e+300');
 		});
 
 		it('should print every double the way Number prints it', () => {
@@ -716,10 +735,9 @@ describe('Decimal', () => {
 			const wrong: string[] = [];
 
 			for (let index = 0; index < 5_000; index++) {
-				const value: number =
-					(random() - 0.5) * 10 ** Math.floor((random() - 0.5) * 60);
+				const value: number = (random() - 0.5) * 10 ** Math.floor((random() - 0.5) * 60);
 
-				if (D(value).toString() !== String(value)) wrong.push(String(value));
+				if (decimalFrom(value).toString() !== String(value)) wrong.push(String(value));
 			}
 
 			expect(wrong).toEqual([]);
@@ -733,24 +751,18 @@ describe('Decimal', () => {
 
 			for (let index = 0; index < 2_000; index++) {
 				const value: number = Math.floor((random() - 0.5) * 2 ** 26) / 64;
-				const decimal = D(value);
+				const decimal = decimalFrom(value);
 				const digits: number = Math.floor(random() * 8);
 
 				const pairs: readonly [string, string][] = [
 					[decimal.toFixed(digits, 'halfAwayFromZero'), value.toFixed(digits)],
-					[
-						decimal.toPrecision(digits + 1, 'halfAwayFromZero'),
-						value.toPrecision(digits + 1),
-					],
-					[
-						decimal.toExponential(digits, 'halfAwayFromZero'),
-						value.toExponential(digits),
-					],
+					[decimal.toPrecision(digits + 1, 'halfAwayFromZero'), value.toPrecision(digits + 1)],
+					[decimal.toExponential(digits, 'halfAwayFromZero'), value.toExponential(digits)],
 				];
 
 				for (const [actual, expected] of pairs) {
 					if (actual !== expected) {
-						wrong.push(`${value}: ${actual} ≠ ${expected}`);
+						wrong.push(`${String(value)}: ${actual} ≠ ${expected}`);
 					}
 				}
 			}
@@ -759,65 +771,69 @@ describe('Decimal', () => {
 		});
 
 		it('should format a fixed number of places, half to even by default', () => {
-			expect(D('123.456').toFixed(2)).toBe('123.46');
-			expect(D('2.5').toFixed()).toBe('2');
-			expect(D('1e21').toFixed(2)).toBe('1000000000000000000000.00');
-			expect(D('-0.001').toFixed(2)).toBe('-0.00');
-			expect(D('-0').toFixed(2)).toBe('0.00');
-			expect(D('NaN').toFixed(2)).toBe('NaN');
-			expect(() => D('1').toFixed(101)).toThrow(RangeError);
+			expect(decimalFrom('123.456').toFixed(2)).toBe('123.46');
+			expect(decimalFrom('2.5').toFixed()).toBe('2');
+			expect(decimalFrom('1e21').toFixed(2)).toBe('1000000000000000000000.00');
+			expect(decimalFrom('-0.001').toFixed(2)).toBe('-0.00');
+			expect(decimalFrom('-0').toFixed(2)).toBe('0.00');
+			expect(decimalFrom('NaN').toFixed(2)).toBe('NaN');
+			expect(() => decimalFrom('1').toFixed(101)).toThrow(RangeError);
 		});
 
 		it('should format significant digits and exponents', () => {
-			expect(D('123.456').toPrecision(2)).toBe('1.2e+2');
-			expect(D('0.00001234').toPrecision(2)).toBe('0.000012');
-			expect(D('0').toPrecision(3)).toBe('0.00');
-			expect(D('9.99').toPrecision(2)).toBe('10');
-			expect(D('123456').toExponential()).toBe('1.23456e+5');
-			expect(D('123456').toExponential(2)).toBe('1.23e+5');
-			expect(D('0').toExponential(2)).toBe('0.00e+0');
-			expect(D('-Infinity').toExponential(2)).toBe('-Infinity');
-			expect(() => D('1').toPrecision(0)).toThrow(RangeError);
+			expect(decimalFrom('123.456').toPrecision(2)).toBe('1.2e+2');
+			expect(decimalFrom('0.00001234').toPrecision(2)).toBe('0.000012');
+			expect(decimalFrom('0').toPrecision(3)).toBe('0.00');
+			expect(decimalFrom('9.99').toPrecision(2)).toBe('10');
+			expect(decimalFrom('123456').toExponential()).toBe('1.23456e+5');
+			expect(decimalFrom('123456').toExponential(2)).toBe('1.23e+5');
+			expect(decimalFrom('0').toExponential(2)).toBe('0.00e+0');
+			expect(decimalFrom('-Infinity').toExponential(2)).toBe('-Infinity');
+			expect(() => decimalFrom('1').toPrecision(0)).toThrow(RangeError);
 		});
 
 		it('should format for a locale without passing through a number', () => {
-			expect(D('1234567.891').toLocaleString('pt-BR')).toBe('1.234.567,891');
+			expect(decimalFrom('1234567.891').toLocaleString('pt-BR')).toBe('1.234.567,891');
+
 			expect(
-				D('12345678901234567890.12').toLocaleString('en-US', {
+				decimalFrom('12345678901234567890.12').toLocaleString('en-US', {
 					maximumFractionDigits: 2,
 				}),
 			).toBe('12,345,678,901,234,567,890.12');
 		});
 
 		it('should serialise to JSON as a string, and interpolate as its text', () => {
-			expect(JSON.stringify({ price: D('19.99') })).toBe('{"price":"19.99"}');
-			expect(`${D('1.5')}`).toBe('1.5');
+			expect(JSON.stringify({ price: decimalFrom('19.99') })).toBe('{"price":"19.99"}');
+			expect(String(decimalFrom('1.5'))).toBe('1.5');
 		});
 	});
 
 	describe('conversion out', () => {
 		it('should convert to the nearest number', () => {
-			expect(D('0.1').toNumber()).toBe(0.1);
-			expect(D('1e400').toNumber()).toBe(Infinity);
-			expect(Object.is(D('-0').toNumber(), -0)).toBe(true);
-			expect(D('NaN').toNumber()).toBeNaN();
+			expect(decimalFrom('0.1').toNumber()).toBe(0.1);
+			expect(decimalFrom('1e400').toNumber()).toBe(Infinity);
+			expect(Object.is(decimalFrom('-0').toNumber(), -0)).toBe(true);
+			expect(decimalFrom('NaN').toNumber()).toBeNaN();
 		});
 
 		it('should convert an integer to a bigint exactly, and refuse anything else', () => {
-			expect(D('1e40').toBigInt()).toBe(10n ** 40n);
-			expect(D('-12').toBigInt()).toBe(-12n);
-			expect(D('-0').toBigInt()).toBe(0n);
-			expect(() => D('1.5').toBigInt()).toThrow(
+			expect(decimalFrom('1e40').toBigInt()).toBe(10n ** 40n);
+			expect(decimalFrom('-12').toBigInt()).toBe(-12n);
+			expect(decimalFrom('-0').toBigInt()).toBe(0n);
+
+			expect(() => decimalFrom('1.5').toBigInt()).toThrow(
 				'Decimal.toBigInt: expected an integer, received 1.5.',
 			);
-			expect(() => D('Infinity').toBigInt()).toThrow(RangeError);
+
+			expect(() => decimalFrom('Infinity').toBigInt()).toThrow(RangeError);
 		});
 
 		it('should refuse every implicit conversion an operator attempts', () => {
-			const one = D('1') as unknown as number;
+			const one = decimalFrom('1') as unknown as number;
 
 			expect(() => one + 1).toThrow(TypeError);
-			expect(() => +one).toThrow(TypeError);
+			// The conversion unary plus makes, asked of the decimal itself.
+			expect(() => Number(decimalFrom('1'))).toThrow(TypeError);
 			expect(() => one < 2).toThrow(TypeError);
 		});
 	});
@@ -831,11 +847,7 @@ describe('Decimal', () => {
 			['-2', '2', '4'],
 			['10', '6145', 'Infinity'],
 			['0.1', '6177', '0'],
-			[
-				'1.000000000000000000000000000000001',
-				'100000000',
-				'1.0000000000000000000000001',
-			],
+			['1.000000000000000000000000000000001', '100000000', '1.0000000000000000000000001'],
 			['0', '-1', 'Infinity'],
 			['-0', '-3', '-Infinity'],
 			['-0', '2', '0'],
@@ -845,15 +857,16 @@ describe('Decimal', () => {
 			['1', '1e6000', '1'],
 			['-1', '1e6000', '1'],
 		])('should raise %s to %s as %s', (base, exponent, expected) => {
-			expect(D(base).power(D(exponent)).toString()).toBe(expected);
+			expect(decimalFrom(base).power(decimalFrom(exponent)).toString()).toBe(expected);
 		});
 
 		it('should refuse an exponent that is not an integer', () => {
-			expect(() => D(2).power(D('1.5'))).toThrow(
+			expect(() => decimalFrom(2).power(decimalFrom('1.5'))).toThrow(
 				'Decimal.power: expected an integer exponent, received 1.5.',
 			);
-			expect(() => D(2).power(D('Infinity'))).toThrow(RangeError);
-			expect(() => D(2).power(D('NaN'))).toThrow(RangeError);
+
+			expect(() => decimalFrom(2).power(decimalFrom('Infinity'))).toThrow(RangeError);
+			expect(() => decimalFrom(2).power(decimalFrom('NaN'))).toThrow(RangeError);
 		});
 
 		it('should agree with the exact power, correctly rounded, in every mode', () => {
@@ -863,22 +876,24 @@ describe('Decimal', () => {
 			for (let index = 0; index < 1_500; index++) {
 				const base: Exact = operand(random, 20);
 				const power: number = Math.floor(random() * 9);
-				const mode: RoundingMode = MODES[index % MODES.length];
+				const mode: RoundingMode | undefined = MODES[index % MODES.length];
+
+				assert.isDefined(mode);
+
 				const exact: Exact = {
 					negative: base.negative && power % 2 === 1,
 					coefficient: base.coefficient ** BigInt(power),
 					exponent: base.exponent * power,
 				};
 
-				const expected: string = D(referenceRound(exact, mode)).toString();
-				const actual: string = D(literal(base))
-					.power(D(power), mode)
+				const expected: string = decimalFrom(referenceRound(exact, mode)).toString();
+
+				const actual: string = decimalFrom(literal(base))
+					.power(decimalFrom(power), mode)
 					.toString();
 
 				if (actual !== expected) {
-					wrong.push(
-						`${literal(base)} ** ${power} (${mode}): ${actual} ≠ ${expected}`,
-					);
+					wrong.push(`${literal(base)} ** ${String(power)} (${mode}): ${actual} ≠ ${expected}`);
 				}
 			}
 
@@ -886,10 +901,11 @@ describe('Decimal', () => {
 		});
 
 		it('should settle an overflow in a directed mode at the largest value', () => {
-			expect(D(10).power(D(6145), 'truncate').equals(Decimal.maximum)).toBe(
+			expect(decimalFrom(10).power(decimalFrom(6145), 'truncate').equals(Decimal.maximum)).toBe(
 				true,
 			);
-			expect(D(-10).power(D(6145), 'ceiling').equals(Decimal.minimum)).toBe(
+
+			expect(decimalFrom(-10).power(decimalFrom(6145), 'ceiling').equals(Decimal.minimum)).toBe(
 				true,
 			);
 		});
@@ -897,25 +913,19 @@ describe('Decimal', () => {
 
 	describe('bounds', () => {
 		it('should report the largest and smallest finite values', () => {
-			expect(Decimal.maximum.toString()).toBe(
-				'9.999999999999999999999999999999999e+6144',
-			);
-			expect(Decimal.minimum.toString()).toBe(
-				'-9.999999999999999999999999999999999e+6144',
-			);
+			expect(Decimal.maximum.toString()).toBe('9.999999999999999999999999999999999e+6144');
+			expect(Decimal.minimum.toString()).toBe('-9.999999999999999999999999999999999e+6144');
 		});
 
 		it('should overflow one unit past the maximum', () => {
-			expect(Decimal.maximum.add(D('1e6111')).toString()).toBe('Infinity');
-			expect(Decimal.minimum.subtract(D('1e6111')).toString()).toBe(
-				'-Infinity',
-			);
+			expect(Decimal.maximum.add(decimalFrom('1e6111')).toString()).toBe('Infinity');
+			expect(Decimal.minimum.subtract(decimalFrom('1e6111')).toString()).toBe('-Infinity');
 		});
 	});
 
 	describe('recognition and types', () => {
 		it('should recognise its instances and nothing else', () => {
-			expect(Decimal.is(D('1'))).toBe(true);
+			expect(Decimal.is(decimalFrom('1'))).toBe(true);
 			expect(Decimal.is('1')).toBe(false);
 			expect(Decimal.is(1)).toBe(false);
 		});
@@ -925,12 +935,14 @@ describe('Decimal', () => {
 				readonly size: 16;
 				readonly alignment: 16;
 			}>();
-			expect('~layout' in D('1')).toBe(false);
+
+			expect('~layout' in decimalFrom('1')).toBe(false);
 		});
 
 		it('should return a Decimal from every operation', () => {
-			expectTypeOf(D('1').add(D('2'))).toEqualTypeOf<Decimal>();
-			expectTypeOf(D('1').compare(D('2'))).toEqualTypeOf<
+			expectTypeOf(decimalFrom('1').add(decimalFrom('2'))).toEqualTypeOf<Decimal>();
+
+			expectTypeOf(decimalFrom('1').compare(decimalFrom('2'))).toEqualTypeOf<
 				-1 | 0 | 1 | undefined
 			>();
 		});

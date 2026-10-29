@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { constantOf } from '@/functions/utils/constantOf';
+import { constantOf } from '@/src/functions/utils/constantOf';
 
 /**
  * Behaviour suite for `constantOf` at runtime: the fallback a consumer gets
@@ -22,14 +22,12 @@ const evaluateAtRuntime: typeof constantOf = constantOf;
  * @param details The details the error is expected to carry.
  * @returns The same error, carrying that code and those details.
  */
-const coded = <T extends Error>(
-	error: T,
-	details: Readonly<Record<string, unknown>>,
-): T =>
-	Object.assign(error, {
+const coded = <T extends Error>(error: T, details: Readonly<Record<string, unknown>>): T => {
+	return Object.assign(error, {
 		code: error.message.slice(0, 'FULCRO0000'.length),
 		details,
 	});
+};
 
 /**
  * Tells whether an object and every object inside it is frozen.
@@ -37,10 +35,13 @@ const coded = <T extends Error>(
  * @param value Value to inspect.
  * @returns `true` when nothing in it can be changed.
  */
-const deeplyFrozen = (value: unknown): boolean =>
-	typeof value !== 'object' ||
-	value === null ||
-	(Object.isFrozen(value) && Object.values(value).every(deeplyFrozen));
+const deeplyFrozen = (value: unknown): boolean => {
+	return (
+		typeof value !== 'object' ||
+		value === null ||
+		(Object.isFrozen(value) && Object.values(value).every(deeplyFrozen))
+	);
+};
 
 /**
  * The message of the refusal a result gets.
@@ -48,8 +49,8 @@ const deeplyFrozen = (value: unknown): boolean =>
  * @param value What the function returns.
  * @returns What the refusal says the value is.
  */
-const refusalFor = (value: unknown): TypeError =>
-	coded(
+const refusalFor = (value: unknown): TypeError => {
+	return coded(
 		new TypeError(
 			`FULCRO4011: constantOf(…) produced ${String(value)}, which cannot be written as a literal. ` +
 				'A constant is a number, a string, a boolean, a bigint, null or undefined, or an array or a plain object of them, each reached once.',
@@ -60,13 +61,12 @@ const refusalFor = (value: unknown): TypeError =>
 			received: String(value),
 		},
 	);
+};
 
 describe('constantOf', () => {
 	describe('values', () => {
 		it('should return what the function returns', () => {
-			expect(
-				evaluateAtRuntime(() => [1, 2, 3].map((value) => value * value)),
-			).toEqual([1, 4, 9]);
+			expect(evaluateAtRuntime(() => [1, 2, 3].map((value) => value * value))).toEqual([1, 4, 9]);
 			expect(evaluateAtRuntime(() => 42)).toBe(42);
 		});
 
@@ -83,17 +83,19 @@ describe('constantOf', () => {
 		});
 
 		it('should freeze arrays and plain objects at every level', () => {
-			const value = evaluateAtRuntime(() => ({
-				list: [1, { deep: [true] }],
-				nested: { name: 'fulcro' },
-			}));
+			const value = evaluateAtRuntime(() => {
+				return {
+					list: [1, { deep: [true] }],
+					nested: { name: 'fulcro' },
+				};
+			});
 
 			expect(deeplyFrozen(value)).toBe(true);
 		});
 
 		it('should accept an object with no prototype', () => {
 			expect(
-				evaluateAtRuntime(() => Object.assign(Object.create(null), { a: 1 })),
+				evaluateAtRuntime(() => Object.assign(Object.create(null) as object, { a: 1 })),
 			).toEqual({
 				a: 1,
 			});
@@ -101,6 +103,7 @@ describe('constantOf', () => {
 
 		it('should infer the type of the value', () => {
 			expectTypeOf(evaluateAtRuntime(() => [1, 2])).toEqualTypeOf<number[]>();
+
 			expectTypeOf(evaluateAtRuntime(() => ({ a: 'b' }))).toEqualTypeOf<{
 				a: string;
 			}>();
@@ -110,44 +113,53 @@ describe('constantOf', () => {
 	describe('refusals', () => {
 		it('should refuse what is not a function', () => {
 			expect(() => evaluateAtRuntime(3 as never)).toThrow(
-				coded(
-					new TypeError(
-						'FULCRO4014: constantOf: expected a function, received number.',
-					),
-					{ operation: 'constantOf', received: 'number' },
-				),
+				coded(new TypeError('FULCRO4014: constantOf: expected a function, received number.'), {
+					operation: 'constantOf',
+					received: 'number',
+				}),
 			);
 		});
 
 		it.each([
 			['a function', () => (): number => 1],
-			['a symbol', () => Symbol('refused')],
-			['an instance of Map', () => new Map()],
-			['an instance of Date', () => new Date(0)],
-			['an array with holes', () => [1, , 3]],
+			['a symbol', (): symbol => Symbol('refused')],
+			['an instance of Map', (): Map<unknown, unknown> => new Map()],
+			['an instance of Date', (): Date => new Date(0)],
+			[
+				'an array with holes',
+				(): (number | undefined)[] => {
+					// Holes made by leaving indices unassigned rather than by a literal.
+					const holed = new Array<number>(3);
+
+					holed[0] = 1;
+					holed[2] = 3;
+
+					return holed;
+				},
+			],
 			[
 				'an array with properties besides its elements',
-				() => Object.assign([1], { extra: 2 }),
+				(): number[] & { extra: number } => Object.assign([1], { extra: 2 }),
 			],
-			['an object with symbol keys', () => ({ [Symbol('key')]: 1 })],
+			['an object with symbol keys', (): Record<symbol, number> => ({ [Symbol('key')]: 1 })],
 			[
 				"an object whose 'value' is a getter",
-				() => ({
-					get value(): number {
-						return 1;
-					},
-				}),
+				(): { readonly value: number } => {
+					return {
+						get value(): number {
+							return 1;
+						},
+					};
+				},
 			],
 		])('should refuse %s', (description, compute) => {
-			expect(() => evaluateAtRuntime(compute as never)).toThrow(
-				refusalFor(description),
-			);
+			expect(() => evaluateAtRuntime(compute as never)).toThrow(refusalFor(description));
 		});
 
 		it('should refuse a value nested deep inside', () => {
-			expect(() =>
-				evaluateAtRuntime(() => ({ list: [1, [new Set()]] }) as never),
-			).toThrow(refusalFor('an instance of Set'));
+			expect(() => evaluateAtRuntime(() => ({ list: [1, [new Set()]] }) as never)).toThrow(
+				refusalFor('an instance of Set'),
+			);
 		});
 
 		it('should refuse an object reached twice, which a literal would copy', () => {
@@ -171,11 +183,11 @@ describe('constantOf', () => {
 		it('should let what the function throws through, unchanged', () => {
 			const thrown = new RangeError('from the function');
 
-			expect(() =>
-				evaluateAtRuntime(() => {
+			expect(() => {
+				return evaluateAtRuntime(() => {
 					throw thrown;
-				}),
-			).toThrow(thrown);
+				});
+			}).toThrow(thrown);
 		});
 	});
 });

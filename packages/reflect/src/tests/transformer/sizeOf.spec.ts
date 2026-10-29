@@ -1,9 +1,9 @@
 import * as path from 'node:path';
 
-import * as ts from 'typescript';
-import { beforeAll, describe, expect, it } from 'vitest';
+import * as typescript from 'typescript';
+import { assert, beforeAll, describe, expect, it } from 'vitest';
 
-import transformer from '@/transformer';
+import transformer from '@/src/transformer';
 
 /**
  * Transformer suite for `sizeOf`.
@@ -22,12 +22,12 @@ import transformer from '@/transformer';
 const PROJECT_ROOT = path.resolve(__dirname, '../../..');
 
 /** Options every fixture compiles with. */
-const COMPILER_OPTIONS: ts.CompilerOptions = {
-	target: ts.ScriptTarget.ES2022,
-	module: ts.ModuleKind.ESNext,
+const COMPILER_OPTIONS: typescript.CompilerOptions = {
+	target: typescript.ScriptTarget.ES2022,
+	module: typescript.ModuleKind.ESNext,
 	// An ESNext module defaults to the classic resolution, which never finds a
 	// package's `index` — the import would resolve to nothing.
-	moduleResolution: ts.ModuleResolutionKind.Node10,
+	moduleResolution: typescript.ModuleResolutionKind.Node10,
 	strict: true,
 	noEmitOnError: false,
 	skipLibCheck: true,
@@ -41,9 +41,9 @@ const COMPILER_OPTIONS: ts.CompilerOptions = {
  */
 const compile = (
 	fileName: string,
-): { emitted: string; errors: readonly ts.Diagnostic[] } => {
+): { emitted: string; errors: readonly typescript.Diagnostic[] } => {
 	const fixture: string = path.resolve(__dirname, fileName);
-	const program: ts.Program = ts.createProgram([fixture], COMPILER_OPTIONS);
+	const program: typescript.Program = typescript.createProgram([fixture], COMPILER_OPTIONS);
 
 	let emitted = '';
 
@@ -57,20 +57,18 @@ const compile = (
 		{ before: [transformer(program, { projectRoot: PROJECT_ROOT })] },
 	);
 
-	const errors: readonly ts.Diagnostic[] = ts
+	const errors: readonly typescript.Diagnostic[] = typescript
 		.getPreEmitDiagnostics(program)
-		.filter(
-			(diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error,
-		);
+		.filter((diagnostic) => diagnostic.category === typescript.DiagnosticCategory.Error);
 
 	return { emitted, errors };
 };
 
 /** Output of the fixture that compiles. */
-let accepted: { emitted: string; errors: readonly ts.Diagnostic[] };
+let accepted: { emitted: string; errors: readonly typescript.Diagnostic[] };
 
 /** Output of the fixture that must not. */
-let rejected: { emitted: string; errors: readonly ts.Diagnostic[] };
+let rejected: { emitted: string; errors: readonly typescript.Diagnostic[] };
 
 beforeAll(() => {
 	accepted = compile('layout.sample.ts');
@@ -80,9 +78,9 @@ beforeAll(() => {
 describe('sizeOf at compile time', () => {
 	it('should compile the fixture without errors', () => {
 		expect(
-			accepted.errors.map((error) =>
-				ts.flattenDiagnosticMessageText(error.messageText, '\n'),
-			),
+			accepted.errors.map((error) => {
+				return typescript.flattenDiagnosticMessageText(error.messageText, '\n');
+			}),
 		).toEqual([]);
 	});
 
@@ -92,15 +90,11 @@ describe('sizeOf at compile time', () => {
 	});
 
 	it('should leave a union of different layouts as a call', () => {
-		expect(accepted.emitted).toMatch(
-			/export const mixedSize = \(\) => sizeOf\(\);/,
-		);
+		expect(accepted.emitted).toMatch(/export const mixedSize = \(\) => sizeOf\(\);/);
 	});
 
 	it('should leave a generic parameter as a call', () => {
-		expect(accepted.emitted).toMatch(
-			/export const genericSize = \(\) => sizeOf\(\);/,
-		);
+		expect(accepted.emitted).toMatch(/export const genericSize = \(\) => sizeOf\(\);/);
 	});
 
 	it('should leave a local function of the same name alone', () => {
@@ -111,12 +105,11 @@ describe('sizeOf at compile time', () => {
 		const refused: string[] = rejected.errors
 			.filter((error) => error.code === 2344)
 			.map((error) => {
-				const { line } = ts.getLineAndCharacterOfPosition(
-					error.file as ts.SourceFile,
-					error.start ?? 0,
-				);
+				assert.isDefined(error.file);
 
-				return (error.file as ts.SourceFile).text.split(/\r?\n/)[line].trim();
+				const { line } = typescript.getLineAndCharacterOfPosition(error.file, error.start ?? 0);
+
+				return (error.file.text.split(/\r?\n/)[line] ?? '').trim();
 			});
 
 		expect(refused).toEqual([

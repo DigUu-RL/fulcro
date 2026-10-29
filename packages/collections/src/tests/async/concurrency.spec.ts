@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { AsyncSequenceCollection } from '@/collections/async';
+import { AsyncSequenceCollection } from '@/src/collections/async';
 
 /**
  * Wraps a projection so the test can see how many ran at once.
@@ -163,9 +163,9 @@ describe('selectAwait', () => {
 		let called = 0;
 
 		const query = AsyncSequenceCollection.from([1, 2, 3]).selectAwait(
-			async (value) => {
+			(value) => {
 				called++;
-				return value;
+				return Promise.resolve(value);
 			},
 			{ concurrency: 2 },
 		);
@@ -182,17 +182,17 @@ describe('selectAwait', () => {
 		(concurrency) => {
 			// Thrown at the call rather than on first iteration, so the mistake is
 			// reported where it was made.
-			expect(() =>
-				AsyncSequenceCollection.from([1]).selectAwait(async (v) => v, {
+			expect(() => {
+				return AsyncSequenceCollection.from([1]).selectAwait((value) => Promise.resolve(value), {
 					concurrency,
-				}),
-			).toThrow(/positive integer concurrency/i);
+				});
+			}).toThrow(/positive integer concurrency/i);
 		},
 	);
 
 	it('should chain with the rest of the operators', async () => {
 		const result = await AsyncSequenceCollection.from([1, 2, 3, 4])
-			.selectAwait(async (value) => value * 10, { concurrency: 2 })
+			.selectAwait((value) => Promise.resolve(value * 10), { concurrency: 2 })
 			.where((value) => value > 15)
 			.toArray();
 
@@ -203,7 +203,7 @@ describe('selectAwait', () => {
 describe('whereAwait', () => {
 	it('should keep the matching elements in order', async () => {
 		const result = await AsyncSequenceCollection.from([1, 2, 3, 4])
-			.whereAwait(async (value) => value % 2 === 0, { concurrency: 2 })
+			.whereAwait((value) => Promise.resolve(value % 2 === 0), { concurrency: 2 })
 			.toArray();
 
 		expect(result).toEqual([2, 4]);
@@ -239,17 +239,18 @@ describe('whereAwait', () => {
 	});
 
 	it.each([0, -1])('should reject a concurrency of %s', (concurrency) => {
-		expect(() =>
-			AsyncSequenceCollection.from([1]).whereAwait(async () => true, {
+		expect(() => {
+			return AsyncSequenceCollection.from([1]).whereAwait(() => Promise.resolve(true), {
 				concurrency,
-			}),
-		).toThrow(/positive integer concurrency/i);
+			});
+		}).toThrow(/positive integer concurrency/i);
 	});
 });
 
 describe('forEachAwait', () => {
 	it('should run every action, several at a time', async () => {
 		const seen: number[] = [];
+
 		const { tracked, peak } = watched(async (value: number) => {
 			await turns(4);
 			seen.push(value);
@@ -288,8 +289,8 @@ describe('forEachAwait', () => {
 	it('should reject when an action does', async () => {
 		await expect(
 			AsyncSequenceCollection.from([1, 2, 3]).forEachAwait(
-				async (value) => {
-					if (value === 2) throw new Error('write failed');
+				(value) => {
+					return value === 2 ? Promise.reject(new Error('write failed')) : Promise.resolve();
 				},
 				{ concurrency: 2 },
 			),
@@ -302,7 +303,7 @@ describe('forEachAwait', () => {
 		controller.abort();
 
 		await expect(
-			AsyncSequenceCollection.from([1, 2, 3]).forEachAwait(async () => {}, {
+			AsyncSequenceCollection.from([1, 2, 3]).forEachAwait(() => Promise.resolve(), {
 				concurrency: 2,
 				signal: controller.signal,
 			}),

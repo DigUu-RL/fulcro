@@ -1,6 +1,6 @@
 import { createError } from '@fulcro/errors';
 
-import { refuseUnresolved, type TypeTest } from '@/functions/utils/is';
+import { refuseUnresolved, type TypeTest } from '@/src/functions/utils/is';
 
 /**
  * Names the type of a value, for the error thrown when nothing more precise is

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { type PathAccessor, pathOf } from '@/functions/utils/pathOf';
+import { type PathAccessor, pathOf } from '@/src/functions/utils/pathOf';
 
 /**
  * Behaviour suite for `pathOf`.
@@ -17,7 +17,9 @@ import { type PathAccessor, pathOf } from '@/functions/utils/pathOf';
 interface Order {
 	readonly id: number;
 	readonly customer: { readonly address: { readonly city: string } };
-	readonly items: readonly { readonly sku: string }[];
+	// Never empty, so `items[0]` is an item: the accessors below are parsed from
+	// their source text, which an optional chain or a cast would change.
+	readonly items: readonly [{ readonly sku: string }, ...{ readonly sku: string }[]];
 }
 
 declare const order: Order;
@@ -31,9 +33,7 @@ const runtime: (accessor: PathAccessor) => string | null = pathOf;
 
 describe('resolved at compile time', () => {
 	it('should report every segment, where nameOf reports one', () => {
-		expect(pathOf(() => order.customer.address.city)).toBe(
-			'customer.address.city',
-		);
+		expect(pathOf(() => order.customer.address.city)).toBe('customer.address.city');
 	});
 
 	it('should drop the root', () => {
@@ -48,9 +48,7 @@ describe('resolved at compile time', () => {
 	});
 
 	it('should read a quoted key as an ordinary segment', () => {
-		expect(pathOf(() => order['customer'].address.city)).toBe(
-			'customer.address.city',
-		);
+		expect(pathOf(() => order.customer.address.city)).toBe('customer.address.city');
 	});
 
 	it('should never evaluate the accessor', () => {
@@ -71,26 +69,15 @@ describe('resolved at compile time', () => {
 
 describe('parsed at runtime, without the transformer', () => {
 	it.each([
-		[
-			'a nested path',
-			() => order.customer.address.city,
-			'customer.address.city',
-		],
-		['a single segment', () => order.id, 'id'],
-		['an indexed element', () => order.items[0].sku, 'items[0].sku'],
-		[
-			'a quoted key',
-			() => order['customer'].address.city,
-			'customer.address.city',
-		],
-	])(
-		'should agree with the compiled form on %s',
-		(_label, accessor, expected) => {
-			// The two implementations answering differently would be worse than
-			// either being wrong, since which one runs depends on the build.
-			expect(runtime(accessor)).toBe(expected);
-		},
-	);
+		['a nested path', (): string => order.customer.address.city, 'customer.address.city'],
+		['a single segment', (): number => order.id, 'id'],
+		['an indexed element', (): string => order.items[0].sku, 'items[0].sku'],
+		['a quoted key', (): string => order.customer.address.city, 'customer.address.city'],
+	])('should agree with the compiled form on %s', (_label, accessor, expected) => {
+		// The two implementations answering differently would be worse than
+		// either being wrong, since which one runs depends on the build.
+		expect(runtime(accessor)).toBe(expected);
+	});
 
 	it('should refuse something that is not a path', () => {
 		expect(runtime(() => 42)).toBeNull();

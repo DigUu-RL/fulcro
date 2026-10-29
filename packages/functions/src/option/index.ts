@@ -1,4 +1,4 @@
-import { createVariant, variantPrototype } from '@/variant';
+import { createVariant, variantPrototype } from '@/src/variant';
 
 /**
  * One branch per variant of an {@link Option}, as {@link OptionMethods.handle}
@@ -170,7 +170,7 @@ export const some = <T>(value: T): Some<T> => createVariant(SOME, { value });
  * result goes.
  * @returns The absent value.
  */
-export const none = <T = never>(): None<T> => ABSENT as None<T>;
+export const none = <T = never>(): None<T> => ABSENT;
 
 /**
  * Turns a nullable value into an option: `null` and `undefined` are absent,
@@ -187,5 +187,6 @@ export const none = <T = never>(): None<T> => ABSENT as None<T>;
  * @param value The value, or `null` or `undefined`.
  * @returns `none()` for a nullish value, a `Some` carrying it otherwise.
  */
-export const optionOf = <T>(value: T): Option<NonNullable<T>> =>
-	value === null || value === undefined ? none() : some(value);
+export const optionOf = <T>(value: T): Option<NonNullable<T>> => {
+	return value === null || value === undefined ? none() : some(value);
+};

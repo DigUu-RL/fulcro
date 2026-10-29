@@ -5,15 +5,7 @@ failure and absence into values. No dependencies, no compiler involvement,
 nothing to configure.
 
 ```ts
-import {
-	failure,
-	none,
-	optionOf,
-	some,
-	success,
-	switchFor,
-	tryCatch,
-} from '@fulcro/functions';
+import { failure, none, optionOf, some, success, switchFor, tryCatch } from '@fulcro/functions';
 ```
 
 ## `switchFor`
@@ -219,3 +211,4 @@ tells them apart.
 
 **Full guide:** [docs/functions.md](../../docs/functions.md) — scenarios, worked
 examples and the failure modes worth knowing before you meet them.
+🇧🇷 [Leia em português](../../docs/pt-BR/functions.md).

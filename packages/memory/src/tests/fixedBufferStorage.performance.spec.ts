@@ -1,14 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import {
-	DoublePrecisionFloat,
-	type Struct,
-	struct,
-	UnsignedInteger,
-} from '@fulcro/types';
+import { DoublePrecisionFloat, type Struct, struct, UnsignedInteger } from '@fulcro/types';
 
-import { createFixedBufferStorage } from '@/fixedBufferStorage';
-import type { Storage } from '@/storage';
+import { createFixedBufferStorage } from '@/src/fixedBufferStorage';
+import type { Storage } from '@/src/storage';
 
 /**
  * Performance suite for `createFixedBufferStorage`.
@@ -25,6 +20,7 @@ const Sample = struct('Sample', {
 	value: DoublePrecisionFloat,
 	channel: UnsignedInteger(8),
 });
+
 type Sample = Struct<typeof Sample>;
 
 /** Enough values for a per-element cost to separate from a constant one. */
@@ -92,8 +88,11 @@ describe('createFixedBufferStorage, counted', () => {
 	it('should touch nothing when an index is refused', () => {
 		const samples: Storage<Sample> = createFixedBufferStorage(counted, VOLUME);
 
-		expect(() => samples.set(VOLUME, sample)).toThrowError(RangeError);
-		expect(() => samples.get(-1)).toThrowError(RangeError);
+		expect(() => {
+			samples.set(VOLUME, sample);
+		}).toThrow(RangeError);
+
+		expect(() => samples.get(-1)).toThrow(RangeError);
 		expect([reads, writes, recognitions]).toEqual([0, 0, 0]);
 	});
 
@@ -120,8 +119,6 @@ describe('createFixedBufferStorage, counted', () => {
 
 		expect(size).toBe(16);
 		expect(offsets).toHaveLength(VOLUME);
-		expect(offsets.every((offset, index) => offset === index * size)).toBe(
-			true,
-		);
+		expect(offsets.every((offset, index) => offset === index * size)).toBe(true);
 	});
 });

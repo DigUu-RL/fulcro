@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { BigInteger } from '@/bigInteger';
+import { BigInteger } from '@/src/bigInteger';
 
 /** Behaviour suite for `BigInteger`. */
 
@@ -9,9 +9,11 @@ describe('BigInteger', () => {
 		expect(BigInteger.from(42)).toBe(42n);
 		expect(BigInteger.from(-(2 ** 60))).toBe(-(2n ** 60n));
 		expect(BigInteger.from(7n)).toBe(7n);
+
 		expect(BigInteger.from('-123456789012345678901234567890')).toBe(
 			-123456789012345678901234567890n,
 		);
+
 		expect(BigInteger.from('+5')).toBe(5n);
 	});
 
@@ -19,6 +21,7 @@ describe('BigInteger', () => {
 		expect(() => BigInteger.from(1.5)).toThrow(
 			'BigInteger.from: expected an integer, received 1.5.',
 		);
+
 		expect(() => BigInteger.from(Infinity)).toThrow(RangeError);
 		expect(() => BigInteger.from(Number.NaN)).toThrow(RangeError);
 	});
@@ -39,21 +42,18 @@ describe('BigInteger', () => {
 		expect(BigInteger.multiply(huge, huge)).toBe(2n ** 400n);
 		expect(BigInteger.add(huge, BigInteger.from(1))).toBe(2n ** 200n + 1n);
 		expect(BigInteger.subtract(BigInteger.from(1), huge)).toBe(1n - 2n ** 200n);
-		expect(BigInteger.divide(BigInteger.from(-7), BigInteger.from(2))).toBe(
-			-3n,
-		);
-		expect(BigInteger.remainder(BigInteger.from(-7), BigInteger.from(2))).toBe(
-			-1n,
-		);
+		expect(BigInteger.divide(BigInteger.from(-7), BigInteger.from(2))).toBe(-3n);
+		expect(BigInteger.remainder(BigInteger.from(-7), BigInteger.from(2))).toBe(-1n);
 	});
 
 	it('should refuse a zero divisor, naming the operation', () => {
-		expect(() =>
-			BigInteger.divide(BigInteger.from(1n), BigInteger.from(0n)),
-		).toThrow('BigInteger.divide: division by zero.');
-		expect(() =>
-			BigInteger.remainder(BigInteger.from(1n), BigInteger.from(0n)),
-		).toThrow('BigInteger.remainder: division by zero.');
+		expect(() => BigInteger.divide(BigInteger.from(1n), BigInteger.from(0n))).toThrow(
+			'BigInteger.divide: division by zero.',
+		);
+
+		expect(() => BigInteger.remainder(BigInteger.from(1n), BigInteger.from(0n))).toThrow(
+			'BigInteger.remainder: division by zero.',
+		);
 	});
 
 	it('should compute the operations behind the operators without bound', () => {
@@ -64,6 +64,7 @@ describe('BigInteger', () => {
 		expect(BigInteger.increment(two)).toBe(3n);
 		expect(BigInteger.decrement(two)).toBe(1n);
 		expect(BigInteger.lessThan(two, BigInteger.from(3))).toBe(true);
+
 		expect(() => BigInteger.power(two, BigInteger.from(-1))).toThrow(
 			'BigInteger.power: expected an exponent of zero or more, received -1n.',
 		);
@@ -81,8 +82,8 @@ describe('BigInteger', () => {
 
 	it('should be a branded bigint at the type level, with no layout', () => {
 		expectTypeOf(BigInteger.from(1)).toEqualTypeOf<BigInteger>();
-		expectTypeOf<BigInteger>().toMatchTypeOf<bigint>();
-		expectTypeOf<bigint>().not.toMatchTypeOf<BigInteger>();
+		expectTypeOf<BigInteger>().toExtend<bigint>();
+		expectTypeOf<bigint>().not.toExtend<BigInteger>();
 		expectTypeOf<BigInteger>().not.toHaveProperty('~layout');
 	});
 });

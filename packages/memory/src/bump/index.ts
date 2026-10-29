@@ -28,11 +28,7 @@ export interface BumpRegion {
  * @returns The bytes, or `undefined` when the region has no room for them,
  * in which case the region is left as it was.
  */
-export const bump = (
-	region: BumpRegion,
-	size: number,
-	alignment: number,
-): DataView | undefined => {
+export const bump = (region: BumpRegion, size: number, alignment: number): DataView | undefined => {
 	const start: number = Math.ceil(region.offset / alignment) * alignment;
 
 	if (start + size > region.buffer.byteLength) return undefined;
@@ -49,5 +45,4 @@ export const bump = (
  * @param region Region to measure.
  * @returns The free byte count, alignment padding not deducted.
  */
-export const remaining = (region: BumpRegion): number =>
-	region.buffer.byteLength - region.offset;
+export const remaining = (region: BumpRegion): number => region.buffer.byteLength - region.offset;

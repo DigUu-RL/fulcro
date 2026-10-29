@@ -1,13 +1,8 @@
 import { createError } from '@fulcro/errors';
 
-import type { Owned } from '@/owned';
-import {
-	claimStorage,
-	createOwned,
-	createOwnership,
-	isBorrow,
-} from '@/ownership';
-import type { Storage } from '@/storage';
+import type { Owned } from '@/src/owned';
+import { claimStorage, createOwned, createOwnership, isBorrow } from '@/src/ownership';
+import type { Storage } from '@/src/storage';
 
 /**
  * Tells whether a value has the shape of a storage that can be written.
@@ -53,11 +48,14 @@ const isStorage = (value: unknown): value is Storage<unknown> => {
  * @throws {Error} When the storage it returns already has an owner.
  */
 export const own = <T>(create: () => Storage<T>): Owned<T> => {
-	if (typeof create !== 'function') {
+	// Read as what a JavaScript caller can actually pass, which the type rules out.
+	const received: unknown = create;
+
+	if (typeof received !== 'function') {
 		throw createError('FULCRO7017', {
 			operation: 'own',
 			expected: 'a function that creates a storage',
-			received: create === null ? 'null' : typeof create,
+			received: received === null ? 'null' : typeof received,
 		});
 	}
 

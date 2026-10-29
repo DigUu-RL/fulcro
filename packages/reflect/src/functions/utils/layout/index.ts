@@ -31,12 +31,15 @@ export interface WithFieldLayout {
 	readonly '~layout': {
 		readonly size: number;
 		readonly alignment: number;
-		readonly fields: {
-			readonly [field: string]: {
-				readonly size: number;
-				readonly alignment: number;
-			};
-		};
+		readonly fields: Readonly<
+			Record<
+				string,
+				{
+					readonly size: number;
+					readonly alignment: number;
+				}
+			>
+		>;
 	};
 }
 
@@ -45,8 +48,7 @@ export interface WithFieldLayout {
  *
  * @template T Type whose layout lists fields.
  */
-export type FieldOf<T extends WithFieldLayout> = keyof T['~layout']['fields'] &
-	string;
+export type FieldOf<T extends WithFieldLayout> = keyof T['~layout']['fields'] & string;
 
 /**
  * The layout of a type, as `layoutOf<T>()` reports it: its size and alignment
@@ -57,7 +59,7 @@ export type FieldOf<T extends WithFieldLayout> = keyof T['~layout']['fields'] &
  *
  * @template T Type whose layout is described.
  */
-export type TypeLayout<T extends WithLayout> = {
+export interface TypeLayout<T extends WithLayout> {
 	readonly size: T['~layout']['size'];
 	readonly alignment: T['~layout']['alignment'];
 	readonly fields: T['~layout'] extends {
@@ -70,8 +72,8 @@ export type TypeLayout<T extends WithLayout> = {
 					readonly alignment: TFields[TKey]['alignment'];
 				};
 			}
-		: Record<never, never>;
-};
+		: Readonly<Record<string, never>>;
+}
 
 /**
  * The error every layout utility throws when a call reached runtime.
@@ -80,8 +82,9 @@ export type TypeLayout<T extends WithLayout> = {
  * up to its type argument, which is what the error reports as its operation.
  * @returns The error.
  */
-export const unresolvedLayout = (call: string): Error =>
-	createError('FULCRO4009', {
+export const unresolvedLayout = (call: string): Error => {
+	return createError('FULCRO4009', {
 		operation: call.slice(0, call.indexOf('<')),
 		call,
 	});
+};

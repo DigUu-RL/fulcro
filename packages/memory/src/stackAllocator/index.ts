@@ -1,8 +1,8 @@
 import { createError } from '@fulcro/errors';
 
-import type { Allocation, AllocationDomain, Allocator } from '@/allocator';
-import { requireRequest, requireSize } from '@/allocator/requireRequest';
-import { bump, type BumpRegion, remaining } from '@/bump';
+import type { Allocation, AllocationDomain, Allocator } from '@/src/allocator';
+import { requireRequest, requireSize } from '@/src/allocator/requireRequest';
+import { bump, type BumpRegion, remaining } from '@/src/bump';
 
 /**
  * An allocator over one buffer, released in frames, last in first out.
@@ -22,7 +22,7 @@ export interface StackAllocator extends Allocator {
 	 *
 	 * @returns The frame.
 	 */
-	enter(): AllocationDomain;
+	readonly enter: () => AllocationDomain;
 }
 
 /** One frame of the stack, the stack itself being frame `0`. */
@@ -64,7 +64,9 @@ export const createStackAllocator = (capacity: number): StackAllocator => {
 	requireSize('createStackAllocator', capacity);
 
 	const region: BumpRegion = { buffer: new ArrayBuffer(capacity), offset: 0 };
-	const frames: Frame[] = [{ depth: 0, mark: 0, live: true }];
+	/** The frame the allocator itself allocates in, which is never closed. */
+	const outermost: Frame = { depth: 0, mark: 0, live: true };
+	const frames: Frame[] = [outermost];
 
 	/**
 	 * Refuses a frame that is not the innermost one still open.
@@ -73,7 +75,8 @@ export const createStackAllocator = (capacity: number): StackAllocator => {
 	 * @param frame Frame being used.
 	 */
 	const requireInnermost = (operation: string, frame: Frame): void => {
-		const innermost = frames[frames.length - 1] as Frame;
+		// The outermost frame is never closed, so the stack is never empty.
+		const innermost: Frame = frames[frames.length - 1] ?? outermost;
 
 		if (innermost !== frame) {
 			throw createError('FULCRO7008', {
@@ -123,13 +126,9 @@ export const createStackAllocator = (capacity: number): StackAllocator => {
 	};
 
 	return Object.freeze({
-		allocate: (size: number, alignment: number): Allocation =>
-			allocateIn(
-				'StackAllocator.allocate',
-				frames[0] as Frame,
-				size,
-				alignment,
-			),
+		allocate: (size: number, alignment: number): Allocation => {
+			return allocateIn('StackAllocator.allocate', outermost, size, alignment);
+		},
 
 		enter: (): AllocationDomain => {
 			const frame: Frame = {
@@ -141,8 +140,9 @@ export const createStackAllocator = (capacity: number): StackAllocator => {
 			frames.push(frame);
 
 			return Object.freeze({
-				allocate: (size: number, alignment: number): Allocation =>
-					allocateIn('StackAllocator.enter().allocate', frame, size, alignment),
+				allocate: (size: number, alignment: number): Allocation => {
+					return allocateIn('StackAllocator.enter().allocate', frame, size, alignment);
+				},
 
 				// Leaving twice is leaving once, as for any disposable: the second
 				// call finds nothing left to release.

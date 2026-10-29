@@ -1,7 +1,8 @@
 {
 	"name": "@fulcro/collections",
-	"version": "1.3.0",
+	"version": "2.0.0",
 	"description": "Lazily evaluated sequences with a composable query operator set.",
+	"type": "module",
 	"keywords": [
 		"sequence",
 		"query",
@@ -27,25 +28,27 @@
 			"default": "./dist/transformer/index.js"
 		},
 		"./unplugin": {
-			"types": "./dist/unplugin/index.d.mts",
-			"default": "./dist/unplugin/index.mjs"
+			"types": "./dist/unplugin/index.d.ts",
+			"default": "./dist/unplugin/index.js"
 		},
 		"./package.json": "./package.json"
 	},
 	"files": [
-		"dist"
+		"dist",
+		"src",
+		"!src/tests"
 	],
 	"//sideEffects": "Deliberately omitted. The barrels run `bootstrapCollections()` on load to plug the concrete classes into the factory registry, so a bundler treating this package as side effect free would drop the call and break `groupBy`, `orderBy` and `orderByDescending`.",
 	"scripts": {
-		"build": "tsc -p tsconfig.build.json && node ../../tools/build/rewrite-aliases.mjs",
-		"typecheck": "tsc --noEmit -p tsconfig.json",
+		"build": "tsdown",
+		"typecheck": "tsc -p tsconfig.json",
 		"prepublishOnly": "npm run build"
 	},
 	"publishConfig": {
 		"access": "public"
 	},
 	"engines": {
-		"node": ">=22"
+		"node": ">=22.12"
 	},
 	"repository": {
 		"type": "git",
@@ -57,11 +60,11 @@
 		"url": "https://github.com/DigUu-RL/fulcro/issues"
 	},
 	"dependencies": {
-		"@fulcro/errors": "^2.0.0",
-		"@fulcro/transform-core": "^1.3.0"
+		"@fulcro/errors": "^3.0.0",
+		"@fulcro/transform-core": "^2.0.0"
 	},
 	"peerDependencies": {
-		"typescript": ">=5.3.3 <7"
+		"typescript": ">=5.9 <7"
 	},
 	"peerDependenciesMeta": {
 		"typescript": {

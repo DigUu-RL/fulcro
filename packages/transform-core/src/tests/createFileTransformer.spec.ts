@@ -1,12 +1,11 @@
-import * as fs from 'node:fs';
+import * as fileSystem from 'node:fs';
 import * as path from 'node:path';
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { createFileTransformer } from '@/program';
-import type { CallRewriter, FileAnalyzer } from '@/shared';
-
-import { createWorkspace } from './workspace';
+import { createFileTransformer } from '@/src/program';
+import type { CallRewriter, FileAnalyzer } from '@/src/shared';
+import { createWorkspace } from '@/src/tests/workspace';
 
 /**
  * Behaviour suite for `createFileTransformer`, the core of every bundler
@@ -35,11 +34,9 @@ beforeAll(() => {
 			'export const value = 1;',
 			'',
 		].join('\n'),
-		'src/untouched.ts': [
-			'// mentions flag in a comment only',
-			'export const value = 1;',
-			'',
-		].join('\n'),
+		'src/untouched.ts': ['// mentions flag in a comment only', 'export const value = 1;', ''].join(
+			'\n',
+		),
 	});
 });
 
@@ -53,7 +50,7 @@ const flagging: FileAnalyzer = {
 	analyze: (sourceFile, context): void => {
 		const statement = sourceFile.statements[1];
 
-		if (statement === undefined || !statement.getText().includes('flag(')) {
+		if (!statement?.getText().includes('flag(')) {
 			return;
 		}
 
@@ -75,17 +72,13 @@ const unused: CallRewriter = {
  * @param analyzers Analyzers of the core.
  * @returns What the core handed back.
  */
-const transform = (
-	name: string,
-	analyzers: readonly FileAnalyzer[],
-): string | null => {
+const transform = (name: string, analyzers: readonly FileAnalyzer[]): string | null => {
 	const fileName: string = path.join(workspace.root, 'src', name);
 
-	return createFileTransformer(
-		[unused],
-		{ root: workspace.root },
-		analyzers,
-	).transform(fileName, fs.readFileSync(fileName, 'utf8'));
+	return createFileTransformer([unused], { root: workspace.root }, analyzers).transform(
+		fileName,
+		fileSystem.readFileSync(fileName, 'utf8'),
+	);
 };
 
 /** What each transformation handed back, or the error it threw. */
@@ -112,9 +105,7 @@ beforeAll(() => {
 describe('createFileTransformer with analyzers', () => {
 	it('should fail the build over a refusal an analyzer reports', () => {
 		expect(checked).toBeInstanceOf(Error);
-		expect((checked as Error).message).toMatch(
-			/FULCRO5003[\s\S]*checked\.ts\(2,1\): FULCRO5999/,
-		);
+		expect((checked as Error).message).toMatch(/FULCRO5003[\s\S]*checked\.ts\(2,1\): FULCRO5999/);
 	});
 
 	it('should hand back null for a file nothing rewrote', () => {

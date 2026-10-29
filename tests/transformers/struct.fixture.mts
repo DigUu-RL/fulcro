@@ -1,8 +1,9 @@
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { compileFunction } from 'node:vm';
 
-import ts from 'typescript';
+import typescript from 'typescript';
 
 /**
  * Compiles `struct.sample.ts` with both plugins applied, as a consumer using
@@ -19,10 +20,7 @@ import ts from 'typescript';
 const require = createRequire(import.meta.url);
 
 /** Fixture fed to the compiler. */
-const FIXTURE = path.resolve(
-	path.dirname(fileURLToPath(import.meta.url)),
-	'struct.sample.ts',
-);
+const FIXTURE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'struct.sample.ts');
 
 /** What compiling and running the fixture produced. */
 export interface CompiledStructs {
@@ -39,35 +37,37 @@ export interface CompiledStructs {
  * @throws {Error} When the fixture does not compile cleanly.
  */
 export const compileStructs = (): CompiledStructs => {
-	const reflect = require('@fulcro/reflect/transformer').default as (
-		program: ts.Program,
-	) => ts.TransformerFactory<ts.SourceFile>;
-	const collections = require('@fulcro/collections/transformer')
-		.default as typeof reflect;
+	const reflect = (
+		require('@fulcro/reflect/transformer') as {
+			readonly default: (
+				program: typescript.Program,
+			) => typescript.TransformerFactory<typescript.SourceFile>;
+		}
+	).default;
 
-	const program: ts.Program = ts.createProgram([FIXTURE], {
-		target: ts.ScriptTarget.ES2022,
-		module: ts.ModuleKind.ESNext,
+	const collections = (
+		require('@fulcro/collections/transformer') as { readonly default: typeof reflect }
+	).default;
+
+	const program: typescript.Program = typescript.createProgram([FIXTURE], {
+		target: typescript.ScriptTarget.ES2022,
+		module: typescript.ModuleKind.ESNext,
 		// `Bundler`, because `Node10` finds a package's main entry but not its
 		// `exports` subpaths, and it only accepts an ES module target.
-		moduleResolution: ts.ModuleResolutionKind.Bundler,
+		moduleResolution: typescript.ModuleResolutionKind.Bundler,
 		strict: true,
 		noEmitOnError: false,
 		skipLibCheck: true,
 	});
 
-	const errors: readonly ts.Diagnostic[] = ts
+	const errors: readonly typescript.Diagnostic[] = typescript
 		.getPreEmitDiagnostics(program, program.getSourceFile(FIXTURE))
-		.filter(
-			(diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error,
-		);
+		.filter((diagnostic) => diagnostic.category === typescript.DiagnosticCategory.Error);
 
 	if (errors.length > 0) {
 		throw new Error(
 			errors
-				.map((error) =>
-					ts.flattenDiagnosticMessageText(error.messageText, '\n'),
-				)
+				.map((error) => typescript.flattenDiagnosticMessageText(error.messageText, '\n'))
 				.join('\n'),
 		);
 	}
@@ -85,19 +85,23 @@ export const compileStructs = (): CompiledStructs => {
 	);
 
 	// Only the module syntax changes here; the transformers have already run.
-	const runnable: string = ts.transpileModule(emitted, {
+	const runnable: string = typescript.transpileModule(emitted, {
 		compilerOptions: {
-			target: ts.ScriptTarget.ES2022,
-			module: ts.ModuleKind.CommonJS,
+			target: typescript.ScriptTarget.ES2022,
+			module: typescript.ModuleKind.CommonJS,
 		},
 	}).outputText;
+
 	const module = { exports: {} as Record<string, unknown> };
 
-	new Function('require', 'module', 'exports', runnable)(
-		require,
-		module,
-		module.exports,
-	);
+	// Compiled as the body of a CommonJS module, with the three names one sees.
+	const run = compileFunction(runnable, ['require', 'module', 'exports']) as (
+		require: NodeJS.Require,
+		module: { exports: Record<string, unknown> },
+		exports: Record<string, unknown>,
+	) => void;
+
+	run(require, module, module.exports);
 
 	return { emitted, exports: module.exports };
 };

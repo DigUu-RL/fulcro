@@ -1,6 +1,6 @@
-import * as ts from 'typescript';
+import * as typescript from 'typescript';
 
-import type { FlowRules } from '@/transformer/flow';
+import type { FlowRules } from '@/src/transformer/flow';
 
 /** What the recording rules saw, in the order the walk met it. */
 export interface Recording {
@@ -28,35 +28,31 @@ export const recordingRules = (): {
 			initial: () => new Set<string>(),
 			copy: (facts) => new Set(facts),
 			join: (first, second) => new Set([...first, ...second]),
-			same: (first, second) =>
-				first.size === second.size &&
-				[...first].every((name) => second.has(name)),
-			read: (identifier, facts) => {
+			same: (first, second): boolean => {
+				return first.size === second.size && [...first].every((name) => second.has(name));
+			},
+			read: (identifier, facts): void => {
 				recording.events.push(
 					facts.has(identifier.text)
 						? `read ${identifier.text} (spent)`
 						: `read ${identifier.text}`,
 				);
 			},
-			call: (call, facts) => {
+			call: (call, facts): void => {
 				const callee: string = call.expression.getText();
 				const [argument] = call.arguments;
 
 				recording.events.push(`call ${callee}`);
 
-				if (
-					callee === 'spend' &&
-					argument !== undefined &&
-					ts.isIdentifier(argument)
-				) {
+				if (callee === 'spend' && argument !== undefined && typescript.isIdentifier(argument)) {
 					facts.add(argument.text);
 				}
 			},
-			bind: (name, _value, facts) => {
+			bind: (name, _value, facts): void => {
 				recording.events.push(`bind ${name.text}`);
 				facts.delete(name.text);
 			},
-			capture: () => {
+			capture: (): void => {
 				recording.events.push('capture');
 			},
 		},
@@ -69,5 +65,6 @@ export const recordingRules = (): {
  * @param text The source.
  * @returns The file.
  */
-export const parse = (text: string): ts.SourceFile =>
-	ts.createSourceFile('flow.ts', text, ts.ScriptTarget.ES2022, true);
+export const parse = (text: string): typescript.SourceFile => {
+	return typescript.createSourceFile('flow.ts', text, typescript.ScriptTarget.ES2022, true);
+};

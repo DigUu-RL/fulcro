@@ -58,10 +58,20 @@ A storage holds a fixed number of values of one type, by index:
 ```ts
 interface Storage<T> {
 	readonly length: number;
-	get(index: number): T;
-	set(index: number, value: T): void;
+	readonly get: (index: number) => T;
+	readonly set: (index: number, value: T) => void;
 }
 ```
+
+`get` and `set` are functions held by the storage, not methods: they work taken
+off their object, so `const { get, set } = storage` is as good as calling them
+through it. The same holds for every member of the views, pointers, references
+and allocators below.
+
+Being functions, their parameters are checked one way only. A `Storage<number>`
+is not a `Storage<unknown>` — that one could be handed a string to `set` — so
+code meant for a storage of any type takes it generically,
+`<T>(storage: Storage<T>)`, rather than as `Storage<unknown>`.
 
 Write code against that, and it runs unchanged over every strategy:
 
@@ -208,12 +218,12 @@ storage cannot tell.
 
 ```ts
 interface Allocator {
-	allocate(size: number, alignment: number): Allocation;
+	readonly allocate: (size: number, alignment: number) => Allocation;
 }
 
 interface Allocation {
 	readonly bytes: DataView; // exactly `size` bytes, zeroed
-	isLive(): boolean;
+	readonly isLive: () => boolean;
 }
 ```
 
@@ -236,10 +246,8 @@ Code that needs memory takes an `Allocator` and leaves the choice to its
 caller:
 
 ```ts
-const createParticles = (
-	count: number,
-	allocator: Allocator,
-): Storage<Particle> => allocate(Particle, count, allocator);
+const createParticles = (count: number, allocator: Allocator): Storage<Particle> =>
+	allocate(Particle, count, allocator);
 ```
 
 ### Choosing an allocator
@@ -374,14 +382,14 @@ MemoryReference<T>  one value that can be read and replaced
 ```ts
 interface ReadOnlyView<T> {
 	readonly length: number;
-	get(index: number): T;
-	subview(start: number, length?: number): ReadOnlyView<T>;
+	readonly get: (index: number) => T;
+	readonly subview: (start: number, length?: number) => ReadOnlyView<T>;
 }
 
 interface View<T> extends ReadOnlyView<T> {
-	set(index: number, value: T): void;
-	subview(start: number, length?: number): View<T>;
-	readOnly(): ReadOnlyView<T>;
+	readonly set: (index: number, value: T) => void;
+	readonly subview: (start: number, length?: number) => View<T>;
+	readonly readOnly: () => ReadOnlyView<T>;
 }
 ```
 
@@ -451,11 +459,7 @@ came from as it was. A pointer may stand one past the last value, so a loop can
 step onto the end and stop there:
 
 ```ts
-for (
-	let cursor = pointerTo(queue, 0);
-	cursor.index < queue.length;
-	cursor = cursor.offset(1)
-) {
+for (let cursor = pointerTo(queue, 0); cursor.index < queue.length; cursor = cursor.offset(1)) {
 	cursor.get();
 }
 ```
@@ -518,13 +522,12 @@ interface LinearMemory {
 interface NativePointer<T> extends MemoryReference<T> {
 	readonly memory: LinearMemory;
 	readonly address: number;
-	get(): T;
-	set(value: T): void;
-	at(byteOffset: number): NativePointer<T>;
-	at<TOther>(
-		byteOffset: number,
-		element: AlignedElement<TOther>,
-	): NativePointer<TOther>;
+	readonly get: () => T;
+	readonly set: (value: T) => void;
+	readonly at: {
+		(byteOffset: number): NativePointer<T>;
+		<TOther>(byteOffset: number, element: AlignedElement<TOther>): NativePointer<TOther>;
+	};
 }
 ```
 
@@ -563,11 +566,7 @@ Points at a byte address of a memory, at a value of the element type — a
 struct, as for `allocate`:
 
 ```ts
-const latest: NativePointer<Reading> = nativePointerTo(
-	memory,
-	moduleExports.latest(),
-	Reading,
-);
+const latest: NativePointer<Reading> = nativePointerTo(memory, moduleExports.latest(), Reading);
 
 latest.get(); // the reading the module wrote, read where it wrote it
 latest.set(Reading.from({ value: 0 })); // and the module sees this
@@ -580,10 +579,7 @@ place:
 
 ```ts
 const particle: NativePointer<Particle> = nativePointerTo(memory, 64, Particle);
-const velocity: NativePointer<Point> = particle.at(
-	Particle.layout.fields.velocity.offset,
-	Point,
-);
+const velocity: NativePointer<Point> = particle.at(Particle.layout.fields.velocity.offset, Point);
 
 velocity.set(Point.from({ x: 0, y: -9.8 })); // writes the particle's velocity
 ```

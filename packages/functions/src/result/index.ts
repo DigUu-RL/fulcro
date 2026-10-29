@@ -1,4 +1,4 @@
-import { createVariant, variantPrototype } from '@/variant';
+import { createVariant, variantPrototype } from '@/src/variant';
 
 /**
  * One branch per variant of a {@link Result}, as {@link ResultMethods.handle}
@@ -142,10 +142,7 @@ const SUCCESS = variantPrototype({
 
 	// Method syntax rather than an arrow: the branch needs the value the
 	// method was called on, and only `this` has it.
-	handle<R>(
-		this: Success<unknown, unknown>,
-		cases: ResultCases<unknown, unknown, R>,
-	): R {
+	handle<R>(this: Success<unknown, unknown>, cases: ResultCases<unknown, unknown, R>): R {
 		return cases.success(this.value);
 	},
 });
@@ -155,10 +152,7 @@ const FAILURE = variantPrototype({
 	isSuccess: (): boolean => false,
 	isFailure: (): boolean => true,
 
-	handle<R>(
-		this: Failure<unknown, unknown>,
-		cases: ResultCases<unknown, unknown, R>,
-	): R {
+	handle<R>(this: Failure<unknown>, cases: ResultCases<unknown, unknown, R>): R {
 		return cases.failure(this.error);
 	},
 });
@@ -174,8 +168,7 @@ const FAILURE = variantPrototype({
  * @param value Value the operation produced.
  * @returns A frozen success carrying it.
  */
-export const success = <T>(value: T): Success<T> =>
-	createVariant(SUCCESS, { value, error: null });
+export const success = <T>(value: T): Success<T> => createVariant(SUCCESS, { value, error: null });
 
 /**
  * Creates a failure.
@@ -189,5 +182,6 @@ export const success = <T>(value: T): Success<T> =>
  * failure read as a success.
  * @returns A frozen failure carrying it.
  */
-export const failure = <E>(error: NonNullable<E>): Failure<never, E> =>
-	createVariant(FAILURE, { value: null, error });
+export const failure = <E>(error: NonNullable<E>): Failure<never, E> => {
+	return createVariant(FAILURE, { value: null, error });
+};

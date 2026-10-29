@@ -1,5 +1,38 @@
 # @fulcro/parallel
 
+## 2.0.0
+
+### Major Changes
+
+- 3b1d05f: Ship every package as an ES module only, built by tsdown, and require Node 22.12 or later.
+
+  What breaks:
+
+  - **No CommonJS build**, where `@fulcro/parallel` already had none. `require('@fulcro/…')` on Node older than 22.12 fails. On 22.12 and later it still works, through Node's `require` of an ES module, so a compiler plugin loader that calls `require` keeps loading `./transformer`.
+  - **A CommonJS TypeScript project compiled with `module: node16`** gets TS1479 on every `@fulcro/…` import, as it already did on `@fulcro/parallel`'s, since that setting does not let a CommonJS file `require` an ES module. Under `module: nodenext` the same imports compile, and so they do under `moduleResolution: node10`.
+  - **`engines` is `>=22.12`** (was `>=22`).
+  - **`./unplugin` ships `.js` and `.d.ts`** (was `.mjs` and `.d.mts`). The subpath is the same, so an import through it is unaffected; a path that reached into `dist` directly has to follow.
+
+  What improves: the declarations ship with declaration maps and the TypeScript sources they point at, without the suites, so Go to Definition in an editor lands in the source rather than in a `.d.ts`. And the `./unplugin` adapters of `@fulcro/collections`, `@fulcro/reflect` and `@fulcro/memory` are now declared with `TransformerUnplugin` from `@fulcro/transform-core`. Their declarations used to name `WebpackPluginInstance`, `RspackPluginInstance`, `EsbuildPlugin` and `JsPlugin` without importing them, so an editor showed those adapters as `any`.
+
+- cf4aeae: `RunOptions.transfer` returns `readonly object[]` rather than `readonly Transferable[]`. `Transferable` is the browser's, declared by the DOM library, so a Node project without that library and with `skipLibCheck: false` got TS2304 from inside `@fulcro/parallel`'s declarations. The browser and Node each transfer their own list of types, and neither list is declared in the other's types, so the option takes any object and the platform's `postMessage` refuses one it cannot transfer — as it already did when the type allowed what only a browser accepts.
+
+  Code that writes the option is unchanged:
+
+  ```ts
+  await pool.map(buffers, { transfer: (buffer) => [buffer as ArrayBuffer] });
+  ```
+
+  What breaks: code that reads the option back and hands what it returns to something typed `Transferable[]` has to say which platform's list it means. And an object that cannot be transferred, such as a plain record, now compiles and is refused by `postMessage` when the run sends it, rather than by the type checker.
+
+### Patch Changes
+
+- 1c46551: `@fulcro/parallel/worker` no longer uses a top-level `await`. It reached `node:worker_threads` through a dynamic import it had to await at the top of the module, and Node's `require` refuses a module that does: loaded that way outside a worker, it failed with `ERR_REQUIRE_ASYNC_MODULE` instead of refusing with `FULCRO3002`. It now reaches the module through `process.getBuiltinModule`, which is synchronous and present on every Node the package supports. Inside a worker, in a browser or on Node, it behaves as before.
+- Updated dependencies [3b1d05f]
+- Updated dependencies [f72897a]
+  - @fulcro/errors@3.0.0
+  - @fulcro/functions@3.0.0
+
 ## 1.3.0
 
 ### Minor Changes

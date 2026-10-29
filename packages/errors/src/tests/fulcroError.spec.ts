@@ -1,7 +1,8 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { createError, ErrorCode } from '@/createError';
-import { FulcroError } from '@/fulcroError';
+import type { ErrorCode } from '@/src/createError';
+import { createError } from '@/src/createError';
+import { FulcroError } from '@/src/fulcroError';
 
 /**
  * Behaviour suite for `FulcroError` as a value: what `instanceof` answers.
@@ -29,6 +30,7 @@ describe('FulcroError', () => {
 
 	it('should not recognise an error nobody registered', () => {
 		expect(new RangeError('plain') instanceof FulcroError).toBe(false);
+
 		expect(
 			Object.assign(new Error('FULCRO9999: text'), {
 				code: 'FULCRO9999',

@@ -1,14 +1,14 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { BigInteger } from '@/bigInteger';
-import { Decimal } from '@/decimal';
-import { DoublePrecisionFloat } from '@/doublePrecisionFloat';
-import { HalfPrecisionFloat } from '@/halfPrecisionFloat';
-import type { Layout } from '@/layout';
-import { SignedInteger } from '@/signedInteger';
-import { SinglePrecisionFloat } from '@/singlePrecisionFloat';
-import { type Struct, struct } from '@/struct';
-import { UnsignedInteger } from '@/unsignedInteger';
+import { BigInteger } from '@/src/bigInteger';
+import { Decimal } from '@/src/decimal';
+import { DoublePrecisionFloat } from '@/src/doublePrecisionFloat';
+import { HalfPrecisionFloat } from '@/src/halfPrecisionFloat';
+import type { Layout } from '@/src/layout';
+import { SignedInteger } from '@/src/signedInteger';
+import { SinglePrecisionFloat } from '@/src/singlePrecisionFloat';
+import { type Struct, struct } from '@/src/struct';
+import { UnsignedInteger } from '@/src/unsignedInteger';
 
 /**
  * Behaviour suite for `struct`.
@@ -28,20 +28,19 @@ import { UnsignedInteger } from '@/unsignedInteger';
  * @param details The details the error is expected to carry.
  * @returns The same error, carrying that code and those details.
  */
-const coded = <T extends Error>(
-	error: T,
-	details: Readonly<Record<string, unknown>>,
-): T =>
-	Object.assign(error, {
+const coded = <T extends Error>(error: T, details: Readonly<Record<string, unknown>>): T => {
+	return Object.assign(error, {
 		code: error.message.slice(0, 'FULCRO0000'.length),
 		details,
 	});
+};
 
 const Vector3 = struct('Vector3', {
 	x: SinglePrecisionFloat,
 	y: SinglePrecisionFloat,
 	z: SinglePrecisionFloat,
 });
+
 type Vector3 = Struct<typeof Vector3>;
 
 /** Declared smallest first, so that placement by alignment has to reorder it. */
@@ -138,6 +137,7 @@ describe('struct', () => {
 					};
 				}
 			>();
+
 			expectTypeOf<Struct<typeof Mixed>['~layout']>().toEqualTypeOf<
 				{ readonly size: 16; readonly alignment: 8 } & {
 					readonly fields: {
@@ -147,6 +147,7 @@ describe('struct', () => {
 					};
 				}
 			>();
+
 			expectTypeOf<Struct<typeof Outer>['~layout']>().toEqualTypeOf<
 				{ readonly size: 8; readonly alignment: 4 } & {
 					readonly fields: {
@@ -155,12 +156,12 @@ describe('struct', () => {
 					};
 				}
 			>();
-			expectTypeOf<
-				Struct<typeof Wide>['~layout']['size' | 'alignment']
-			>().toEqualTypeOf<32 | 16>();
-			expectTypeOf<
-				Struct<typeof Large>['~layout']['size' | 'alignment']
-			>().toEqualTypeOf<1040 | 16>();
+
+			expectTypeOf<Struct<typeof Wide>['~layout']['size' | 'alignment']>().toEqualTypeOf<32 | 16>();
+
+			expectTypeOf<Struct<typeof Large>['~layout']['size' | 'alignment']>().toEqualTypeOf<
+				1040 | 16
+			>();
 
 			expect([Vector3.layout.size, Vector3.layout.alignment]).toEqual([12, 4]);
 			expect([Mixed.layout.size, Mixed.layout.alignment]).toEqual([16, 8]);
@@ -175,6 +176,7 @@ describe('struct', () => {
 				weight: { offset: 0, size: 8, alignment: 8 },
 				count: { offset: 8, size: 2, alignment: 2 },
 			});
+
 			expect(Vector3.layout.fields.x.offset).toBe(0);
 			expect(Vector3.layout.fields.y.offset).toBe(4);
 			expect(Vector3.layout.fields.z.offset).toBe(8);
@@ -199,15 +201,13 @@ describe('struct', () => {
 		it('should accept only types with a fixed layout, in the type checker', () => {
 			type Fields = Parameters<typeof struct>[1];
 
-			expectTypeOf<{ value: typeof Decimal }>().toMatchTypeOf<Fields>();
-			expectTypeOf<{ value: typeof Vector3 }>().toMatchTypeOf<Fields>();
-			expectTypeOf<{ value: typeof BigInteger }>().not.toMatchTypeOf<Fields>();
+			expectTypeOf<{ value: typeof Decimal }>().toExtend<Fields>();
+			expectTypeOf<{ value: typeof Vector3 }>().toExtend<Fields>();
+			expectTypeOf<{ value: typeof BigInteger }>().not.toExtend<Fields>();
 		});
 
 		it('should refuse a field with no fixed layout at runtime too', () => {
-			expect(() =>
-				struct('Account', { balance: BigInteger } as never),
-			).toThrowError(
+			expect(() => struct('Account', { balance: BigInteger } as never)).toThrow(
 				coded(
 					new TypeError(
 						"FULCRO6016: struct Account: field 'balance' has no fixed layout. Declare it with a numeric type of @fulcro/types other than BigInteger, or with another struct.",
@@ -215,27 +215,21 @@ describe('struct', () => {
 					{ operation: 'struct', name: 'Account', field: 'balance' },
 				),
 			);
-			expect(() =>
-				struct('Loose', { value: { is: () => true } } as never),
-			).toThrow(TypeError);
+
+			expect(() => struct('Loose', { value: { is: () => true } } as never)).toThrow(TypeError);
 		});
 
 		it('should refuse no fields, no name, and names an object would reorder', () => {
-			expect(() => struct('Empty', {})).toThrowError(
-				coded(
-					new TypeError(
-						'FULCRO6014: struct Empty: expected at least one field.',
-					),
-					{ operation: 'struct', name: 'Empty' },
-				),
+			expect(() => struct('Empty', {})).toThrow(
+				coded(new TypeError('FULCRO6014: struct Empty: expected at least one field.'), {
+					operation: 'struct',
+					name: 'Empty',
+				}),
 			);
+
 			expect(() => struct('', { x: SinglePrecisionFloat })).toThrow(TypeError);
-			expect(() => struct('Indexed', { 0: SinglePrecisionFloat })).toThrow(
-				TypeError,
-			);
-			expect(() =>
-				struct('Layout', { '~layout': SinglePrecisionFloat }),
-			).toThrow(TypeError);
+			expect(() => struct('Indexed', { 0: SinglePrecisionFloat })).toThrow(TypeError);
+			expect(() => struct('Layout', { '~layout': SinglePrecisionFloat })).toThrow(TypeError);
 		});
 
 		it('should recognise an integer descriptor by identity, not by shape', () => {
@@ -273,45 +267,43 @@ describe('struct', () => {
 			}
 
 			expect(caught).toBeInstanceOf(RangeError);
+
 			expect((caught as Error).message).toBe(
 				"FULCRO6031: Mixed.from: field 'flag': UnsignedInteger<8>.from: 256 is outside [0, 255].",
 			);
+
 			expect((caught as Error).cause).toBeInstanceOf(RangeError);
 
 			// The field is where it happened, not what happened: the code stays the
 			// one the field's own conversion raised, on the outer error and the cause.
 			expect(caught).toMatchObject({ code: 'FULCRO6031' });
+
 			expect((caught as Error).cause).toMatchObject({
 				code: 'FULCRO6031',
-				message:
-					'FULCRO6031: UnsignedInteger<8>.from: 256 is outside [0, 255].',
+				message: 'FULCRO6031: UnsignedInteger<8>.from: 256 is outside [0, 255].',
 			});
 		});
 
 		it('should refuse a missing field, an unknown one, and a non-object', () => {
-			expect(() => Vector3.from({ x: 1, y: 2 } as never)).toThrowError(
+			expect(() => Vector3.from({ x: 1, y: 2 } as never)).toThrow(
 				coded(new TypeError("FULCRO6021: Vector3.from: missing field 'z'."), {
 					operation: 'Vector3.from',
 					field: 'z',
 				}),
 			);
-			expect(() =>
-				Vector3.from({ x: 1, y: 2, z: 3, w: 4 } as never),
-			).toThrowError(
+
+			expect(() => Vector3.from({ x: 1, y: 2, z: 3, w: 4 } as never)).toThrow(
 				coded(
-					new TypeError(
-						"FULCRO6020: Vector3.from: 'w' is not a field; the fields are x, y, z.",
-					),
+					new TypeError("FULCRO6020: Vector3.from: 'w' is not a field; the fields are x, y, z."),
 					{ operation: 'Vector3.from', key: 'w', fields: 'x, y, z' },
 				),
 			);
-			expect(() => Vector3.from(null as never)).toThrowError(
-				coded(
-					new TypeError(
-						'FULCRO6019: Vector3.from: expected an object, received null.',
-					),
-					{ operation: 'Vector3.from', received: 'null' },
-				),
+
+			expect(() => Vector3.from(null as never)).toThrow(
+				coded(new TypeError('FULCRO6019: Vector3.from: expected an object, received null.'), {
+					operation: 'Vector3.from',
+					received: 'null',
+				}),
 			);
 		});
 
@@ -327,17 +319,15 @@ describe('struct', () => {
 		});
 
 		it('should compare by field, as each field type compares', () => {
-			const a = Vector3.from({ x: 1, y: 2, z: 3 });
-			const b = Vector3.from({ x: 1, y: 2, z: 3 });
+			const left = Vector3.from({ x: 1, y: 2, z: 3 });
+			const right = Vector3.from({ x: 1, y: 2, z: 3 });
 
-			expect(a === b).toBe(false);
-			expect(Vector3.equals(a, b)).toBe(true);
-			expect(Vector3.equals(a, Vector3.from({ x: 1, y: 2, z: 4 }))).toBe(false);
+			expect(left === right).toBe(false);
+			expect(Vector3.equals(left, right)).toBe(true);
+			expect(Vector3.equals(left, Vector3.from({ x: 1, y: 2, z: 4 }))).toBe(false);
+
 			expect(
-				Vector3.equals(
-					Vector3.from({ x: 0, y: 0, z: 0 }),
-					Vector3.from({ x: -0, y: 0, z: 0 }),
-				),
+				Vector3.equals(Vector3.from({ x: 0, y: 0, z: 0 }), Vector3.from({ x: -0, y: 0, z: 0 })),
 			).toBe(true);
 
 			const withNaN = Vector3.from({ x: NaN, y: 0, z: 0 });
@@ -370,6 +360,7 @@ describe('struct', () => {
 				},
 			},
 		);
+
 		type Point = Struct<typeof Point>;
 
 		it('should give every value its methods, with this as the value', () => {
@@ -390,6 +381,7 @@ describe('struct', () => {
 
 		it('should keep a nested struct its own methods', () => {
 			const Segment = struct('Segment', { start: Point, end: Point });
+
 			const segment = Segment.from({
 				start: { x: 0, y: 0 },
 				end: { x: 3, y: 4 },
@@ -400,13 +392,13 @@ describe('struct', () => {
 		});
 
 		it('should share one prototype, and keep only the fields as own keys', () => {
-			const a = Point.from({ x: 1, y: 2 });
-			const b = Point.from({ x: 3, y: 4 });
+			const left = Point.from({ x: 1, y: 2 });
+			const right = Point.from({ x: 3, y: 4 });
 
-			expect(Object.getPrototypeOf(a)).toBe(Object.getPrototypeOf(b));
-			expect(Object.keys(a)).toEqual(['x', 'y']);
-			expect({ ...a }).toEqual({ x: 1, y: 2 });
-			expect(Object.isFrozen(Object.getPrototypeOf(a))).toBe(true);
+			expect(Object.getPrototypeOf(left)).toBe(Object.getPrototypeOf(right));
+			expect(Object.keys(left)).toEqual(['x', 'y']);
+			expect({ ...left }).toEqual({ x: 1, y: 2 });
+			expect(Object.isFrozen(Object.getPrototypeOf(left))).toBe(true);
 		});
 
 		it('should leave the layout, equality and bytes as the fields alone make them', () => {
@@ -416,19 +408,13 @@ describe('struct', () => {
 			});
 
 			expect(Point.layout).toEqual(Plain.layout);
-			expectTypeOf<Point['~layout']>().toEqualTypeOf<
-				Struct<typeof Plain>['~layout']
-			>();
-			expect(
-				Point.equals(Point.from({ x: 1, y: 2 }), Point.from({ x: 1, y: 2 })),
-			).toBe(true);
+			expectTypeOf<Point['~layout']>().toEqualTypeOf<Struct<typeof Plain>['~layout']>();
+			expect(Point.equals(Point.from({ x: 1, y: 2 }), Point.from({ x: 1, y: 2 }))).toBe(true);
 		});
 
 		it('should refuse an object with the right fields but not made by the struct', () => {
 			expect(Point.is(Object.freeze({ x: 3, y: 4 }))).toBe(false);
-			expect(Point.is(Object.freeze({ ...Point.from({ x: 3, y: 4 }) }))).toBe(
-				false,
-			);
+			expect(Point.is(Object.freeze({ ...Point.from({ x: 3, y: 4 }) }))).toBe(false);
 		});
 
 		it('should keep is as it was for a struct without methods', () => {
@@ -451,13 +437,13 @@ describe('struct', () => {
 						};
 					}
 			>();
-			expect(Object.getPrototypeOf(Vector3.from({ x: 1, y: 2, z: 3 }))).toBe(
-				Object.prototype,
-			);
+
+			expect(Object.getPrototypeOf(Vector3.from({ x: 1, y: 2, z: 3 }))).toBe(Object.prototype);
 		});
 
 		it('should not let a method change the value', () => {
 			const point = Point.from({ x: 1, y: 2 });
+
 			const Mutating = struct(
 				'Mutating',
 				{ x: SinglePrecisionFloat },
@@ -468,16 +454,19 @@ describe('struct', () => {
 				},
 			);
 
-			expect(() => Mutating.from({ x: 1 }).reset()).toThrow(TypeError);
+			expect(() => {
+				Mutating.from({ x: 1 }).reset();
+			}).toThrow(TypeError);
+
 			expect(() => {
 				(point as { length: unknown }).length = null;
 			}).toThrow(TypeError);
 		});
 
 		it('should refuse a method named like a field, an index or the layout', () => {
-			expect(() =>
-				struct('Clash', { x: SinglePrecisionFloat }, { x: () => 1 } as never),
-			).toThrowError(
+			expect(() => {
+				return struct('Clash', { x: SinglePrecisionFloat }, { x: () => 1 } as never);
+			}).toThrow(
 				coded(
 					new TypeError(
 						"FULCRO6009: struct Clash: method 'x' has the name of a field; a value could not hold both.",
@@ -485,18 +474,18 @@ describe('struct', () => {
 					{ operation: 'struct', name: 'Clash', method: 'x' },
 				),
 			);
-			expect(() =>
-				struct('Indexed', { x: SinglePrecisionFloat }, { 0: () => 1 }),
-			).toThrow(TypeError);
-			expect(() =>
-				struct('Layout', { x: SinglePrecisionFloat }, { '~layout': () => 1 }),
-			).toThrow(TypeError);
+
+			expect(() => struct('Indexed', { x: SinglePrecisionFloat }, { 0: () => 1 })).toThrow(
+				TypeError,
+			);
+
+			expect(() => struct('Layout', { x: SinglePrecisionFloat }, { '~layout': () => 1 })).toThrow(
+				TypeError,
+			);
 		});
 
 		it('should refuse a method that is not a function, and methods that are not an object', () => {
-			expect(() =>
-				struct('Loose', { x: SinglePrecisionFloat }, { size: 3 } as never),
-			).toThrowError(
+			expect(() => struct('Loose', { x: SinglePrecisionFloat }, { size: 3 } as never)).toThrow(
 				coded(
 					new TypeError(
 						"FULCRO6011: struct Loose: method 'size' must be a function, received number.",
@@ -509,13 +498,10 @@ describe('struct', () => {
 					},
 				),
 			);
-			expect(() =>
-				struct('Null', { x: SinglePrecisionFloat }, null as never),
-			).toThrowError(
+
+			expect(() => struct('Null', { x: SinglePrecisionFloat }, null as never)).toThrow(
 				coded(
-					new TypeError(
-						'FULCRO6008: struct Null: expected an object of methods, received null.',
-					),
+					new TypeError('FULCRO6008: struct Null: expected an object of methods, received null.'),
 					{ operation: 'struct', name: 'Null', received: 'null' },
 				),
 			);
@@ -542,6 +528,7 @@ describe('struct', () => {
 					},
 				},
 			);
+
 			type Counter = Struct<typeof Counter>;
 
 			const next: Counter = Counter.from({ value: 1 }).next();
@@ -605,11 +592,7 @@ describe('struct', () => {
 			const Word = struct('Word', { value: UnsignedInteger(32) });
 			const bytes = new Uint8Array(4);
 
-			Word.write(
-				new DataView(bytes.buffer),
-				0,
-				Word.from({ value: 0x01020304 }),
-			);
+			Word.write(new DataView(bytes.buffer), 0, Word.from({ value: 0x01020304 }));
 
 			expect([...bytes]).toEqual([4, 3, 2, 1]);
 		});
@@ -665,9 +648,7 @@ describe('struct', () => {
 		it('should round-trip a decimal NaN', () => {
 			const Amount = struct('Amount', { value: Decimal });
 
-			expect(
-				roundTrip(Amount, Amount.from({ value: NaN })).value.toString(),
-			).toBe('NaN');
+			expect(roundTrip(Amount, Amount.from({ value: NaN })).value.toString()).toBe('NaN');
 		});
 
 		it('should write a nested struct inline, at its offset in the parent', () => {
@@ -684,7 +665,9 @@ describe('struct', () => {
 			const view = new DataView(bytes.buffer);
 			const value = Vector3.from({ x: 1, y: 2, z: 3 });
 
-			expect(() => Vector3.write(view, 4, value)).toThrowError(
+			expect(() => {
+				Vector3.write(view, 4, value);
+			}).toThrow(
 				coded(
 					new RangeError(
 						'FULCRO6018: Vector3.write: 12 bytes at offset 4 do not fit in a view of 12 bytes.',
@@ -697,6 +680,7 @@ describe('struct', () => {
 					},
 				),
 			);
+
 			expect([...bytes].every((byte) => byte === 0)).toBe(true);
 			expect(() => Vector3.read(view, -1)).toThrow(RangeError);
 			expect(() => Vector3.read(view, 0.5)).toThrow(RangeError);
@@ -707,11 +691,7 @@ describe('struct', () => {
 			// Fields end at byte 11 of 16: bytes 11 to 15 are tail padding.
 			const bytes = new Uint8Array(Mixed.layout.size).fill(0xaa);
 
-			Mixed.write(
-				new DataView(bytes.buffer),
-				0,
-				Mixed.from({ flag: 0, weight: 0, count: 0 }),
-			);
+			Mixed.write(new DataView(bytes.buffer), 0, Mixed.from({ flag: 0, weight: 0, count: 0 }));
 
 			expect([...bytes.subarray(11)]).toEqual([0xaa, 0xaa, 0xaa, 0xaa, 0xaa]);
 			expect([...bytes.subarray(0, 11)].every((byte) => byte === 0)).toBe(true);
@@ -732,5 +712,16 @@ describe('struct', () => {
 			expect(Vector3.read(view, Vector3.layout.size)).toEqual(second);
 			expect(Vector3.read(view, 0)).toEqual({ x: 0, y: 0, z: 0 });
 		});
+	});
+});
+
+describe('a struct declared without methods', () => {
+	it('should make values that are their fields alone, with no marker showing', () => {
+		const Plain = struct('Plain', { x: SinglePrecisionFloat });
+
+		const value = Plain.from({ x: 1 });
+
+		expectTypeOf(value).not.toHaveProperty('~noMethods');
+		expectTypeOf(value).toHaveProperty('x').toEqualTypeOf<SinglePrecisionFloat>();
 	});
 });

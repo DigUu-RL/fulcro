@@ -9,10 +9,9 @@ import {
 	UnsignedInteger,
 } from '@fulcro/types';
 
-import { createFixedBufferStorage } from '@/fixedBufferStorage';
-import type { Storage } from '@/storage';
-
-import { coded } from './coded';
+import { createFixedBufferStorage } from '@/src/fixedBufferStorage';
+import type { Storage } from '@/src/storage';
+import { coded } from '@/src/tests/coded';
 
 /**
  * Behaviour suite for `createFixedBufferStorage`.
@@ -26,6 +25,7 @@ const Point = struct('Point', {
 	x: SinglePrecisionFloat,
 	y: SinglePrecisionFloat,
 });
+
 type Point = Struct<typeof Point>;
 
 /** Sixteen bytes, seven of them padding: a neighbour written carelessly shows. */
@@ -86,6 +86,7 @@ describe('createFixedBufferStorage', () => {
 				},
 			},
 		);
+
 		const vectors = createFixedBufferStorage(Vector, 2);
 
 		vectors.set(1, Vector.from({ x: 3, y: 4 }));
@@ -97,6 +98,7 @@ describe('createFixedBufferStorage', () => {
 	it('should hold nested structs and decimals', () => {
 		const Price = struct('Price', { amount: Decimal, at: Point });
 		const prices = createFixedBufferStorage(Price, 2);
+
 		const price = Price.from({
 			amount: Decimal.from('19.99'),
 			at: Point.from({ x: 1, y: 1 }),
@@ -113,14 +115,15 @@ describe('createFixedBufferStorage', () => {
 
 		points.set(0, Point.from({ x: 5, y: 5 }));
 
-		expect(() => points.set(0, impostor)).toThrowError(
+		expect(() => {
+			points.set(0, impostor);
+		}).toThrow(
 			coded(
-				new TypeError(
-					'FULCRO7004: FixedBufferStorage.set: the value is not a value of Point.',
-				),
+				new TypeError('FULCRO7004: FixedBufferStorage.set: the value is not a value of Point.'),
 				{ operation: 'FixedBufferStorage.set', element: 'Point' },
 			),
 		);
+
 		expect(points.get(0).x).toBe(5);
 	});
 
@@ -138,13 +141,13 @@ describe('createFixedBufferStorage', () => {
 				name: 'T',
 				layout: { size: 4 },
 				read: (): number => 0,
-				write: (): void => {},
+				write: (): void => {
+					// Present only so that is is the one member missing.
+				},
 			},
 		],
 	])('should refuse an element type missing %s', (missing, element) => {
-		expect(() =>
-			createFixedBufferStorage(element as unknown as typeof Point, 1),
-		).toThrowError(
+		expect(() => createFixedBufferStorage(element as unknown as typeof Point, 1)).toThrow(
 			coded(
 				new TypeError(
 					`FULCRO7003: createFixedBufferStorage: expected an element type with a name, layout.size, read, write and is; ${missing} is missing.`,
@@ -155,23 +158,22 @@ describe('createFixedBufferStorage', () => {
 	});
 
 	it('should refuse a numeric type, which carries no byte encoding of its own', () => {
-		expect(() =>
-			createFixedBufferStorage(
-				SinglePrecisionFloat as unknown as typeof Point,
-				1,
-			),
-		).toThrowError(TypeError);
+		expect(() => {
+			return createFixedBufferStorage(SinglePrecisionFloat as unknown as typeof Point, 1);
+		}).toThrow(TypeError);
 	});
 
 	it('should infer the struct it stores', () => {
-		expectTypeOf(createFixedBufferStorage(Point, 1)).toEqualTypeOf<
-			Storage<Point>
-		>();
-		expectTypeOf(createFixedBufferStorage(Point, 1).set)
+		expectTypeOf(createFixedBufferStorage(Point, 1)).toEqualTypeOf<Storage<Point>>();
+
+		expectTypeOf(createFixedBufferStorage(Point, 1))
+			.toHaveProperty('set')
 			.parameter(1)
 			.toEqualTypeOf<Point>();
-		expectTypeOf<{ x: number; y: number }>().not.toMatchTypeOf<Point>();
-		expectTypeOf<typeof SinglePrecisionFloat>().not.toMatchTypeOf<
+
+		expectTypeOf<{ x: number; y: number }>().not.toExtend<Point>();
+
+		expectTypeOf<typeof SinglePrecisionFloat>().not.toExtend<
 			Parameters<typeof createFixedBufferStorage>[0]
 		>();
 	});

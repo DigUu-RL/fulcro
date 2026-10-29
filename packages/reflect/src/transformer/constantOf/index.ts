@@ -1,4 +1,4 @@
-import * as vm from 'node:vm';
+import * as virtualMachine from 'node:vm';
 
 import typescript from 'typescript';
 
@@ -10,8 +10,8 @@ import {
 	utilityModuleSegment,
 } from '@fulcro/transform-core';
 
-import { describeUnwritable } from '@/functions/utils/constantOf';
-import { constantLiteral } from '@/transformer/literal';
+import { describeUnwritable } from '@/src/functions/utils/constantOf';
+import { constantLiteral } from '@/src/transformer/literal';
 
 /**
  * Compile-time evaluation of `constantOf`.
@@ -111,10 +111,7 @@ interface Assembly {
  * The outcome of every call already evaluated, per program, so a constant read
  * by several others is still evaluated once.
  */
-const outcomes = new WeakMap<
-	typescript.TypeChecker,
-	Map<typescript.CallExpression, Outcome>
->();
+const outcomes = new WeakMap<typescript.TypeChecker, Map<typescript.CallExpression, Outcome>>();
 
 /**
  * Tells whether a node sits inside another, in the same file.
@@ -123,10 +120,13 @@ const outcomes = new WeakMap<
  * @param outer Node that may contain it.
  * @returns `true` when it does.
  */
-const isWithin = (inner: typescript.Node, outer: typescript.Node): boolean =>
-	inner.getSourceFile() === outer.getSourceFile() &&
-	inner.pos >= outer.pos &&
-	inner.end <= outer.end;
+const isWithin = (inner: typescript.Node, outer: typescript.Node): boolean => {
+	return (
+		inner.getSourceFile() === outer.getSourceFile() &&
+		inner.pos >= outer.pos &&
+		inner.end <= outer.end
+	);
+};
 
 /**
  * Tells whether an identifier is read as a value, rather than naming a member,
@@ -136,32 +136,32 @@ const isWithin = (inner: typescript.Node, outer: typescript.Node): boolean =>
  * @param root Node being proved, beyond which no ancestor is looked at.
  * @returns `true` when it reads a binding.
  */
-const isValueReference = (
-	identifier: typescript.Identifier,
-	root: typescript.Node,
-): boolean => {
+const isValueReference = (identifier: typescript.Identifier, root: typescript.Node): boolean => {
 	const { parent } = identifier;
 
 	if (
-		(typescript.isPropertyAccessExpression(parent) &&
-			parent.name === identifier) ||
+		(typescript.isPropertyAccessExpression(parent) && parent.name === identifier) ||
 		(typescript.isPropertyAssignment(parent) && parent.name === identifier) ||
 		(typescript.isMethodDeclaration(parent) && parent.name === identifier) ||
 		(typescript.isPropertyDeclaration(parent) && parent.name === identifier) ||
 		(typescript.isGetAccessor(parent) && parent.name === identifier) ||
 		(typescript.isSetAccessor(parent) && parent.name === identifier) ||
-		(typescript.isBindingElement(parent) &&
-			parent.propertyName === identifier) ||
+		(typescript.isBindingElement(parent) && parent.propertyName === identifier) ||
 		typescript.isLabeledStatement(parent) ||
 		typescript.isBreakOrContinueStatement(parent)
 	) {
 		return false;
 	}
 
+	// `parent` is declared as always present, and a source file has none: read
+	// through a call that says so, or the walk could run off the top of a tree
+	// it was handed without `root` in it.
+	const parentOf = (node: typescript.Node): typescript.Node | undefined => node.parent;
+
 	for (
-		let ancestor: typescript.Node = parent;
+		let ancestor: typescript.Node | undefined = parent;
 		ancestor !== root && ancestor !== undefined;
-		ancestor = ancestor.parent
+		ancestor = parentOf(ancestor)
 	) {
 		if (typescript.isTypeNode(ancestor)) return false;
 	}
@@ -221,20 +221,14 @@ const prove = (
 
 		if (typescript.isIdentifier(current) && isValueReference(current, node)) {
 			const shorthand: boolean =
-				typescript.isShorthandPropertyAssignment(current.parent) &&
-				current.parent.name === current;
+				typescript.isShorthandPropertyAssignment(current.parent) && current.parent.name === current;
+
 			const symbol: typescript.Symbol | undefined = shorthand
 				? checker.getShorthandAssignmentValueSymbol(current.parent)
 				: checker.getSymbolAtLocation(current);
 
 			if (symbol !== undefined) {
-				const binding: string | Failure = bind(
-					current.text,
-					symbol,
-					node,
-					context,
-					assembly,
-				);
+				const binding: string | Failure = bind(current.text, symbol, node, context, assembly);
 
 				if (typeof binding !== 'string') {
 					failure = binding;
@@ -257,13 +251,16 @@ const prove = (
 
 	walk(node);
 
-	if (failure !== null) return failure;
+	// Read through a call: `walk` sets it, and the compiler does not follow an
+	// assignment made inside a callback, so read directly it is always `null`.
+	const failed = (): Failure | null => failure;
+	const refused: Failure | null = failed();
+
+	if (refused !== null) return refused;
 
 	let text: string = source.text.slice(start, node.end);
 
-	for (const replacement of replacements.sort(
-		(left, right) => right.start - left.start,
-	)) {
+	for (const replacement of replacements.sort((left, right) => right.start - left.start)) {
 		text =
 			text.slice(0, replacement.start - start) +
 			replacement.text +
@@ -281,11 +278,12 @@ const prove = (
  * @returns The position.
  */
 const functionStart = (declaration: typescript.FunctionDeclaration): number => {
-	const kept: typescript.ModifierLike | undefined = declaration.modifiers?.find(
-		(modifier) =>
+	const kept: typescript.ModifierLike | undefined = declaration.modifiers?.find((modifier) => {
+		return (
 			modifier.kind !== typescript.SyntaxKind.ExportKeyword &&
-			modifier.kind !== typescript.SyntaxKind.DefaultKeyword,
-	);
+			modifier.kind !== typescript.SyntaxKind.DefaultKeyword
+		);
+	});
 
 	if (kept !== undefined) return kept.getStart();
 
@@ -315,26 +313,25 @@ const bind = (
 	assembly: Assembly,
 ): string | Failure => {
 	const { checker } = context;
+
 	const resolved: typescript.Symbol =
-		(symbol.flags & typescript.SymbolFlags.Alias) !== 0
-			? checker.getAliasedSymbol(symbol)
-			: symbol;
-	const declarations: readonly typescript.Declaration[] =
-		resolved.declarations ?? [];
+		(symbol.flags & typescript.SymbolFlags.Alias) !== 0 ? checker.getAliasedSymbol(symbol) : symbol;
+
+	const declarations: readonly typescript.Declaration[] = resolved.declarations ?? [];
+	const declaration: typescript.Declaration | undefined = declarations[0];
 
 	// `undefined` is the one built-in the checker gives a symbol with no
 	// declaration at all.
-	if (declarations.length === 0) {
+	if (declaration === undefined) {
 		return BUILT_INS.has(resolved.name)
 			? ''
 			: { reason: `'${name}' has no declaration the compiler can see` };
 	}
 
-	if (declarations.every((declaration) => isWithin(declaration, root))) {
+	if (declarations.every((each) => isWithin(each, root))) {
 		return '';
 	}
 
-	const [declaration] = declarations;
 	const file: typescript.SourceFile = declaration.getSourceFile();
 
 	if (file.hasNoDefaultLib) {
@@ -355,7 +352,7 @@ const bind = (
 
 	if (known !== undefined) return known;
 
-	const binding = `constant${assembly.bindings.size}_${resolved.name}`;
+	const binding = `constant${String(assembly.bindings.size)}_${resolved.name}`;
 
 	// Reserved before the declaration is proved, so two functions calling each
 	// other each find the other's binding instead of proving forever.
@@ -413,9 +410,7 @@ const bind = (
 			return { reason: `'${name}' is a constant that could not be evaluated` };
 		}
 
-		assembly.declarations.push(
-			`const ${binding} = ${printLiteral(outcome.value)};`,
-		);
+		assembly.declarations.push(`const ${binding} = ${printLiteral(outcome.value)};`);
 
 		return binding;
 	}
@@ -435,14 +430,15 @@ const bind = (
  * @param value A value a literal can write.
  * @returns Its source.
  */
-const printLiteral = (value: unknown): string =>
-	typescript
+const printLiteral = (value: unknown): string => {
+	return typescript
 		.createPrinter()
 		.printNode(
 			typescript.EmitHint.Expression,
 			constantLiteral(typescript.factory, value),
 			typescript.createSourceFile('', '', typescript.ScriptTarget.ES2022),
 		);
+};
 
 /**
  * Describes what an evaluation threw, which may come from the evaluation's own
@@ -464,24 +460,23 @@ const describeThrown = (thrown: unknown): string => {
  * @returns The value, or the refusal.
  */
 const run = (script: string): Outcome => {
-	const sandbox: vm.Context = vm.createContext(
+	const sandbox: virtualMachine.Context = virtualMachine.createContext(
 		{},
 		{ codeGeneration: { strings: false, wasm: false } },
 	);
 
-	vm.runInContext('delete Math.random;', sandbox);
+	virtualMachine.runInContext('delete Math.random;', sandbox);
 
 	try {
 		return {
 			kind: 'value',
-			value: vm.runInContext(script, sandbox, { timeout: EVALUATION_TIMEOUT }),
+			value: virtualMachine.runInContext(script, sandbox, { timeout: EVALUATION_TIMEOUT }),
 		};
 	} catch (thrown) {
 		return {
 			kind: 'refused',
 			message:
-				(thrown as { code?: unknown } | null)?.code ===
-				'ERR_SCRIPT_EXECUTION_TIMEOUT'
+				(thrown as { code?: unknown } | null)?.code === 'ERR_SCRIPT_EXECUTION_TIMEOUT'
 					? createError('FULCRO4013', {
 							operation: 'constantOf',
 							call: CALL,
@@ -503,12 +498,10 @@ const run = (script: string): Outcome => {
  * @param context Compilation in progress.
  * @returns Its value, or why it has none.
  */
-const evaluate = (
-	call: typescript.CallExpression,
-	context: RewriteContext,
-): Outcome => {
-	let evaluated: Map<typescript.CallExpression, Outcome> | undefined =
-		outcomes.get(context.checker);
+const evaluate = (call: typescript.CallExpression, context: RewriteContext): Outcome => {
+	let evaluated: Map<typescript.CallExpression, Outcome> | undefined = outcomes.get(
+		context.checker,
+	);
 
 	if (evaluated === undefined) {
 		evaluated = new Map();
@@ -533,24 +526,23 @@ const evaluate = (
  * @param context Compilation in progress.
  * @returns Its value, or why it has none.
  */
-const computeOutcome = (
-	call: typescript.CallExpression,
-	context: RewriteContext,
-): Outcome => {
-	const refuse = (reason: string): Outcome => ({
-		kind: 'refused',
-		message: createError('FULCRO4010', {
-			operation: 'constantOf',
-			call: CALL,
-			reason,
-		}).message,
-	});
+const computeOutcome = (call: typescript.CallExpression, context: RewriteContext): Outcome => {
+	const refuse = (reason: string): Outcome => {
+		return {
+			kind: 'refused',
+			message: createError('FULCRO4010', {
+				operation: 'constantOf',
+				call: CALL,
+				reason,
+			}).message,
+		};
+	};
 
-	if (call.arguments.length !== 1) {
+	const argument: typescript.Expression | undefined = call.arguments[0];
+
+	if (argument === undefined || call.arguments.length !== 1) {
 		return refuse('it takes exactly one function');
 	}
-
-	const [argument] = call.arguments;
 
 	if (
 		!typescript.isArrowFunction(argument) &&

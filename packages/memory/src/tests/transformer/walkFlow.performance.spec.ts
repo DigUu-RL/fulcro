@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { walkFlow } from '@/transformer/flow';
-
-import { parse, recordingRules } from './recordingRules';
+import { parse, recordingRules } from '@/src/tests/transformer/recordingRules';
+import { walkFlow } from '@/src/transformer/flow';
 
 /**
  * Performance suite for `walkFlow`.
@@ -48,16 +47,13 @@ describe('walkFlow, counted', () => {
 
 	it('should walk loops that change nothing once, however deeply they nest', () => {
 		const depth = 12;
-		const nested: string =
-			'for (const a of as) {'.repeat(depth) + 'x;' + '}'.repeat(depth);
+		const nested: string = 'for (const a of as) {'.repeat(depth) + 'x;' + '}'.repeat(depth);
 
 		// One read of `as` per loop, and one of `x`.
 		expect(readsIn(nested)).toBe(depth + 1);
 	});
 
 	it('should walk a loop that changes something exactly twice', () => {
-		expect(readsIn('while (c) { x; spend(x); }')).toBe(
-			2 * readsIn('c; x; spend(x);'),
-		);
+		expect(readsIn('while (c) { x; spend(x); }')).toBe(2 * readsIn('c; x; spend(x);'));
 	});
 });

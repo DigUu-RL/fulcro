@@ -3,9 +3,8 @@ import * as path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { none, type Option, optionOf, some } from '@/option';
-
-import { compileFixture, COMPILERS, reportedLines } from './compileFixture';
+import { none, type Option, optionOf, some } from '@/src/option';
+import { compileFixture, COMPILERS, reportedLines } from '@/src/tests/compileFixture';
 
 describe('some', () => {
 	it('should carry the value', () => {
@@ -79,6 +78,7 @@ describe('optionOf', () => {
 describe('Option', () => {
 	it('should run only the branch of its own variant', () => {
 		const ran: string[] = [];
+
 		const cases = {
 			some: (): void => void ran.push('some'),
 			none: (): void => void ran.push('none'),
@@ -135,9 +135,7 @@ const FIXTURE = 'option.fixture.ts';
 /** Lines of the fixture carrying the refusal marker, 1-based. */
 const REFUSED: number[] = readFileSync(path.resolve(__dirname, FIXTURE), 'utf8')
 	.split('\n')
-	.flatMap((line, index) =>
-		line.trimEnd().endsWith('// refused') ? [index + 1] : [],
-	);
+	.flatMap((line, index) => (line.trimEnd().endsWith('// refused') ? [index + 1] : []));
 
 describe.each(COMPILERS)('Option at compile time, on %s', (_label, name) => {
 	const report: string = compileFixture(FIXTURE, name);

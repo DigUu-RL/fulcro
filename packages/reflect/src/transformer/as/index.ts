@@ -1,6 +1,6 @@
-import { CallRewriter } from '@fulcro/transform-core';
+import type { CallRewriter } from '@fulcro/transform-core';
 
-import { checkRewriter } from '@/transformer/shared';
+import { checkRewriter } from '@/src/transformer/shared';
 
 /**
  * Rewriter of `as`.

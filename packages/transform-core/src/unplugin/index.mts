@@ -1,15 +1,11 @@
-import {
-	createUnplugin,
-	type UnpluginFactory,
-	type UnpluginInstance,
-} from 'unplugin';
+import { createUnplugin, type UnpluginFactory, type UnpluginInstance } from 'unplugin';
 
 import {
 	createFileTransformer,
 	type FileTransformer,
 	type TransformCoreOptions,
-} from '@/program/index.js';
-import { type CallRewriter, type FileAnalyzer } from '@/shared/index.js';
+} from '@/src/program/index.js';
+import { type CallRewriter, type FileAnalyzer } from '@/src/shared/index.js';
 
 /**
  * Bundler adapters for the Fulcro transformers.
@@ -24,9 +20,10 @@ import { type CallRewriter, type FileAnalyzer } from '@/shared/index.js';
  * `@fulcro/collections` each publish a plugin of their own without either
  * having to know the other exists.
  *
- * Emitted as an ES module because `unplugin` ships as one. The core stays
- * CommonJS, since the compiler plugin loads it through `require`, and an ES
- * module importing CommonJS is the direction that works.
+ * Every package here is an ES module. A compiler plugin loader that still calls
+ * `require` reaches this through Node's `require` of an ES module, which is why
+ * the packages need Node 22.12 or later and why nothing in them may use a
+ * top-level `await`.
  */
 
 /** Options accepted by every adapter. */
@@ -79,11 +76,9 @@ export const createTransformerUnplugin = (
 	rewriters: readonly CallRewriter[],
 	name: string,
 	analyzers: readonly FileAnalyzer[] = [],
-): TransformerUnplugin =>
-	createAdapters(
-		(options) => createFileTransformer(rewriters, options, analyzers),
-		name,
-	);
+): TransformerUnplugin => {
+	return createAdapters((options) => createFileTransformer(rewriters, options, analyzers), name);
+};
 
 /**
  * Builds the adapters around the core of a package.
@@ -96,9 +91,7 @@ const createAdapters = (
 	build: (options: PluginOptions) => FileTransformer,
 	name: string,
 ): TransformerUnplugin => {
-	const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (
-		options = {},
-	) => {
+	const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (options = {}) => {
 		let transformer: FileTransformer | undefined;
 
 		/**
@@ -124,7 +117,7 @@ const createAdapters = (
 				return resolve().handles(id);
 			},
 
-			transform(code: string, id: string) {
+			transform(code: string, id: string): { code: string; map: null } | null {
 				const transformed: string | null = resolve().transform(id, code);
 
 				return transformed === null ? null : { code: transformed, map: null };

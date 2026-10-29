@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { offsetOf } from '@/functions/utils/offsetOf';
+import type { FieldOf } from '@/src/functions/utils/layout';
+import { offsetOf } from '@/src/functions/utils/offsetOf';
 
 /**
  * Behaviour suite for `offsetOf`.
@@ -98,24 +99,18 @@ describe('offsetOf', () => {
 	it('should leave a field held in a variable to throw, naming it', () => {
 		const field: 'flag' | 'count' = ['flag', 'count'][0] as 'flag';
 
-		expect(() => offsetOf<Mixed>(field)).toThrow(
-			expect.objectContaining({
-				code: 'FULCRO4009',
-				message: expect.stringContaining('offsetOf<T>("flag")'),
-			}),
-		);
+		expect(() => offsetOf<Mixed>(field)).toThrow(expect.objectContaining({ code: 'FULCRO4009' }));
+		expect(() => offsetOf<Mixed>(field)).toThrow('offsetOf<T>("flag")');
 	});
 
 	it('should leave a union of structs placing the field differently to throw', () => {
-		expect(() => offsetOf<Vector | Reversed>('x')).toThrow(
-			'a union of layouts has no single one',
-		);
+		expect(() => offsetOf<Vector | Reversed>('x')).toThrow('a union of layouts has no single one');
 	});
 
 	it('should leave a generic parameter to throw, having nothing substituted yet', () => {
-		const locate = <T extends Mixed>(): number => offsetOf<T>('flag');
+		const locate = <T extends Mixed>(field: FieldOf<T>): number => offsetOf<T>(field);
 
-		expect(() => locate<Mixed>()).toThrow(
+		expect(() => locate<Mixed>('flag')).toThrow(
 			'a generic parameter has no layout until it is substituted',
 		);
 	});

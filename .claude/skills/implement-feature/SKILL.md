@@ -3,7 +3,7 @@ name: implement-feature
 description: Builds one roadmap feature or one concrete change end to end — dependencies confirmed from the code rather than from a checkbox, a plan agreed before the first edit, the behaviour suite and the performance suite the standard requires, and the changeset when something ships. Use when a feature is to be implemented, named by roadmap ID, by feature name, or as a described change, and the work is larger than one obvious edit.
 argument-hint: <feature id, feature name, or what to build>
 disable-model-invocation: true
-allowed-tools: Read, Grep, Glob, Edit, Write, WebFetch, WebSearch, Bash(npm run build), Bash(npm run typecheck), Bash(npm run format), Bash(npm run format:check), Bash(npm run lint:md), Bash(npm run validate:claude), Bash(npx vitest run:*), Bash(npx eslint:*), Bash(npm ls:*), Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git show:*), Bash(git branch:*), Bash(git switch:*)
+allowed-tools: Read, Grep, Glob, Edit, Write, WebFetch, WebSearch, Bash(npm run build), Bash(npm run typecheck), Bash(npm run format), Bash(npm run format:check), Bash(npm run lint:md), Bash(npm run validate:claude), Bash(npx vitest run:*), Bash(npx eslint:*), Bash(npm ls:*), Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git show:*), Bash(git branch:*), Bash(git switch:*), Bash(gh issue list:*), Bash(gh issue view:*)
 ---
 
 # implement-feature
@@ -42,7 +42,7 @@ behind them.
 Use it when there is a change to build and more than one file will know:
 
 - a roadmap feature by ID — `/implement-feature F13`;
-- a feature by name, with a specification under `.roadmap/features/`;
+- a feature by name, matched against the titles of the `feature` issues;
 - a concrete described change large enough to need a plan: a new operator, a
   transformer branch, a new package surface.
 
@@ -64,11 +64,11 @@ It does not apply when:
 
 One of:
 
-| Argument            | Meaning                                                 |
-| ------------------- | ------------------------------------------------------- |
-| `F13`               | A roadmap ID; the specification is found under §1       |
-| `transformer-audit` | A feature name; matched against the specification files |
-| A described change  | No specification exists; §1 builds one with the user    |
+| Argument            | Meaning                                              |
+| ------------------- | ---------------------------------------------------- |
+| `F13`               | A roadmap ID; the specification is found under §1    |
+| `transformer-audit` | A feature name; matched against the feature issues   |
+| A described change  | No specification exists; §1 builds one with the user |
 
 With no argument, ask which feature and stop. There is no default feature, and
 choosing one produces an implementation nobody asked for.
@@ -91,26 +91,33 @@ choosing one produces an implementation nobody asked for.
 Gather before proposing anything. Name every source; nothing here is recalled
 from memory.
 
+The roadmap is GitHub issues; `.claude/CLAUDE.md` says how they are laid out.
+
 | #   | Source                                       | What it settles                           |
 | --- | -------------------------------------------- | ----------------------------------------- |
-| 1   | `.roadmap/features/<ID>-*.md`                | The objective, the checkboxes, the stops  |
-| 2   | `.roadmap/MASTER-ROADMAP.md`                 | Where the feature sits in the ordering    |
-| 3   | `.roadmap/CHECKLIST-MASTER.md`               | What the plan claims is already done      |
-| 4   | `.roadmap/DEPENDENCIES-MASTER.md`            | What this feature is declared to need     |
-| 5   | The specification of each direct dependency  | What that dependency promised to provide  |
+| 1   | The feature's issue, through `gh issue view` | The objective, the checkboxes, the stops  |
+| 2   | Its `P0`–`P2` and `fase <n>` labels          | Where the feature sits in the ordering    |
+| 3   | Whether each issue is open or closed         | What the plan claims is already done      |
+| 4   | The **Dependências** line of the issue       | What this feature is declared to need     |
+| 5   | The issue of each direct dependency          | What that dependency promised to provide  |
 | 6   | The code that dependency produced            | Whether it actually provides it           |
-| 7   | `.roadmap/GLOSSARY.md`                       | The canonical name for every concept used |
+| 7   | The pinned glossary issue, #113              | The canonical name for every concept used |
 | 8   | `.claude/CLAUDE.md`, `.claude/rules/`        | The invariants the change is bound by     |
 | 9   | The package's `src/`, its specs, its `docs/` | The abstraction that may already exist    |
 | 10  | The package's `package.json` `exports` map   | The public surface as it stands today     |
 | 11  | `vitest.config.mts`                          | Which project the new suites will run in  |
 | 12  | `docs/testing.md`                            | What the two suites have to assert        |
 
-**A checkbox is not evidence.** `.roadmap/CHECKLIST-MASTER.md` records
-intent; the dependency is confirmed by reading what it produced — the file, the
-export, the passing suite — and by running the one command that exercises it.
-A dependency ticked in the checklist and absent from the tree is a hard stop,
-not a gap to fill on the way past.
+**A closed issue is not evidence.** Closing records intent; the dependency is
+confirmed by reading what it produced — the file, the export, the passing suite
+— and by running the one command that exercises it. A dependency closed on
+GitHub and absent from the tree is a hard stop, not a gap to fill on the way
+past.
+
+**A reconstructed specification is not agreed.** Some issues of the original
+roadmap say their acceptance criteria were reconstructed after the
+specification was lost. Treat those criteria as a draft: write them into the §2
+plan and wait for the user to confirm them, as for a described change.
 
 Then establish the surface, with the table in
 `.claude/skills/verify/SKILL.md` §1 as the vocabulary: runtime, tests,
@@ -160,9 +167,9 @@ The criteria that decide its content:
   each is a public commitment once exported.
 - **Search before adding.** One file per utility, and the neighbour often
   already solves it. `Grep` the package before describing behaviour as missing.
-- **Names come from the glossary.** `.roadmap/GLOSSARY.md` is canonical; a
-  concept that has a name there is not given a second one here, and a name that
-  is not there yet is proposed as a glossary entry in the plan.
+- **Names come from the glossary.** The pinned glossary issue, #113, is
+  canonical; a concept that has a name there is not given a second one here,
+  and a name that is not there yet is proposed as a glossary entry in the plan.
 - **Inference is part of the surface.** A signature that starts returning
   `Sequence<unknown>` where it returned `Sequence<User>` breaks every consumer
   without changing a name, and only a type-level test catches it.
@@ -216,13 +223,14 @@ What may not change:
   goes back with what broke. Deleting, skipping or loosening one to reach green
   is the anti-pattern this whole file is arranged around.
 - **A warning, by silencing it.** `eslint-disable`, `@ts-ignore`,
-  `@ts-expect-error`, `skip` — each is a last resort with explicit approval and
-  a comment saying why (`.claude/CLAUDE.md`).
+  `@ts-expect-error`, `skip` and a rule switched off for some files are not used
+  in this repository at all (`.claude/CLAUDE.md`); the warning is fixed or it
+  goes back as a stop condition.
 - **Anything outside the plan.** Unrelated tidying, reformatting and generated
   output are their own commits (`.claude/rules/git.md`), and in this skill they
   are their own turn.
 - **`dist/`, or a file beside a source.** If a `.js` or `.d.ts` appears under
-  `packages/*/src/`, the `rootDir`/`outDir` pair is the bug —
+  `packages/*/src/`, the build configuration is the bug —
   `.claude/rules/build-output.md`, and do not delete the file and move on.
 
 Run the narrow command after each step rather than the full pass:
@@ -269,7 +277,7 @@ that was not run is reported as not run.
 
 Halt and hand back when:
 
-- **A direct dependency is missing**, whatever the checklist says. Name the
+- **A direct dependency is missing**, whatever its issue says. Name the
   feature, what was looked for, and where.
 - **The roadmap contradicts itself**, or contradicts `.claude/rules/`. Quote
   both and ask which holds; do not pick.

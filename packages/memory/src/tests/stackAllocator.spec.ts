@@ -1,9 +1,8 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import type { Allocation, AllocationDomain } from '@/allocator';
-import { createStackAllocator, type StackAllocator } from '@/stackAllocator';
-
-import { coded } from './coded';
+import type { Allocation, AllocationDomain } from '@/src/allocator';
+import { createStackAllocator, type StackAllocator } from '@/src/stackAllocator';
+import { coded } from '@/src/tests/coded';
 
 /**
  * Behaviour suite for `createStackAllocator`.
@@ -65,7 +64,8 @@ describe('createStackAllocator', () => {
 			inside = frame.allocate(64, 8);
 
 			throw new Error('leaving early');
-		}).toThrowError('leaving early');
+		}).toThrow('leaving early');
+
 		expect(inside?.isLive()).toBe(false);
 		expect(stack.allocate(64, 8).isLive()).toBe(true);
 	});
@@ -87,7 +87,7 @@ describe('createStackAllocator', () => {
 		const outer: AllocationDomain = stack.enter();
 		const inner: AllocationDomain = stack.enter();
 
-		expect(() => outer.allocate(8, 8)).toThrowError(
+		expect(() => outer.allocate(8, 8)).toThrow(
 			coded(
 				new Error(
 					'FULCRO7008: StackAllocator.enter().allocate: frame 1 is not the innermost open frame, 2; frames are allocated from and left in last-in, first-out order.',
@@ -99,7 +99,10 @@ describe('createStackAllocator', () => {
 				},
 			),
 		);
-		expect(() => outer[Symbol.dispose]()).toThrowError(
+
+		expect(() => {
+			outer[Symbol.dispose]();
+		}).toThrow(
 			coded(
 				new Error(
 					'FULCRO7008: StackAllocator.enter()[Symbol.dispose]: frame 1 is not the innermost open frame, 2; frames are allocated from and left in last-in, first-out order.',
@@ -111,7 +114,8 @@ describe('createStackAllocator', () => {
 				},
 			),
 		);
-		expect(() => stack.allocate(8, 8)).toThrowError(
+
+		expect(() => stack.allocate(8, 8)).toThrow(
 			coded(
 				new Error(
 					'FULCRO7008: StackAllocator.allocate: frame 0 is not the innermost open frame, 2; frames are allocated from and left in last-in, first-out order.',
@@ -131,7 +135,7 @@ describe('createStackAllocator', () => {
 
 		frame[Symbol.dispose]();
 
-		expect(() => frame.allocate(8, 8)).toThrowError(
+		expect(() => frame.allocate(8, 8)).toThrow(
 			coded(
 				new Error(
 					'FULCRO7012: StackAllocator.enter().allocate: frame 1 was already left; enter a new one.',
@@ -157,7 +161,7 @@ describe('createStackAllocator', () => {
 
 		stack.allocate(3, 1);
 
-		expect(() => stack.allocate(29, 4)).toThrowError(
+		expect(() => stack.allocate(29, 4)).toThrow(
 			coded(
 				new RangeError(
 					'FULCRO7007: StackAllocator.allocate: 29 bytes aligned to 4 were requested, but only 29 of 32 bytes remain.',
@@ -171,6 +175,7 @@ describe('createStackAllocator', () => {
 				},
 			),
 		);
+
 		expect(stack.allocate(29, 1).bytes.byteOffset).toBe(3);
 	});
 
@@ -178,14 +183,14 @@ describe('createStackAllocator', () => {
 		const stack: StackAllocator = createStackAllocator(16);
 
 		expect(stack.allocate(16, 16).bytes.byteLength).toBe(16);
-		expect(() => stack.allocate(1, 1)).toThrowError(RangeError);
+		expect(() => stack.allocate(1, 1)).toThrow(RangeError);
 	});
 
 	it.each([
 		[-1, '-1'],
 		[1.5, '1.5'],
 	])('should refuse a capacity of %s', (capacity, shown) => {
-		expect(() => createStackAllocator(capacity)).toThrowError(
+		expect(() => createStackAllocator(capacity)).toThrow(
 			coded(
 				new RangeError(
 					`FULCRO7005: createStackAllocator: expected a size in bytes that is a non-negative safe integer, received ${shown}.`,
@@ -196,9 +201,7 @@ describe('createStackAllocator', () => {
 	});
 
 	it('should hand out frames that are allocation domains', () => {
-		expectTypeOf(
-			createStackAllocator(64).enter(),
-		).toEqualTypeOf<AllocationDomain>();
+		expectTypeOf(createStackAllocator(64).enter()).toEqualTypeOf<AllocationDomain>();
 		expect(Object.isFrozen(createStackAllocator(64).enter())).toBe(true);
 	});
 });

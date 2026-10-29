@@ -1,13 +1,7 @@
 import { createError } from '@fulcro/errors';
 
-import {
-	type DecimalParts,
-	infinity,
-	NOT_A_NUMBER,
-	PRECISION,
-	zero,
-} from './parts';
-import { finish } from './round';
+import { type DecimalParts, infinity, NOT_A_NUMBER, PRECISION, zero } from '@/src/decimal/parts';
+import { finish } from '@/src/decimal/round';
 
 /**
  * A decimal literal: an optional sign, digits with at most one point and at
@@ -39,8 +33,9 @@ const KEPT_DIGITS = PRECISION + 1;
  * @param text Input that was rejected.
  * @returns A quoted, shortened copy.
  */
-const describeInput = (text: string): string =>
-	JSON.stringify(text.length > 40 ? `${text.slice(0, 40)}…` : text);
+const describeInput = (text: string): string => {
+	return JSON.stringify(text.length > 40 ? `${text.slice(0, 40)}…` : text);
+};
 
 /**
  * Parses a decimal literal into normalised parts, rounding half to even when it
@@ -82,10 +77,7 @@ export const parseDecimal = (text: string): DecimalParts => {
 	let exponent: number =
 		exponentText === undefined
 			? 0
-			: Math.max(
-					-EXPONENT_LIMIT,
-					Math.min(EXPONENT_LIMIT, Number(exponentText)),
-				);
+			: Math.max(-EXPONENT_LIMIT, Math.min(EXPONENT_LIMIT, Number(exponentText)));
 
 	exponent -= fraction.length;
 
@@ -99,9 +91,7 @@ export const parseDecimal = (text: string): DecimalParts => {
 		return finish(negative, BigInt(significant), exponent, 'halfEven');
 	}
 
-	const sticky: string = /[1-9]/.test(significant.slice(KEPT_DIGITS))
-		? '1'
-		: '0';
+	const sticky: string = /[1-9]/.test(significant.slice(KEPT_DIGITS)) ? '1' : '0';
 
 	return finish(
 		negative,

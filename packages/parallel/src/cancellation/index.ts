@@ -1,8 +1,10 @@
-import { CancellationSource, CancellationToken } from '@/@types/index.js';
+import type { CancellationSource, CancellationToken } from '@/src/@types/index.js';
 
 /** What a registration returns when there is nothing left to remove. */
 const NOTHING_TO_RELEASE: Disposable = Object.freeze({
-	[Symbol.dispose]: (): void => {},
+	[Symbol.dispose]: (): void => {
+		// Nothing was registered, so there is nothing to take back.
+	},
 });
 
 /**
@@ -35,7 +37,9 @@ const propagate = (step: () => void): void => {
 	propagating = queue;
 
 	try {
-		for (let index = 0; index < queue.length; index++) queue[index]();
+		// A step may queue more while this runs; the array's own iterator reads
+		// the length again at every step, so those run in this same loop.
+		for (const run of queue) run();
 	} finally {
 		propagating = null;
 	}
@@ -54,10 +58,7 @@ const propagate = (step: () => void): void => {
  * @param handler The handler.
  * @param reason The reason the work was called off.
  */
-const callLate = (
-	handler: (reason: unknown) => void,
-	reason: unknown,
-): void => {
+const callLate = (handler: (reason: unknown) => void, reason: unknown): void => {
 	try {
 		handler(reason);
 	} catch (error) {
@@ -92,9 +93,7 @@ const callLate = (
  * before `cancel` returns.
  * @returns The source. Dispose it to stop following `parent`.
  */
-export const createCancellationSource = (
-	parent?: CancellationToken,
-): CancellationSource => {
+export const createCancellationSource = (parent?: CancellationToken): CancellationSource => {
 	const controller = new AbortController();
 	const signal: AbortSignal = controller.signal;
 
@@ -129,7 +128,10 @@ export const createCancellationSource = (
 			return signal.aborted;
 		},
 		get reason(): unknown {
-			return signal.reason;
+			// The platform types it as ny; what it holds is whatever cancelled.
+			const reason: unknown = signal.reason;
+
+			return reason;
 		},
 		signal,
 		throwIfCancelled: (): void => {

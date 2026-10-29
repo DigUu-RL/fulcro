@@ -1,12 +1,8 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import type { Allocation, AllocationDomain } from '@/allocator';
-import {
-	createFixedBufferAllocator,
-	type FixedBufferAllocator,
-} from '@/fixedBufferAllocator';
-
-import { coded } from './coded';
+import type { Allocation, AllocationDomain } from '@/src/allocator';
+import { createFixedBufferAllocator, type FixedBufferAllocator } from '@/src/fixedBufferAllocator';
+import { coded } from '@/src/tests/coded';
 
 /**
  * Behaviour suite for `createFixedBufferAllocator`.
@@ -38,13 +34,11 @@ describe('createFixedBufferAllocator', () => {
 	});
 
 	it('should refuse a request past the end of the buffer', () => {
-		const allocator: FixedBufferAllocator = createFixedBufferAllocator(
-			new ArrayBuffer(16),
-		);
+		const allocator: FixedBufferAllocator = createFixedBufferAllocator(new ArrayBuffer(16));
 
 		allocator.allocate(12, 4);
 
-		expect(() => allocator.allocate(8, 1)).toThrowError(
+		expect(() => allocator.allocate(8, 1)).toThrow(
 			coded(
 				new RangeError(
 					'FULCRO7007: FixedBufferAllocator.allocate: 8 bytes aligned to 1 were requested, but only 4 of 16 bytes remain.',
@@ -61,20 +55,16 @@ describe('createFixedBufferAllocator', () => {
 	});
 
 	it('should count the alignment padding against the room left', () => {
-		const allocator: FixedBufferAllocator = createFixedBufferAllocator(
-			new ArrayBuffer(16),
-		);
+		const allocator: FixedBufferAllocator = createFixedBufferAllocator(new ArrayBuffer(16));
 
 		allocator.allocate(1, 1);
 
-		expect(() => allocator.allocate(12, 8)).toThrowError(RangeError);
+		expect(() => allocator.allocate(12, 8)).toThrow(RangeError);
 		expect(allocator.allocate(8, 8).bytes.byteOffset).toBe(8);
 	});
 
 	it('should release everything on reset and start again from the front', () => {
-		const allocator: FixedBufferAllocator = createFixedBufferAllocator(
-			new ArrayBuffer(16),
-		);
+		const allocator: FixedBufferAllocator = createFixedBufferAllocator(new ArrayBuffer(16));
 		const before: Allocation = allocator.allocate(16, 8);
 
 		allocator.reset();
@@ -93,9 +83,7 @@ describe('createFixedBufferAllocator', () => {
 		['SharedArrayBuffer', new SharedArrayBuffer(16)],
 		['Uint8Array', new Uint8Array(16)],
 	])('should refuse %s where a buffer is expected', (received, buffer) => {
-		expect(() =>
-			createFixedBufferAllocator(buffer as unknown as ArrayBuffer),
-		).toThrowError(
+		expect(() => createFixedBufferAllocator(buffer as unknown as ArrayBuffer)).toThrow(
 			coded(
 				new TypeError(
 					`FULCRO7013: createFixedBufferAllocator: expected an ArrayBuffer, received ${received}.`,
@@ -120,9 +108,7 @@ describe('createFixedBufferAllocator', () => {
 	});
 
 	it('should start again from the front of the buffer after a dispose', () => {
-		const allocator: FixedBufferAllocator = createFixedBufferAllocator(
-			new ArrayBuffer(16),
-		);
+		const allocator: FixedBufferAllocator = createFixedBufferAllocator(new ArrayBuffer(16));
 
 		allocator.allocate(16, 8);
 		allocator[Symbol.dispose]();
@@ -135,6 +121,7 @@ describe('createFixedBufferAllocator', () => {
 		expectTypeOf(
 			createFixedBufferAllocator(new ArrayBuffer(8)),
 		).toEqualTypeOf<FixedBufferAllocator>();
-		expectTypeOf<FixedBufferAllocator>().toMatchTypeOf<AllocationDomain>();
+
+		expectTypeOf<FixedBufferAllocator>().toExtend<AllocationDomain>();
 	});
 });

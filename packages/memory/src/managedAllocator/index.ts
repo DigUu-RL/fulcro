@@ -1,5 +1,5 @@
-import type { Allocation, Allocator } from '@/allocator';
-import { requireRequest } from '@/allocator/requireRequest';
+import type { Allocation, Allocator } from '@/src/allocator';
+import { requireRequest } from '@/src/allocator/requireRequest';
 
 /** Answers that memory the garbage collector owns is live while it is held. */
 const always = (): boolean => true;
@@ -21,8 +21,8 @@ const always = (): boolean => true;
  *
  * @returns The allocator, frozen.
  */
-export const createManagedAllocator = (): Allocator =>
-	Object.freeze({
+export const createManagedAllocator = (): Allocator => {
+	return Object.freeze({
 		allocate: (size: number, alignment: number): Allocation => {
 			requireRequest('ManagedAllocator.allocate', size, alignment);
 
@@ -34,3 +34,4 @@ export const createManagedAllocator = (): Allocator =>
 			});
 		},
 	});
+};

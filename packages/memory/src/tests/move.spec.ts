@@ -1,13 +1,12 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { borrow } from '@/borrow';
-import { borrowMutable } from '@/borrowMutable';
-import { createManagedStorage } from '@/managedStorage';
-import { move } from '@/move';
-import { own } from '@/own';
-import type { Owned } from '@/owned';
-
-import { coded } from './coded';
+import { borrow } from '@/src/borrow';
+import { borrowMutable } from '@/src/borrowMutable';
+import { createManagedStorage } from '@/src/managedStorage';
+import { move } from '@/src/move';
+import { own } from '@/src/own';
+import type { Owned } from '@/src/owned';
+import { coded } from '@/src/tests/coded';
 
 /**
  * Behaviour suite for `move`.
@@ -54,9 +53,7 @@ describe('move', () => {
 	it('should refuse something that is not an owner', () => {
 		expect(() => move(undefined as never)).toThrow(
 			coded(
-				new TypeError(
-					'FULCRO7017: move: expected an owner from own or move, received undefined.',
-				),
+				new TypeError('FULCRO7017: move: expected an owner from own or move, received undefined.'),
 				{
 					operation: 'move',
 					expected: 'an owner from own or move',

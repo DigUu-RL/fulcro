@@ -1,7 +1,7 @@
 import typescript from 'typescript';
 
-import { RewriteContext } from '@/shared';
-import { buildExplainer } from '@/structural/explain';
+import type { RewriteContext } from '@/src/shared';
+import { buildExplainer } from '@/src/structural/explain';
 
 /**
  * Writing out the checks a type implies.
@@ -41,8 +41,8 @@ import { buildExplainer } from '@/structural/explain';
  *
  * What this module emits, and what the runtime halves of `ofType`, `cast`, `is`
  * and `as` receive. Declared here because more than one library consumes it;
- * each also re-exports a structurally identical one of its own, so nothing a
- * consumer imports depends on this package.
+ * each also declares one of its own, assignable to this one both ways, so
+ * nothing a consumer imports depends on this package.
  *
  * @template R Type a passing value is taken to be.
  */
@@ -70,6 +70,13 @@ export interface TypeTest<R> {
 
 	/** Name of the type, as it was written. */
 	readonly name?: string;
+
+	/**
+	 * The type a passing value is taken to be, carried in the type only: never
+	 * present on a test, it keeps a test for one type from passing for a test
+	 * of another.
+	 */
+	readonly '~type'?: R;
 }
 
 /** What a caller wants emitted beyond the yes-or-no check. */
@@ -135,8 +142,9 @@ interface RecursiveCheck {
  * @param flag Flag looked for.
  * @returns `true` when the type carries it.
  */
-const has = (type: typescript.Type, flag: typescript.TypeFlags): boolean =>
-	(type.flags & flag) !== 0;
+const has = (type: typescript.Type, flag: typescript.TypeFlags): boolean => {
+	return (type.flags & flag) !== 0;
+};
 
 /**
  * Builds `typeof value === name`.
@@ -150,11 +158,12 @@ const typeofIs = (
 	factory: typescript.NodeFactory,
 	value: typescript.Expression,
 	name: string,
-): typescript.Expression =>
-	factory.createStrictEquality(
+): typescript.Expression => {
+	return factory.createStrictEquality(
 		factory.createTypeOfExpression(value),
 		factory.createStringLiteral(name),
 	);
+};
 
 /**
  * Joins checks with `&&`, or answers `true` when there are none.
@@ -166,10 +175,11 @@ const typeofIs = (
 const all = (
 	factory: typescript.NodeFactory,
 	checks: readonly typescript.Expression[],
-): typescript.Expression =>
-	checks.length === 0
+): typescript.Expression => {
+	return checks.length === 0
 		? factory.createTrue()
 		: checks.reduce((left, right) => factory.createLogicalAnd(left, right));
+};
 
 /**
  * Joins checks with `||`, or answers `false` when there are none.
@@ -181,10 +191,11 @@ const all = (
 const any = (
 	factory: typescript.NodeFactory,
 	checks: readonly typescript.Expression[],
-): typescript.Expression =>
-	checks.length === 0
+): typescript.Expression => {
+	return checks.length === 0
 		? factory.createFalse()
 		: checks.reduce((left, right) => factory.createLogicalOr(left, right));
+};
 
 /**
  * Reads a property off an expression, quoting the key when it has to.
@@ -198,13 +209,11 @@ const propertyOf = (
 	factory: typescript.NodeFactory,
 	value: typescript.Expression,
 	name: string,
-): typescript.Expression =>
-	/^[A-Za-z_$][\w$]*$/.test(name)
+): typescript.Expression => {
+	return /^[A-Za-z_$][\w$]*$/.test(name)
 		? factory.createPropertyAccessExpression(value, name)
-		: factory.createElementAccessExpression(
-				value,
-				factory.createStringLiteral(name),
-			);
+		: factory.createElementAccessExpression(value, factory.createStringLiteral(name));
+};
 
 /**
  * Names a global constructor that is safe to test with `instanceof`.
@@ -245,10 +254,12 @@ const GLOBAL_CLASSES = new Set([
  * @param type Type being inspected.
  * @returns `true` when `undefined` is one of its members.
  */
-const admitsUndefined = (type: typescript.Type): boolean =>
-	has(type, typescript.TypeFlags.Undefined) ||
-	(type.isUnion() &&
-		type.types.some((member) => has(member, typescript.TypeFlags.Undefined)));
+const admitsUndefined = (type: typescript.Type): boolean => {
+	return (
+		has(type, typescript.TypeFlags.Undefined) ||
+		(type.isUnion() && type.types.some((member) => has(member, typescript.TypeFlags.Undefined)))
+	);
+};
 
 /**
  * Lists the types a type is built out of, for the cycle search.
@@ -259,13 +270,13 @@ const admitsUndefined = (type: typescript.Type): boolean =>
  *
  * @param type Type being taken apart.
  * @param checker Checker of the program being compiled.
- * @param at Node the lookups happen from.
+ * @param position Node the lookups happen from.
  * @returns The types it refers to.
  */
 const partsOf = (
 	type: typescript.Type,
 	checker: typescript.TypeChecker,
-	at: typescript.Node,
+	position: typescript.Node,
 ): readonly typescript.Type[] => {
 	if (type.isUnionOrIntersection()) return type.types;
 
@@ -279,22 +290,18 @@ const partsOf = (
 
 	if (
 		symbol !== undefined &&
-		((symbol.flags & typescript.SymbolFlags.Class) !== 0 ||
-			GLOBAL_CLASSES.has(symbol.getName()))
+		((symbol.flags & typescript.SymbolFlags.Class) !== 0 || GLOBAL_CLASSES.has(symbol.getName()))
 	) {
 		return [];
 	}
 
-	if (
-		type.getCallSignatures().length > 0 ||
-		type.getConstructSignatures().length > 0
-	) {
+	if (type.getCallSignatures().length > 0 || type.getConstructSignatures().length > 0) {
 		return [];
 	}
 
 	return type
 		.getProperties()
-		.map((property) => checker.getTypeOfSymbolAtLocation(property, at));
+		.map((property) => checker.getTypeOfSymbolAtLocation(property, position));
 };
 
 /**
@@ -307,13 +314,13 @@ const partsOf = (
  *
  * @param root Type the call asked for.
  * @param checker Checker of the program being compiled.
- * @param at Node the lookups happen from.
+ * @param position Node the lookups happen from.
  * @returns Every type that refers back to itself, directly or through others.
  */
 const findRecursive = (
 	root: typescript.Type,
 	checker: typescript.TypeChecker,
-	at: typescript.Node,
+	position: typescript.Node,
 ): ReadonlySet<typescript.Type> => {
 	const recursive = new Set<typescript.Type>();
 	const finished = new Set<typescript.Type>();
@@ -330,7 +337,7 @@ const findRecursive = (
 
 		path.add(type);
 
-		for (const part of partsOf(type, checker, at)) visit(part);
+		for (const part of partsOf(type, checker, position)) visit(part);
 
 		path.delete(type);
 		finished.add(type);
@@ -354,24 +361,26 @@ const findRecursive = (
 const isValueInScope = (name: string, generation: Generation): boolean => {
 	if (GLOBAL_CLASSES.has(name)) return true;
 
-	const resolved: typescript.Symbol | undefined =
-		generation.context.checker.resolveName(
-			name,
-			generation.at,
-			typescript.SymbolFlags.Value,
-			false,
-		);
+	const resolved: typescript.Symbol | undefined = generation.context.checker.resolveName(
+		name,
+		generation.at,
+		typescript.SymbolFlags.Value,
+		false,
+	);
 
 	if (resolved === undefined) return false;
 
 	return !(resolved.declarations ?? []).some((declaration) => {
 		if (typescript.isImportSpecifier(declaration)) {
 			return (
-				declaration.isTypeOnly || declaration.parent.parent.isTypeOnly === true
+				declaration.isTypeOnly ||
+				declaration.parent.parent.phaseModifier === typescript.SyntaxKind.TypeKeyword
 			);
 		}
 
-		if (typescript.isImportClause(declaration)) return declaration.isTypeOnly;
+		if (typescript.isImportClause(declaration)) {
+			return declaration.phaseModifier === typescript.SyntaxKind.TypeKeyword;
+		}
 
 		return false;
 	});
@@ -409,26 +418,17 @@ const checkFor = (
 	}
 
 	if (has(type, typescript.TypeFlags.Undefined | typescript.TypeFlags.Void)) {
-		return factory.createStrictEquality(
-			value,
-			factory.createIdentifier('undefined'),
-		);
+		return factory.createStrictEquality(value, factory.createIdentifier('undefined'));
 	}
 
 	// Literals before the primitive groups they belong to, or `'dark'` would be
 	// checked as any old string.
 	if (type.isStringLiteral()) {
-		return factory.createStrictEquality(
-			value,
-			factory.createStringLiteral(type.value),
-		);
+		return factory.createStrictEquality(value, factory.createStringLiteral(type.value));
 	}
 
 	if (type.isNumberLiteral()) {
-		return factory.createStrictEquality(
-			value,
-			factory.createNumericLiteral(type.value),
-		);
+		return factory.createStrictEquality(value, factory.createNumericLiteral(type.value));
 	}
 
 	if (has(type, typescript.TypeFlags.BooleanLiteral)) {
@@ -442,27 +442,23 @@ const checkFor = (
 
 	// A union takes in enums too, which the checker presents as one.
 	if (type.isUnion()) {
-		const members: (typescript.Expression | null)[] = type.types.map((member) =>
-			checkFor(member, value, generation, depth + 1),
-		);
+		const members: (typescript.Expression | null)[] = type.types.map((member) => {
+			return checkFor(member, value, generation, depth + 1);
+		});
 
 		if (members.some((member) => member === null)) return null;
 
-		return factory.createParenthesizedExpression(
-			any(factory, members as typescript.Expression[]),
-		);
+		return factory.createParenthesizedExpression(any(factory, members as typescript.Expression[]));
 	}
 
 	if (type.isIntersection()) {
-		const members: (typescript.Expression | null)[] = type.types.map((member) =>
-			checkFor(member, value, generation, depth + 1),
-		);
+		const members: (typescript.Expression | null)[] = type.types.map((member) => {
+			return checkFor(member, value, generation, depth + 1);
+		});
 
 		if (members.some((member) => member === null)) return null;
 
-		return factory.createParenthesizedExpression(
-			all(factory, members as typescript.Expression[]),
-		);
+		return factory.createParenthesizedExpression(all(factory, members as typescript.Expression[]));
 	}
 
 	if (has(type, typescript.TypeFlags.StringLike)) {
@@ -491,7 +487,7 @@ const checkFor = (
 	// reference has a name to call, and every mention of it — the first one
 	// included — becomes a call to that name.
 	if (generation.recursive.has(type)) {
-		return checkThroughFunction(type, value, generation, depth);
+		return checkThroughFunction(type, value, generation);
 	}
 
 	// Belt and braces. The cycle search above should have caught anything that
@@ -509,39 +505,38 @@ const checkFor = (
  * trick: the reference that closes the cycle is met while the body is still
  * being built, and it needs something to call.
  *
+ * The depth the caller had reached is deliberately not taken: the body starts
+ * again from zero, below.
+ *
  * @param type Type being checked for.
  * @param value Expression the check is applied to.
  * @param generation State of the generation.
- * @param depth How deep into the type this is.
  * @returns A call to the function, or `null` when the body cannot be written.
  */
 const checkThroughFunction = (
 	type: typescript.Type,
 	value: typescript.Expression,
 	generation: Generation,
-	depth: number,
 ): typescript.Expression | null => {
 	const { factory } = generation.context;
 
 	const existing: RecursiveCheck | undefined = generation.declared.get(type);
 
 	if (existing !== undefined) {
-		return factory.createCallExpression(
-			factory.createIdentifier(existing.name),
-			undefined,
-			[value],
-		);
+		return factory.createCallExpression(factory.createIdentifier(existing.name), undefined, [
+			value,
+		]);
 	}
 
 	const declaration: RecursiveCheck = {
-		name: `check${generation.counter.value++}`,
+		name: `check${String(generation.counter.value++)}`,
 	};
 
 	generation.declared.set(type, declaration);
 
 	// Written against its own parameter rather than against the caller's
 	// expression, because the same body serves every call site.
-	const parameter: string = `r${generation.counter.value++}`;
+	const parameter: string = `r${String(generation.counter.value++)}`;
 
 	const body: typescript.Expression | null = checkForObject(
 		type,
@@ -568,11 +563,9 @@ const checkThroughFunction = (
 		body,
 	);
 
-	return factory.createCallExpression(
-		factory.createIdentifier(declaration.name),
-		undefined,
-		[value],
-	);
+	return factory.createCallExpression(factory.createIdentifier(declaration.name), undefined, [
+		value,
+	]);
 };
 
 /**
@@ -596,13 +589,11 @@ const checkForObject = (
 
 	try {
 		if (checker.isArrayType(type)) {
-			const [element] = checker.getTypeArguments(
-				type as typescript.TypeReference,
-			);
+			const [element] = checker.getTypeArguments(type as typescript.TypeReference);
 
 			if (element === undefined) return null;
 
-			const parameter: string = `e${generation.counter.value++}`;
+			const parameter: string = `e${String(generation.counter.value++)}`;
 
 			const inner: typescript.Expression | null = checkFor(
 				element,
@@ -618,10 +609,7 @@ const checkForObject = (
 			// produce. What that costs is the caller's to know, and documented.
 			return factory.createLogicalAnd(
 				factory.createCallExpression(
-					factory.createPropertyAccessExpression(
-						factory.createIdentifier('Array'),
-						'isArray',
-					),
+					factory.createPropertyAccessExpression(factory.createIdentifier('Array'), 'isArray'),
 					undefined,
 					[value],
 				),
@@ -632,13 +620,7 @@ const checkForObject = (
 						factory.createArrowFunction(
 							undefined,
 							undefined,
-							[
-								factory.createParameterDeclaration(
-									undefined,
-									undefined,
-									parameter,
-								),
-							],
+							[factory.createParameterDeclaration(undefined, undefined, parameter)],
 							undefined,
 							factory.createToken(typescript.SyntaxKind.EqualsGreaterThanToken),
 							inner,
@@ -654,19 +636,18 @@ const checkForObject = (
 
 			// A rest or optional element makes the length variable, and a length
 			// this cannot pin down is one it will not guess at.
-			if (target.hasRestElement || target.minLength !== target.fixedLength) {
+			if (
+				(target.combinedFlags & typescript.ElementFlags.Variable) !== 0 ||
+				target.minLength !== target.fixedLength
+			) {
 				return null;
 			}
 
-			const elements: readonly typescript.Type[] =
-				checker.getTypeArguments(reference);
+			const elements: readonly typescript.Type[] = checker.getTypeArguments(reference);
 
 			const checks: typescript.Expression[] = [
 				factory.createCallExpression(
-					factory.createPropertyAccessExpression(
-						factory.createIdentifier('Array'),
-						'isArray',
-					),
+					factory.createPropertyAccessExpression(factory.createIdentifier('Array'), 'isArray'),
 					undefined,
 					[value],
 				),
@@ -679,10 +660,7 @@ const checkForObject = (
 			for (const [index, element] of elements.entries()) {
 				const inner: typescript.Expression | null = checkFor(
 					element,
-					factory.createElementAccessExpression(
-						value,
-						factory.createNumericLiteral(index),
-					),
+					factory.createElementAccessExpression(value, factory.createNumericLiteral(index)),
 					generation,
 					depth + 1,
 				);
@@ -707,8 +685,7 @@ const checkForObject = (
 		// known names first is what keeps that from being emitted.
 		const isClassLike: boolean =
 			symbol !== undefined &&
-			((symbol.flags & typescript.SymbolFlags.Class) !== 0 ||
-				GLOBAL_CLASSES.has(symbol.getName()));
+			((symbol.flags & typescript.SymbolFlags.Class) !== 0 || GLOBAL_CLASSES.has(symbol.getName()));
 
 		if (isClassLike && symbol !== undefined) {
 			const name: string = symbol.getName();
@@ -724,10 +701,7 @@ const checkForObject = (
 
 		// A function type. Only that it is callable can be checked — no runtime
 		// sees a signature — and the shape below would be wrong for one.
-		if (
-			type.getCallSignatures().length > 0 ||
-			type.getConstructSignatures().length > 0
-		) {
+		if (type.getCallSignatures().length > 0 || type.getConstructSignatures().length > 0) {
 			return typeofIs(factory, value, 'function');
 		}
 
@@ -758,8 +732,7 @@ const checkForObject = (
 				generation.at,
 			);
 
-			const optional: boolean =
-				(property.flags & typescript.SymbolFlags.Optional) !== 0;
+			const optional: boolean = (property.flags & typescript.SymbolFlags.Optional) !== 0;
 
 			const access: typescript.Expression = propertyOf(factory, value, name);
 
@@ -786,10 +759,7 @@ const checkForObject = (
 				needsWrapping
 					? factory.createParenthesizedExpression(
 							factory.createLogicalOr(
-								factory.createStrictEquality(
-									access,
-									factory.createIdentifier('undefined'),
-								),
+								factory.createStrictEquality(access, factory.createIdentifier('undefined')),
 								inner,
 							),
 						)
@@ -808,7 +778,7 @@ const checkForObject = (
  *
  * @param type Type the call asked for.
  * @param written The type as the consumer wrote it, for error messages.
- * @param at Node the call sits at, for scope.
+ * @param position Node the call sits at, for scope.
  * @param context Compilation in progress.
  * @returns The object literal to pass at runtime, or `null` when the type
  * cannot be checked honestly.
@@ -816,7 +786,7 @@ const checkForObject = (
 export const buildStructuralTest = (
 	type: typescript.Type,
 	written: string,
-	at: typescript.Node,
+	position: typescript.Node,
 	context: RewriteContext,
 	options: StructuralOptions = {},
 ): typescript.Expression | null => {
@@ -824,9 +794,9 @@ export const buildStructuralTest = (
 
 	const generation: Generation = {
 		context,
-		at,
+		at: position,
 		open: new Set(),
-		recursive: findRecursive(type, context.checker, at),
+		recursive: findRecursive(type, context.checker, position),
 		declared: new Map(),
 		counter: { value: 0 },
 	};
@@ -850,39 +820,35 @@ export const buildStructuralTest = (
 			? buildExplainer(
 					type,
 					written,
-					at,
+					position,
 					context.checker,
 					factory,
 					// Handed the same yes-or-no builder the fast check uses, so the
 					// two can never disagree about what counts as a match. A separate
 					// generation, since the walker and the check number their own
 					// helpers independently.
-					(inner, value) =>
-						checkFor(
+					(inner, value) => {
+						return checkFor(
 							inner,
 							value,
 							{
 								context,
-								at,
+								at: position,
 								open: new Set(),
 								recursive: generation.recursive,
 								declared: new Map(),
 								counter: generation.counter,
 							},
 							0,
-						),
+						);
+					},
 				)
 			: null;
 
 	const test: typescript.Expression = factory.createObjectLiteralExpression(
 		[
-			factory.createPropertyAssignment(
-				'name',
-				factory.createStringLiteral(written),
-			),
-			...(explainer === null
-				? []
-				: [factory.createPropertyAssignment('explain', explainer)]),
+			factory.createPropertyAssignment('name', factory.createStringLiteral(written)),
+			...(explainer === null ? [] : [factory.createPropertyAssignment('explain', explainer)]),
 			factory.createPropertyAssignment(
 				'matches',
 				factory.createArrowFunction(

@@ -1,9 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { Allocation } from '@/allocator';
-import { createPoolAllocator, type PoolAllocator } from '@/poolAllocator';
-
-import { watchBuffers } from './watchBuffers';
+import type { Allocation } from '@/src/allocator';
+import { createPoolAllocator, type PoolAllocator } from '@/src/poolAllocator';
+import { watchBuffers } from '@/src/tests/watchBuffers';
 
 /**
  * Performance suite for `createPoolAllocator`.
@@ -59,9 +58,7 @@ describe('createPoolAllocator, counted', () => {
 		const buffers = watchBuffers();
 
 		for (let round = 0; round < ROUNDS; round++) {
-			const taken: Allocation[] = Array.from({ length: BLOCKS }, () =>
-				pool.allocate(48, 16),
-			);
+			const taken: Allocation[] = Array.from({ length: BLOCKS }, () => pool.allocate(48, 16));
 
 			for (const allocation of shuffle(taken)) pool.deallocate(allocation);
 		}
@@ -83,15 +80,11 @@ describe('createPoolAllocator, counted', () => {
 		}
 
 		const marked: number = taken.filter(
-			(allocation) =>
-				new Uint8Array(allocation.bytes.buffer)[allocation.bytes.byteOffset] ===
-				0xaa,
+			(allocation) => new Uint8Array(allocation.bytes.buffer)[allocation.bytes.byteOffset] === 0xaa,
 		).length;
+
 		const again = new Set(
-			Array.from(
-				{ length: BLOCKS },
-				() => pool.allocate(64, 8).bytes.byteOffset,
-			),
+			Array.from({ length: BLOCKS }, () => pool.allocate(64, 8).bytes.byteOffset),
 		);
 
 		expect(marked).toBe(BLOCKS);
@@ -101,17 +94,12 @@ describe('createPoolAllocator, counted', () => {
 
 	it('should hand every block out again after a shuffled return, none twice', () => {
 		const pool: PoolAllocator = createPoolAllocator(64, BLOCKS);
-		const first: Allocation[] = Array.from({ length: BLOCKS }, () =>
-			pool.allocate(64, 8),
-		);
+		const first: Allocation[] = Array.from({ length: BLOCKS }, () => pool.allocate(64, 8));
 
 		for (const allocation of shuffle([...first])) pool.deallocate(allocation);
 
 		const offsets = new Set(
-			Array.from(
-				{ length: BLOCKS },
-				() => pool.allocate(64, 8).bytes.byteOffset,
-			),
+			Array.from({ length: BLOCKS }, () => pool.allocate(64, 8).bytes.byteOffset),
 		);
 
 		expect(offsets.size).toBe(BLOCKS);

@@ -1,8 +1,8 @@
 import { createError } from '@fulcro/errors';
 
-import type { Allocation, Allocator } from '@/allocator';
-import { requireRequest, requireSize } from '@/allocator/requireRequest';
-import { requireLength } from '@/storage/requireLength';
+import type { Allocation, Allocator } from '@/src/allocator';
+import { requireRequest, requireSize } from '@/src/allocator/requireRequest';
+import { requireLength } from '@/src/storage/requireLength';
 
 /**
  * An allocator of blocks of one size, each returned on its own, in any order.
@@ -28,7 +28,7 @@ export interface PoolAllocator extends Allocator {
 	 * @throws {RangeError} When the request does not fit a block, or every
 	 * block is out.
 	 */
-	allocate(size: number, alignment: number): Allocation & Disposable;
+	readonly allocate: (size: number, alignment: number) => Allocation & Disposable;
 
 	/**
 	 * Returns one allocation's block to the pool, for the next request to reuse.
@@ -37,7 +37,7 @@ export interface PoolAllocator extends Allocator {
 	 * @param allocation An allocation this pool made and has not taken back.
 	 * @throws {Error} When this pool did not make it, or already took it back.
 	 */
-	deallocate(allocation: Allocation): void;
+	readonly deallocate: (allocation: Allocation) => void;
 }
 
 /** Which block an allocation holds, and the block's generation at the time. */
@@ -72,10 +72,7 @@ interface Lease {
  * @throws {RangeError} When the block size or the block count is not a
  * non-negative safe integer.
  */
-export const createPoolAllocator = (
-	blockSize: number,
-	blockCount: number,
-): PoolAllocator => {
+export const createPoolAllocator = (blockSize: number, blockCount: number): PoolAllocator => {
 	requireSize('createPoolAllocator', blockSize);
 	requireLength('createPoolAllocator', blockCount);
 
@@ -84,10 +81,7 @@ export const createPoolAllocator = (
 
 	// The free blocks, the next one to hand out last, so the pool fills from
 	// the front of the buffer.
-	const free: number[] = Array.from(
-		{ length: blockCount },
-		(_, index) => blockCount - 1 - index,
-	);
+	const free: number[] = Array.from({ length: blockCount }, (_, index) => blockCount - 1 - index);
 
 	// A block's generation moves on every time it comes back, which is what
 	// tells an allocation still holding it from one that held it before.
@@ -130,10 +124,13 @@ export const createPoolAllocator = (
 			}
 
 			const start: number = block * blockSize;
+
 			const lease: Lease = {
 				block,
-				generation: generations[block] as number,
+				// `block` is always one of the pool's, whose generations start at zero.
+				generation: generations[block] ?? 0,
 			};
+
 			const isLive = (): boolean => generations[block] === lease.generation;
 
 			new Uint8Array(buffer, start, size).fill(0);

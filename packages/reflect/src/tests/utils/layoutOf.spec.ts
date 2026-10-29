@@ -1,7 +1,7 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import type { TypeLayout, WithLayout } from '@/functions/utils/layout';
-import { layoutOf } from '@/functions/utils/layoutOf';
+import type { TypeLayout, WithLayout } from '@/src/functions/utils/layout';
+import { layoutOf } from '@/src/functions/utils/layoutOf';
 
 /**
  * Behaviour suite for `layoutOf`.
@@ -47,10 +47,13 @@ interface Mixed {
  * @param value Value to inspect.
  * @returns `true` when nothing in it can be changed.
  */
-const deeplyFrozen = (value: unknown): boolean =>
-	typeof value !== 'object' ||
-	value === null ||
-	(Object.isFrozen(value) && Object.values(value).every(deeplyFrozen));
+const deeplyFrozen = (value: unknown): boolean => {
+	return (
+		typeof value !== 'object' ||
+		value === null ||
+		(Object.isFrozen(value) && Object.values(value).every(deeplyFrozen))
+	);
+};
 
 describe('layoutOf', () => {
 	it('should read the layout of a struct, its fields placed', () => {
@@ -66,11 +69,7 @@ describe('layoutOf', () => {
 	});
 
 	it('should list the fields in the order they were declared', () => {
-		expect(Object.keys(layoutOf<Mixed>().fields)).toEqual([
-			'flag',
-			'weight',
-			'count',
-		]);
+		expect(Object.keys(layoutOf<Mixed>().fields)).toEqual(['flag', 'weight', 'count']);
 	});
 
 	it('should report a type without fields with its size, its alignment and none', () => {
@@ -113,9 +112,8 @@ describe('layoutOf', () => {
 				};
 			};
 		}>();
-		expectTypeOf<TypeLayout<Half>['fields']>().toEqualTypeOf<
-			Record<never, never>
-		>();
+
+		expectTypeOf<TypeLayout<Half>['fields']>().toEqualTypeOf<Readonly<Record<string, never>>>();
 	});
 
 	it('should leave a union of different layouts to throw, having no single answer', () => {
@@ -123,10 +121,8 @@ describe('layoutOf', () => {
 	});
 
 	it('should leave a generic parameter to throw, having nothing substituted yet', () => {
-		const measure = <T extends WithLayout>(): unknown => layoutOf<T>();
+		const measure = <T extends WithLayout>(): TypeLayout<T> => layoutOf<T>();
 
-		expect(() => measure<Half>()).toThrow(
-			expect.objectContaining({ code: 'FULCRO4009' }),
-		);
+		expect(() => measure<Half>()).toThrow(expect.objectContaining({ code: 'FULCRO4009' }));
 	});
 });

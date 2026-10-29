@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { ComplexNumber } from '@/complexNumber';
-import { DoublePrecisionFloat } from '@/doublePrecisionFloat';
+import { ComplexNumber } from '@/src/complexNumber';
+import { DoublePrecisionFloat } from '@/src/doublePrecisionFloat';
 
 /**
  * Performance suite for `ComplexNumber`.

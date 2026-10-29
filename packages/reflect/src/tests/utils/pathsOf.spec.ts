@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { pathsOf } from '@/functions/utils/pathsOf';
+import { pathsOf, type TypePath } from '@/src/functions/utils/pathsOf';
 
 /**
  * Behaviour suite for `pathsOf`.
@@ -37,12 +37,13 @@ describe('pathsOf', () => {
 	 * @param path Path being looked up.
 	 * @returns The entry, when there is one.
 	 */
-	const at = (path: string) =>
-		pathsOf<Order>().find((entry) => entry.path === path);
+	const entryAt = (path: string): ReturnType<typeof pathsOf<Order>>[number] | undefined => {
+		return pathsOf<Order>().find((entry) => entry.path === path);
+	};
 
 	it('should walk to a nested leaf', () => {
-		expect(at('customer.email')?.type).toBe('string');
-		expect(at('customer.city.name')?.type).toBe('string');
+		expect(entryAt('customer.email')?.type).toBe('string');
+		expect(entryAt('customer.city.name')?.type).toBe('string');
 	});
 
 	it('should stop at a primitive', () => {
@@ -56,34 +57,30 @@ describe('pathsOf', () => {
 	});
 
 	it('should mark the elements of an array', () => {
-		expect(at('items[].sku')?.type).toBe('string');
-		expect(at('items[].qty')?.type).toBe('number');
+		expect(entryAt('items[].sku')?.type).toBe('string');
+		expect(entryAt('items[].qty')?.type).toBe('number');
 	});
 
 	it('should report a known class rather than its methods', () => {
-		expect(at('placedAt')?.type).toBe('Date');
-		expect(
-			pathsOf<Order>().some((entry) => entry.path.startsWith('placedAt.')),
-		).toBe(false);
+		expect(entryAt('placedAt')?.type).toBe('Date');
+		expect(pathsOf<Order>().some((entry) => entry.path.startsWith('placedAt.'))).toBe(false);
 	});
 
 	it('should report a union of literals as one leaf', () => {
-		expect(at('status')?.type).toBe('"pending" | "paid"');
+		expect(entryAt('status')?.type).toBe('"pending" | "paid"');
 	});
 
 	it('should stop where a type contains itself', () => {
 		// Infinitely many paths otherwise. The honest answer is where the repeat
 		// begins, with the type named at the end of it.
-		expect(at('parent')?.type).toBe('Order');
-		expect(
-			pathsOf<Order>().some((entry) => entry.path.startsWith('parent.')),
-		).toBe(false);
+		expect(entryAt('parent')?.type).toBe('Order');
+		expect(pathsOf<Order>().some((entry) => entry.path.startsWith('parent.'))).toBe(false);
 	});
 
 	it('should carry optionality down the path', () => {
-		expect(at('note')?.optional).toBe(true);
-		expect(at('id')?.optional).toBe(false);
-		expect(at('customer.email')?.optional).toBe(false);
+		expect(entryAt('note')?.optional).toBe(true);
+		expect(entryAt('id')?.optional).toBe(false);
+		expect(entryAt('customer.email')?.optional).toBe(false);
 	});
 
 	it('should mark a leaf below an optional step as optional', () => {
@@ -91,9 +88,7 @@ describe('pathsOf', () => {
 			readonly inner?: { readonly deep: string };
 		}
 
-		const found = pathsOf<Wrapper>().find(
-			(entry) => entry.path === 'inner.deep',
-		);
+		const found = pathsOf<Wrapper>().find((entry) => entry.path === 'inner.deep');
 
 		expect(found?.optional).toBe(true);
 	});
@@ -102,5 +97,13 @@ describe('pathsOf', () => {
 		expect(() => (pathsOf as () => readonly unknown[])()).toThrow(
 			/was not resolved at compile time/,
 		);
+	});
+});
+
+describe('what pathsOf declares', () => {
+	it('should return paths of the type it was asked about', () => {
+		expectTypeOf<ReturnType<typeof pathsOf<Order>>>().toEqualTypeOf<readonly TypePath<Order>[]>();
+		expectTypeOf<TypePath<Order>>().toExtend<TypePath>();
+		expectTypeOf<TypePath<Order>>().not.toExtend<TypePath<number>>();
 	});
 });

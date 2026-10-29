@@ -1,12 +1,14 @@
 {
 	"extends": "../../tsconfig.base.json",
 	"compilerOptions": {
-		"rootDir": "./src",
-		"outDir": "./dist",
+		// No DOM, unlike the shared base: nothing here calls a browser API, and the DOM
+		// declarations made every program the transformers build over two times slower.
+		"lib": ["ES2024"],
+		"types": ["node"],
 		"paths": {
-			"@/*": ["./src/*"]
+			"@/*": ["./*"]
 		}
 	},
-	"include": ["src/**/*"],
+	"include": ["src", "tsdown.config.ts"],
 	"exclude": ["src/tests/*.fixture.ts"]
 }

@@ -162,12 +162,13 @@ the ones a test would.
    in `dist/` after the build. A `types` condition pointing at a missing `.d.ts`
    is a consumer whose editor shows `any` and whose suite stays green —
    `.claude/rules/release.md` names this as the failure to look for.
-2. Each condition's extension matches what it is: `./unplugin` resolves to
-   `.d.mts`/`.mjs` in the packages that ship it that way, and a `.d.ts` served
-   under an ESM condition is a resolution failure on the consumer's side.
+2. Each condition's extension matches what it is. Every package is
+   `"type": "module"` and ships `.js` with `.d.ts`; a `.cjs`, `.mjs` or
+   `.d.mts` appearing in `exports` is a build configuration that drifted from
+   `fixedExtension: false`, and a resolution surprise on the consumer's side.
 3. Nothing resolves outside `dist/`. A target beside the source is
-   `.claude/rules/build-output.md`'s failure, and the bug is the
-   `rootDir`/`outDir` pair rather than the file.
+   `.claude/rules/build-output.md`'s failure, and the bug is the build
+   configuration rather than the file.
 4. `./package.json` is still exported. Tooling reads it and its removal breaks
    consumers who never imported anything.
 
@@ -219,10 +220,13 @@ the ones a test would.
 
 **Packaging** — what is in the tarball.
 
-1. `files` still covers every path the `exports` map names. `files: ["dist"]` and
-   an `exports` target outside `dist/` is a package that resolves here and fails
-   on `npm install`.
-2. Nothing unintended is added: sources, fixtures, `.tsbuildinfo`, test output.
+1. `files` still covers every path the `exports` map names. `files` carries
+   `dist` and the sources, so an `exports` target outside `dist/` resolves here
+   and fails on `npm install`.
+2. Nothing unintended is added: suites, fixtures, `.tsbuildinfo`, test output.
+   The sources under `src`, without `src/tests`, are intended — they are what the
+   declaration maps point at — and every map a `.d.ts` names is packed with
+   every source it names.
 3. `main`, `types`, `engines`, `peerDependencies` and their `Meta` entries match
    what the package actually requires. A peer that became mandatory is a break
    even though no exported name moved.

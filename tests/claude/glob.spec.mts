@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { matchedBy, matches } from '../../tools/claude/glob.mjs';
+import { matchedBy, matches } from '@/tools/claude/glob.mts';
 
 /**
  * The matcher the rule fixtures are decided with.
@@ -13,13 +13,9 @@ import { matchedBy, matches } from '../../tools/claude/glob.mjs';
 
 describe('a wildcard inside one segment', () => {
 	it('matches within the segment and stops at the separator', () => {
-		expect(
-			matches('packages/*/src/index.ts', 'packages/reflect/src/index.ts'),
-		).toBe(true);
+		expect(matches('packages/*/src/index.ts', 'packages/reflect/src/index.ts')).toBe(true);
 
-		expect(
-			matches('packages/*/src/index.ts', 'packages/reflect/src/pool/index.ts'),
-		).toBe(false);
+		expect(matches('packages/*/src/index.ts', 'packages/reflect/src/pool/index.ts')).toBe(false);
 	});
 
 	it('separates one extension from another', () => {
@@ -38,9 +34,7 @@ describe('a wildcard across segments', () => {
 		const glob = 'packages/collections/src/**/*.ts';
 
 		expect(matches(glob, 'packages/collections/src/index.ts')).toBe(true);
-		expect(
-			matches(glob, 'packages/collections/src/collections/async/index.ts'),
-		).toBe(true);
+		expect(matches(glob, 'packages/collections/src/collections/async/index.ts')).toBe(true);
 	});
 
 	it('does not escape the directory it is anchored in', () => {
@@ -52,7 +46,7 @@ describe('a wildcard across segments', () => {
 
 	it('takes everything below it when it ends the glob', () => {
 		expect(matches('tests/**', 'tests/hooks/hook.spec.mts')).toBe(true);
-		expect(matches('tests/**', 'tools/claude/tree.mjs')).toBe(false);
+		expect(matches('tests/**', 'tools/claude/tree.mts')).toBe(false);
 	});
 });
 
@@ -62,9 +56,7 @@ describe('what is not glob syntax', () => {
 	});
 
 	it('anchors both ends, so a longer name is not a match', () => {
-		expect(
-			matches('packages/collections/**', 'packages/collections-2/a.ts'),
-		).toBe(false);
+		expect(matches('packages/collections/**', 'packages/collections-2/a.ts')).toBe(false);
 
 		expect(matches('src/*.ts', 'other/src/index.ts')).toBe(false);
 	});
@@ -72,17 +64,10 @@ describe('what is not glob syntax', () => {
 
 describe('a set of globs', () => {
 	it('matches when any one of them does, and reports none as no match', () => {
-		const globs = [
-			'packages/*/src/transformer/**/*.ts',
-			'tests/transformers/**',
-		];
+		const globs = ['packages/*/src/transformer/**/*.ts', 'tests/transformers/**'];
 
-		expect(matchedBy(globs, 'packages/reflect/src/transformer/index.ts')).toBe(
-			true,
-		);
-		expect(matchedBy(globs, 'tests/transformers/coexistence.sample.ts')).toBe(
-			true,
-		);
+		expect(matchedBy(globs, 'packages/reflect/src/transformer/index.ts')).toBe(true);
+		expect(matchedBy(globs, 'tests/transformers/coexistence.sample.ts')).toBe(true);
 		expect(matchedBy(globs, 'packages/reflect/src/index.ts')).toBe(false);
 		expect(matchedBy([], 'packages/reflect/src/index.ts')).toBe(false);
 	});

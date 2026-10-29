@@ -10,9 +10,7 @@
  * @param methods The methods of the variant.
  * @returns A frozen prototype carrying them.
  */
-export const variantPrototype = <TMethods extends object>(
-	methods: TMethods,
-): TMethods => {
+export const variantPrototype = <TMethods extends object>(methods: TMethods): TMethods => {
 	const prototype: object = {};
 
 	for (const key of Reflect.ownKeys(methods)) {
@@ -30,14 +28,21 @@ export const variantPrototype = <TMethods extends object>(
 /**
  * Creates a frozen value of one variant.
  *
+ * `TValue` is inferred from where the value goes — `Success<T>`, `Some<T>` —
+ * never from the fields, which are only checked against it: a field the
+ * value's type does not declare is refused here rather than carried along
+ * unseen. The prototype's
+ * methods are what the conversion vouches for: they return `boolean`, where
+ * the value's type narrows with `this is`.
+ *
+ * @template TValue Type of the value created.
  * @param prototype The variant's prototype, from {@link variantPrototype}.
  * @param fields The value's own data.
  * @returns The value, frozen, inheriting the variant's methods.
  */
 export const createVariant = <TValue>(
 	prototype: object,
-	fields: object,
-): TValue =>
-	Object.freeze(
-		Object.assign(Object.create(prototype) as object, fields),
-	) as TValue;
+	fields: Partial<NoInfer<TValue>>,
+): TValue => {
+	return Object.freeze(Object.assign(Object.create(prototype) as object, fields)) as TValue;
+};

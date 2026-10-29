@@ -1,5 +1,5 @@
-import { ErrorKind } from '@/definition';
-import { isFulcroError } from '@/isFulcroError';
+import type { ErrorKind } from '@/src/definition';
+import { isFulcroError } from '@/src/isFulcroError';
 
 /**
  * Places an error in the context it was raised from, keeping its code, its
@@ -38,7 +38,7 @@ export const prefixError = <T>(error: T, context: string): T => {
 
 	// Hidden for the same reason `createError` hides itself: the frame a reader
 	// wants is the one that re-threw.
-	Error.captureStackTrace?.(located, prefixError);
+	if ('captureStackTrace' in Error) Error.captureStackTrace(located, prefixError);
 
 	return Object.assign(located, { code, details }) as T;
 };

@@ -1,4 +1,4 @@
-import { SpawnWorker, WorkerHandle } from '@/@types/index.js';
+import type { SpawnWorker, WorkerHandle } from '@/src/@types/index.js';
 
 /**
  * Workers the test drives by hand.
@@ -148,9 +148,7 @@ export const createFakeWorkers = (options: FakeOptions = {}): FakeWorkers => {
 		const task = running.get(id);
 
 		if (task === undefined) {
-			throw new Error(
-				`No task ${id} is in flight; ${[...running.keys()]} are.`,
-			);
+			throw new Error(`No task ${String(id)} is in flight; ${String([...running.keys()])} are.`);
 		}
 
 		running.delete(id);
@@ -183,7 +181,7 @@ export const createFakeWorkers = (options: FakeOptions = {}): FakeWorkers => {
 							options.broken?.includes(index) === true
 								? {
 										kind: 'broken',
-										error: `Worker ${index} could not load the module.`,
+										error: `Worker ${String(index)} could not load the module.`,
 									}
 								: { kind: 'ready' },
 						);
@@ -197,7 +195,11 @@ export const createFakeWorkers = (options: FakeOptions = {}): FakeWorkers => {
 				inFlight++;
 				peak = Math.max(peak, inFlight);
 
-				if (options.auto === true) queueMicrotask(() => complete(incoming.id));
+				if (options.auto === true) {
+					queueMicrotask(() => {
+						complete(incoming.id);
+					});
+				}
 			},
 
 			listen: (handler: Handler): (() => void) => {
@@ -231,7 +233,7 @@ export const createFakeWorkers = (options: FakeOptions = {}): FakeWorkers => {
 				}
 
 				if (options.unstoppable?.includes(index) === true) {
-					throw new Error(`Worker ${index} would not stop.`);
+					throw new Error(`Worker ${String(index)} would not stop.`);
 				}
 			},
 		};
@@ -243,8 +245,7 @@ export const createFakeWorkers = (options: FakeOptions = {}): FakeWorkers => {
 		posted: (): readonly unknown[] => posted,
 		inFlight: (): number => inFlight,
 		peak: (): number => peak,
-		handlers: (): number =>
-			[...listeners.values()].reduce((total, set) => total + set.size, 0),
+		handlers: (): number => [...listeners.values()].reduce((total, set) => total + set.size, 0),
 		terminated: (): number => stopped.size,
 		complete,
 
@@ -260,7 +261,7 @@ export const createFakeWorkers = (options: FakeOptions = {}): FakeWorkers => {
 
 		crash: (worker: number): void => {
 			dead.add(worker);
-			emit(worker, undefined, new Error(`Worker ${worker} crashed.`));
+			emit(worker, undefined, new Error(`Worker ${String(worker)} crashed.`));
 		},
 
 		finishStopping: (): void => {
@@ -296,5 +297,5 @@ export const until = async (
 		await Promise.resolve();
 	}
 
-	throw new Error(`${describe} did not happen within ${allowed} turns.`);
+	throw new Error(`${describe} did not happen within ${String(allowed)} turns.`);
 };

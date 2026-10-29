@@ -1,6 +1,7 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { assert, beforeAll, describe, expect, it } from 'vitest';
 
-import { AsyncSequenceCollection } from '@/collections/async';
+import { AsyncSequenceCollection } from '@/src/collections/async';
+import { asyncSourceOf } from '@/src/tests/async/asyncSourceOf';
 
 /**
  * Performance suite for the operators brought over from the synchronous
@@ -38,15 +39,21 @@ let orders: readonly Order[] = [];
 beforeAll(() => {
 	// Built once. A dataset rebuilt per test would make every count below a
 	// measurement of the builder.
-	orders = Array.from({ length: SIZE }, (_, index) => ({
-		id: index,
-		region: ['north', 'south', 'east', 'west'][index % 4],
-		total: (index * 7919) % 50_000,
-		items: [
-			{ sku: `sku-${index % 97}`, quantity: (index % 5) + 1 },
-			{ sku: `sku-${index % 89}`, quantity: (index % 3) + 1 },
-		],
-	}));
+	orders = Array.from({ length: SIZE }, (_, index) => {
+		const region: string | undefined = ['north', 'south', 'east', 'west'][index % 4];
+
+		assert.isDefined(region);
+
+		return {
+			id: index,
+			region,
+			total: (index * 7919) % 50_000,
+			items: [
+				{ sku: `sku-${String(index % 97)}`, quantity: (index % 5) + 1 },
+				{ sku: `sku-${String(index % 89)}`, quantity: (index % 3) + 1 },
+			],
+		};
+	});
 });
 
 /**
@@ -55,55 +62,68 @@ beforeAll(() => {
  * @param values Elements to yield.
  * @returns The asynchronous iterable and a reader of how far it got.
  */
-const counted = <T>(
-	values: readonly T[],
-): { source: AsyncIterable<T>; pulled: () => number } => {
+const counted = <T>(values: readonly T[]): { source: AsyncIterable<T>; pulled: () => number } => {
 	let pulled = 0;
 
 	return {
-		source: {
-			async *[Symbol.asyncIterator](): AsyncIterator<T> {
+		source: asyncSourceOf({
+			*[Symbol.iterator](): Iterator<T> {
 				for (const value of values) {
 					pulled++;
 					yield value;
 				}
 			},
-		},
+		}),
 		pulled: () => pulled,
 	};
 };
 
 /** A source that never ends, for proving an operator yields before it. */
-const endless = (): AsyncIterable<number> => ({
-	async *[Symbol.asyncIterator](): AsyncIterator<number> {
-		for (let value = 0; ; value++) yield value;
-	},
-});
+const endless = (): AsyncIterable<number> => {
+	return asyncSourceOf({
+		*[Symbol.iterator](): Iterator<number> {
+			for (let value = 0; ; value++) yield value;
+		},
+	});
+};
 
 describe('the terminals read the source once', () => {
 	it.each([
-		['sum', (sequence: AsyncSequenceOf<Order>) => sequence.sum((o) => o.total)],
+		[
+			'sum',
+			(sequence: AsyncSequenceOf<Order>): Promise<number> => sequence.sum((order) => order.total),
+		],
 		[
 			'average',
-			(sequence: AsyncSequenceOf<Order>) => sequence.average((o) => o.total),
+			(sequence: AsyncSequenceOf<Order>): Promise<number> => {
+				return sequence.average((order) => order.total);
+			},
 		],
-		['min', (sequence: AsyncSequenceOf<Order>) => sequence.min((o) => o.total)],
+		[
+			'min',
+			(sequence: AsyncSequenceOf<Order>): Promise<number> => sequence.min((order) => order.total),
+		],
 		[
 			'maxBy',
-			(sequence: AsyncSequenceOf<Order>) => sequence.maxBy((o) => o.total),
+			(sequence: AsyncSequenceOf<Order>): Promise<Order> => sequence.maxBy((order) => order.total),
 		],
 		[
 			'countBy',
-			(sequence: AsyncSequenceOf<Order>) => sequence.countBy((o) => o.region),
+			(sequence: AsyncSequenceOf<Order>): Promise<Map<string, number>> => {
+				return sequence.countBy((order) => order.region);
+			},
 		],
 		[
 			'toLookup',
-			(sequence: AsyncSequenceOf<Order>) => sequence.toLookup((o) => o.region),
+			(sequence: AsyncSequenceOf<Order>): Promise<Map<string, Order[]>> => {
+				return sequence.toLookup((order) => order.region);
+			},
 		],
 		[
 			'standardDeviation',
-			(sequence: AsyncSequenceOf<Order>) =>
-				sequence.standardDeviation((o) => o.total),
+			(sequence: AsyncSequenceOf<Order>): Promise<number> => {
+				return sequence.standardDeviation((order) => order.total);
+			},
 		],
 	])('should pull %s elements exactly once each', async (_label, run) => {
 		const { source, pulled } = counted(orders);
@@ -120,8 +140,11 @@ describe('the terminals read the source once', () => {
 describe('the terminals that can stop, stop', () => {
 	it('should leave contains where it found the value', async () => {
 		const { source, pulled } = counted(orders);
+		const third: Order | undefined = orders[2];
 
-		await AsyncSequenceCollection.from(source).contains(orders[2]);
+		assert.isDefined(third);
+
+		await AsyncSequenceCollection.from(source).contains(third);
 
 		expect(pulled()).toBe(3);
 	});
@@ -129,21 +152,19 @@ describe('the terminals that can stop, stop', () => {
 	it('should leave single at the second element', async () => {
 		const { source, pulled } = counted(orders);
 
-		await expect(
-			AsyncSequenceCollection.from(source).single(),
-		).rejects.toThrow();
+		await expect(AsyncSequenceCollection.from(source).single()).rejects.toThrow();
 
 		expect(pulled()).toBe(2);
 	});
 
 	it('should leave sequenceEqual at the first difference', async () => {
 		const { source, pulled } = counted(orders);
+		const [first, second] = orders;
 
-		const different: readonly Order[] = [
-			orders[0],
-			{ ...orders[1], id: -1 },
-			...orders.slice(2),
-		];
+		assert.isDefined(first);
+		assert.isDefined(second);
+
+		const different: readonly Order[] = [first, { ...second, id: -1 }, ...orders.slice(2)];
 
 		await AsyncSequenceCollection.from(source).sequenceEqual(different);
 
@@ -161,22 +182,44 @@ describe('the terminals that can stop, stop', () => {
 
 describe('the windows hold a window, not the stream', () => {
 	it.each([
-		['windowed', (sequence: AsyncSequenceOfNumbers) => sequence.windowed(3)],
-		['pairwise', (sequence: AsyncSequenceOfNumbers) => sequence.pairwise()],
-		['skipLast', (sequence: AsyncSequenceOfNumbers) => sequence.skipLast(3)],
+		[
+			'windowed',
+			(
+				sequence: AsyncSequenceOfNumbers,
+			): ReturnType<typeof AsyncSequenceCollection.from<unknown>> => {
+				return sequence.windowed(3);
+			},
+		],
+		[
+			'pairwise',
+			(
+				sequence: AsyncSequenceOfNumbers,
+			): ReturnType<typeof AsyncSequenceCollection.from<unknown>> => {
+				return sequence.pairwise();
+			},
+		],
+		[
+			'skipLast',
+			(
+				sequence: AsyncSequenceOfNumbers,
+			): ReturnType<typeof AsyncSequenceCollection.from<unknown>> => {
+				return sequence.skipLast(3);
+			},
+		],
 		[
 			'groupAdjacent',
-			(sequence: AsyncSequenceOfNumbers) =>
-				sequence.groupAdjacent((value) => Math.floor(value / 2)),
+			(
+				sequence: AsyncSequenceOfNumbers,
+			): ReturnType<typeof AsyncSequenceCollection.from<unknown>> => {
+				return sequence.groupAdjacent((value) => Math.floor(value / 2));
+			},
 		],
 	])('should let %s yield before the source ends', async (_label, build) => {
 		// The property that matters, and the one an implementation collecting the
 		// source would fail: over an endless source, these still produce. A test
 		// that only checked the values would pass on a version that buffered
 		// everything — this one would never return.
-		const first = await build(AsyncSequenceCollection.from(endless()))
-			.take(2)
-			.toArray();
+		const first = await build(AsyncSequenceCollection.from(endless())).take(2).toArray();
 
 		expect(first).toHaveLength(2);
 	});
@@ -186,19 +229,14 @@ describe('the windows hold a window, not the stream', () => {
 		// stays a step ahead of what is yielded rather than a stream ahead.
 		const { source, pulled } = counted(orders);
 
-		const first = await AsyncSequenceCollection.from(source)
-			.skipLast(5)
-			.take(1)
-			.toArray();
+		const first = await AsyncSequenceCollection.from(source).skipLast(5).take(1).toArray();
 
 		expect(first).toHaveLength(1);
 		expect(pulled()).toBeLessThanOrEqual(7);
 	});
 
 	/** Shorthand for the sequence type the cases above are handed. */
-	type AsyncSequenceOfNumbers = ReturnType<
-		typeof AsyncSequenceCollection.from<number>
-	>;
+	type AsyncSequenceOfNumbers = ReturnType<typeof AsyncSequenceCollection.from<number>>;
 });
 
 describe('takeLast is the one that cannot stream, and says so', () => {
@@ -207,9 +245,7 @@ describe('takeLast is the one that cannot stream, and says so', () => {
 		// does keep bounded is memory: five elements, not fifty thousand.
 		const { source, pulled } = counted(orders);
 
-		const iterator = AsyncSequenceCollection.from(source)
-			.takeLast(5)
-			[Symbol.asyncIterator]();
+		const iterator = AsyncSequenceCollection.from(source).takeLast(5)[Symbol.asyncIterator]();
 
 		const first = await iterator.next();
 
@@ -222,9 +258,11 @@ describe('the second side is read once', () => {
 	it('should index the inner side of a join a single time', async () => {
 		let innerReads = 0;
 
-		const regions = ['north', 'south', 'east', 'west'].map((name) => ({
-			name,
-		}));
+		const regions = ['north', 'south', 'east', 'west'].map((name) => {
+			return {
+				name,
+			};
+		});
 
 		const inner: Iterable<{ name: string }> = {
 			*[Symbol.iterator](): Iterator<{ name: string }> {
@@ -274,9 +312,7 @@ describe('smoke ceilings', () => {
 	it('should aggregate fifty thousand records within a generous ceiling', async () => {
 		const started: number = performance.now();
 
-		const total: number = await AsyncSequenceCollection.from(orders).sum(
-			(order) => order.total,
-		);
+		const total: number = await AsyncSequenceCollection.from(orders).sum((order) => order.total);
 
 		// A smoke ceiling, not a budget: it exists to catch the regression that
 		// turns seconds into minutes.
@@ -285,9 +321,11 @@ describe('smoke ceilings', () => {
 	});
 
 	it('should group and join fifty thousand records within a generous ceiling', async () => {
-		const regions = ['north', 'south', 'east', 'west'].map((name) => ({
-			name,
-		}));
+		const regions = ['north', 'south', 'east', 'west'].map((name) => {
+			return {
+				name,
+			};
+		});
 
 		const started: number = performance.now();
 

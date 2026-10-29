@@ -1,18 +1,17 @@
-import { describe, expect, expectTypeOf, it } from 'vitest';
+import { assert, describe, expect, expectTypeOf, it } from 'vitest';
 
-import { asView } from '@/asView';
-import { borrow } from '@/borrow';
-import type { Borrowed } from '@/borrowed';
-import { borrowMutable } from '@/borrowMutable';
-import { createManagedStorage } from '@/managedStorage';
-import type { MutableBorrow } from '@/mutableBorrow';
-import { own } from '@/own';
-import type { Owned } from '@/owned';
-import { pointerTo } from '@/pointerTo';
-import type { Storage } from '@/storage';
-import type { View } from '@/view';
-
-import { coded } from './coded';
+import { asView } from '@/src/asView';
+import { borrow } from '@/src/borrow';
+import type { Borrowed } from '@/src/borrowed';
+import { borrowMutable } from '@/src/borrowMutable';
+import { createManagedStorage } from '@/src/managedStorage';
+import type { MutableBorrow } from '@/src/mutableBorrow';
+import { own } from '@/src/own';
+import type { Owned } from '@/src/owned';
+import { pointerTo } from '@/src/pointerTo';
+import type { Storage } from '@/src/storage';
+import { coded } from '@/src/tests/coded';
+import type { View } from '@/src/view';
 
 /**
  * Behaviour suite for `borrowMutable`, and for the `MutableBorrow<T>` it
@@ -26,13 +25,23 @@ import { coded } from './coded';
 describe('borrowMutable', () => {
 	it('should write the owned storage itself', () => {
 		const values: number[] = [0, 0, 0];
-		const owner: Owned<number> = own((): Storage<number> => ({
-			length: 3,
-			get: (index: number): number => values[index] as number,
-			set: (index: number, value: number): void => {
-				values[index] = value;
-			},
-		}));
+
+		const owner: Owned<number> = own((): Storage<number> => {
+			return {
+				length: 3,
+				get: (index: number): number => {
+					const value: number | undefined = values[index];
+
+					assert.isDefined(value);
+
+					return value;
+				},
+				set: (index: number, value: number): void => {
+					values[index] = value;
+				},
+			};
+		});
+
 		const scores: MutableBorrow<number> = borrowMutable(owner);
 
 		scores.set(1, 42);

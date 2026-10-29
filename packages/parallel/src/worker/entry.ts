@@ -41,7 +41,10 @@ type Incoming = InitMessage | TaskMessage;
 let task: ((value: unknown) => unknown) | null = null;
 
 /** Sends a message back to the pool. */
-let reply: (message: unknown) => void = () => {};
+let reply: (message: unknown) => void = () => {
+	// Replaced as soon as the worker knows how to reach the pool; nothing can be
+	// sent before then, since nothing has been asked.
+};
 
 /** One of this package's own errors, as it crosses to the pool. */
 type CodedFailure = {
@@ -61,9 +64,11 @@ type CodedFailure = {
  * @param error The thrown value.
  * @returns Its text.
  */
-const describeForeign = (error: unknown): { readonly error: string } => ({
-	error: error instanceof Error ? error.message : String(error),
-});
+const describeForeign = (error: unknown): { readonly error: string } => {
+	return {
+		error: error instanceof Error ? error.message : String(error),
+	};
+};
 
 /**
  * Loads the module and finds the export the pool asked for.
@@ -73,12 +78,8 @@ const describeForeign = (error: unknown): { readonly error: string } => ({
  * module has no such export, or it is not callable.
  * @throws When the module itself cannot be loaded.
  */
-const initialize = async (
-	message: InitMessage,
-): Promise<CodedFailure | null> => {
-	const loaded: Record<string, unknown> = (await import(
-		message.module
-	)) as Record<string, unknown>;
+const initialize = async (message: InitMessage): Promise<CodedFailure | null> => {
+	const loaded: Record<string, unknown> = (await import(message.module)) as Record<string, unknown>;
 
 	const found: unknown = loaded[message.export];
 
@@ -136,9 +137,7 @@ const receive = async (message: Incoming): Promise<void> => {
 		try {
 			const failure: CodedFailure | null = await initialize(message);
 
-			reply(
-				failure === null ? { kind: 'ready' } : { kind: 'broken', ...failure },
-			);
+			reply(failure === null ? { kind: 'ready' } : { kind: 'broken', ...failure });
 		} catch (error) {
 			reply({ kind: 'broken', ...describeForeign(error) });
 		}
@@ -150,7 +149,7 @@ const receive = async (message: Incoming): Promise<void> => {
 };
 
 /** Wires the worker to whichever messaging the runtime provides. */
-const listen = async (): Promise<void> => {
+const listen = (): void => {
 	// A browser worker. `self` is the global scope, and there is no
 	// `parentPort` to import.
 	if (typeof self !== 'undefined' && typeof self.postMessage === 'function') {
@@ -165,7 +164,11 @@ const listen = async (): Promise<void> => {
 		return;
 	}
 
-	const { parentPort } = await import('node:worker_threads');
+	// Node. Reached through `getBuiltinModule` rather than an import, so a
+	// browser bundle never pulls `node:worker_threads` in — and synchronously,
+	// so this module needs no top-level await, which `require` refuses: loaded
+	// that way outside a worker it would report the await, not this refusal.
+	const { parentPort } = process.getBuiltinModule('node:worker_threads');
 
 	if (parentPort === null) {
 		throw createError('FULCRO3002', { operation: 'listen' });
@@ -180,4 +183,4 @@ const listen = async (): Promise<void> => {
 	});
 };
 
-await listen();
+listen();

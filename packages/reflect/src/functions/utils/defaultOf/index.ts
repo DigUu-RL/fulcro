@@ -1,6 +1,18 @@
 import { createError } from '@fulcro/errors';
 
 /**
+ * The value {@link defaultOf} builds for T: a T itself.
+ *
+ * Spelled as a conditional rather than as T so that the type the value is
+ * going to is still where T is inferred from — const order: Order =
+ * defaultOf() reads Order — while the signature says what the call returns
+ * in terms of what it was asked for.
+ *
+ * @template T Type whose default value is produced.
+ */
+export type Defaulted<T> = T extends unknown ? T : never;
+
+/**
  * Produces the default value of a type: the emptiest value that still fully
  * inhabits it, built by filling the type in rather than by handing back a
  * placeholder such as `null`.
@@ -35,6 +47,6 @@ import { createError } from '@fulcro/errors';
  * @returns The default value of `T`.
  * @throws {Error} Always, when the transformer is not enabled.
  */
-export function defaultOf<T>(): T {
+export const defaultOf = <T>(): Defaulted<T> => {
 	throw createError('FULCRO4003', { operation: 'defaultOf' });
-}
+};

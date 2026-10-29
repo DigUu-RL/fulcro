@@ -1,7 +1,7 @@
-import { requirePart } from '@/region/requirePart';
-import type { Source } from '@/source';
-import { requireIndex } from '@/storage/requireIndex';
-import type { ReadOnlyView, View } from '@/view';
+import { requirePart } from '@/src/region/requirePart';
+import type { Source } from '@/src/source';
+import { requireIndex } from '@/src/storage/requireIndex';
+import type { ReadOnlyView, View } from '@/src/view';
 
 /**
  * Builds a read-only view of `length` values of a source, from `start`.
@@ -19,8 +19,8 @@ export const createReadOnlyView = <T>(
 	source: Source<T>,
 	start: number,
 	length: number,
-): ReadOnlyView<T> =>
-	Object.freeze({
+): ReadOnlyView<T> => {
+	return Object.freeze({
 		length,
 
 		get: (index: number): T => {
@@ -31,13 +31,15 @@ export const createReadOnlyView = <T>(
 
 		// A subview is cut from the source, not from this view: a hundred
 		// nested subviews read through one indirection, not a hundred.
-		subview: (from: number, count?: number): ReadOnlyView<T> =>
-			createReadOnlyView(
+		subview: (from: number, count?: number): ReadOnlyView<T> => {
+			return createReadOnlyView(
 				source,
 				start + from,
 				requirePart('ReadOnlyView.subview', from, count, length),
-			),
+			);
+		},
 	});
+};
 
 /**
  * Builds a view of `length` values of a source, from `start`.
@@ -49,12 +51,8 @@ export const createReadOnlyView = <T>(
  * @param length How many values it observes, already checked.
  * @returns The view, frozen.
  */
-export const createView = <T>(
-	source: Source<T>,
-	start: number,
-	length: number,
-): View<T> =>
-	Object.freeze({
+export const createView = <T>(source: Source<T>, start: number, length: number): View<T> => {
+	return Object.freeze({
 		length,
 
 		get: (index: number): T => {
@@ -68,12 +66,10 @@ export const createView = <T>(
 			source.write('View.set', start + index, value);
 		},
 
-		subview: (from: number, count?: number): View<T> =>
-			createView(
-				source,
-				start + from,
-				requirePart('View.subview', from, count, length),
-			),
+		subview: (from: number, count?: number): View<T> => {
+			return createView(source, start + from, requirePart('View.subview', from, count, length));
+		},
 
 		readOnly: (): ReadOnlyView<T> => createReadOnlyView(source, start, length),
 	});
+};

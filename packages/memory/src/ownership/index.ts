@@ -1,8 +1,8 @@
 import { createError } from '@fulcro/errors';
 
-import type { Owned } from '@/owned';
-import { type Source, storageSource } from '@/source';
-import type { Storage } from '@/storage';
+import type { Owned } from '@/src/owned';
+import { type Source, storageSource } from '@/src/source';
+import type { Storage } from '@/src/storage';
 
 /**
  * What one owned storage, its current owner and its borrows share.
@@ -94,8 +94,9 @@ export const recordBorrow = <T extends object>(borrow: T): T => {
  * @param value Value to look at.
  * @returns `true` for a borrow.
  */
-export const isBorrow = (value: unknown): boolean =>
-	typeof value === 'object' && value !== null && borrows.has(value);
+export const isBorrow = (value: unknown): boolean => {
+	return typeof value === 'object' && value !== null && borrows.has(value);
+};
 
 /**
  * Makes the handle that owns a storage now, and spends the one before it.
@@ -137,13 +138,15 @@ export const createOwned = <T>(state: Ownership<T>): Owned<T> => {
  * @param storage The storage, already claimed.
  * @returns What its owners and borrows will share.
  */
-export const createOwnership = <T>(storage: Storage<T>): Ownership<T> => ({
-	storage,
-	source: storageSource(storage),
-	generation: 0,
-	exclusive: false,
-	owner: null,
-});
+export const createOwnership = <T>(storage: Storage<T>): Ownership<T> => {
+	return {
+		storage,
+		source: storageSource(storage),
+		generation: 0,
+		exclusive: false,
+		owner: null,
+	};
+};
 
 /**
  * Finds the state behind an owner, refusing a spent one.
@@ -154,14 +157,9 @@ export const createOwnership = <T>(storage: Storage<T>): Ownership<T> => ({
  * @throws {TypeError} When the value is not an owner made by `own` or `move`.
  * @throws {Error} When the owner was moved or disposed.
  */
-export const requireOwnership = <T>(
-	operation: string,
-	owner: unknown,
-): Ownership<T> => {
+export const requireOwnership = <T>(operation: string, owner: unknown): Ownership<T> => {
 	const state = (
-		typeof owner === 'object' && owner !== null
-			? ownerships.get(owner)
-			: undefined
+		typeof owner === 'object' && owner !== null ? ownerships.get(owner) : undefined
 	) as Ownership<T> | undefined;
 
 	if (state === undefined) {
@@ -173,10 +171,9 @@ export const requireOwnership = <T>(
 	}
 
 	if (state.owner !== owner) {
-		throw createError(
-			disposedOwners.has(owner as object) ? 'FULCRO7030' : 'FULCRO7023',
-			{ operation },
-		);
+		throw createError(disposedOwners.has(owner as object) ? 'FULCRO7030' : 'FULCRO7023', {
+			operation,
+		});
 	}
 
 	return state;
@@ -189,10 +186,7 @@ export const requireOwnership = <T>(
  * @param state The ownership.
  * @param exclusive Whether the borrow about to be taken is the exclusive one.
  */
-export const endBorrows = <T>(
-	state: Ownership<T>,
-	exclusive: boolean,
-): void => {
+export const endBorrows = <T>(state: Ownership<T>, exclusive: boolean): void => {
 	state.generation++;
 	state.exclusive = exclusive;
 };

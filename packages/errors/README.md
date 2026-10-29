@@ -31,6 +31,7 @@ try {
 
 What every code means, the fields of its details, and what to write instead:
 [Error codes](https://github.com/DigUu-RL/fulcro/blob/main/docs/errors.md).
+🇧🇷 [Leia em português](../../docs/pt-BR/errors.md).
 
 ## API
 
@@ -45,12 +46,11 @@ import {
 } from '@fulcro/errors';
 ```
 
-| Export          | What it is                                                                         |
-| --------------- | ---------------------------------------------------------------------------------- |
-| `isFulcroError` | Tells whether a value is an error of these packages, of one code when given        |
-| `FulcroError`   | The type of such an error, and the value `instanceof` recognises one with          |
-| `DetailsOf`     | The type of one code's details                                                     |
-| `createError`   | Creates the error a registered code names, from its details                        |
-| `prefixError`   | Places an error in a wider context, keeping its code, its details and its class    |
-| `ErrorCode`     | The union of every registered code                                                 |
-| `CodedError`    | Deprecated: `FulcroError` under its former name, removed in the next major version |
+| Export          | What it is                                                                      |
+| --------------- | ------------------------------------------------------------------------------- |
+| `isFulcroError` | Tells whether a value is an error of these packages, of one code when given     |
+| `FulcroError`   | The type of such an error, and the value `instanceof` recognises one with       |
+| `DetailsOf`     | The type of one code's details                                                  |
+| `createError`   | Creates the error a registered code names, from its details                     |
+| `prefixError`   | Places an error in a wider context, keeping its code, its details and its class |
+| `ErrorCode`     | The union of every registered code                                              |

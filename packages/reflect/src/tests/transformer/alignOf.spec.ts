@@ -1,9 +1,9 @@
 import * as path from 'node:path';
 
-import * as ts from 'typescript';
+import * as typescript from 'typescript';
 import { beforeAll, describe, expect, it } from 'vitest';
 
-import transformer from '@/transformer';
+import transformer from '@/src/transformer';
 
 /**
  * Transformer suite for `alignOf`.
@@ -21,10 +21,11 @@ let emitted = '';
 
 beforeAll(() => {
 	const fixture: string = path.resolve(__dirname, 'layout.sample.ts');
-	const program: ts.Program = ts.createProgram([fixture], {
-		target: ts.ScriptTarget.ES2022,
-		module: ts.ModuleKind.ESNext,
-		moduleResolution: ts.ModuleResolutionKind.Node10,
+
+	const program: typescript.Program = typescript.createProgram([fixture], {
+		target: typescript.ScriptTarget.ES2022,
+		module: typescript.ModuleKind.ESNext,
+		moduleResolution: typescript.ModuleResolutionKind.Node10,
 		strict: true,
 		noEmitOnError: false,
 		skipLibCheck: true,

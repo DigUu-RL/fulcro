@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { SequenceCollection } from '@/collections/sequence';
+import { SequenceCollection } from '@/src/collections/sequence';
 
 describe('SequenceCollection Unit Tests', () => {
 	it('should allow accessing items by index (Proxy)', () => {
@@ -15,24 +15,21 @@ describe('SequenceCollection Unit Tests', () => {
 		const source = [1, 2, 3, 4, 5];
 		const numbers = SequenceCollection.from(source);
 
-		const filtered = numbers.where((n) => n % 2 === 0);
+		const filtered = numbers.where((value) => value % 2 === 0);
 		expect(filtered.toArray()).toEqual([2, 4]);
 	});
 
 	it('should project items with select()', () => {
 		const numbers = SequenceCollection.from([1, 2, 3]);
-		const doubled = numbers.select((n) => n * 2);
+		const doubled = numbers.select((value) => value * 2);
 
 		expect(doubled.toArray()).toEqual([2, 4, 6]);
 	});
 
 	it('should flatten collections with selectMany()', () => {
-		const orders = SequenceCollection.from([
-			{ items: ['apple', 'banana'] },
-			{ items: ['orange'] },
-		]);
+		const orders = SequenceCollection.from([{ items: ['apple', 'banana'] }, { items: ['orange'] }]);
 
-		const allItems = orders.selectMany((o) => o.items);
+		const allItems = orders.selectMany((order) => order.items);
 		expect(allItems.toArray()).toEqual(['apple', 'banana', 'orange']);
 	});
 
@@ -40,16 +37,14 @@ describe('SequenceCollection Unit Tests', () => {
 		const numbers = SequenceCollection.from([10, 20, 30]);
 
 		expect(numbers.first()).toBe(10);
-		expect(numbers.first((n) => n > 15)).toBe(20);
-		expect(() => SequenceCollection.empty().first()).toThrow(
-			'Sequence contains no elements',
-		);
+		expect(numbers.first((value) => value > 15)).toBe(20);
+		expect(() => SequenceCollection.empty().first()).toThrow('Sequence contains no elements');
 	});
 
 	it('should find the first element or return null', () => {
 		const numbers = SequenceCollection.from([10, 20, 30]);
 
-		expect(numbers.firstOrNull((n) => n > 50)).toBeNull();
+		expect(numbers.firstOrNull((value) => value > 50)).toBeNull();
 		expect(SequenceCollection.empty().firstOrNull()).toBeNull();
 	});
 
@@ -57,29 +52,25 @@ describe('SequenceCollection Unit Tests', () => {
 		const numbers = SequenceCollection.from([10, 20, 30]);
 
 		expect(numbers.last()).toBe(30);
-		expect(numbers.last((n) => n < 25)).toBe(20);
-		expect(() => SequenceCollection.empty().last()).toThrow(
-			'Sequence contains no elements',
-		);
-		expect(() => numbers.last((n) => n > 50)).toThrow(
-			'Sequence contains no elements',
-		);
+		expect(numbers.last((value) => value < 25)).toBe(20);
+		expect(() => SequenceCollection.empty().last()).toThrow('Sequence contains no elements');
+		expect(() => numbers.last((value) => value > 50)).toThrow('Sequence contains no elements');
 	});
 
 	it('should find the last element or return null', () => {
 		const numbers = SequenceCollection.from([10, 20, 30]);
 
 		expect(numbers.lastOrNull()).toBe(30);
-		expect(numbers.lastOrNull((n) => n > 50)).toBeNull();
+		expect(numbers.lastOrNull((value) => value > 50)).toBeNull();
 		expect(SequenceCollection.empty().lastOrNull()).toBeNull();
 	});
 
 	it('should find the last element of a single pass source', () => {
-		function* generate(): Generator<number> {
+		const generate = function* (): Generator<number> {
 			yield 1;
 			yield 2;
 			yield 3;
-		}
+		};
 
 		expect(SequenceCollection.from(generate()).last()).toBe(3);
 	});
@@ -88,11 +79,12 @@ describe('SequenceCollection Unit Tests', () => {
 		const numbers = SequenceCollection.from([1, 2, 3, 4, 5]);
 
 		expect(numbers.count()).toBe(5);
-		expect(numbers.count((n) => n > 2)).toBe(3);
+		expect(numbers.count((value) => value > 2)).toBe(3);
 	});
 
 	it('should count sized sources without traversing them', () => {
 		const set = new Set([1, 2, 3]);
+
 		const map = new Map([
 			['a', 1],
 			['b', 2],
@@ -118,18 +110,20 @@ describe('SequenceCollection Unit Tests', () => {
 
 		const numbers = SequenceCollection.from(source);
 
-		expect(numbers.select((n) => n * 2).count()).toBe(4);
+		expect(numbers.select((value) => value * 2).count()).toBe(4);
 		expect(numbers.take(2).count()).toBe(2);
 		expect(numbers.take(99).count()).toBe(4);
 		expect(numbers.skip(3).count()).toBe(1);
 		expect(numbers.skip(99).count()).toBe(0);
-		expect(numbers.orderBy((n) => n).count()).toBe(4);
+		expect(numbers.orderBy((value) => value).count()).toBe(4);
+
 		expect(
 			numbers
-				.select((n) => n)
+				.select((value) => value)
 				.take(2)
 				.count(),
 		).toBe(2);
+
 		expect(traversals).toBe(0);
 	});
 
@@ -140,21 +134,21 @@ describe('SequenceCollection Unit Tests', () => {
 		source.push(3);
 
 		expect(numbers.count()).toBe(3);
-		expect(numbers.select((n) => n).count()).toBe(3);
+		expect(numbers.select((value) => value).count()).toBe(3);
 		expect(numbers.skip(1).count()).toBe(2);
 	});
 
 	it('should fall back to traversing when the count depends on the data', () => {
 		const numbers = SequenceCollection.from([1, 2, 3, 4]);
 
-		expect(numbers.where((n) => n % 2 === 0).count()).toBe(2);
+		expect(numbers.where((value) => value % 2 === 0).count()).toBe(2);
 		expect(numbers.distinct().count()).toBe(4);
-		expect(numbers.count((n) => n > 2)).toBe(2);
+		expect(numbers.count((value) => value > 2)).toBe(2);
 
-		function* generate(): Generator<number> {
+		const generate = function* (): Generator<number> {
 			yield 1;
 			yield 2;
-		}
+		};
 
 		expect(SequenceCollection.from(generate()).count()).toBe(2);
 	});
@@ -163,7 +157,7 @@ describe('SequenceCollection Unit Tests', () => {
 		const numbers = SequenceCollection.from([1, 2, 3]);
 
 		expect(numbers.any()).toBe(true);
-		expect(numbers.any((n) => n > 5)).toBe(false);
+		expect(numbers.any((value) => value > 5)).toBe(false);
 		expect(SequenceCollection.empty().any()).toBe(false);
 	});
 
@@ -174,15 +168,17 @@ describe('SequenceCollection Unit Tests', () => {
 			{ category: 'A', val: 3 },
 		]);
 
-		const grouped = items.groupBy((i) => i.category).toArray();
+		const grouped = items.groupBy((item) => item.category).toArray();
 
 		expect(grouped.length).toBe(2);
-		expect(grouped[0].key).toBe('A');
-		expect(grouped[0].toArray()).toEqual([
+		expect(grouped[0]?.key).toBe('A');
+
+		expect(grouped[0]?.toArray()).toEqual([
 			{ category: 'A', val: 1 },
 			{ category: 'A', val: 3 },
 		]);
-		expect(grouped[1].key).toBe('B');
+
+		expect(grouped[1]?.key).toBe('B');
 	});
 
 	it('should paginate elements using take() and skip()', () => {
@@ -200,8 +196,8 @@ describe('SequenceCollection Unit Tests', () => {
 		]);
 
 		const sorted = items
-			.orderBy((i) => i.name)
-			.thenBy((i) => i.age)
+			.orderBy((item) => item.name)
+			.thenBy((item) => item.age)
 			.toArray();
 
 		expect(sorted[0]).toEqual({ name: 'Anna', age: 20 });
@@ -238,12 +234,14 @@ describe('SequenceCollection Unit Tests', () => {
 		]);
 
 		const map = items.toMap(
-			(i) => i.id,
-			(i) => i.val,
+			(item) => item.id,
+			(item) => item.val,
 		);
+
 		expect(map.get('x')).toBe(100);
 		expect(map.get('y')).toBe(200);
-		expect(() => items.toMap((i) => 'same-key')).toThrow(
+
+		expect(() => items.toMap(() => 'same-key')).toThrow(
 			'An item with the same key has already been added.',
 		);
 	});
@@ -264,6 +262,7 @@ describe('SequenceCollection Unit Tests', () => {
 			{ id: 1, name: 'A' },
 			{ id: 2, name: 'B' },
 		]);
+
 		const right = [
 			{ fk: 1, score: 100 },
 			{ fk: 1, score: 90 },
@@ -272,9 +271,9 @@ describe('SequenceCollection Unit Tests', () => {
 		const joined = left
 			.join(
 				right,
-				(l) => l.id,
-				(r) => r.fk,
-				(l, r) => ({ name: l.name, score: r.score }),
+				(leftItem) => leftItem.id,
+				(rightItem) => rightItem.fk,
+				(leftItem, rightItem) => ({ name: leftItem.name, score: rightItem.score }),
 			)
 			.toArray();
 
@@ -285,10 +284,7 @@ describe('SequenceCollection Unit Tests', () => {
 
 	it('should reduce items via aggregate() with custom seed types', () => {
 		const words = SequenceCollection.from(['A', 'B', 'C']);
-		const concatenated = words.aggregate(
-			'Start:',
-			(acc, item) => `${acc} ${item}`,
-		);
+		const concatenated = words.aggregate('Start:', (acc, item) => `${acc} ${item}`);
 
 		expect(concatenated).toBe('Start: A B C');
 	});

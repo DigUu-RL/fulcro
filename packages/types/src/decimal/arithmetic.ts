@@ -1,5 +1,3 @@
-import type { RoundingMode } from '@/roundingMode';
-
 import {
 	adjustedExponent,
 	type DecimalParts,
@@ -12,8 +10,9 @@ import {
 	powerOfTen,
 	PRECISION,
 	zero,
-} from './parts';
-import { discardDigits, finish } from './round';
+} from '@/src/decimal/parts';
+import { discardDigits, finish } from '@/src/decimal/round';
+import type { RoundingMode } from '@/src/roundingMode';
 
 /**
  * The operations of `Decimal`, on parts.
@@ -53,8 +52,7 @@ export const addParts = (
 	if (isZero(left) && isZero(right)) {
 		// IEEE 754: a sum of zeros is negative only when both are, or, for zeros
 		// of opposite sign, when rounding towards negative infinity.
-		const negative: boolean =
-			left.negative === right.negative ? left.negative : mode === 'floor';
+		const negative: boolean = left.negative === right.negative ? left.negative : mode === 'floor';
 
 		return zero(negative);
 	}
@@ -65,9 +63,7 @@ export const addParts = (
 	// The larger operand in magnitude of exponent goes first; it decides where
 	// the result's last digit can fall.
 	const [larger, smaller] =
-		adjustedExponent(left) >= adjustedExponent(right)
-			? [left, right]
-			: [right, left];
+		adjustedExponent(left) >= adjustedExponent(right) ? [left, right] : [right, left];
 
 	// Exponent of the thirty-fourth digit of the larger operand.
 	const lastPlace: number = adjustedExponent(larger) - (PRECISION - 1);
@@ -85,8 +81,7 @@ export const addParts = (
 	const exponent: number = Math.min(larger.exponent, addend.exponent);
 
 	const signed = (parts: DecimalParts): bigint => {
-		const magnitude: bigint =
-			parts.coefficient * powerOfTen(parts.exponent - exponent);
+		const magnitude: bigint = parts.coefficient * powerOfTen(parts.exponent - exponent);
 
 		return parts.negative ? -magnitude : magnitude;
 	};
@@ -168,10 +163,7 @@ export const divideParts = (
 
 	const shift: number = Math.max(
 		0,
-		PRECISION +
-			1 +
-			digitCount(right.coefficient) -
-			digitCount(left.coefficient),
+		PRECISION + 1 + digitCount(right.coefficient) - digitCount(left.coefficient),
 	);
 
 	const dividend: bigint = left.coefficient * powerOfTen(shift);
@@ -221,10 +213,7 @@ const powerOfTenModulo = (exponent: number, modulus: bigint): bigint => {
  * @param right Divisor.
  * @returns The remainder.
  */
-export const remainderParts = (
-	left: DecimalParts,
-	right: DecimalParts,
-): DecimalParts => {
+export const remainderParts = (left: DecimalParts, right: DecimalParts): DecimalParts => {
 	if (left.kind === 'nan' || right.kind === 'nan') return NOT_A_NUMBER;
 	if (left.kind === 'infinity' || isZero(right)) return NOT_A_NUMBER;
 	if (right.kind === 'infinity' || isZero(left)) return left;
@@ -232,26 +221,18 @@ export const remainderParts = (
 	// A dividend smaller than the divisor is its own remainder.
 	if (adjustedExponent(left) < adjustedExponent(right)) return left;
 
-	let remainder: bigint;
-	let exponent: number;
+	// Whichever last place is the finer one is where the remainder is counted.
+	const exponent: number = Math.min(left.exponent, right.exponent);
 
-	if (left.exponent >= right.exponent) {
-		// The dividend is coefficient × 10^gap in units of the divisor's last
-		// place, and the gap can be twelve thousand: reduce the power instead.
-		const gap: number = left.exponent - right.exponent;
-
-		remainder =
-			(left.coefficient * powerOfTenModulo(gap, right.coefficient)) %
-			right.coefficient;
-		exponent = right.exponent;
-	} else {
-		// The divisor's last place is the coarser one. Since the dividend is at
-		// least as large, the gap is under thirty-four places.
-		remainder =
-			left.coefficient %
-			(right.coefficient * powerOfTen(right.exponent - left.exponent));
-		exponent = left.exponent;
-	}
+	const remainder: bigint =
+		left.exponent >= right.exponent
+			? // The dividend is coefficient × 10^gap in units of the divisor's last
+				// place, and the gap can be twelve thousand: reduce the power instead.
+				(left.coefficient * powerOfTenModulo(left.exponent - right.exponent, right.coefficient)) %
+				right.coefficient
+			: // The divisor's last place is the coarser one. Since the dividend is at
+				// least as large, the gap is under thirty-four places.
+				left.coefficient % (right.coefficient * powerOfTen(right.exponent - left.exponent));
 
 	if (remainder === 0n) return zero(left.negative);
 
@@ -266,17 +247,13 @@ export const remainderParts = (
  * @returns -1, 0 or 1, or `undefined` when either is not a number, which is
  * ordered against nothing.
  */
-export const compareParts = (
-	left: DecimalParts,
-	right: DecimalParts,
-): -1 | 0 | 1 | undefined => {
+export const compareParts = (left: DecimalParts, right: DecimalParts): -1 | 0 | 1 | undefined => {
 	if (left.kind === 'nan' || right.kind === 'nan') return undefined;
 
 	// Both zeros are equal, whatever their signs.
 	if (isZero(left) && isZero(right)) return 0;
 
-	const sign = (parts: DecimalParts): -1 | 0 | 1 =>
-		isZero(parts) ? 0 : parts.negative ? -1 : 1;
+	const sign = (parts: DecimalParts): -1 | 0 | 1 => (isZero(parts) ? 0 : parts.negative ? -1 : 1);
 
 	if (sign(left) !== sign(right)) return sign(left) < sign(right) ? -1 : 1;
 
@@ -297,10 +274,8 @@ export const compareParts = (
 
 	// Same leading exponent, so the alignment is under thirty-four places.
 	const exponent: number = Math.min(left.exponent, right.exponent);
-	const leftAligned: bigint =
-		left.coefficient * powerOfTen(left.exponent - exponent);
-	const rightAligned: bigint =
-		right.coefficient * powerOfTen(right.exponent - exponent);
+	const leftAligned: bigint = left.coefficient * powerOfTen(left.exponent - exponent);
+	const rightAligned: bigint = right.coefficient * powerOfTen(right.exponent - exponent);
 
 	if (leftAligned === rightAligned) return 0;
 
@@ -341,11 +316,7 @@ const decimalLogarithm = (parts: DecimalParts): number => {
 	const digits: string = parts.coefficient.toString();
 	const leading: string = digits.slice(0, 15);
 
-	return (
-		parts.exponent +
-		Math.log10(Number(leading)) +
-		(digits.length - leading.length)
-	);
+	return parts.exponent + Math.log10(Number(leading)) + (digits.length - leading.length);
 };
 
 /**
@@ -395,7 +366,11 @@ const guardedPower = (
 		}
 	}
 
-	return inexact
+	// Read through a call: `cut` sets it, and the compiler does not follow an
+	// assignment made inside a closure, so read directly it is always `false`.
+	const lostDigits = (): boolean => inexact;
+
+	return lostDigits()
 		? { coefficient: result[0] * 10n + 1n, exponent: result[1] - 1 }
 		: { coefficient: result[0], exponent: result[1] };
 };
@@ -417,11 +392,7 @@ const guardedPower = (
  * @param mode Rounding mode.
  * @returns The rounded power.
  */
-export const powerParts = (
-	base: DecimalParts,
-	power: bigint,
-	mode: RoundingMode,
-): DecimalParts => {
+export const powerParts = (base: DecimalParts, power: bigint, mode: RoundingMode): DecimalParts => {
 	if (power === 0n) return ONE;
 	if (base.kind === 'nan') return NOT_A_NUMBER;
 
@@ -431,6 +402,7 @@ export const powerParts = (
 	if (base.kind === 'infinity') {
 		return positive ? infinity(negative) : zero(negative);
 	}
+
 	if (isZero(base)) return positive ? zero(negative) : infinity(negative);
 
 	if (base.coefficient === 1n && base.exponent === 0) {
@@ -451,8 +423,7 @@ export const powerParts = (
 	}
 
 	const exact: boolean =
-		magnitude * BigInt(digitCount(base.coefficient)) <=
-		BigInt(EXACT_DIGIT_LIMIT);
+		magnitude * BigInt(digitCount(base.coefficient)) <= BigInt(EXACT_DIGIT_LIMIT);
 
 	const raised = exact
 		? {

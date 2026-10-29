@@ -298,7 +298,7 @@ that the silent failures are found before the cosmetic ones.
 4. Does the branch carry two unrelated changes, which cannot be reverted or
    released separately?
 5. Is emitted output committed under `packages/*/src/`? `build-output.md` says
-   the bug is the `rootDir`/`outDir` pair, not the file.
+   the bug is the build configuration, not the file.
 
 ### Severity
 

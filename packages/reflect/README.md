@@ -187,9 +187,7 @@ A value computed once, while the program compiles, and written into the output
 as a literal:
 
 ```ts
-const SQUARES = constantOf(() =>
-	Array.from({ length: 256 }, (_, index) => index * index),
-);
+const SQUARES = constantOf(() => Array.from({ length: 256 }, (_, index) => index * index));
 // emitted: const SQUARES = Object.freeze([0, 1, 4, 9, …]);
 ```
 

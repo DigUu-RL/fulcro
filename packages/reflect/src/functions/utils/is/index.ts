@@ -40,6 +40,13 @@ export interface TypeTest<T> {
 
 	/** Name of the type, as it was written. */
 	readonly name?: string;
+
+	/**
+	 * The type a passing value is taken to be, carried in the type only: never
+	 * present on a test, it keeps a test for one type from passing for a test
+	 * of another.
+	 */
+	readonly '~type'?: T;
 }
 
 /**
@@ -54,9 +61,7 @@ export interface TypeTest<T> {
  * @param operator Name of the calling utility.
  * @throws {Error} Always.
  */
-export const refuseUnresolved: (operator: string) => never = (
-	operator: string,
-): never => {
+export const refuseUnresolved: (operator: string) => never = (operator: string): never => {
 	// From here the two ways a call can arrive unresolved are
 	// indistinguishable, so both are named. Guessing between them would be
 	// presenting a coin toss as a diagnosis.

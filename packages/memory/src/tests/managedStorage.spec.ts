@@ -1,7 +1,7 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { createManagedStorage } from '@/managedStorage';
-import type { Storage } from '@/storage';
+import { createManagedStorage } from '@/src/managedStorage';
+import type { Storage } from '@/src/storage';
 
 /**
  * Behaviour suite for `createManagedStorage`.
@@ -19,19 +19,12 @@ describe('createManagedStorage', () => {
 	it('should hold the initial value at every position', () => {
 		const flags: Storage<boolean> = createManagedStorage(3, true);
 
-		expect([flags.get(0), flags.get(1), flags.get(2)]).toEqual([
-			true,
-			true,
-			true,
-		]);
+		expect([flags.get(0), flags.get(1), flags.get(2)]).toEqual([true, true, true]);
 	});
 
 	it('should return the very value it was given, not a copy', () => {
 		const ada: User = { id: 1, name: 'Ada' };
-		const users: Storage<User | null> = createManagedStorage<User | null>(
-			2,
-			null,
-		);
+		const users: Storage<User | null> = createManagedStorage<User | null>(2, null);
 
 		users.set(0, ada);
 
@@ -50,6 +43,7 @@ describe('createManagedStorage', () => {
 		const handlers: Storage<(() => number) | undefined> = createManagedStorage<
 			(() => number) | undefined
 		>(2, undefined);
+
 		const handler = (): number => 42;
 
 		handlers.set(1, handler);
@@ -71,8 +65,6 @@ describe('createManagedStorage', () => {
 	it('should infer its type from the initial value', () => {
 		expectTypeOf(createManagedStorage(1, 0)).toEqualTypeOf<Storage<number>>();
 		expectTypeOf(createManagedStorage(1, 'a')).toEqualTypeOf<Storage<string>>();
-		expectTypeOf(createManagedStorage<User | null>(1, null)).toEqualTypeOf<
-			Storage<User | null>
-		>();
+		expectTypeOf(createManagedStorage<User | null>(1, null)).toEqualTypeOf<Storage<User | null>>();
 	});
 });

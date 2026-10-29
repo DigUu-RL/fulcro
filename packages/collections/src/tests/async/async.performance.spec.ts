@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { AsyncSequenceCollection } from '@/collections/async';
+import { AsyncSequenceCollection } from '@/src/collections/async';
+import { asyncSourceOf } from '@/src/tests/async/asyncSourceOf';
 
 /**
  * Performance suite for the asynchronous sequence and its concurrent
@@ -32,24 +33,28 @@ beforeEach(() => {
  * @param size Amount of elements the source yields.
  * @returns The instrumented source.
  */
-const instrumentedSource = (size: number): AsyncIterable<number> => ({
-	async *[Symbol.asyncIterator](): AsyncIterator<number> {
-		for (let index = 0; index < size; index++) {
-			pulled++;
-			yield index;
-		}
-	},
-});
+const instrumentedSource = (size: number): AsyncIterable<number> => {
+	return asyncSourceOf({
+		*[Symbol.iterator](): Iterator<number> {
+			for (let index = 0; index < size; index++) {
+				pulled++;
+				yield index;
+			}
+		},
+	});
+};
 
 /** A source that never ends, for proving an operator stops pulling. */
-const endless = (): AsyncIterable<number> => ({
-	async *[Symbol.asyncIterator](): AsyncIterator<number> {
-		for (let index = 0; ; index++) {
-			pulled++;
-			yield index;
-		}
-	},
-});
+const endless = (): AsyncIterable<number> => {
+	return asyncSourceOf({
+		*[Symbol.iterator](): Iterator<number> {
+			for (let index = 0; ; index++) {
+				pulled++;
+				yield index;
+			}
+		},
+	});
+};
 
 /**
  * Waits a real interval.
@@ -59,11 +64,12 @@ const endless = (): AsyncIterable<number> => ({
  * @param milliseconds How long to wait.
  * @returns A promise settling after that long.
  */
-const delay = (milliseconds: number): Promise<void> =>
-	new Promise((resolve) => setTimeout(resolve, milliseconds));
+const delay = (milliseconds: number): Promise<void> => {
+	return new Promise((resolve) => setTimeout(resolve, milliseconds));
+};
 
 describe('laziness', () => {
-	it('should pull nothing while a chain is only described', async () => {
+	it('should pull nothing while a chain is only described', () => {
 		AsyncSequenceCollection.from(instrumentedSource(VOLUME))
 			.where((value) => value > 1)
 			.select((value) => value * 2)
@@ -109,9 +115,7 @@ describe('laziness', () => {
 	it('should stream chunks rather than collect the source first', async () => {
 		let pulledAtFirstChunk = 0;
 
-		for await (const chunk of AsyncSequenceCollection.from(
-			instrumentedSource(VOLUME),
-		).chunk(10)) {
+		for await (const chunk of AsyncSequenceCollection.from(instrumentedSource(VOLUME)).chunk(10)) {
 			pulledAtFirstChunk = pulled;
 			expect(chunk).toHaveLength(10);
 			break;
@@ -193,9 +197,10 @@ describe('concurrency actually overlaps', () => {
 		// A limit of 4 over ten thousand elements must not pull ten thousand.
 		let pulledAtFirstResult = 0;
 
-		const results = AsyncSequenceCollection.from(
-			instrumentedSource(VOLUME),
-		).selectAwait(async (value) => value, { concurrency: 4 });
+		const results = AsyncSequenceCollection.from(instrumentedSource(VOLUME)).selectAwait(
+			(value) => Promise.resolve(value),
+			{ concurrency: 4 },
+		);
 
 		for await (const _ of results) {
 			pulledAtFirstResult = pulled;
@@ -210,12 +215,12 @@ describe('concurrency actually overlaps', () => {
 
 		const attempt = AsyncSequenceCollection.from([...Array(VOLUME).keys()])
 			.selectAwait(
-				async (value) => {
+				(value) => {
 					started++;
 
-					if (value === 1) throw new Error('boom');
+					if (value === 1) return Promise.reject(new Error('boom'));
 
-					return value;
+					return Promise.resolve(value);
 				},
 				{ concurrency: 2 },
 			)
@@ -246,20 +251,22 @@ describe('realistic records at volume', () => {
 	 * @param size Amount of readings to produce.
 	 * @returns The source.
 	 */
-	const readings = (size: number): AsyncIterable<Reading> => ({
-		async *[Symbol.asyncIterator](): AsyncIterator<Reading> {
-			for (let index = 0; index < size; index++) {
-				pulled++;
+	const readings = (size: number): AsyncIterable<Reading> => {
+		return asyncSourceOf({
+			*[Symbol.iterator](): Iterator<Reading> {
+				for (let index = 0; index < size; index++) {
+					pulled++;
 
-				yield {
-					sensorId: `sensor-${index % 500}`,
-					takenAt: new Date(2024, 0, 1 + (index % 365)),
-					celsius: (index % 60) - 10,
-					tags: [`floor-${index % 12}`, index % 2 === 0 ? 'indoor' : 'outdoor'],
-				};
-			}
-		},
-	});
+					yield {
+						sensorId: `sensor-${String(index % 500)}`,
+						takenAt: new Date(2024, 0, 1 + (index % 365)),
+						celsius: (index % 60) - 10,
+						tags: [`floor-${String(index % 12)}`, index % 2 === 0 ? 'indoor' : 'outdoor'],
+					};
+				}
+			},
+		});
+	};
 
 	it('should stream fifty thousand records without collecting them', async () => {
 		const started: number = performance.now();
@@ -280,10 +287,12 @@ describe('realistic records at volume', () => {
 		let batches = 0;
 
 		await AsyncSequenceCollection.from(readings(50_000))
-			.select((reading) => ({
-				...reading,
-				fahrenheit: reading.celsius * 1.8 + 32,
-			}))
+			.select((reading) => {
+				return {
+					...reading,
+					fahrenheit: reading.celsius * 1.8 + 32,
+				};
+			})
 			.chunk(500)
 			.forEach((batch) => {
 				if (batches === 0) pulledAtFirstBatch = pulled;
@@ -312,7 +321,7 @@ describe('realistic records at volume', () => {
 		let pulledAtFirstResult = 0;
 
 		const enriched = AsyncSequenceCollection.from(readings(50_000)).selectAwait(
-			async (reading) => ({ ...reading, checked: true }),
+			(reading) => Promise.resolve({ ...reading, checked: true }),
 			{ concurrency: 8 },
 		);
 
@@ -329,9 +338,7 @@ describe('wall clock ceilings', () => {
 	it('should traverse ten thousand elements within budget', async () => {
 		const started: number = performance.now();
 
-		const collected = await AsyncSequenceCollection.from(
-			instrumentedSource(VOLUME),
-		)
+		const collected = await AsyncSequenceCollection.from(instrumentedSource(VOLUME))
 			.where((value) => value % 2 === 0)
 			.select((value) => value * 2)
 			.toArray();

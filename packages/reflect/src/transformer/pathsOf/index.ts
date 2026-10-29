@@ -1,12 +1,10 @@
-import typescript from 'typescript';
+import type typescript from 'typescript';
 
-import {
-	CallRewriter,
-	RewriteContext,
-	utilityModuleSegment,
-} from '@fulcro/transform-core';
+import type { CallRewriter, RewriteContext } from '@fulcro/transform-core';
+import { utilityModuleSegment } from '@fulcro/transform-core';
 
-import { Path, pathsOfType } from '@/transformer/describe';
+import type { Path } from '@/src/transformer/describe';
+import { pathsOfType } from '@/src/transformer/describe';
 
 /**
  * Rewriter of `pathsOf`.
@@ -47,25 +45,19 @@ export const pathsOfRewriter: CallRewriter = {
 
 		return factory.updateCallExpression(call, call.expression, undefined, [
 			factory.createArrayLiteralExpression(
-				paths.map((entry) =>
-					factory.createObjectLiteralExpression(
+				paths.map((entry) => {
+					return factory.createObjectLiteralExpression(
 						[
-							factory.createPropertyAssignment(
-								'path',
-								factory.createStringLiteral(entry.path),
-							),
-							factory.createPropertyAssignment(
-								'type',
-								factory.createStringLiteral(entry.type),
-							),
+							factory.createPropertyAssignment('path', factory.createStringLiteral(entry.path)),
+							factory.createPropertyAssignment('type', factory.createStringLiteral(entry.type)),
 							factory.createPropertyAssignment(
 								'optional',
 								entry.optional ? factory.createTrue() : factory.createFalse(),
 							),
 						],
 						false,
-					),
-				),
+					);
+				}),
 				true,
 			),
 		]);

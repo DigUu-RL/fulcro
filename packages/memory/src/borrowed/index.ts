@@ -1,4 +1,4 @@
-import type { ReadOnlyView } from '@/view';
+import type { ReadOnlyView } from '@/src/view';
 
 /**
  * Marks the type as a shared borrow. Declared, never created: it exists only

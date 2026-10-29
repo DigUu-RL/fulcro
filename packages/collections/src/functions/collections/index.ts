@@ -14,14 +14,12 @@ const DIGIT_NINE_CODE = 57;
  * @param source Value being inspected.
  * @returns `true` when `source` exposes a numeric `length` property.
  */
-export const targetHasLength = (
-	source: unknown,
-): source is { readonly length: number } => {
+export const targetHasLength = (source: unknown): source is { readonly length: number } => {
 	return (
 		typeof source === 'object' &&
 		source !== null &&
 		'length' in source &&
-		typeof (source as { length: unknown }).length === 'number'
+		typeof source.length === 'number'
 	);
 };
 
@@ -33,14 +31,12 @@ export const targetHasLength = (
  * @param source Value being inspected.
  * @returns `true` when `source` exposes a numeric `size` property.
  */
-export const targetHasSize = (
-	source: unknown,
-): source is { readonly size: number } => {
+export const targetHasSize = (source: unknown): source is { readonly size: number } => {
 	return (
 		typeof source === 'object' &&
 		source !== null &&
 		'size' in source &&
-		typeof (source as { size: unknown }).size === 'number'
+		typeof source.size === 'number'
 	);
 };
 
@@ -60,6 +56,20 @@ export const resolveDeclaredCount = (source: unknown): number | null => {
 	if (targetHasSize(source)) return source.size;
 
 	return null;
+};
+
+/**
+ * Tells whether a source is an array, keeping the type of its elements.
+ *
+ * `Array.isArray` alone narrows to `any[]`, which turns every element read
+ * from it into `any`; the sources here are typed, and stay so.
+ *
+ * @template T Type of the elements.
+ * @param source Source of a sequence.
+ * @returns `true` when the source is an array.
+ */
+export const isArraySource = <T>(source: Iterable<T>): source is readonly T[] => {
+	return Array.isArray(source);
 };
 
 /**
@@ -84,10 +94,7 @@ export const isIndexKey = (property: string | symbol): property is string => {
 
 	const firstCharacterCode: number = property.charCodeAt(0);
 
-	if (
-		firstCharacterCode < DIGIT_ZERO_CODE ||
-		firstCharacterCode > DIGIT_NINE_CODE
-	) {
+	if (firstCharacterCode < DIGIT_ZERO_CODE || firstCharacterCode > DIGIT_NINE_CODE) {
 		return false;
 	}
 

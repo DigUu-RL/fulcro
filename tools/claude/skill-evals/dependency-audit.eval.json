@@ -81,11 +81,11 @@
 		{
 			"id": "eslint-is-not-declared",
 			"kind": "edge",
-			"prompt": "We run npx eslint . in CI and there is an eslint.config.mjs. Is our lint setup declared properly?",
-			"why": "The root declares eslint-config-prettier, eslint-plugin-simple-import-sort and typescript-eslint and never eslint itself; it resolves only as their peer. An import nothing declares works until the tree changes, and only reading both halves — the manifest and `npm explain` — finds it.",
+			"prompt": "We run npx eslint . in CI and there is an eslint.config.ts. Is our lint setup declared properly?",
+			"why": "The configuration imports eslint/config, so eslint has to be declared, not merely arrive as the peer of typescript-eslint. It works either way until the tree changes, and only reading both halves — the manifest and `npm explain` — tells which it is.",
 			"expect": {
 				"invokes": true,
-				"output": "Check 1 with both halves named: the root `devDependencies` as declared, and `npm explain eslint` showing it arriving as a peer of typescript-eslint. MEDIUM, with the missing declaration stated and no version recommended.",
+				"output": "Check 1 with both halves named: the root `devDependencies` as declared, and `npm explain eslint` showing how it arrives. A MEDIUM finding if it arrives only as a peer, with the missing declaration stated and no version recommended; none if the root declares it.",
 				"refuses": "Concluding the setup is fine because the command runs today, and naming the version to add rather than the declaration that is missing."
 			}
 		},

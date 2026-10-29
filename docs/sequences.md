@@ -1,5 +1,7 @@
 # Sequences
 
+🇧🇷 Português (Brasil): [Leia esta documentação em português](./pt-BR/sequences.md)
+
 Querying arrays, sets, maps and generators with composable operators that only
 do the work you actually ask for.
 
@@ -118,7 +120,9 @@ them into `where().select()` means doing that work twice:
 const accounts = users
 	.where((user) => findAccount(user) !== null)
 	.select((user) => findAccount(user));
+```
 
+```ts
 // Once.
 const accounts = users.choose((user) => findAccount(user));
 ```
@@ -134,10 +138,10 @@ Both narrow a mixed sequence to one type. They differ in what they do with an
 element that does not fit, and that difference is the reason to have both:
 
 ```ts
-const values: unknown[] = ['a', 7, 'b'];
+const values = SequenceCollection.from<unknown>(['a', 7, 'b']);
 
-values.ofType('string'); // ['a', 'b'] — 7 is skipped
-values.cast('string'); // throws on 7
+values.ofType('string').toArray(); // ['a', 'b'] — 7 is skipped
+values.cast('string').toArray(); // throws on 7
 ```
 
 Reach for `ofType` when the sequence is **expected** to be mixed, and `cast`
@@ -145,7 +149,7 @@ when an element of another type means the data is wrong and silence would be
 the worst outcome. The throw names what it found and where:
 
 ```text
-TypeError: FULCRO1015: cast('string') found a number at index 2.
+TypeError: FULCRO1015: cast('string') found a number at index 1.
 ```
 
 Both take either a `typeof` name or a class, and both narrow the type without a
@@ -537,7 +541,7 @@ ever wanted the head of it.
 ### Paging
 
 ```ts
-const page = SequenceCollection.from(results)
+const onPage = SequenceCollection.from(results)
 	.where((row) => row.region === region)
 	.orderByDescending((row) => row.score)
 	.skip(page * size)
@@ -590,8 +594,7 @@ The contracts ship as interfaces — `Sequence<T>`, `OrderedSequence<T>`,
 over the concrete classes in your own signatures:
 
 ```ts
-const activeUsers = (users: Sequence<User>): Sequence<User> =>
-	users.where((user) => user.active);
+const activeUsers = (users: Sequence<User>): Sequence<User> => users.where((user) => user.active);
 ```
 
 ## Reference

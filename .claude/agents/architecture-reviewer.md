@@ -60,12 +60,12 @@ Every source is named in the memo; nothing is recalled from memory.
 | `.claude/rules/errors.md`                   | Which package owns an error, and in which range          |
 | `.claude/rules/transformers.md`             | The runtime and its transformer as one feature           |
 | `.claude/rules/naming.md`                   | The agreed vocabulary                                    |
-| `.roadmap/DEPENDENCIES-MASTER.md`           | Which feature is declared to come before which           |
-| `.roadmap/features/`                        | The specification the change claims to implement         |
+| the feature issue's **Dependências** line   | Which feature is declared to come before which           |
+| the feature issue (`gh issue view`)         | The specification the change claims to implement         |
 
-`.roadmap/` is kept out of the checkout by `.gitignore`. Where it is absent,
-say so in `Not reviewed` and answer the roadmap question from the commit log
-alone, marked as such.
+The roadmap is GitHub issues, laid out as `.claude/CLAUDE.md` describes. Where
+`gh` cannot reach them, say so in `Not reviewed` and answer the roadmap
+question from the commit log alone, marked as such.
 
 ## The questions
 
@@ -112,7 +112,7 @@ applicable with the reason. None is skipped in silence.
    through an exported signature; a helper added to `./transformer` or
    `./unplugin` for a test.
 9. **Does it align with the roadmap dependencies?** A change that builds on a
-   feature `.roadmap/DEPENDENCIES-MASTER.md` places after it, or that
+   feature the roadmap issues place after it, or that
    implements part of a later feature on the way past, is out of order even
    when it compiles.
 10. **Is the abstraction justified by more than one plausible consumer?** An

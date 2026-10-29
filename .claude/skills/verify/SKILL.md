@@ -180,10 +180,10 @@ diff land on the same set of checks.
 - **A new package is verified as wiring before it is verified as code.** Four
   things are checked by reading, and each one fails silently when it is absent:
   the package is registered as a project in `vitest.config.mts` — otherwise its
-  suites never run and the absence looks like a clean pass; its `tsconfig.json`
-  sets `rootDir` to `./src` and `outDir` to `./dist`, which is
-  `.claude/rules/build-output.md`; its `exports` map is covered by
-  `tests/entrypoints.spec.mts`; and it carries a changeset, since its first
+  suites never run and the absence looks like a clean pass; its
+  `tsdown.config.ts` builds into `dist` with `tsconfig.build.json` rooted at
+  `src`, which is `.claude/rules/build-output.md`; its `exports` map is covered
+  by `tests/entrypoints.spec.mts`; and it carries a changeset, since its first
   version is a release. Then the full pass.
 - **A public surface change is marked, not judged.** An altered `exports` map,
   an added export, a changed exported type: the report says so and names it

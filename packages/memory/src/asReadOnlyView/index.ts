@@ -1,9 +1,9 @@
-import type { MemoryReference } from '@/memoryReference';
-import type { Pointer } from '@/pointer';
-import { createReadOnlyView } from '@/region';
-import { cutRegion } from '@/region/cutRegion';
-import type { Storage } from '@/storage';
-import type { ReadOnlyView } from '@/view';
+import type { MemoryReference } from '@/src/memoryReference';
+import type { Pointer } from '@/src/pointer';
+import { createReadOnlyView } from '@/src/region';
+import { cutRegion } from '@/src/region/cutRegion';
+import type { Storage } from '@/src/storage';
+import type { ReadOnlyView } from '@/src/view';
 
 /**
  * Observes a region of a storage, a view or an array without the right to
@@ -47,10 +47,7 @@ export function asReadOnlyView<T>(
  * @throws {RangeError} When the region runs past the end of the pointer's
  * source.
  */
-export function asReadOnlyView<T>(
-	source: Pointer<T>,
-	length?: number,
-): ReadOnlyView<T>;
+export function asReadOnlyView<T>(source: Pointer<T>, length?: number): ReadOnlyView<T>;
 
 /**
  * Observes the one value of a reference, as a read-only view of length `1`.
@@ -62,12 +59,7 @@ export function asReadOnlyView<T>(
 export function asReadOnlyView<T>(source: MemoryReference<T>): ReadOnlyView<T>;
 
 export function asReadOnlyView<T>(
-	source:
-		| ReadOnlyView<T>
-		| Storage<T>
-		| readonly T[]
-		| Pointer<T>
-		| MemoryReference<T>,
+	source: ReadOnlyView<T> | Storage<T> | readonly T[] | Pointer<T> | MemoryReference<T>,
 	first?: number,
 	second?: number,
 ): ReadOnlyView<T> {

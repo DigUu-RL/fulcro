@@ -1,9 +1,9 @@
 import * as path from 'node:path';
 
-import * as ts from 'typescript';
-import { beforeAll, describe, expect, it } from 'vitest';
+import * as typescript from 'typescript';
+import { assert, beforeAll, describe, expect, it } from 'vitest';
 
-import transformer from '@/transformer';
+import transformer from '@/src/transformer';
 
 /**
  * Performance suite for the ownership rules.
@@ -39,61 +39,69 @@ const IMPORTS =
  * @returns How many questions, and how many refusals.
  */
 const questionsFor = (text: string): { questions: number; refused: number } => {
-	const fileName: string = path
-		.resolve(__dirname, 'counted.virtual.ts')
-		.split(path.sep)
-		.join('/');
-	const options: ts.CompilerOptions = {
-		target: ts.ScriptTarget.ES2022,
-		module: ts.ModuleKind.ESNext,
-		moduleResolution: ts.ModuleResolutionKind.Bundler,
+	const fileName: string = path.resolve(__dirname, 'counted.virtual.ts').split(path.sep).join('/');
+
+	const options: typescript.CompilerOptions = {
+		target: typescript.ScriptTarget.ES2022,
+		module: typescript.ModuleKind.ESNext,
+		moduleResolution: typescript.ModuleResolutionKind.Bundler,
 		strict: true,
 		skipLibCheck: true,
 	};
-	const host: ts.CompilerHost = ts.createCompilerHost(options);
-	const { getSourceFile, fileExists, readFile } = host;
 
-	host.getSourceFile = (name, ...rest) =>
-		name === fileName
-			? ts.createSourceFile(name, text, ts.ScriptTarget.ES2022, true)
+	const host: typescript.CompilerHost = typescript.createCompilerHost(options);
+	// Bound, because they are called on their own below and nothing promises a
+	// compiler host's methods work off their object.
+	const getSourceFile = host.getSourceFile.bind(host);
+	const fileExists = host.fileExists.bind(host);
+	const readFile = host.readFile.bind(host);
+
+	host.getSourceFile = (name, ...rest): typescript.SourceFile | undefined => {
+		return name === fileName
+			? typescript.createSourceFile(name, text, typescript.ScriptTarget.ES2022, true)
 			: getSourceFile(name, ...rest);
-	host.fileExists = (name) => name === fileName || fileExists(name);
-	host.readFile = (name) => (name === fileName ? text : readFile(name));
+	};
 
-	const program: ts.Program = ts.createProgram([fileName], options, host);
-	const checker: ts.TypeChecker = program.getTypeChecker();
+	host.fileExists = (name): boolean => name === fileName || fileExists(name);
+	host.readFile = (name): string | undefined => (name === fileName ? text : readFile(name));
+
+	const program: typescript.Program = typescript.createProgram([fileName], options, host);
+	const checker: typescript.TypeChecker = program.getTypeChecker();
 	let questions = 0;
 
 	// Built before counting, so the program's own checking is not counted.
-	ts.getPreEmitDiagnostics(program);
+	typescript.getPreEmitDiagnostics(program);
 
 	const counting = new Proxy(checker, {
-		get: (target, key, receiver) => {
+		get: (target, key, receiver): unknown => {
 			const value: unknown = Reflect.get(target, key, receiver);
 
 			return typeof value === 'function'
-				? (...args: unknown[]) => {
+				? (...args: unknown[]): unknown => {
 						questions++;
 
-						return (value as (...inner: unknown[]) => unknown).apply(
-							target,
-							args,
-						);
+						return (value as (...inner: unknown[]) => unknown).apply(target, args);
 					}
 				: value;
 		},
 	});
-	const counted: ts.Program = new Proxy(program, {
-		get: (target, key, receiver) =>
-			key === 'getTypeChecker'
-				? () => counting
-				: Reflect.get(target, key, receiver),
-	});
-	let refused = 0;
 
-	ts.transform(program.getSourceFile(fileName) as ts.SourceFile, [
-		transformer(counted, undefined, { addDiagnostic: () => refused++ }),
-	]).dispose();
+	const counted: typescript.Program = new Proxy(program, {
+		get: (target, key, receiver): unknown => {
+			return key === 'getTypeChecker'
+				? (): typescript.TypeChecker => counting
+				: Reflect.get(target, key, receiver);
+		},
+	});
+
+	let refused = 0;
+	const source: typescript.SourceFile | undefined = program.getSourceFile(fileName);
+
+	assert.isDefined(source);
+
+	typescript
+		.transform(source, [transformer(counted, undefined, { addDiagnostic: () => refused++ })])
+		.dispose();
 
 	return { questions, refused };
 };
@@ -104,11 +112,12 @@ const questionsFor = (text: string): { questions: number; refused: number } => {
  * @param count How many.
  * @returns Its text.
  */
-const unitsOf = (count: number): string =>
-	IMPORTS +
-	Array.from({ length: count }, (_, index) =>
-		UNIT.replace('{n}', String(index)),
-	).join('\n');
+const unitsOf = (count: number): string => {
+	return (
+		IMPORTS +
+		Array.from({ length: count }, (_, index) => UNIT.replace('{n}', String(index))).join('\n')
+	);
+};
 
 /** What the transformer asked of files of none, fifty and a hundred units. */
 let empty: { questions: number; refused: number };
@@ -127,9 +136,7 @@ describe('ownership rules, counted', () => {
 	it('should ask the checker twice as much for a file twice as long', () => {
 		expect(once.refused + twice.refused).toBe(0);
 		expect(once.questions).toBeGreaterThan(empty.questions);
-		expect(twice.questions - empty.questions).toBe(
-			2 * (once.questions - empty.questions),
-		);
+		expect(twice.questions - empty.questions).toBe(2 * (once.questions - empty.questions));
 	});
 
 	it('should ask nothing of a file that names none of its functions', () => {

@@ -1,9 +1,8 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import type { Allocation, AllocationDomain } from '@/allocator';
-import { type ArenaAllocator, createArenaAllocator } from '@/arenaAllocator';
-
-import { coded } from './coded';
+import type { Allocation, AllocationDomain } from '@/src/allocator';
+import { type ArenaAllocator, createArenaAllocator } from '@/src/arenaAllocator';
+import { coded } from '@/src/tests/coded';
 
 /**
  * Behaviour suite for `createArenaAllocator`.
@@ -42,9 +41,7 @@ describe('createArenaAllocator', () => {
 
 	it('should release every allocation at once on reset', () => {
 		const arena: ArenaAllocator = createArenaAllocator(16);
-		const allocations: Allocation[] = [1, 2, 3, 4].map(() =>
-			arena.allocate(12, 4),
-		);
+		const allocations: Allocation[] = [1, 2, 3, 4].map(() => arena.allocate(12, 4));
 
 		arena.reset();
 
@@ -95,7 +92,8 @@ describe('createArenaAllocator', () => {
 			made = arena.allocate(8, 8);
 
 			throw new Error('leaving early');
-		}).toThrowError('leaving early');
+		}).toThrow('leaving early');
+
 		expect(made?.isLive()).toBe(false);
 	});
 
@@ -121,7 +119,7 @@ describe('createArenaAllocator', () => {
 		[1.5, '1.5'],
 		[Number.NaN, 'NaN'],
 	])('should refuse a chunk size of %s', (chunkSize, shown) => {
-		expect(() => createArenaAllocator(chunkSize)).toThrowError(
+		expect(() => createArenaAllocator(chunkSize)).toThrow(
 			coded(
 				new RangeError(
 					`FULCRO7005: createArenaAllocator: expected a size in bytes that is a non-negative safe integer, received ${shown}.`,
@@ -132,7 +130,7 @@ describe('createArenaAllocator', () => {
 	});
 
 	it('should be an allocation domain', () => {
-		expectTypeOf(createArenaAllocator(64)).toMatchTypeOf<AllocationDomain>();
+		expectTypeOf(createArenaAllocator(64)).toExtend<AllocationDomain>();
 		expectTypeOf(createArenaAllocator(64)).toEqualTypeOf<ArenaAllocator>();
 	});
 });

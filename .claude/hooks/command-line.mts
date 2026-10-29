@@ -48,15 +48,13 @@ const PREFIXES = new Set([
 /**
  * Names that mean a directory tree is being deleted, whatever the shell.
  */
-const REMOVERS = new Set([
-	'rm',
-	'rmdir',
-	'remove-item',
-	'ri',
-	'rd',
-	'erase',
-	'del',
-]);
+const REMOVERS = new Set(['rm', 'rmdir', 'remove-item', 'ri', 'rd', 'erase', 'del']);
+
+/** One command as it runs: the name it was invoked by, and what followed. */
+export interface Invocation {
+	readonly name: string;
+	readonly arguments: readonly string[];
+}
 
 /**
  * Targets that are a whole machine, a whole home or a whole checkout.
@@ -87,24 +85,24 @@ const ROOTS = new Set([
  * Quoted text stays in one token and is never read as a separator, so a
  * command named inside a string is an argument and nothing more.
  *
- * @param {string} line The whole command line.
- * @returns {string[][]} One array of tokens per command, empty ones dropped.
+ * @param line The whole command line.
+ * @returns One array of tokens per command, empty ones dropped.
  */
-export const commandsOf = (line) => {
-	const commands = [];
+export const commandsOf = (line: string): string[][] => {
+	const commands: string[][] = [];
 
-	let tokens = [];
+	let tokens: string[] = [];
 	let token = '';
-	let quote = null;
+	let quote: string | null = null;
 
-	const endToken = () => {
+	const endToken = (): void => {
 		if (token !== '') {
 			tokens.push(token);
 			token = '';
 		}
 	};
 
-	const endCommand = () => {
+	const endCommand = (): void => {
 		endToken();
 
 		if (tokens.length > 0) {
@@ -117,10 +115,10 @@ export const commandsOf = (line) => {
 		if (quote !== null) {
 			if (character === quote) {
 				quote = null;
-			} else {
-				token += character;
+				continue;
 			}
 
+			token += character;
 			continue;
 		}
 
@@ -153,10 +151,10 @@ export const commandsOf = (line) => {
  * `C:\Program Files\GitHub CLI\gh.exe` and `/usr/bin/git` answer the same as
  * `gh` and `git` do.
  *
- * @param {string} token The token holding the executable.
- * @returns {string} The bare name, lowercased.
+ * @param token The token holding the executable.
+ * @returns The bare name, lowercased.
  */
-export const nameOf = (token) => {
+export const nameOf = (token: string): string => {
 	const leaf = token.split(/[\\/]/).pop() ?? '';
 
 	return leaf.replace(/\.(exe|cmd|bat|ps1)$/i, '').toLowerCase();
@@ -169,15 +167,12 @@ export const nameOf = (token) => {
  * publish`. A runner that only reads the first token calls them `timeout` and
  * an assignment, and neither is what runs.
  *
- * @param {string[]} tokens The tokens of one command.
- * @returns {{ name: string, arguments: string[] } | null} The invocation, or
+ * @param tokens The tokens of one command.
+ * @returns The invocation, or
  *   `null` when the tokens name no command at all.
  */
-export const invocationOf = (tokens) => {
-	let index = 0;
-
-	while (index < tokens.length) {
-		const token = tokens[index];
+export const invocationOf = (tokens: readonly string[]): Invocation | null => {
+	for (const [index, token] of tokens.entries()) {
 		const skippable =
 			PREFIXES.has(nameOf(token)) ||
 			token.startsWith('-') ||
@@ -187,8 +182,6 @@ export const invocationOf = (tokens) => {
 		if (!skippable) {
 			return { name: nameOf(token), arguments: tokens.slice(index + 1) };
 		}
-
-		index += 1;
 	}
 
 	return null;
@@ -201,11 +194,11 @@ export const invocationOf = (tokens) => {
  * in order, so that `git push origin dev` and `git push --force origin dev`
  * both answer to `['git', 'push']` while `git log` answers to neither.
  *
- * @param {{ name: string, arguments: string[] } | null} invocation The command.
- * @param {string[]} pattern The command name, then the words that follow it.
- * @returns {boolean} Whether the invocation matches.
+ * @param invocation The command.
+ * @param pattern The command name, then the words that follow it.
+ * @returns Whether the invocation matches.
  */
-export const runs = (invocation, pattern) => {
+export const runs = (invocation: Invocation | null, pattern: readonly string[]): boolean => {
 	const [name, ...words] = pattern;
 
 	if (invocation === null || invocation.name !== name) return false;
@@ -213,11 +206,11 @@ export const runs = (invocation, pattern) => {
 	let from = 0;
 
 	for (const word of words) {
-		const at = invocation.arguments.indexOf(word, from);
+		const position = invocation.arguments.indexOf(word, from);
 
-		if (at < 0) return false;
+		if (position < 0) return false;
 
-		from = at + 1;
+		from = position + 1;
 	}
 
 	return true;
@@ -230,12 +223,12 @@ export const runs = (invocation, pattern) => {
  * of letters is read as a bundle, which keeps PowerShell's `-Recurse` from
  * being mistaken for six short flags.
  *
- * @param {{ name: string, arguments: string[] } | null} invocation The command.
- * @param {string} long The flag as written in full, `--force` or `-Recurse`.
- * @param {string} [short] The single letter it bundles as, if it has one.
- * @returns {boolean} Whether the flag is present.
+ * @param invocation The command.
+ * @param long The flag as written in full, `--force` or `-Recurse`.
+ * @param short The single letter it bundles as, if it has one.
+ * @returns Whether the flag is present.
  */
-export const hasFlag = (invocation, long, short) => {
+export const hasFlag = (invocation: Invocation | null, long: string, short?: string): boolean => {
 	if (invocation === null) return false;
 
 	return invocation.arguments.some((argument) => {
@@ -254,10 +247,10 @@ export const hasFlag = (invocation, long, short) => {
  * with it, which is what `.`, `..` and an absolute path to the checkout all
  * have in common. `dist` and `node_modules` resolve below it and are ordinary.
  *
- * @param {string} target A non-flag argument of a deletion.
- * @returns {boolean} Whether deleting it would take the checkout or more.
+ * @param target A non-flag argument of a deletion.
+ * @returns Whether deleting it would take the checkout or more.
  */
-export const isRepositoryWide = (target) => {
+export const isRepositoryWide = (target: string): boolean => {
 	if (ROOTS.has(target)) return true;
 
 	// A drive root, a filesystem root, or a single segment directly below one.
@@ -283,10 +276,10 @@ export const isRepositoryWide = (target) => {
 /**
  * Whether an invocation deletes a tree, and the targets it would delete.
  *
- * @param {{ name: string, arguments: string[] } | null} invocation The command.
- * @returns {string[]} The targets, empty when this is not a recursive deletion.
+ * @param invocation The command.
+ * @returns The targets, empty when this is not a recursive deletion.
  */
-export const deletionTargets = (invocation) => {
+export const deletionTargets = (invocation: Invocation | null): string[] => {
 	if (invocation === null || !REMOVERS.has(invocation.name)) return [];
 
 	const recursive =

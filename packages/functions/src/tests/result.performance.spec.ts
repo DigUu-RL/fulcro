@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { failure, type Result, success } from '@/result';
+import { failure, type Result, success } from '@/src/result';
 
 /**
  * Performance suite.
@@ -16,24 +16,21 @@ import { failure, type Result, success } from '@/result';
 const RESULTS = 10_000;
 
 /** Results alternating between the two variants. */
-const mixed = (): Result<number, string>[] =>
-	[...Array(RESULTS).keys()].map((index) =>
-		index % 2 === 0 ? success(index) : failure(`failed ${index}`),
-	);
+const mixed = (): Result<number, string>[] => {
+	return [...Array(RESULTS).keys()].map((index) => {
+		return index % 2 === 0 ? success(index) : failure(`failed ${String(index)}`);
+	});
+};
 
 describe('Result', () => {
 	it('should share one prototype per variant, however many results exist', () => {
-		const prototypes = new Set(
-			mixed().map((result) => Object.getPrototypeOf(result) as object),
-		);
+		const prototypes = new Set(mixed().map((result) => Object.getPrototypeOf(result) as object));
 
 		expect(prototypes.size).toBe(2);
 	});
 
 	it('should carry two own properties, and no methods', () => {
-		const counts = new Set(
-			mixed().map((result) => Reflect.ownKeys(result).length),
-		);
+		const counts = new Set(mixed().map((result) => Reflect.ownKeys(result).length));
 
 		expect([...counts]).toEqual([2]);
 	});

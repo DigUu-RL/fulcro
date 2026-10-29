@@ -19,16 +19,15 @@
  */
 const SPECIAL = /[.+^${}()|[\]\\]/g;
 
-/** @type {Map<string, RegExp>} */
-const compiled = new Map();
+const compiled = new Map<string, RegExp>();
 
 /**
  * Compiles one glob into the expression that decides it.
  *
- * @param {string} glob The glob, with forward slashes.
- * @returns {RegExp} An expression anchored at both ends.
+ * @param glob The glob, with forward slashes.
+ * @returns An expression anchored at both ends.
  */
-export const expressionOf = (glob) => {
+export const expressionOf = (glob: string): RegExp => {
 	const remembered = compiled.get(glob);
 
 	if (remembered !== undefined) return remembered;
@@ -36,7 +35,7 @@ export const expressionOf = (glob) => {
 	let pattern = '';
 
 	for (let index = 0; index < glob.length; index += 1) {
-		const character = glob[index];
+		const character = glob.charAt(index);
 
 		if (character === '?') {
 			pattern += '[^/]';
@@ -77,19 +76,20 @@ export const expressionOf = (glob) => {
 /**
  * Whether a path is matched by a glob.
  *
- * @param {string} glob The glob, with forward slashes.
- * @param {string} target A path relative to the repository root, with forward
+ * @param glob The glob, with forward slashes.
+ * @param target A path relative to the repository root, with forward
  *   slashes.
- * @returns {boolean} Whether it matches.
+ * @returns Whether it matches.
  */
-export const matches = (glob, target) => expressionOf(glob).test(target);
+export const matches = (glob: string, target: string): boolean => expressionOf(glob).test(target);
 
 /**
  * Whether a path is matched by any of these globs.
  *
- * @param {string[]} globs The globs.
- * @param {string} target The path.
- * @returns {boolean} Whether one of them matches.
+ * @param globs The globs.
+ * @param target The path.
+ * @returns Whether one of them matches.
  */
-export const matchedBy = (globs, target) =>
-	globs.some((glob) => matches(glob, target));
+export const matchedBy = (globs: string[], target: string): boolean => {
+	return globs.some((glob) => matches(glob, target));
+};

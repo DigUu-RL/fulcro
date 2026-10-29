@@ -1,7 +1,7 @@
 import { createError } from '@fulcro/errors';
 
-import { BigInteger } from '@/bigInteger';
-import { createComponentRecord } from '@/components';
+import { BigInteger } from '@/src/bigInteger';
+import { createComponentRecord } from '@/src/components';
 import {
 	describeKind,
 	describeType,
@@ -10,10 +10,10 @@ import {
 	type RepeatedLayout,
 	type SourceOf,
 	type ValueOf,
-} from '@/element';
-import type { IntegerType } from '@/integer';
-import type { NumericType } from '@/numericType';
-import type { Multiply } from '@/struct/arithmetic';
+} from '@/src/element';
+import type { IntegerType } from '@/src/integer';
+import type { NumericType } from '@/src/numericType';
+import type { Multiply } from '@/src/struct/arithmetic';
 
 /**
  * An exact rational number: a numerator over a denominator, both of the
@@ -74,12 +74,15 @@ const PARTS: readonly string[] = ['numerator', 'denominator'];
  * @param descriptor Value to inspect.
  * @returns `true` for `BigInteger` and for a fixed-width integer type.
  */
-const isIntegerDescriptor = (descriptor: unknown): boolean =>
-	descriptor === BigInteger ||
-	(typeof descriptor === 'object' &&
-		descriptor !== null &&
-		typeof (descriptor as { signed?: unknown }).signed === 'boolean' &&
-		typeof (descriptor as { width?: unknown }).width === 'number');
+const isIntegerDescriptor = (descriptor: unknown): boolean => {
+	return (
+		descriptor === BigInteger ||
+		(typeof descriptor === 'object' &&
+			descriptor !== null &&
+			typeof (descriptor as { signed?: unknown }).signed === 'boolean' &&
+			typeof (descriptor as { width?: unknown }).width === 'number')
+	);
+};
 
 /**
  * Declares a fraction type over an integer type.
@@ -115,6 +118,7 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 	elementOf<T>(integer, 'Fraction');
 
 	const name: string = describeType('Fraction', integer.name);
+
 	const { make, convert, isRecord, register } = createComponentRecord<T, Value>(
 		PARTS,
 		integer,
@@ -128,8 +132,7 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 	 * @param value An integer.
 	 * @returns Its magnitude.
 	 */
-	const absolute = (value: T): T =>
-		integer.lessThan(value, zero) ? integer.negate(value) : value;
+	const absolute = (value: T): T => (integer.lessThan(value, zero) ? integer.negate(value) : value);
 
 	/**
 	 * The greatest common divisor, by Euclid's algorithm: a number of steps
@@ -141,17 +144,17 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 	 * zeros.
 	 */
 	const greatestCommonDivisor = (left: T, right: T): T => {
-		let a: T = absolute(left);
-		let b: T = absolute(right);
+		let dividend: T = absolute(left);
+		let divisor: T = absolute(right);
 
-		while (!integer.equals(b, zero)) {
-			const remainder: T = integer.remainder(a, b);
+		while (!integer.equals(divisor, zero)) {
+			const remainder: T = integer.remainder(dividend, divisor);
 
-			a = b;
-			b = remainder;
+			dividend = divisor;
+			divisor = remainder;
 		}
 
-		return a;
+		return dividend;
 	};
 
 	/**
@@ -207,18 +210,17 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 	): Value => {
 		const first: T = greatestCommonDivisor(left, rightDenominator);
 		const second: T = greatestCommonDivisor(right, leftDenominator);
-		const over = (value: T, divisor: T): T =>
-			integer.equals(divisor, zero) || integer.equals(divisor, one)
+
+		const over = (value: T, divisor: T): T => {
+			return integer.equals(divisor, zero) || integer.equals(divisor, one)
 				? value
 				: integer.divide(value, divisor);
+		};
 
 		return reduce(
 			operation,
 			integer.multiply(over(left, first), over(right, second)),
-			integer.multiply(
-				over(leftDenominator, second),
-				over(rightDenominator, first),
-			),
+			integer.multiply(over(leftDenominator, second), over(rightDenominator, first)),
 		);
 	};
 
@@ -237,10 +239,7 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 		right: Value,
 		combine: (left: T, right: T) => T,
 	): Value => {
-		const divisor: T = greatestCommonDivisor(
-			left.denominator,
-			right.denominator,
-		);
+		const divisor: T = greatestCommonDivisor(left.denominator, right.denominator);
 		const leftScale: T = integer.divide(right.denominator, divisor);
 		const rightScale: T = integer.divide(left.denominator, divisor);
 
@@ -262,10 +261,12 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 	 * @param right Second operand.
 	 * @returns The two cross products.
 	 */
-	const cross = (left: Value, right: Value): [T, T] => [
-		integer.multiply(left.numerator, right.denominator),
-		integer.multiply(right.numerator, left.denominator),
-	];
+	const cross = (left: Value, right: Value): [T, T] => {
+		return [
+			integer.multiply(left.numerator, right.denominator),
+			integer.multiply(right.numerator, left.denominator),
+		];
+	};
 
 	const descriptor: FractionType<T, SourceOf<TElement>> = {
 		name,
@@ -273,33 +274,47 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 		from: (value) => {
 			const parts: T[] | null = convert(`${name}.from`, value);
 
-			if (parts !== null) return reduce(`${name}.from`, parts[0], parts[1]);
+			// A converted fraction is always a numerator and a denominator.
+			if (parts !== null) {
+				const [numerator, denominator] = parts;
+
+				if (numerator !== undefined && denominator !== undefined) {
+					return reduce(`${name}.from`, numerator, denominator);
+				}
+			}
 
 			return make(integer.from(value as number), one);
 		},
 
-		is: (value): value is Value =>
-			isRecord(value) &&
-			integer.lessThan(zero, value.denominator) &&
-			integer.equals(
-				greatestCommonDivisor(value.numerator, value.denominator),
-				one,
-			),
+		is: (value): value is Value => {
+			return (
+				isRecord(value) &&
+				integer.lessThan(zero, value.denominator) &&
+				integer.equals(greatestCommonDivisor(value.numerator, value.denominator), one)
+			);
+		},
 
-		add: (left, right) =>
-			sum(`${name}.add`, left, right, (a, b) => integer.add(a, b)),
+		add: (left, right) => {
+			return sum(`${name}.add`, left, right, (leftTerm, rightTerm) => {
+				return integer.add(leftTerm, rightTerm);
+			});
+		},
 
-		subtract: (left, right) =>
-			sum(`${name}.subtract`, left, right, (a, b) => integer.subtract(a, b)),
+		subtract: (left, right) => {
+			return sum(`${name}.subtract`, left, right, (leftTerm, rightTerm) => {
+				return integer.subtract(leftTerm, rightTerm);
+			});
+		},
 
-		multiply: (left, right) =>
-			product(
+		multiply: (left, right) => {
+			return product(
 				`${name}.multiply`,
 				left.numerator,
 				left.denominator,
 				right.numerator,
 				right.denominator,
-			),
+			);
+		},
 
 		divide: (left, right) => {
 			if (integer.equals(right.numerator, zero)) {
@@ -360,28 +375,26 @@ export const Fraction = <TElement extends IntegerDescriptor>(
 		// factor, and neither does adding or taking away the denominator.
 		negate: (value) => make(integer.negate(value.numerator), value.denominator),
 
-		increment: (value) =>
-			make(integer.add(value.numerator, value.denominator), value.denominator),
+		increment: (value) => make(integer.add(value.numerator, value.denominator), value.denominator),
 
-		decrement: (value) =>
-			make(
-				integer.subtract(value.numerator, value.denominator),
-				value.denominator,
-			),
+		decrement: (value) => {
+			return make(integer.subtract(value.numerator, value.denominator), value.denominator);
+		},
 
-		equals: (left, right) =>
-			integer.equals(left.numerator, right.numerator) &&
-			integer.equals(left.denominator, right.denominator),
+		equals: (left, right) => {
+			return (
+				integer.equals(left.numerator, right.numerator) &&
+				integer.equals(left.denominator, right.denominator)
+			);
+		},
 
 		lessThan: (left, right) => integer.lessThan(...cross(left, right)),
-		lessThanOrEqual: (left, right) =>
-			integer.lessThanOrEqual(...cross(left, right)),
+		lessThanOrEqual: (left, right) => integer.lessThanOrEqual(...cross(left, right)),
 		greaterThan: (left, right) => integer.greaterThan(...cross(left, right)),
-		greaterThanOrEqual: (left, right) =>
-			integer.greaterThanOrEqual(...cross(left, right)),
+		greaterThanOrEqual: (left, right) => integer.greaterThanOrEqual(...cross(left, right)),
 	};
 
-	register(descriptor, descriptor.equals);
+	register(descriptor, (left, right) => descriptor.equals(left, right));
 
 	return descriptor;
 };

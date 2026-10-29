@@ -204,7 +204,7 @@ What moves out, into supporting files beside `SKILL.md`:
   let it be read only when that branch is taken.
 
 Every supporting file a skill names must exist.
-`tools/claude/validate-skills.mjs` checks this, and the failure mode without it
+`tools/claude/validate-skills.mts` checks this, and the failure mode without it
 is a skill confidently following a step that points at nothing.
 
 Dynamic context injection — pulling command output into the skill at load —
@@ -238,9 +238,9 @@ transcript that otherwise reads well:
 - **Broad shell permissions for convenience.** `Bash(*)` because enumerating
   was tedious is how an audit acquires the ability to push.
 - **Silencing instead of diagnosing.** `eslint-disable`, `@ts-ignore`,
-  `@ts-expect-error`, `skip` — each needs explicit approval and a comment
-  saying why. `.claude/CLAUDE.md` states this for the repository; a skill does
-  not get to relax it.
+  `@ts-expect-error`, `skip` and a rule switched off for some files are not used
+  in this repository, approved or not. `.claude/CLAUDE.md` states this for the
+  repository; a skill does not get to relax it.
 - **A skill per command.** `/run-tests` wraps something that is already one
   line. Skills are for procedures with judgement in them.
 

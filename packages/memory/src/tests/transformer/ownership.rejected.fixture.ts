@@ -1,11 +1,4 @@
-import {
-	borrow,
-	borrowMutable,
-	createManagedStorage,
-	move,
-	own,
-	type Owned,
-} from '@fulcro/memory';
+import { borrow, borrowMutable, createManagedStorage, move, own, type Owned } from '@fulcro/memory';
 
 /**
  * Uses the ownership rules refuse. Every line the transformer must report

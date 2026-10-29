@@ -4,10 +4,7 @@ import { Linter } from 'eslint';
 import typescriptEslint from 'typescript-eslint';
 import { describe, expect, it } from 'vitest';
 
-import {
-	codedErrors,
-	PACKAGE_RANGES,
-} from '../../tools/eslint/coded-errors.mjs';
+import { codedErrors, PACKAGE_RANGES } from '@/tools/eslint/coded-errors.mts';
 
 /**
  * Suite for the `local/coded-errors` rule.
@@ -29,8 +26,8 @@ const linter = new Linter({ configType: 'flat' });
  * @param filename Where it lives, relative to the repository.
  * @returns The message ids the rule reported, in order.
  */
-const reported = (code: string, filename: string): string[] =>
-	linter
+const reported = (code: string, filename: string): string[] => {
+	return linter
 		.verify(
 			code,
 			[
@@ -44,27 +41,21 @@ const reported = (code: string, filename: string): string[] =>
 			{ filename },
 		)
 		.map((message) => message.messageId ?? message.message);
+};
 
 /** A file inside `@fulcro/types`, whose range is 6. */
 const TYPES_FILE = 'packages/types/src/decimal/index.ts';
 
 describe('local/coded-errors refuses', () => {
-	it.each([
-		'Error',
-		'TypeError',
-		'RangeError',
-		'SyntaxError',
-		'AggregateError',
-	])('a new %s', (name) => {
-		expect(reported(`throw new ${name}('text');`, TYPES_FILE)).toEqual([
-			'constructed',
-		]);
-	});
+	it.each(['Error', 'TypeError', 'RangeError', 'SyntaxError', 'AggregateError'])(
+		'a new %s',
+		(name) => {
+			expect(reported(`throw new ${name}('text');`, TYPES_FILE)).toEqual(['constructed']);
+		},
+	);
 
 	it('an error constructed without being thrown', () => {
-		expect(reported(`reject(new Error('lost its way'));`, TYPES_FILE)).toEqual([
-			'constructed',
-		]);
+		expect(reported(`reject(new Error('lost its way'));`, TYPES_FILE)).toEqual(['constructed']);
 	});
 
 	it('a thrown string, plain or templated', () => {
@@ -73,18 +64,13 @@ describe('local/coded-errors refuses', () => {
 	});
 
 	it("a code from another package's range", () => {
-		expect(reported(`throw createError('FULCRO1001');`, TYPES_FILE)).toEqual([
-			'otherRange',
-		]);
+		expect(reported(`throw createError('FULCRO1001');`, TYPES_FILE)).toEqual(['otherRange']);
 	});
 
 	it('a code in a package that has no range yet', () => {
-		expect(
-			reported(
-				`throw createError('FULCRO7001');`,
-				'packages/newcomer/src/index.ts',
-			),
-		).toEqual(['noRange']);
+		expect(reported(`throw createError('FULCRO7001');`, 'packages/newcomer/src/index.ts')).toEqual([
+			'noRange',
+		]);
 	});
 
 	it("the same on an absolute path, in the platform's separators", () => {
@@ -101,30 +87,21 @@ describe('local/coded-errors refuses', () => {
 
 describe('local/coded-errors allows', () => {
 	it("a code from the file's own range", () => {
-		expect(
-			reported(
-				`throw createError('FULCRO6021', 'Vector3.from', 'x');`,
-				TYPES_FILE,
-			),
-		).toEqual([]);
+		expect(reported(`throw createError('FULCRO6021', 'Vector3.from', 'x');`, TYPES_FILE)).toEqual(
+			[],
+		);
 	});
 
 	it('a caught error, thrown again', () => {
-		expect(
-			reported(`try { run(); } catch (error) { throw error; }`, TYPES_FILE),
-		).toEqual([]);
+		expect(reported(`try { run(); } catch (error) { throw error; }`, TYPES_FILE)).toEqual([]);
 	});
 
 	it('an error placed in a wider context', () => {
-		expect(
-			reported(`throw prefixError(error, 'Outer.from');`, TYPES_FILE),
-		).toEqual([]);
+		expect(reported(`throw prefixError(error, 'Outer.from');`, TYPES_FILE)).toEqual([]);
 	});
 
 	it('a code the types narrowed, passed through a variable', () => {
-		expect(reported(`throw createError(code, reason);`, TYPES_FILE)).toEqual(
-			[],
-		);
+		expect(reported(`throw createError(code, reason);`, TYPES_FILE)).toEqual([]);
 	});
 
 	it('a class whose name only resembles an error', () => {
@@ -137,6 +114,7 @@ describe('the ranges', () => {
 		const digits: string[] = Object.values(PACKAGE_RANGES);
 
 		expect(new Set(digits).size).toBe(digits.length);
+
 		expect(PACKAGE_RANGES).toEqual({
 			collections: '1',
 			functions: '2',

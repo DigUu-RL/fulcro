@@ -4,7 +4,7 @@ import {
 	type TransformerFactory,
 } from '@fulcro/transform-core';
 
-import { ownershipAnalyzer } from '@/transformer/ownership';
+import { ownershipAnalyzer } from '@/src/transformer/ownership';
 
 export type { TransformerOptions } from '@fulcro/transform-core';
 

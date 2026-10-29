@@ -18,7 +18,7 @@
 			"expect": {
 				"invokes": true,
 				"output": "The report first and the question second; fixes only after the answer, one subject at a time, each re-verified by the check that produced it, and the summary printed again after the fixes.",
-				"refuses": "Silencing a warning without explicit approval, and adjusting a test so a fix passes."
+				"refuses": "Silencing a warning in any form, approved or not, and adjusting a test so a fix passes."
 			}
 		},
 		{

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { alignOf } from '@/functions/utils/alignOf';
+import { alignOf } from '@/src/functions/utils/alignOf';
 
 /**
  * Performance suite for `alignOf`.
@@ -13,9 +13,9 @@ import { alignOf } from '@/functions/utils/alignOf';
 /** How many calls each loop makes. */
 const CALLS = 100_000;
 
-type Narrow = {
+interface Narrow {
 	readonly '~layout': { readonly size: 12; readonly alignment: 4 };
-};
+}
 
 /**
  * Times a loop.

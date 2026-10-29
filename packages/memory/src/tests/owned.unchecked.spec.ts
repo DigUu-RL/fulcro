@@ -1,12 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { borrow } from '@/borrow';
-import { createManagedStorage } from '@/managedStorage';
-import { move } from '@/move';
-import { own } from '@/own';
-import type { Owned } from '@/owned';
-
-import { coded } from './coded';
+import { borrow } from '@/src/borrow';
+import { createManagedStorage } from '@/src/managedStorage';
+import { move } from '@/src/move';
+import { own } from '@/src/own';
+import type { Owned } from '@/src/owned';
+import { coded } from '@/src/tests/coded';
 
 /**
  * Runtime refusals around `Owned<T>[Symbol.dispose]` that use an owner after
@@ -33,12 +32,9 @@ describe('Owned[Symbol.dispose], unchecked', () => {
 		second[Symbol.dispose]();
 
 		expect(() => borrow(first)).toThrow(
-			coded(
-				new Error(
-					'FULCRO7023: borrow: the owner was moved; use the owner move returned.',
-				),
-				{ operation: 'borrow' },
-			),
+			coded(new Error('FULCRO7023: borrow: the owner was moved; use the owner move returned.'), {
+				operation: 'borrow',
+			}),
 		);
 	});
 });

@@ -1,4 +1,4 @@
-import { RangeCatalog } from '@/definition';
+import type { RangeCatalog } from '@/src/definition';
 
 /**
  * The errors of `@fulcro/transform-core`, `FULCRO5xxx`.
@@ -9,23 +9,26 @@ import { RangeCatalog } from '@/definition';
 export const transformCoreCatalog = {
 	FULCRO5001: {
 		kind: Error,
-		message: ({ root }: { operation: string; root: string }) =>
-			`No tsconfig.json found from ${root}. The transformer needs one to ` +
-			'know which files belong to the program.',
+		message: ({ root }: { operation: string; root: string }) => {
+			return (
+				`No tsconfig.json found from ${root}. The transformer needs one to ` +
+				'know which files belong to the program.'
+			);
+		},
 	},
 	FULCRO5002: {
 		kind: Error,
 		// The compiler's own diagnostic, flattened: it already names the file and
 		// what is wrong with it, and rewording it would lose what TypeScript
 		// knows and this package does not.
-		message: ({ diagnostic }: { operation: string; diagnostic: string }) =>
-			diagnostic,
+		message: ({ diagnostic }: { operation: string; diagnostic: string }) => diagnostic,
 	},
 	FULCRO5003: {
 		kind: Error,
 		// Each line already carries the file, the position and the refusal's
 		// own code and message; this only says where they came from.
-		message: ({ report }: { operation: string; report: string }) =>
-			`The Fulcro transformer refused calls it could not answer at compile time:\n${report}`,
+		message: ({ report }: { operation: string; report: string }) => {
+			return `The Fulcro transformer refused calls it could not answer at compile time:\n${report}`;
+		},
 	},
 } as const satisfies RangeCatalog<'5'>;

@@ -1,13 +1,13 @@
-import { describe, expect, expectTypeOf, it } from 'vitest';
+import { assert, describe, expect, expectTypeOf, it } from 'vitest';
 
-import { borrow } from '@/borrow';
-import { borrowMutable } from '@/borrowMutable';
-import { createManagedStorage } from '@/managedStorage';
-import { own } from '@/own';
-import type { Owned } from '@/owned';
-import type { Storage } from '@/storage';
-
-import { coded } from './coded';
+import { borrow } from '@/src/borrow';
+import { borrowMutable } from '@/src/borrowMutable';
+import { createManagedStorage } from '@/src/managedStorage';
+import { own } from '@/src/own';
+import type { Owned } from '@/src/owned';
+import type { Storage } from '@/src/storage';
+import { coded } from '@/src/tests/coded';
+import { thrownBy } from '@/src/tests/thrownBy';
 
 /**
  * Behaviour suite for `own`, and for the `Owned<T>` it returns.
@@ -38,13 +38,21 @@ describe('own', () => {
 
 	it('should own a storage written outside the package', () => {
 		const values: number[] = [3, 4];
+
 		const outside: Storage<number> = {
 			length: 2,
-			get: (index: number): number => values[index] as number,
+			get: (index: number): number => {
+				const value: number | undefined = values[index];
+
+				assert.isDefined(value);
+
+				return value;
+			},
 			set: (index: number, value: number): void => {
 				values[index] = value;
 			},
 		};
+
 		const owner: Owned<number> = own(() => outside);
 
 		borrowMutable(owner).set(0, 9);
@@ -118,21 +126,16 @@ describe('own', () => {
 				},
 			),
 		);
-		expect(() => own(() => null as never)).toThrow(
-			expect.objectContaining({
-				code: 'FULCRO7017',
-				details: expect.objectContaining({ received: 'null' }),
-			}),
-		);
+
+		expect(thrownBy(() => own(() => null as never))).toMatchObject({
+			code: 'FULCRO7017',
+			details: { received: 'null' },
+		});
 	});
 
 	it('should infer the type of the values from the storage created', () => {
-		expectTypeOf(own(() => createManagedStorage(1, 0))).toEqualTypeOf<
-			Owned<number>
-		>();
-		expectTypeOf(own(() => createManagedStorage(1, 'a'))).toEqualTypeOf<
-			Owned<string>
-		>();
+		expectTypeOf(own(() => createManagedStorage(1, 0))).toEqualTypeOf<Owned<number>>();
+		expectTypeOf(own(() => createManagedStorage(1, 'a'))).toEqualTypeOf<Owned<string>>();
 	});
 
 	it('should not take a plain object with a length for an owner', () => {

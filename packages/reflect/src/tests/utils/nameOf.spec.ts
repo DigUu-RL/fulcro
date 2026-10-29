@@ -1,13 +1,17 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { nameOf } from '@/functions/utils/nameOf';
+import { nameOf, type TypeName } from '@/src/functions/utils/nameOf';
 
 /** Shape carrying a property, a nested one, a method and an accessor. */
 class User {
 	email = 'a@b.c';
 	profile = { theme: 'dark' };
 
-	save(): void {}
+	// A function held by the instance, so reading it off the object is safe:
+	// the expression `user.save` is what is named, as it would be for a method.
+	save = (): void => {
+		// To be named, never called.
+	};
 
 	get displayName(): string {
 		return this.email;
@@ -53,11 +57,13 @@ describe('nameOf', () => {
 	it('should name an indexed access', () => {
 		const user = new User();
 
-		expect(nameOf(() => user['email'])).toBe('email');
+		expect(nameOf(() => user.email)).toBe('email');
 	});
 
 	it('should name an optionally chained access', () => {
-		const user: User | null = new User();
+		// Through a call, so the compiler keeps the `null` the chain is there for.
+		const find = (): User | null => new User();
+		const user: User | null = find();
 
 		expect(nameOf(() => user?.email)).toBe('email');
 	});
@@ -71,20 +77,25 @@ describe('nameOf', () => {
 		const user = new User();
 
 		expect(
-			nameOf(function () {
+			nameOf(() => {
 				return user.email;
 			}),
 		).toBe('email');
 	});
 
 	it('should fall back to the name of the callable when it is not an accessor', () => {
-		function namedFunction(): number {
+		const namedFunction = function namedFunction(): number {
 			return 1;
-		}
+		};
 
 		expect(nameOf(namedFunction)).toBe('namedFunction');
 		expect(nameOf(() => 1)).toBe('(anonymous)');
-		expect(nameOf(() => new User().save())).toBe('(anonymous)');
+
+		expect(
+			nameOf(() => {
+				new User().save();
+			}),
+		).toBe('(anonymous)');
 	});
 
 	it('should fall back to the name of the type for a plain value', () => {
@@ -92,5 +103,13 @@ describe('nameOf', () => {
 		expect(nameOf('x')).toBe('String');
 		expect(nameOf(new User())).toBe('User');
 		expect(nameOf(null)).toBe('null');
+	});
+});
+
+describe('what nameOf declares', () => {
+	it('should return a name carrying the type it names, usable as a string', () => {
+		expectTypeOf<ReturnType<typeof nameOf<User>>>().toEqualTypeOf<TypeName<User>>();
+		expectTypeOf<TypeName<User>>().toExtend<string>();
+		expectTypeOf<TypeName<User>>().not.toExtend<TypeName<number>>();
 	});
 });

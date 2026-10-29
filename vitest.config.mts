@@ -29,58 +29,56 @@ import { vite as reflectTransformer } from '@fulcro/reflect/unplugin';
  * @param name Directory of the package under `packages`.
  * @returns The project configuration.
  */
-const project = (name: string): ViteUserConfig => ({
-	root: `packages/${name}`,
+const project = (name: string): ViteUserConfig => {
+	return {
+		root: `packages/${name}`,
 
-	// The type aware utilities are resolved by a transformer, which needs a type
-	// checker. Without these the suites would exercise only the runtime
-	// fallbacks: `defaultOf` would throw, and so would `ofType<T>()`.
-	//
-	// All three are applied to every project, and they do not interfere: each
-	// claims only the calls whose declarations it can trace back to its own
-	// package, so a project using none is left untouched by all.
-	plugins: [
-		reflectTransformer(),
-		collectionsTransformer(),
-		memoryTransformer(),
-	],
-
-	// The `@/*` alias is declared once, in the tsconfig of each package, and
-	// read back from there rather than repeated as a Vite alias — so a path the
-	// compiler resolves and one the test runner resolves can never drift apart.
-	resolve: { tsconfigPaths: true },
-
-	test: {
-		name,
-		globals: true,
-		include: ['src/**/*.spec.ts', 'src/**/*.test.ts'],
-		exclude: ['src/**/*.unchecked.spec.ts'],
-
-		// The transformer suites build a whole TypeScript program in `beforeAll`
-		// — the standard library and the built declarations, type-checked — and
-		// that is CPU-bound work competing with every other project in a full
-		// run. Alone, it takes a few seconds; under the full run it crossed the
-		// default ten once a fifth such suite was added (F30c), failing an
-		// untouched one. A generous ceiling, as `docs/testing.md` allows for
-		// smoke limits: only a hang crosses it, never a slow machine.
-		hookTimeout: 60_000,
-
-		// Vitest prints a hint on every run suggesting `fsModuleCache: true`.
-		// Do not take it. The cache keys on the content of the source files, and
-		// the plugin above rewrites those files based on code that lives in this
-		// same repository — so a change to the transformer leaves every cached
-		// transform untouched and the suites go on asserting against output the
-		// transformer no longer produces.
+		// The type aware utilities are resolved by a transformer, which needs a type
+		// checker. Without these the suites would exercise only the runtime
+		// fallbacks: `defaultOf` would throw, and so would `ofType<T>()`.
 		//
-		// This was measured, not assumed. With the cache on, breaking the
-		// `defaultOf` rewriter outright — making it decline every call — left all
-		// 31 reflect tests passing. With it off, the same break failed 11 of them
-		// with the error the runtime fallback is supposed to throw.
-		//
-		// A few seconds a run is not worth a suite that lies about the one
-		// component this repository exists to build.
-	},
-});
+		// All three are applied to every project, and they do not interfere: each
+		// claims only the calls whose declarations it can trace back to its own
+		// package, so a project using none is left untouched by all.
+		plugins: [reflectTransformer(), collectionsTransformer(), memoryTransformer()],
+
+		// The `@/*` alias is declared once, in the tsconfig of each package, and
+		// read back from there rather than repeated as a Vite alias — so a path the
+		// compiler resolves and one the test runner resolves can never drift apart.
+		resolve: { tsconfigPaths: true },
+
+		test: {
+			name,
+			globals: true,
+			include: ['src/**/*.spec.ts', 'src/**/*.test.ts'],
+			exclude: ['src/**/*.unchecked.spec.ts'],
+
+			// The transformer suites build a whole TypeScript program in `beforeAll`
+			// — the standard library and the built declarations, type-checked — and
+			// that is CPU-bound work competing with every other project in a full
+			// run. Alone, it takes a few seconds; under the full run it crossed the
+			// default ten once a fifth such suite was added (F30c), failing an
+			// untouched one. A generous ceiling, as `docs/testing.md` allows for
+			// smoke limits: only a hang crosses it, never a slow machine.
+			hookTimeout: 60_000,
+
+			// Vitest prints a hint on every run suggesting `fsModuleCache: true`.
+			// Do not take it. The cache keys on the content of the source files, and
+			// the plugin above rewrites those files based on code that lives in this
+			// same repository — so a change to the transformer leaves every cached
+			// transform untouched and the suites go on asserting against output the
+			// transformer no longer produces.
+			//
+			// This was measured, not assumed. With the cache on, breaking the
+			// `defaultOf` rewriter outright — making it decline every call — left all
+			// 31 reflect tests passing. With it off, the same break failed 11 of them
+			// with the error the runtime fallback is supposed to throw.
+			//
+			// A few seconds a run is not worth a suite that lies about the one
+			// component this repository exists to build.
+		},
+	};
+};
 
 /**
  * `@fulcro/parallel`, run on its own once every other project has finished.
@@ -151,15 +149,25 @@ const memoryUnchecked = (): ViteUserConfig => {
  * trigger that makes the plugin go looking for a tsconfig to build a program
  * from — there is none at this level, by design.
  */
-const entryPoints = (): ViteUserConfig => ({
-	test: {
-		name: 'entrypoints',
-		globals: true,
-		// The root of `tests` only: the folders below it are their own projects,
-		// and running them under this name would misdescribe what they check.
-		include: ['tests/*.spec.mts'],
-	},
-});
+const entryPoints = (): ViteUserConfig => {
+	return {
+		// The suites import through the @/ alias of the root tsconfig, as the package projects do.
+		resolve: { tsconfigPaths: true },
+		test: {
+			name: 'entrypoints',
+			globals: true,
+			// The root of `tests` only: the folders below it are their own projects,
+			// and running them under this name would misdescribe what they check.
+			include: ['tests/*.spec.mts'],
+			// The workspace links resolve to `packages/*/dist`, outside `node_modules`,
+			// so Vite would treat the built packages as source and transform every
+			// module of them. Under a full run that pushed a first import past the
+			// test timeout. Externalized, Node loads them natively — which is also
+			// exactly how a consumer loads them.
+			server: { deps: { external: [/[\\/]packages[\\/][^\\/]+[\\/]dist[\\/]/] } },
+		},
+	};
+};
 
 /**
  * The compile time plugins applied together, as a consumer using several of
@@ -172,17 +180,21 @@ const entryPoints = (): ViteUserConfig => ({
  *
  * @returns The project configuration.
  */
-const transformers = (): ViteUserConfig => ({
-	test: {
-		name: 'transformers',
-		globals: true,
-		include: ['tests/transformers/**/*.spec.mts'],
-		// Every suite here builds a TypeScript program in `beforeAll`: the same
-		// CPU-bound work, under the same contention, as the package projects'
-		// transformer suites — see `hookTimeout` in `project` above.
-		hookTimeout: 60_000,
-	},
-});
+const transformers = (): ViteUserConfig => {
+	return {
+		// The suites import through the @/ alias of the root tsconfig, as the package projects do.
+		resolve: { tsconfigPaths: true },
+		test: {
+			name: 'transformers',
+			globals: true,
+			include: ['tests/transformers/**/*.spec.mts'],
+			// Every suite here builds a TypeScript program in `beforeAll`: the same
+			// CPU-bound work, under the same contention, as the package projects'
+			// transformer suites — see `hookTimeout` in `project` above.
+			hookTimeout: 60_000,
+		},
+	};
+};
 
 /**
  * The repository's own lint rules.
@@ -193,30 +205,17 @@ const transformers = (): ViteUserConfig => ({
  *
  * @returns The project configuration.
  */
-const lint = (): ViteUserConfig => ({
-	test: {
-		name: 'eslint',
-		globals: true,
-		include: ['tests/eslint/**/*.spec.mts'],
-	},
-});
-
-/**
- * The repository's own build tools.
- *
- * Its own project for the reason the lint rules have one: what it checks is how
- * the packages are built, not the library. The suites build a small package in
- * a temporary directory and run the tool over it.
- *
- * @returns The project configuration.
- */
-const build = (): ViteUserConfig => ({
-	test: {
-		name: 'build',
-		globals: true,
-		include: ['tests/build/**/*.spec.mts'],
-	},
-});
+const lint = (): ViteUserConfig => {
+	return {
+		// The suites import through the @/ alias of the root tsconfig, as the package projects do.
+		resolve: { tsconfigPaths: true },
+		test: {
+			name: 'eslint',
+			globals: true,
+			include: ['tests/eslint/**/*.spec.mts'],
+		},
+	};
+};
 
 /**
  * The repository's own safety hooks.
@@ -229,13 +228,17 @@ const build = (): ViteUserConfig => ({
  *
  * @returns The project configuration.
  */
-const hooks = (): ViteUserConfig => ({
-	test: {
-		name: 'hooks',
-		globals: true,
-		include: ['tests/hooks/**/*.spec.mts'],
-	},
-});
+const hooks = (): ViteUserConfig => {
+	return {
+		// The suites import through the @/ alias of the root tsconfig, as the package projects do.
+		resolve: { tsconfigPaths: true },
+		test: {
+			name: 'hooks',
+			globals: true,
+			include: ['tests/hooks/**/*.spec.mts'],
+		},
+	};
+};
 
 /**
  * The validators of the repository's own `.claude` tree.
@@ -248,13 +251,17 @@ const hooks = (): ViteUserConfig => ({
  *
  * @returns The project configuration.
  */
-const claude = (): ViteUserConfig => ({
-	test: {
-		name: 'claude',
-		globals: true,
-		include: ['tests/claude/**/*.spec.mts'],
-	},
-});
+const claude = (): ViteUserConfig => {
+	return {
+		// The suites import through the @/ alias of the root tsconfig, as the package projects do.
+		resolve: { tsconfigPaths: true },
+		test: {
+			name: 'claude',
+			globals: true,
+			include: ['tests/claude/**/*.spec.mts'],
+		},
+	};
+};
 
 export default defineConfig({
 	test: {
@@ -271,7 +278,6 @@ export default defineConfig({
 			entryPoints(),
 			transformers(),
 			lint(),
-			build(),
 			hooks(),
 			claude(),
 		],

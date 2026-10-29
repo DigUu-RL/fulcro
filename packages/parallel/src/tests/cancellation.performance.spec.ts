@@ -2,8 +2,8 @@ import { getEventListeners } from 'node:events';
 
 import { describe, expect, it } from 'vitest';
 
-import { type CancellationSource } from '@/@types/index.js';
-import { createCancellationSource } from '@/cancellation/index.js';
+import { type CancellationSource } from '@/src/@types/index.js';
+import { createCancellationSource } from '@/src/cancellation/index.js';
 
 /**
  * What a cancellation costs, counted rather than timed.
@@ -30,14 +30,11 @@ describe('what a parent keeps', () => {
 	it('should hold one listener per live child, and none once they are disposed', () => {
 		const parent = createCancellationSource();
 
-		const children: CancellationSource[] = Array.from(
-			{ length: CHILDREN },
-			() => createCancellationSource(parent.token),
-		);
+		const children: CancellationSource[] = Array.from({ length: CHILDREN }, () => {
+			return createCancellationSource(parent.token);
+		});
 
-		expect(getEventListeners(parent.token.signal, 'abort')).toHaveLength(
-			CHILDREN,
-		);
+		expect(getEventListeners(parent.token.signal, 'abort')).toHaveLength(CHILDREN);
 
 		for (const child of children) child[Symbol.dispose]();
 
@@ -48,7 +45,9 @@ describe('what a parent keeps', () => {
 		const source = createCancellationSource();
 
 		for (let index = 0; index < CHILDREN; index++) {
-			using _registration = source.token.onCancelled(() => {});
+			using _registration = source.token.onCancelled(() => {
+				// Never reached: the registration is disposed before any cancellation.
+			});
 		}
 
 		expect(getEventListeners(source.token.signal, 'abort')).toHaveLength(0);

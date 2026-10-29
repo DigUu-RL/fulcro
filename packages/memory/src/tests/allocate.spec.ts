@@ -1,4 +1,4 @@
-import { describe, expect, expectTypeOf, it } from 'vitest';
+import { assert, describe, expect, expectTypeOf, it } from 'vitest';
 
 import {
 	DoublePrecisionFloat,
@@ -8,16 +8,15 @@ import {
 	UnsignedInteger,
 } from '@fulcro/types';
 
-import { allocate } from '@/allocate';
-import type { Allocation, Allocator } from '@/allocator';
-import { createArenaAllocator } from '@/arenaAllocator';
-import { createFixedBufferAllocator } from '@/fixedBufferAllocator';
-import { createManagedAllocator } from '@/managedAllocator';
-import { createPoolAllocator } from '@/poolAllocator';
-import { createStackAllocator } from '@/stackAllocator';
-import type { Storage } from '@/storage';
-
-import { coded } from './coded';
+import { allocate } from '@/src/allocate';
+import type { Allocation, Allocator } from '@/src/allocator';
+import { createArenaAllocator } from '@/src/arenaAllocator';
+import { createFixedBufferAllocator } from '@/src/fixedBufferAllocator';
+import { createManagedAllocator } from '@/src/managedAllocator';
+import { createPoolAllocator } from '@/src/poolAllocator';
+import { createStackAllocator } from '@/src/stackAllocator';
+import type { Storage } from '@/src/storage';
+import { coded } from '@/src/tests/coded';
 
 /**
  * Behaviour suite for `allocate`.
@@ -32,6 +31,7 @@ const Particle = struct('Particle', {
 	x: SinglePrecisionFloat,
 	y: SinglePrecisionFloat,
 });
+
 type Particle = Struct<typeof Particle>;
 
 /** Sixteen bytes aligned to eight: misplacing it shows. */
@@ -124,6 +124,7 @@ describe('allocate', () => {
 		// The pool takes back one allocation, so the one `allocate` asked it for
 		// is kept on the way through.
 		const leases: Allocation[] = [];
+
 		const recordingPool: Allocator = {
 			allocate: (size: number, alignment: number): Allocation => {
 				const allocation: Allocation = pool.allocate(size, alignment);
@@ -144,10 +145,14 @@ describe('allocate', () => {
 		arena.reset();
 		fixed.reset();
 		frame[Symbol.dispose]();
-		pool.deallocate(leases[0] as Allocation);
+
+		const [lease] = leases;
+
+		assert.isDefined(lease);
+		pool.deallocate(lease);
 
 		for (const particles of released) {
-			expect(() => particles.get(0)).toThrowError(
+			expect(() => particles.get(0)).toThrow(
 				coded(
 					new Error(
 						'FULCRO7009: Storage.get: the memory was released by its allocator, and may already hold other values.',
@@ -155,9 +160,10 @@ describe('allocate', () => {
 					{ operation: 'Storage.get' },
 				),
 			);
-			expect(() =>
-				particles.set(0, Particle.from({ x: 1, y: 1 })),
-			).toThrowError(
+
+			expect(() => {
+				particles.set(0, Particle.from({ x: 1, y: 1 }));
+			}).toThrow(
 				coded(
 					new Error(
 						'FULCRO7009: Storage.set: the memory was released by its allocator, and may already hold other values.',
@@ -178,7 +184,7 @@ describe('allocate', () => {
 
 		after.set(0, Particle.from({ x: 7, y: 7 }));
 
-		expect(() => before.get(0)).toThrowError(Error);
+		expect(() => before.get(0)).toThrow(Error);
 		expect(after.get(0)).toEqual({ x: 7, y: 7 });
 	});
 
@@ -193,44 +199,39 @@ describe('allocate', () => {
 	it('should refuse a value its element type does not recognise', () => {
 		const particles = allocate(Particle, 1, createManagedAllocator());
 
-		expect(() =>
-			particles.set(0, { x: 1, y: 1 } as unknown as Particle),
-		).toThrowError(
-			coded(
-				new TypeError(
-					'FULCRO7004: Storage.set: the value is not a value of Particle.',
-				),
-				{ operation: 'Storage.set', element: 'Particle' },
-			),
+		expect(() => {
+			particles.set(0, { x: 1, y: 1 } as unknown as Particle);
+		}).toThrow(
+			coded(new TypeError('FULCRO7004: Storage.set: the value is not a value of Particle.'), {
+				operation: 'Storage.set',
+				element: 'Particle',
+			}),
 		);
 	});
 
 	it('should refuse an index outside it', () => {
-		expect(() =>
-			allocate(Particle, 2, createManagedAllocator()).get(2),
-		).toThrowError(
-			coded(
-				new RangeError(
-					'FULCRO7002: Storage.get: index 2 is outside a storage of length 2.',
-				),
-				{ operation: 'Storage.get', index: 2, length: 2 },
-			),
+		expect(() => allocate(Particle, 2, createManagedAllocator()).get(2)).toThrow(
+			coded(new RangeError('FULCRO7002: Storage.get: index 2 is outside a storage of length 2.'), {
+				operation: 'Storage.get',
+				index: 2,
+				length: 2,
+			}),
 		);
 	});
 
 	it('should refuse an element type it cannot store, before asking for memory', () => {
 		const { allocator, requests } = createLedgerAllocator();
 
-		expect(() =>
-			allocate(
+		expect(() => {
+			return allocate(
 				{
 					name: 'T',
 					layout: { size: 4, alignment: 4 },
 				} as unknown as typeof Particle,
 				1,
 				allocator,
-			),
-		).toThrowError(
+			);
+		}).toThrow(
 			coded(
 				new TypeError(
 					'FULCRO7003: allocate: expected an element type with a name, layout.size, read, write and is; read is missing.',
@@ -238,6 +239,7 @@ describe('allocate', () => {
 				{ operation: 'allocate', missing: 'read' },
 			),
 		);
+
 		expect(requests).toEqual([]);
 	});
 
@@ -249,22 +251,24 @@ describe('allocate', () => {
 		'should refuse an element whose alignment is %s, before asking for memory',
 		(alignment, shown) => {
 			const { allocator, requests } = createLedgerAllocator();
+
 			const element = {
 				...Particle,
 				layout: { size: Particle.layout.size, alignment },
 			} as unknown as typeof Particle;
 
-			expect(() => allocate(element, 1, allocator)).toThrowError(
+			expect(() => allocate(element, 1, allocator)).toThrow(
 				coded(
 					new RangeError(
 						`FULCRO7006: allocate: expected an alignment that is a positive power of two, received ${shown}.`,
 					),
 					{
 						operation: 'allocate',
-						received: alignment === undefined ? 'undefined' : alignment,
+						received: alignment ?? 'undefined',
 					},
 				),
 			);
+
 			expect(requests).toEqual([]);
 		},
 	);
@@ -272,7 +276,7 @@ describe('allocate', () => {
 	it('should refuse a length that is not a count, before asking for memory', () => {
 		const { allocator, requests } = createLedgerAllocator();
 
-		expect(() => allocate(Particle, -1, allocator)).toThrowError(
+		expect(() => allocate(Particle, -1, allocator)).toThrow(
 			coded(
 				new RangeError(
 					'FULCRO7001: allocate: expected a length that is a non-negative safe integer, received -1.',
@@ -280,11 +284,12 @@ describe('allocate', () => {
 				{ operation: 'allocate', received: -1 },
 			),
 		);
+
 		expect(requests).toEqual([]);
 	});
 
 	it('should pass on the allocator’s refusal when it has no room', () => {
-		expect(() => allocate(Particle, 3, createStackAllocator(16))).toThrowError(
+		expect(() => allocate(Particle, 3, createStackAllocator(16))).toThrow(
 			coded(
 				new RangeError(
 					'FULCRO7007: StackAllocator.allocate: 24 bytes aligned to 4 were requested, but only 16 of 16 bytes remain.',
@@ -304,11 +309,12 @@ describe('allocate', () => {
 		expectTypeOf(allocate(Particle, 1, createManagedAllocator())).toEqualTypeOf<
 			Storage<Particle>
 		>();
-		expectTypeOf(allocate(Particle, 1, createManagedAllocator()).set)
+
+		expectTypeOf(allocate(Particle, 1, createManagedAllocator()))
+			.toHaveProperty('set')
 			.parameter(1)
 			.toEqualTypeOf<Particle>();
-		expectTypeOf(createStackAllocator(8).enter()).toMatchTypeOf<
-			Parameters<typeof allocate>[2]
-		>();
+
+		expectTypeOf(createStackAllocator(8).enter()).toExtend<Parameters<typeof allocate>[2]>();
 	});
 });

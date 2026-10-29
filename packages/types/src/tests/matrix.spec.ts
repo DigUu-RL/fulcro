@@ -3,18 +3,18 @@ import * as path from 'node:path';
 
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { BigInteger } from '@/bigInteger';
-import { ComplexNumber } from '@/complexNumber';
-import { Decimal } from '@/decimal';
-import { DoublePrecisionFloat } from '@/doublePrecisionFloat';
-import type { Layout } from '@/layout';
-import { type Matrix, Matrix as MatrixOf } from '@/matrix';
-import { Quaternion } from '@/quaternion';
-import { SignedInteger } from '@/signedInteger';
-import { SinglePrecisionFloat } from '@/singlePrecisionFloat';
-import { struct } from '@/struct';
-import { UnsignedInteger } from '@/unsignedInteger';
-import { Vector } from '@/vector';
+import { BigInteger } from '@/src/bigInteger';
+import { ComplexNumber } from '@/src/complexNumber';
+import { Decimal } from '@/src/decimal';
+import { DoublePrecisionFloat } from '@/src/doublePrecisionFloat';
+import type { Layout } from '@/src/layout';
+import { type Matrix, Matrix as MatrixOf } from '@/src/matrix';
+import { Quaternion } from '@/src/quaternion';
+import { SignedInteger } from '@/src/signedInteger';
+import { SinglePrecisionFloat } from '@/src/singlePrecisionFloat';
+import { struct } from '@/src/struct';
+import { UnsignedInteger } from '@/src/unsignedInteger';
+import { Vector } from '@/src/vector';
 
 /**
  * Behaviour suite for `Matrix`.
@@ -34,14 +34,12 @@ import { Vector } from '@/vector';
  * @param details The details the error is expected to carry.
  * @returns The same error, carrying that code and those details.
  */
-const coded = <T extends Error>(
-	error: T,
-	details: Readonly<Record<string, unknown>>,
-): T =>
-	Object.assign(error, {
+const coded = <T extends Error>(error: T, details: Readonly<Record<string, unknown>>): T => {
+	return Object.assign(error, {
 		code: error.message.slice(0, 'FULCRO0000'.length),
 		details,
 	});
+};
 
 const Pair = MatrixOf(DoublePrecisionFloat, 2, 3);
 const Tall = MatrixOf(DoublePrecisionFloat, 3, 2);
@@ -51,6 +49,7 @@ const pair = Pair.from([
 	[1, 2, 3],
 	[4, 5, 6],
 ]);
+
 const tall = Tall.from([
 	[7, 8],
 	[9, 10],
@@ -81,20 +80,13 @@ describe('Matrix', () => {
 		it('should convert every element with the element type', () => {
 			const Floats = MatrixOf(SinglePrecisionFloat, 1, 2);
 
-			expect([...Floats.from([[0.1, 1e39]])]).toEqual([
-				Math.fround(0.1),
-				Infinity,
-			]);
+			expect([...Floats.from([[0.1, 1e39]])]).toEqual([Math.fround(0.1), Infinity]);
 		});
 
 		it('should infer the element type and the shape', () => {
 			expectTypeOf(pair).toEqualTypeOf<Matrix<DoublePrecisionFloat, 2, 3>>();
-			expectTypeOf(Pair.multiply(pair, tall)).toEqualTypeOf<
-				Matrix<DoublePrecisionFloat, 2, 2>
-			>();
-			expectTypeOf(Pair.transpose(pair)).toEqualTypeOf<
-				Matrix<DoublePrecisionFloat, 3, 2>
-			>();
+			expectTypeOf(Pair.multiply(pair, tall)).toEqualTypeOf<Matrix<DoublePrecisionFloat, 2, 2>>();
+			expectTypeOf(Pair.transpose(pair)).toEqualTypeOf<Matrix<DoublePrecisionFloat, 3, 2>>();
 		});
 	});
 
@@ -147,9 +139,7 @@ describe('Matrix', () => {
 		});
 
 		it('should scale every element', () => {
-			expect([...Pair.scale(pair, DoublePrecisionFloat.from(2))]).toEqual([
-				2, 4, 6, 8, 10, 12,
-			]);
+			expect([...Pair.scale(pair, DoublePrecisionFloat.from(2))]).toEqual([2, 4, 6, 8, 10, 12]);
 		});
 
 		it('should multiply a row of the left by a column of the right', () => {
@@ -171,11 +161,11 @@ describe('Matrix', () => {
 		it('should keep the order of elements whose product does not commute', () => {
 			const Rotation = Quaternion(DoublePrecisionFloat);
 			const Single = MatrixOf(Rotation, 1, 1);
-			const i = Single.from([[{ w: 0, x: 1, y: 0, z: 0 }]]);
-			const j = Single.from([[{ w: 0, x: 0, y: 1, z: 0 }]]);
+			const unitI = Single.from([[{ w: 0, x: 1, y: 0, z: 0 }]]);
+			const unitJ = Single.from([[{ w: 0, x: 0, y: 1, z: 0 }]]);
 
-			expect(Single.multiply(i, j)[0]).toEqual({ w: 0, x: 0, y: 0, z: 1 });
-			expect(Single.multiply(j, i)[0]).toEqual({ w: 0, x: 0, y: 0, z: -1 });
+			expect(Single.multiply(unitI, unitJ)[0]).toEqual({ w: 0, x: 0, y: 0, z: 1 });
+			expect(Single.multiply(unitJ, unitI)[0]).toEqual({ w: 0, x: 0, y: 0, z: -1 });
 		});
 
 		it('should transpose', () => {
@@ -217,9 +207,9 @@ describe('Matrix', () => {
 		it('should compute over complex numbers', () => {
 			const Complex = ComplexNumber(DoublePrecisionFloat);
 			const Single = MatrixOf(Complex, 1, 1);
-			const i = Single.from([[{ real: 0, imaginary: 1 }]]);
+			const imaginaryUnit = Single.from([[{ real: 0, imaginary: 1 }]]);
 
-			expect(Single.multiply(i, i)[0]).toEqual({ real: -1, imaginary: 0 });
+			expect(Single.multiply(imaginaryUnit, imaginaryUnit)[0]).toEqual({ real: -1, imaginary: 0 });
 		});
 	});
 
@@ -234,6 +224,7 @@ describe('Matrix', () => {
 					]),
 				),
 			).toBe(true);
+
 			expect(Pair.equals(pair, Pair.negate(pair))).toBe(false);
 		});
 
@@ -251,9 +242,11 @@ describe('Matrix', () => {
 
 	describe('layout', () => {
 		it('should declare its elements end to end', () => {
-			expectTypeOf<
-				Matrix<SinglePrecisionFloat, 3, 4>['~layout']
-			>().toEqualTypeOf<{ readonly size: 48; readonly alignment: 4 }>();
+			expectTypeOf<Matrix<SinglePrecisionFloat, 3, 4>['~layout']>().toEqualTypeOf<{
+				readonly size: 48;
+				readonly alignment: 4;
+			}>();
+
 			expectTypeOf<Matrix<Decimal, 4, 4>['~layout']>().toEqualTypeOf<{
 				readonly size: 256;
 				readonly alignment: 16;
@@ -261,13 +254,12 @@ describe('Matrix', () => {
 		});
 
 		it('should declare no layout over a type that has none', () => {
-			expectTypeOf<Matrix<BigInteger, 2, 2>>().not.toMatchTypeOf<
-				Layout<number, number>
-			>();
+			expectTypeOf<Matrix<BigInteger, 2, 2>>().not.toExtend<Layout<number, number>>();
 		});
 
 		it('should be a field of a struct, laid out as its type declares', () => {
 			const Transform = MatrixOf(SinglePrecisionFloat, 3, 4);
+
 			const Placed = struct('Placed', {
 				tag: UnsignedInteger(8),
 				transform: Transform,
@@ -278,17 +270,20 @@ describe('Matrix', () => {
 				size: 48,
 				alignment: 4,
 			});
+
 			expectTypeOf(Placed.layout.fields.transform.size).toEqualTypeOf<48>();
 		});
 
 		it('should write its elements into bytes and read them back', () => {
 			const Placed = struct('Placed', { transform: Pair });
+
 			const value = Placed.from({
 				transform: [
 					[1, 2, 3],
 					[4, 5, 6],
 				],
 			});
+
 			const view = new DataView(new ArrayBuffer(Placed.layout.size));
 
 			Placed.write(view, 0, value);
@@ -318,7 +313,7 @@ describe('Matrix', () => {
 			expect(() => MatrixOf(DoublePrecisionFloat, rows, 2)).toThrow(
 				coded(
 					new RangeError(
-						`FULCRO6035: Matrix: expected a positive integer number of rows, received ${rows}.`,
+						`FULCRO6035: Matrix: expected a positive integer number of rows, received ${String(rows)}.`,
 					),
 					{ operation: 'Matrix', dimension: 'rows', received: String(rows) },
 				),
@@ -352,12 +347,13 @@ describe('Matrix', () => {
 					},
 				),
 			);
-			expect(() =>
-				Pair.from([
+
+			expect(() => {
+				return Pair.from([
 					[1, 2, 3],
 					[4, 5],
-				]),
-			).toThrow(
+				]);
+			}).toThrow(
 				coded(
 					new RangeError(
 						'FULCRO6038: Matrix<DoublePrecisionFloat, 2, 3>.from: expected 3 elements in row 1, received 2.',
@@ -372,12 +368,12 @@ describe('Matrix', () => {
 		});
 
 		it('should name the element its own type refused, keeping its code', () => {
-			expect(() =>
-				Pair.from([
+			expect(() => {
+				return Pair.from([
 					[1, 2, 3],
 					[4, 'x' as never, 6],
-				]),
-			).toThrow(
+				]);
+			}).toThrow(
 				coded(
 					new TypeError(
 						'FULCRO6006: Matrix<DoublePrecisionFloat, 2, 3>.from: row 1, column 1: DoublePrecisionFloat.from: expected a number, received string.',
@@ -487,39 +483,38 @@ const compileRejected = (packageName: string): string => {
 	}
 };
 
-describe.each(COMPILERS)(
-	'Matrix shapes at compile time, on %s',
-	(_label, name) => {
-		const report: string = compileRejected(name);
-		const lines: number[] = [
-			...new Set(
-				[...report.matchAll(/rejected\.fixture\.ts[:(](\d+)/g)].map((match) =>
-					Number(match[1]),
-				),
-			),
-		];
+describe.each(COMPILERS)('Matrix shapes at compile time, on %s', (_label, name) => {
+	const report: string = compileRejected(name);
 
-		it('should refuse a product whose shapes do not meet, quoting why', () => {
-			expect(lines).toContain(22);
-			expect(report).toContain(
-				'Cannot multiply Matrix<T, 3, 4> by Vector<T, 2, 1>. Expected a vector with 4 rows.',
-			);
-			expect(lines).toContain(25);
-			expect(report).toContain(
-				'Cannot multiply Matrix<T, 3, 4> by Matrix<T, 3, 4>. Expected a matrix with 4 rows.',
-			);
-		});
+	const lines: number[] = [
+		...new Set(
+			[...report.matchAll(/rejected\.fixture\.ts[:(](\d+)/g)].map((match) => Number(match[1])),
+		),
+	];
 
-		it('should refuse an identity to a matrix that is not square', () => {
-			expect(lines).toContain(29);
-		});
+	it('should refuse a product whose shapes do not meet, quoting why', () => {
+		expect(lines).toContain(22);
 
-		it('should refuse to add matrices of different shapes', () => {
-			expect(lines).toContain(33);
-		});
+		expect(report).toContain(
+			'Cannot multiply Matrix<T, 3, 4> by Vector<T, 2, 1>. Expected a vector with 4 rows.',
+		);
 
-		it('should report nothing else', () => {
-			expect(lines).toEqual([22, 25, 29, 33]);
-		});
-	},
-);
+		expect(lines).toContain(25);
+
+		expect(report).toContain(
+			'Cannot multiply Matrix<T, 3, 4> by Matrix<T, 3, 4>. Expected a matrix with 4 rows.',
+		);
+	});
+
+	it('should refuse an identity to a matrix that is not square', () => {
+		expect(lines).toContain(29);
+	});
+
+	it('should refuse to add matrices of different shapes', () => {
+		expect(lines).toContain(33);
+	});
+
+	it('should report nothing else', () => {
+		expect(lines).toEqual([22, 25, 29, 33]);
+	});
+});

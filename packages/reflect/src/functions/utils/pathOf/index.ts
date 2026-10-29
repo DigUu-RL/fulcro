@@ -28,7 +28,7 @@ const parsePath = (accessor: PathAccessor): string | null => {
 		.replace(/[;\s}]+$/, '')
 		.trim();
 
-	const matched: RegExpMatchArray | null = source.match(PATH_PATTERN);
+	const matched: RegExpMatchArray | null = PATH_PATTERN.exec(source);
 
 	if (matched === null) return null;
 
@@ -39,9 +39,9 @@ const parsePath = (accessor: PathAccessor): string | null => {
 		.replaceAll('?.', '.')
 		// A quoted key becomes a dotted segment; a numeric index keeps its
 		// brackets, since `items.0.sku` is not how anyone writes a path.
-		.replace(BRACKET_PATTERN, (_whole, single, double, digits) =>
-			digits === undefined ? `.${single ?? double}` : `[${digits}]`,
-		);
+		.replace(BRACKET_PATTERN, (_whole, single, double, digits) => {
+			return digits === undefined ? `.${String(single ?? double)}` : `[${String(digits)}]`;
+		});
 
 	// The root is dropped. `pathOf(() => user.profile.email)` answers
 	// `profile.email`, because the root is the thing the path is relative *to* —
@@ -97,5 +97,4 @@ const parsePath = (accessor: PathAccessor): string | null => {
  * @param accessor Accessor walking the path.
  * @returns The path, or `null` when the accessor does not walk one.
  */
-export const pathOf = (accessor: PathAccessor): string | null =>
-	parsePath(accessor);
+export const pathOf = (accessor: PathAccessor): string | null => parsePath(accessor);

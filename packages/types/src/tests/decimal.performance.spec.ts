@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { Decimal } from '@/decimal';
+import { Decimal } from '@/src/decimal';
 
 /**
  * Performance suite for `Decimal`.
@@ -25,25 +25,42 @@ import { Decimal } from '@/decimal';
 /** Digits of the largest integer printed or parsed since the test started. */
 let largest = 0;
 
-const nativeToString = BigInt.prototype.toString;
+/** The prototype's own `toString`, restored after each test. */
+const nativeToString: PropertyDescriptor | undefined = Object.getOwnPropertyDescriptor(
+	BigInt.prototype,
+	'toString',
+);
+
 const nativeBigInt: BigIntConstructor = globalThis.BigInt;
+
+/**
+ * Prints a bigint the way the platform does, recording how long the text was.
+ *
+ * Calls the platform's own function, from the descriptor kept above, on the
+ * bigint itself: while this one is installed, `BigInt.prototype.toString` is
+ * this one, so it cannot be reached through the prototype.
+ *
+ * @param radix Base to print in.
+ * @returns The text.
+ */
+const recordingToString = function (this: bigint, ...radix: [number?]): string {
+	const text: string = (nativeToString?.value as (radix?: number) => string).apply(this, radix);
+
+	largest = Math.max(largest, text.length);
+
+	return text;
+};
 
 beforeEach(() => {
 	largest = 0;
 
-	BigInt.prototype.toString = function (
-		this: bigint,
-		...radix: [number?]
-	): string {
-		const text: string = nativeToString.apply(this, radix);
-
-		largest = Math.max(largest, text.length);
-
-		return text;
-	};
+	Object.defineProperty(BigInt.prototype, 'toString', {
+		...nativeToString,
+		value: recordingToString,
+	});
 
 	globalThis.BigInt = new Proxy(nativeBigInt, {
-		apply: (target, receiver, argumentsList: unknown[]) => {
+		apply: (target, receiver, argumentsList: unknown[]): unknown => {
 			const [value] = argumentsList;
 
 			if (typeof value === 'string') largest = Math.max(largest, value.length);
@@ -54,11 +71,14 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-	BigInt.prototype.toString = nativeToString;
+	if (nativeToString !== undefined) {
+		Object.defineProperty(BigInt.prototype, 'toString', nativeToString);
+	}
+
 	globalThis.BigInt = nativeBigInt;
 });
 
-const D = Decimal.from;
+const decimal = Decimal.from;
 
 /**
  * No intermediate may pass this many digits: two thirty-four-digit
@@ -72,32 +92,24 @@ describe('Decimal intermediates', () => {
 		['1e6000', '1e-6000'],
 		['9.999999999999999999999999999999999e6144', '1e-6176'],
 		['-1e-6176', '1e6144'],
-	])(
-		'should add %s and %s without writing out the gap between them',
-		(left, right) => {
-			const a = D(left);
-			const b = D(right);
+	])('should add %s and %s without writing out the gap between them', (left, right) => {
+		const leftDecimal = decimal(left);
+		const rightDecimal = decimal(right);
 
-			largest = 0;
+		largest = 0;
 
-			for (const mode of [
-				'halfEven',
-				'ceiling',
-				'floor',
-				'truncate',
-			] as const) {
-				a.add(b, mode);
-				a.subtract(b, mode);
-				b.subtract(a, mode);
-			}
+		for (const mode of ['halfEven', 'ceiling', 'floor', 'truncate'] as const) {
+			leftDecimal.add(rightDecimal, mode);
+			leftDecimal.subtract(rightDecimal, mode);
+			rightDecimal.subtract(leftDecimal, mode);
+		}
 
-			expect(largest).toBeLessThanOrEqual(INTERMEDIATE_CEILING);
-		},
-	);
+		expect(largest).toBeLessThanOrEqual(INTERMEDIATE_CEILING);
+	});
 
 	it('should multiply and divide across the whole exponent range in bounded digits', () => {
-		const huge = D('9.999999999999999999999999999999999e6144');
-		const tiny = D('1.234567890123456789012345678901234e-6176');
+		const huge = decimal('9.999999999999999999999999999999999e6144');
+		const tiny = decimal('1.234567890123456789012345678901234e-6176');
 
 		largest = 0;
 
@@ -105,31 +117,28 @@ describe('Decimal intermediates', () => {
 		tiny.multiply(tiny);
 		huge.divide(tiny);
 		tiny.divide(huge);
-		D('1').divide(D('3'));
+		decimal('1').divide(decimal('3'));
 
 		expect(largest).toBeLessThanOrEqual(INTERMEDIATE_CEILING);
 	});
 
 	it('should find a remainder across twelve thousand places by reducing the power', () => {
-		const huge = D('9.999999999999999999999999999999999e6144');
-		const tiny = D('7e-6176');
+		const huge = decimal('9.999999999999999999999999999999999e6144');
+		const tiny = decimal('7e-6176');
 
 		largest = 0;
 
-		huge.remainder(D('7'));
+		huge.remainder(decimal('7'));
 		huge.remainder(tiny);
-		D('1e6000').remainder(D('3.3'));
+		decimal('1e6000').remainder(decimal('3.3'));
 
 		expect(largest).toBeLessThanOrEqual(INTERMEDIATE_CEILING);
 	});
 
 	it('should compare values of any exponent in bounded digits', () => {
-		const values = [
-			'1e6144',
-			'1e-6176',
-			'-5e3000',
-			'5.000000000000000000000000000000001e3000',
-		].map((text) => D(text));
+		const values = ['1e6144', '1e-6176', '-5e3000', '5.000000000000000000000000000000001e3000'].map(
+			(text) => decimal(text),
+		);
 
 		largest = 0;
 
@@ -141,9 +150,9 @@ describe('Decimal intermediates', () => {
 	it('should round away six thousand places without building their power', () => {
 		largest = 0;
 
-		D('1e-6000').round(2, 'ceiling');
-		D('1.5e-6176').round(0);
-		D('1e6000').round(-6000);
+		decimal('1e-6000').round(2, 'ceiling');
+		decimal('1.5e-6176').round(0);
+		decimal('1e6000').round(-6000);
 
 		expect(largest).toBeLessThanOrEqual(INTERMEDIATE_CEILING);
 	});
@@ -152,15 +161,15 @@ describe('Decimal intermediates', () => {
 		const text = `0.${'3'.repeat(100_000)}`;
 
 		largest = 0;
-		D(text);
+		decimal(text);
 
 		// Thirty-four digits, the rounding digit and the one summarising the rest.
 		expect(largest).toBeLessThanOrEqual(36);
 	});
 
 	it('should print an extreme exponent in exponential notation, not in full', () => {
-		expect(D('1e6000').toString().length).toBeLessThan(10);
-		expect(D('-1.5e-6000').toString().length).toBeLessThan(12);
+		expect(decimal('1e6000').toString().length).toBeLessThan(10);
+		expect(decimal('-1.5e-6000').toString().length).toBeLessThan(12);
 	});
 });
 
@@ -177,7 +186,7 @@ describe('Decimal parsing', () => {
 			const repetitions: number = 2_000_000 / length;
 			const started: number = performance.now();
 
-			for (let index = 0; index < repetitions; index++) D(text);
+			for (let index = 0; index < repetitions; index++) decimal(text);
 
 			return Math.max(performance.now() - started, 1);
 		};

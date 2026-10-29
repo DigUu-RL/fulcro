@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
-import { catalog } from '@/catalog';
-import { collectionsCatalog } from '@/catalog/collections';
-import { functionsCatalog } from '@/catalog/functions';
-import { memoryCatalog } from '@/catalog/memory';
-import { parallelCatalog } from '@/catalog/parallel';
-import { reflectCatalog } from '@/catalog/reflect';
-import { transformCoreCatalog } from '@/catalog/transform-core';
-import { typesCatalog } from '@/catalog/types';
-import { ErrorDefinition } from '@/definition';
-import { sampleDetails } from '@/tests/sampleDetails';
+import { catalog } from '@/src/catalog';
+import { collectionsCatalog } from '@/src/catalog/collections';
+import { functionsCatalog } from '@/src/catalog/functions';
+import { memoryCatalog } from '@/src/catalog/memory';
+import { parallelCatalog } from '@/src/catalog/parallel';
+import { reflectCatalog } from '@/src/catalog/reflect';
+import { transformCoreCatalog } from '@/src/catalog/transform-core';
+import { typesCatalog } from '@/src/catalog/types';
+import type { ErrorDefinition } from '@/src/definition';
+import { sampleDetails } from '@/src/tests/sampleDetails';
 
 /**
  * Behaviour suite for the catalog.
@@ -35,30 +35,22 @@ const RANGES = [
 const CODE = /^FULCRO\d{4}$/;
 
 describe('catalog', () => {
-	it.each(RANGES)(
-		"%s's codes should all sit in range %sxxx",
-		(_name, digit, codes) => {
-			for (const code of Object.keys(codes)) {
-				expect(code).toMatch(CODE);
-				expect(code[6]).toBe(digit);
-			}
-		},
-	);
+	it.each(RANGES)("%s's codes should all sit in range %sxxx", (_name, digit, codes) => {
+		for (const code of Object.keys(codes)) {
+			expect(code).toMatch(CODE);
+			expect(code[6]).toBe(digit);
+		}
+	});
 
 	it('should lose no code when the ranges are merged', () => {
-		const total: number = RANGES.reduce(
-			(sum, [, , codes]) => sum + Object.keys(codes).length,
-			0,
-		);
+		const total: number = RANGES.reduce((sum, [, , codes]) => sum + Object.keys(codes).length, 0);
 
 		expect(Object.keys(catalog)).toHaveLength(total);
 	});
 
 	it('should give every code a template that produces text', () => {
 		for (const [code, definition] of Object.entries(catalog)) {
-			const text: string = (definition as ErrorDefinition).message(
-				sampleDetails(),
-			);
+			const text: string = (definition as ErrorDefinition).message(sampleDetails());
 
 			expect(text.length, code).toBeGreaterThan(0);
 			expect(text, code).not.toMatch(/^FULCRO\d{4}/);

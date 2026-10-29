@@ -1,12 +1,7 @@
 import typescript from 'typescript';
 
-import {
-	CallRewriter,
-	IDENTIFIER_PATTERN,
-	isTupleType,
-	RewriteContext,
-	utilityModuleSegment,
-} from '@fulcro/transform-core';
+import type { CallRewriter, RewriteContext } from '@fulcro/transform-core';
+import { IDENTIFIER_PATTERN, isTupleType, utilityModuleSegment } from '@fulcro/transform-core';
 
 /**
  * Rewriter of `defaultOf`.
@@ -74,9 +69,7 @@ const buildDefaultExpression = (
 
 	if (
 		(flags &
-			(typescript.TypeFlags.Undefined |
-				typescript.TypeFlags.Void |
-				typescript.TypeFlags.Never)) !==
+			(typescript.TypeFlags.Undefined | typescript.TypeFlags.Void | typescript.TypeFlags.Never)) !==
 		0
 	) {
 		return factory.createIdentifier('undefined');
@@ -84,9 +77,7 @@ const buildDefaultExpression = (
 
 	if (
 		(flags &
-			(typescript.TypeFlags.Null |
-				typescript.TypeFlags.Any |
-				typescript.TypeFlags.Unknown)) !==
+			(typescript.TypeFlags.Null | typescript.TypeFlags.Any | typescript.TypeFlags.Unknown)) !==
 		0
 	) {
 		return factory.createNull();
@@ -94,6 +85,7 @@ const buildDefaultExpression = (
 
 	// A literal type admits exactly one value, which is therefore its default.
 	if (type.isStringLiteral()) return factory.createStringLiteral(type.value);
+
 	if (type.isNumberLiteral()) {
 		return type.value < 0
 			? factory.createPrefixUnaryExpression(
@@ -104,15 +96,11 @@ const buildDefaultExpression = (
 	}
 
 	if ((flags & typescript.TypeFlags.BooleanLiteral) !== 0) {
-		return checker.typeToString(type) === 'true'
-			? factory.createTrue()
-			: factory.createFalse();
+		return checker.typeToString(type) === 'true' ? factory.createTrue() : factory.createFalse();
 	}
 
 	if ((flags & typescript.TypeFlags.BigIntLiteral) !== 0) {
-		return factory.createBigIntLiteral(
-			`${checker.typeToString(type).replace(/n$/, '')}n`,
-		);
+		return factory.createBigIntLiteral(`${checker.typeToString(type).replace(/n$/, '')}n`);
 	}
 
 	if ((flags & typescript.TypeFlags.String) !== 0) {
@@ -132,11 +120,7 @@ const buildDefaultExpression = (
 	}
 
 	if ((flags & typescript.TypeFlags.ESSymbol) !== 0) {
-		return factory.createCallExpression(
-			factory.createIdentifier('Symbol'),
-			undefined,
-			[],
-		);
+		return factory.createCallExpression(factory.createIdentifier('Symbol'), undefined, []);
 	}
 
 	// An enum defaults to its first member, which is the one carrying the
@@ -176,10 +160,7 @@ const buildUnionDefault = (
 	// A nullable union is happiest empty: `null` and `undefined` are the
 	// cheapest inhabitants, and the ones a caller expects from a default.
 	const nullish = type.types.find(
-		(member) =>
-			(member.flags &
-				(typescript.TypeFlags.Null | typescript.TypeFlags.Undefined)) !==
-			0,
+		(member) => (member.flags & (typescript.TypeFlags.Null | typescript.TypeFlags.Undefined)) !== 0,
 	);
 
 	if (nullish !== undefined) {
@@ -207,7 +188,7 @@ const buildBuiltInDefault = (
 	type: typescript.ObjectType,
 	factory: typescript.NodeFactory,
 ): typescript.Expression | null => {
-	const name: string | undefined = type.symbol?.getName();
+	const name: string | undefined = type.getSymbol()?.getName();
 
 	if (name === undefined) return null;
 
@@ -223,9 +204,7 @@ const buildBuiltInDefault = (
 
 	return args === undefined
 		? null
-		: factory.createNewExpression(factory.createIdentifier(name), undefined, [
-				...args,
-			]);
+		: factory.createNewExpression(factory.createIdentifier(name), undefined, [...args]);
 };
 
 /**
@@ -244,8 +223,9 @@ const buildObjectDefault = (
 	const deeper: BuildState = { ...state, depth: depth + 1 };
 
 	if (isTupleType(type)) {
-		const elements: readonly typescript.Type[] =
-			checker.getTypeArguments(type as typescript.TypeReference) ?? [];
+		const elements: readonly typescript.Type[] = checker.getTypeArguments(
+			type as typescript.TypeReference,
+		);
 
 		return factory.createArrayLiteralExpression(
 			elements.map((element) => buildDefaultExpression(element, deeper)),
@@ -257,10 +237,7 @@ const buildObjectDefault = (
 		return factory.createArrayLiteralExpression([], false);
 	}
 
-	const builtIn: typescript.Expression | null = buildBuiltInDefault(
-		type,
-		factory,
-	);
+	const builtIn: typescript.Expression | null = buildBuiltInDefault(type, factory);
 
 	if (builtIn !== null) return builtIn;
 
@@ -288,15 +265,13 @@ const buildObjectDefault = (
 		.getPropertiesOfType(type)
 		// An optional property is satisfied by its own absence, which keeps
 		// the emitted literal to what the type actually requires.
-		.filter(
-			(property) => (property.flags & typescript.SymbolFlags.Optional) === 0,
-		)
+		.filter((property) => (property.flags & typescript.SymbolFlags.Optional) === 0)
 		.map((property) => {
 			const propertyType: typescript.Type = checker.getTypeOfSymbolAtLocation(
 				property,
 				property.valueDeclaration ??
 					property.declarations?.[0] ??
-					(type.symbol?.declarations?.[0] as typescript.Node),
+					(type.getSymbol()?.declarations?.[0] as typescript.Node),
 			);
 
 			const name: string = property.getName();

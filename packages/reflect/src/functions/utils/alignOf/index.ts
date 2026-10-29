@@ -1,4 +1,4 @@
-import { unresolvedLayout, type WithLayout } from '@/functions/utils/layout';
+import { type TypeLayout, unresolvedLayout, type WithLayout } from '@/src/functions/utils/layout';
 
 /**
  * The alignment of a type in memory, in bytes, as the type declares it: the
@@ -16,10 +16,11 @@ import { unresolvedLayout, type WithLayout } from '@/functions/utils/layout';
  * layout is a type error.
  *
  * @template T Type whose alignment is read; it must declare a layout.
- * @returns The alignment, in bytes.
+ * @returns The alignment, in bytes, typed as the number literal the layout of
+ * T declares: the same answer {@link layoutOf} reports as lignment.
  * @throws {Error} Always, when the transformer is not enabled or the type
  * argument is a generic parameter.
  */
-export const alignOf = <T extends WithLayout>(): number => {
+export const alignOf = <T extends WithLayout>(): TypeLayout<T>['alignment'] => {
 	throw unresolvedLayout('alignOf<T>()');
 };

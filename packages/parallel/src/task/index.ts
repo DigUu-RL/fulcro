@@ -1,20 +1,19 @@
 import { createError } from '@fulcro/errors';
 import { type Result, tryCatch } from '@fulcro/functions';
 
-import {
+import type {
 	CancellationSource,
 	CancellationToken,
 	Task,
 	TaskScope,
 	TaskScopeOptions,
 	TaskWork,
-} from '@/@types/index.js';
-import { createCancellationSource } from '@/cancellation/index.js';
-import {
-	createWaitingQueue,
-	type Waiting,
-	type WaitingQueue,
-} from '@/task/queue.js';
+} from '@/src/@types/index.js';
+import { createCancellationSource } from '@/src/cancellation/index.js';
+import { createWaitingQueue, type Waiting, type WaitingQueue } from '@/src/task/queue.js';
+
+/** Any value but `null` and `undefined`: what a task may fail with. */
+type NonNullish = string | number | bigint | boolean | symbol | object;
 
 /**
  * What a task rejects with, made safe to hold as a failure.
@@ -28,12 +27,15 @@ import {
  * @param thrown What the work rejected with.
  * @returns The value itself, or FULCRO3013 standing in for a nullish one.
  */
-const asFailure = (thrown: unknown): NonNullable<unknown> =>
-	thrown ??
-	createError('FULCRO3013', {
-		operation: 'spawn',
-		thrown: thrown as null | undefined,
-	});
+const asFailure = (thrown: unknown): NonNullish => {
+	return (
+		thrown ??
+		createError('FULCRO3013', {
+			operation: 'spawn',
+			thrown: thrown,
+		})
+	);
+};
 
 /**
  * Creates a scope that tasks start in and that ends only when they all have.
@@ -59,10 +61,7 @@ const asFailure = (thrown: unknown): NonNullable<unknown> =>
 export const createTaskScope = (options: TaskScopeOptions = {}): TaskScope => {
 	const limit: number = options.concurrency ?? Number.POSITIVE_INFINITY;
 
-	if (
-		limit !== Number.POSITIVE_INFINITY &&
-		!(Number.isInteger(limit) && limit >= 1)
-	) {
+	if (limit !== Number.POSITIVE_INFINITY && !(Number.isInteger(limit) && limit >= 1)) {
 		throw createError('FULCRO3012', {
 			operation: 'createTaskScope',
 			concurrency: limit,
@@ -157,7 +156,7 @@ export const createTaskScope = (options: TaskScopeOptions = {}): TaskScope => {
 		// Reading the outcome as a `Result` is also what handles it, so a task
 		// nobody awaits is never an unhandled rejection. Its failure is not lost:
 		// the scope holds it for `join` and for disposal.
-		const outcomeAsResult: Promise<Result<T, unknown>> = tryCatch<T>(outcome);
+		const outcomeAsResult: Promise<Result<T>> = tryCatch<T>(outcome);
 
 		/**
 		 * Ends the task, releasing its hold on the scope's cancellation.
@@ -180,11 +179,12 @@ export const createTaskScope = (options: TaskScopeOptions = {}): TaskScope => {
 				// Called off between being started and the work beginning —
 				// `spawn` then `cancel` in one breath. It has not run, so it
 				// never does.
-				const producing: Promise<T> = token.isCancelled
-					? Promise.reject(token.reason)
-					: new Promise<T>((onValue) => {
-							onValue(work(token));
-						});
+				// The token throws its own reason, so the rejection carries exactly
+				// what cancelled it.
+				const producing: Promise<T> = new Promise<T>((onValue) => {
+					token.throwIfCancelled();
+					onValue(work(token));
+				});
 
 				void producing
 					.then(
@@ -192,7 +192,7 @@ export const createTaskScope = (options: TaskScopeOptions = {}): TaskScope => {
 							resolve(value);
 						},
 						(thrown: unknown) => {
-							const error: NonNullable<unknown> = asFailure(thrown);
+							const error: NonNullish = asFailure(thrown);
 
 							// After a cancellation, the rejection is the work
 							// answering it. Only a task nobody called off can fail
@@ -241,10 +241,10 @@ export const createTaskScope = (options: TaskScopeOptions = {}): TaskScope => {
 		return Object.freeze({
 			then: <TResult1 = T, TResult2 = never>(
 				onFulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | null,
-				onRejected?:
-					((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
-			): PromiseLike<TResult1 | TResult2> =>
-				outcome.then(onFulfilled, onRejected),
+				onRejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
+			): PromiseLike<TResult1 | TResult2> => {
+				return outcome.then(onFulfilled, onRejected);
+			},
 			settled: outcomeAsResult,
 			token,
 			cancel: own.cancel,
@@ -266,9 +266,7 @@ export const createTaskScope = (options: TaskScopeOptions = {}): TaskScope => {
 
 		await end();
 
-		const unreported: { readonly error: unknown } | null = reported
-			? null
-			: failure;
+		const unreported: { readonly error: unknown } | null = reported ? null : failure;
 
 		reported = true;
 

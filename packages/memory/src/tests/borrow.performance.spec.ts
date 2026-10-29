@@ -2,15 +2,14 @@ import { describe, expect, it } from 'vitest';
 
 import { DoublePrecisionFloat, type Struct, struct } from '@fulcro/types';
 
-import { allocate } from '@/allocate';
-import type { Allocation, Allocator } from '@/allocator';
-import { borrow } from '@/borrow';
-import type { Borrowed } from '@/borrowed';
-import { own } from '@/own';
-import type { Owned } from '@/owned';
-import type { ReadOnlyView } from '@/view';
-
-import { countedStorage } from './countedSource';
+import { allocate } from '@/src/allocate';
+import type { Allocation, Allocator } from '@/src/allocator';
+import { borrow } from '@/src/borrow';
+import type { Borrowed } from '@/src/borrowed';
+import { own } from '@/src/own';
+import type { Owned } from '@/src/owned';
+import { countedStorage } from '@/src/tests/countedSource';
+import type { ReadOnlyView } from '@/src/view';
 
 /**
  * Performance suite for `borrow`, and for the `Borrowed<T>` it returns.
@@ -78,16 +77,20 @@ describe('borrow, counted', () => {
 	it('should ask once per access whether allocated memory is live', () => {
 		const Sample = struct('Sample', { value: DoublePrecisionFloat });
 		let livenessChecks = 0;
-		const allocator: Allocator = {
-			allocate: (size: number): Allocation => ({
-				bytes: new DataView(new ArrayBuffer(size)),
-				isLive: (): boolean => {
-					livenessChecks++;
 
-					return true;
-				},
-			}),
+		const allocator: Allocator = {
+			allocate: (size: number): Allocation => {
+				return {
+					bytes: new DataView(new ArrayBuffer(size)),
+					isLive: (): boolean => {
+						livenessChecks++;
+
+						return true;
+					},
+				};
+			},
 		};
+
 		const values: Borrowed<Struct<typeof Sample>> = borrow(
 			own(() => allocate(Sample, VOLUME, allocator)),
 		);

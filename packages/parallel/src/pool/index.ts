@@ -1,12 +1,12 @@
 import { createError, type DetailsOf, type ErrorCode } from '@fulcro/errors';
 
-import {
+import type {
 	PoolOptions,
 	RunOptions,
 	SpawnWorker,
 	WorkerHandle,
 	WorkerPool,
-} from '@/@types/index.js';
+} from '@/src/@types/index.js';
 
 /**
  * The pool, with the one platform-specific piece handed in.
@@ -25,8 +25,7 @@ const DEFAULT_WORKERS = 4;
  * and its details, or somebody else's, as the text it had.
  */
 type Failure =
-	| { readonly code: ErrorCode; readonly details: DetailsOf<ErrorCode> }
-	| { readonly error: string };
+	{ readonly code: ErrorCode; readonly details: DetailsOf<ErrorCode> } | { readonly error: string };
 
 /** What a worker sends back. */
 type Outgoing =
@@ -43,10 +42,7 @@ type Outgoing =
  * loading the task module, or running the task.
  * @returns The error.
  */
-const errorFrom = (
-	failure: Failure,
-	foreign: 'FULCRO3004' | 'FULCRO3005',
-): Error => {
+const errorFrom = (failure: Failure, foreign: 'FULCRO3004' | 'FULCRO3005'): Error => {
 	if ('error' in failure) {
 		return createError(foreign, {
 			operation: foreign === 'FULCRO3004' ? 'initialize' : 'run',
@@ -56,10 +52,7 @@ const errorFrom = (
 
 	// The worker chose the code and its details together, from the same
 	// catalog, so they match; the compiler cannot see that across a message.
-	const create = createError as (
-		code: ErrorCode,
-		details: DetailsOf<ErrorCode>,
-	) => Error;
+	const create = createError as (code: ErrorCode, details: DetailsOf<ErrorCode>) => Error;
 
 	return create(failure.code, failure.details);
 };
@@ -93,15 +86,14 @@ interface Member {
  * @returns A promise settling when it is this run's turn, or rejecting with
  * the abort reason.
  */
-const turnAfter = (
-	queued: Promise<void>,
-	signal: AbortSignal | undefined,
-): Promise<void> => {
+const turnAfter = (queued: Promise<void>, signal: AbortSignal | undefined): Promise<void> => {
 	if (signal === undefined) return queued;
 
-	return new Promise<void>((resolve, reject) => {
+	// The race decides only whether the run was called off; the signal itself
+	// then throws its reason, so the rejection carries exactly that.
+	const calledOff = new Promise<boolean>((resolve) => {
 		const onAbort = (): void => {
-			reject(signal.reason);
+			resolve(true);
 		};
 
 		if (signal.aborted) {
@@ -113,8 +105,12 @@ const turnAfter = (
 
 		void queued.then(() => {
 			signal.removeEventListener('abort', onAbort);
-			resolve();
+			resolve(false);
 		});
+	});
+
+	return calledOff.then((aborted) => {
+		if (aborted) signal.throwIfAborted();
 	});
 };
 
@@ -176,6 +172,16 @@ export const createPool = <T, R>(
 	 * fresh set of threads after `close` had already promised they were gone.
 	 */
 	let closed = false;
+
+	/**
+	 * Reads `closed` through a call, which control flow does not narrow. A run
+	 * checks it again after every wait, because a close that arrived meanwhile
+	 * is exactly what it is looking for — and read directly, the compiler keeps
+	 * the answer of the check before the wait.
+	 *
+	 * @returns `true` once `close` has been called.
+	 */
+	const isClosed = (): boolean => closed;
 
 	/** The close in progress or finished, which a second call shares. */
 	let closing: Promise<void> | null = null;
@@ -249,35 +255,37 @@ export const createPool = <T, R>(
 
 		try {
 			await Promise.all(
-				started.map(
-					(member) =>
-						new Promise<void>((resolve, reject) => {
-							stops.push(
-								member.handle.listen((message, failure) => {
-									if (failure !== undefined) {
-										reject(failure);
-										return;
-									}
+				started.map(async (member) => {
+					// Settles with what went wrong, if anything, rather than
+					// rejecting with it: a worker's failure is rethrown below as it
+					// came, its own error rather than one this pool made.
+					const outcome: { readonly failure: unknown } | null = await new Promise((resolve) => {
+						stops.push(
+							member.handle.listen((message, failure) => {
+								if (failure !== undefined) {
+									resolve({ failure });
+									return;
+								}
 
-									const reply = message as Outgoing;
+								const reply = message as Outgoing;
 
-									if (reply.kind === 'ready') resolve();
-									if (reply.kind === 'broken') {
-										reject(errorFrom(reply, 'FULCRO3004'));
-									}
-								}),
-							);
+								if (reply.kind === 'ready') resolve(null);
 
-							member.handle.post({
-								kind: 'init',
-								module:
-									typeof options.module === 'string'
-										? options.module
-										: options.module.href,
-								export: options.export,
-							});
-						}),
-				),
+								if (reply.kind === 'broken') {
+									resolve({ failure: errorFrom(reply, 'FULCRO3004') });
+								}
+							}),
+						);
+
+						member.handle.post({
+							kind: 'init',
+							module: typeof options.module === 'string' ? options.module : options.module.href,
+							export: options.export,
+						});
+					});
+
+					if (outcome !== null) throw outcome.failure;
+				}),
 			);
 		} catch (error) {
 			// One worker failing to load says nothing about the others, which
@@ -310,21 +318,21 @@ export const createPool = <T, R>(
 	const ready = async (operation: string): Promise<Member[]> => {
 		const refuse = (): Error => createError('FULCRO3010', { operation });
 
-		if (closed) throw refuse();
+		if (isClosed()) throw refuse();
 
 		const current: Promise<Member[]> | null = members;
 
 		if (current !== null) {
 			const running: Member[] = await current;
 
-			if (closed) throw refuse();
+			if (isClosed()) throw refuse();
 			if (running.every((member) => member.alive)) return running;
 
 			if (members === current) members = null;
 
 			await retire(running);
 
-			if (closed) throw refuse();
+			if (isClosed()) throw refuse();
 		}
 
 		const starting: Promise<Member[]> = start();
@@ -335,7 +343,7 @@ export const createPool = <T, R>(
 
 		// A close that arrived during the handshake has terminated these
 		// already, and a run handed them would wait on threads that are gone.
-		if (closed) throw refuse();
+		if (isClosed()) throw refuse();
 
 		return started;
 	};
@@ -389,8 +397,8 @@ export const createPool = <T, R>(
 		// Registered for this run and removed when it ends. A handler left behind
 		// reads the next run's replies into this run's buffers, and holds them
 		// alive for as long as the pool.
-		const stops: (() => void)[] = pool.map((member) =>
-			member.handle.listen((message, workerFailure) => {
+		const stops: (() => void)[] = pool.map((member) => {
+			return member.handle.listen((message, workerFailure) => {
 				if (workerFailure !== undefined) {
 					failure ??= { error: workerFailure };
 					notify();
@@ -413,11 +421,19 @@ export const createPool = <T, R>(
 					outstanding.delete(reply.id);
 					notify();
 				}
-			}),
-		);
+			});
+		});
 
 		/** The termination of this run's workers, once one has begun. */
 		let discarding: Promise<void> | null = null;
+
+		/**
+		 * Reads `discarding` through a call, for the reason `failed` does: it is
+		 * set inside `discard`, which an abort reaches from its listener.
+		 *
+		 * @returns The termination under way, or `null` while there is none.
+		 */
+		const discardStarted = (): Promise<void> | null => discarding;
 
 		/**
 		 * Gives up every worker of this run.
@@ -464,15 +480,12 @@ export const createPool = <T, R>(
 				if (signal?.aborted === true) return;
 
 				const position: number = handedOut++;
-				const value: T = pending[position];
+				const value = pending[position] as T;
 
 				member.busyWith = position;
 				outstanding.set(position, member);
 
-				member.handle.post(
-					{ kind: 'task', id: position, value },
-					runOptions?.transfer?.(value),
-				);
+				member.handle.post({ kind: 'task', id: position, value }, runOptions?.transfer?.(value));
 			}
 		};
 
@@ -506,7 +519,7 @@ export const createPool = <T, R>(
 
 			for (const stop of stops) stop();
 
-			if (outstanding.size > 0 || discarding !== null) await discard();
+			if (outstanding.size > 0 || discardStarted() !== null) await discard();
 		}
 	};
 
@@ -587,24 +600,22 @@ export const createPool = <T, R>(
 		map: async (items, runOptions): Promise<R[]> => {
 			const collected: R[] = [];
 
-			for await (const { position, value } of process(
-				items,
-				runOptions,
-				'map',
-			)) {
+			for await (const { position, value } of process(items, runOptions, 'map')) {
 				collected[position] = value;
 			}
 
 			return collected;
 		},
 
-		stream: (items, runOptions): AsyncIterable<R> => ({
-			async *[Symbol.asyncIterator](): AsyncIterator<R> {
-				for await (const { value } of process(items, runOptions, 'stream')) {
-					yield value;
-				}
-			},
-		}),
+		stream: (items, runOptions): AsyncIterable<R> => {
+			return {
+				async *[Symbol.asyncIterator](): AsyncIterator<R> {
+					for await (const { value } of process(items, runOptions, 'stream')) {
+						yield value;
+					}
+				},
+			};
+		},
 
 		close,
 

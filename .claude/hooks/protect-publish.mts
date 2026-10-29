@@ -13,22 +13,23 @@
 
 import { pathToFileURL } from 'node:url';
 
-import { commandsOf, invocationOf, runs } from './command-line.mjs';
-import { exceptions, guard } from './hook.mjs';
+import { commandsOf, invocationOf, runs } from './command-line.mts';
+import { exceptions, guard } from './hook.mts';
 
 /**
  * How a refusal reads to the model that tripped it.
  *
- * @param {string} operation What was attempted.
- * @param {string} instead What to do about it.
- * @returns {string} The message handed back.
+ * @param operation What was attempted.
+ * @param instead What to do about it.
+ * @returns The message handed back.
  */
-const refusal = (operation, instead) =>
-	[
-		`Blocked by .claude/hooks/protect-publish.mjs: ${operation}.`,
+const refusal = (operation: string, instead: string): string => {
+	return [
+		`Blocked by .claude/hooks/protect-publish.mts: ${operation}.`,
 		instead,
 		'See .claude/rules/protected-operations.md. Do not look for another way to run it.',
 	].join(' ');
+};
 
 /**
  * The operations this hook refuses.
@@ -76,10 +77,10 @@ const RULES = [
 /**
  * Reviews one command line.
  *
- * @param {{ command?: unknown }} input The `tool_input` of the hook event.
- * @returns {string | null} The reason the call is refused, or `null`.
+ * @param input The `tool_input` of the hook event.
+ * @returns The reason the call is refused, or `null`.
  */
-export const review = (input) => {
+export const review = (input: { readonly command?: unknown }): string | null => {
 	if (typeof input.command !== 'string') return null;
 
 	const allowed = exceptions();
@@ -88,9 +89,9 @@ export const review = (input) => {
 	for (const rule of RULES) {
 		if (allowed.has(rule.id)) continue;
 
-		const tripped = invocations.some((invocation) =>
-			rule.patterns.some((pattern) => runs(invocation, pattern)),
-		);
+		const tripped = invocations.some((invocation) => {
+			return rule.patterns.some((pattern) => runs(invocation, pattern));
+		});
 
 		if (tripped) return rule.reason;
 	}
@@ -101,9 +102,6 @@ export const review = (input) => {
 // Run as a hook, imported by its tests. The comparison is on the resolved URL
 // rather than on the file name, so a test importing this module never spawns
 // the guard and never calls `process.exit`.
-if (
-	process.argv[1] !== undefined &&
-	import.meta.url === pathToFileURL(process.argv[1]).href
-) {
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
 	void guard(review);
 }

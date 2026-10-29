@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { defaultOf } from '@/functions/utils/defaultOf';
+import { type Defaulted, defaultOf } from '@/src/functions/utils/defaultOf';
 
 /** Shape exercising nesting, optionality and collections at once. */
 interface Order {
@@ -105,8 +105,16 @@ describe('defaultOf', () => {
 		// The transformer only rewrites direct calls it can trace back to the
 		// module. Reached through a binding it cannot follow, the runtime
 		// implementation takes over — and throws rather than inventing a value.
-		const indirect: <T>() => T = defaultOf;
+		const indirect: <T>() => Defaulted<T> = defaultOf;
 
 		expect(() => indirect<string>()).toThrow(/only exists at compile time/);
+	});
+});
+
+describe('what defaultOf declares', () => {
+	it('should return a value of the type it was asked for', () => {
+		expectTypeOf<ReturnType<typeof defaultOf<Order>>>().toEqualTypeOf<Order>();
+		expectTypeOf<ReturnType<typeof defaultOf<boolean>>>().toEqualTypeOf<boolean>();
+		expectTypeOf<Defaulted<'dark' | 'light'>>().toEqualTypeOf<'dark' | 'light'>();
 	});
 });

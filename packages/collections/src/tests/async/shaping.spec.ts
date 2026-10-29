@@ -1,7 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { AsyncSequenceCollection } from '@/collections/async';
-import { SequenceCollection } from '@/collections/sequence';
+import { AsyncSequenceCollection } from '@/src/collections/async';
+import { asyncSourceOf } from '@/src/tests/async/asyncSourceOf';
+import { SequenceCollection } from '@/src/collections/sequence';
+import type { TypeTest } from '@/src/@types';
+import type { AsyncSequence } from '@/src/@types/collections/async';
 
 /**
  * Behavior suite for the shaping operators on the asynchronous sequence:
@@ -24,9 +27,7 @@ import { SequenceCollection } from '@/collections/sequence';
  * @param values Elements to yield.
  * @returns The asynchronous iterable and a reader of how far it got.
  */
-const counted = <T>(
-	values: readonly T[],
-): { source: AsyncIterable<T>; pulled: () => number } => {
+const counted = <T>(values: readonly T[]): { source: AsyncIterable<T>; pulled: () => number } => {
 	let pulled = 0;
 
 	return {
@@ -49,40 +50,34 @@ const counted = <T>(
  * @param values Elements to yield.
  * @returns The sequence.
  */
-const streamOf = <T>(values: readonly T[]): AsyncIterable<T> => ({
-	async *[Symbol.asyncIterator](): AsyncIterator<T> {
-		yield* values;
-	},
-});
+const streamOf = <T>(values: readonly T[]): AsyncIterable<T> => {
+	return asyncSourceOf(values);
+};
 
 describe('choose', () => {
 	it('should keep what the projection produced and drop what it did not', async () => {
 		const values = AsyncSequenceCollection.from(
-			streamOf([
-				{ email: 'a@b.c' },
-				{ email: null },
-				{ email: 'c@d.e' },
-			] as readonly { email: string | null }[]),
+			streamOf([{ email: 'a@b.c' }, { email: null }, { email: 'c@d.e' }] as readonly {
+				email: string | null;
+			}[]),
 		).choose((user) => user.email);
 
 		expect(await values.toArray()).toEqual(['a@b.c', 'c@d.e']);
 	});
 
 	it('should await a projection that has to wait', async () => {
-		const values = AsyncSequenceCollection.from(streamOf([1, 2, 3])).choose(
-			async (value) => {
-				await Promise.resolve();
-				return value % 2 === 0 ? value : null;
-			},
-		);
+		const values = AsyncSequenceCollection.from(streamOf([1, 2, 3])).choose(async (value) => {
+			await Promise.resolve();
+			return value % 2 === 0 ? value : null;
+		});
 
 		expect(await values.toArray()).toEqual([2]);
 	});
 
 	it('should treat falsy values as results, not as absence', async () => {
-		const values = AsyncSequenceCollection.from(streamOf([1, 2, 3])).choose(
-			(value) => (value === 2 ? null : 0),
-		);
+		const values = AsyncSequenceCollection.from(streamOf([1, 2, 3])).choose((value) => {
+			return value === 2 ? null : 0;
+		});
 
 		expect(await values.toArray()).toEqual([0, 0]);
 	});
@@ -103,9 +98,7 @@ describe('choose', () => {
 		let running = 0;
 		let peak = 0;
 
-		const values = AsyncSequenceCollection.from(
-			streamOf([...Array(12).keys()]),
-		).chooseAwait(
+		const values = AsyncSequenceCollection.from(streamOf([...Array(12).keys()])).chooseAwait(
 			async (value) => {
 				running++;
 				peak = Math.max(peak, running);
@@ -149,12 +142,11 @@ describe('choose', () => {
 	});
 
 	it.each([0, -1, 1.5])('should reject a concurrency of %s', (concurrency) => {
-		expect(() =>
-			AsyncSequenceCollection.from(streamOf([1])).chooseAwait(
-				(value) => value,
-				{ concurrency },
-			),
-		).toThrow(/positive integer/i);
+		expect(() => {
+			return AsyncSequenceCollection.from(streamOf([1])).chooseAwait((value) => value, {
+				concurrency,
+			});
+		}).toThrow(/positive integer/i);
 	});
 });
 
@@ -162,9 +154,7 @@ describe('ofType and cast', () => {
 	it('should keep only the elements of a type', async () => {
 		const values: unknown[] = ['a', 1, 'b', null];
 
-		const strings = AsyncSequenceCollection.from(streamOf(values)).ofType(
-			'string',
-		);
+		const strings = AsyncSequenceCollection.from(streamOf(values)).ofType('string');
 
 		expect(await strings.toArray()).toEqual(['a', 'b']);
 	});
@@ -174,9 +164,9 @@ describe('ofType and cast', () => {
 		// without the remainder of the feed being fetched.
 		const { source, pulled } = counted<unknown>(['a', 'b', 7, 'c', 'd']);
 
-		await expect(
-			AsyncSequenceCollection.from(source).cast('string').toArray(),
-		).rejects.toThrow(/cast\('string'\) found a number at index 2/);
+		await expect(AsyncSequenceCollection.from(source).cast('string').toArray()).rejects.toThrow(
+			/cast\('string'\) found a number at index 2/,
+		);
 
 		expect(pulled()).toBe(3);
 	});
@@ -199,25 +189,28 @@ describe('ofType and cast', () => {
 			id: number;
 		}>({
 			name: 'Account',
-			matches: (value) =>
-				value !== null &&
-				typeof value === 'object' &&
-				typeof (value as { id: unknown }).id === 'number',
+			matches: (value) => {
+				return (
+					value !== null &&
+					typeof value === 'object' &&
+					typeof (value as { id: unknown }).id === 'number'
+				);
+			},
 		});
 
 		expect(await kept.toArray()).toEqual([{ id: 1 }]);
 	});
 
-	it('should refuse an unresolved type argument before reading anything', async () => {
+	it('should refuse an unresolved type argument before reading anything', () => {
 		const { source, pulled } = counted<unknown>([1, 2, 3]);
 
-		expect(() =>
-			(
+		expect(() => {
+			return (
 				AsyncSequenceCollection.from(source) as unknown as {
 					ofType: () => unknown;
 				}
-			).ofType(),
-		).toThrow(/was not resolved at compile time/);
+			).ofType();
+		}).toThrow(/was not resolved at compile time/);
 
 		expect(pulled()).toBe(0);
 	});
@@ -225,9 +218,10 @@ describe('ofType and cast', () => {
 
 describe('topBy', () => {
 	it('should return the largest keys, largest first', async () => {
-		const best = AsyncSequenceCollection.from(
-			streamOf([3, 1, 4, 1, 5, 9, 2, 6]),
-		).topBy((value) => value, 3);
+		const best = AsyncSequenceCollection.from(streamOf([3, 1, 4, 1, 5, 9, 2, 6])).topBy(
+			(value) => value,
+			3,
+		);
 
 		expect(await best.toArray()).toEqual([9, 6, 5]);
 	});
@@ -235,10 +229,12 @@ describe('topBy', () => {
 	it('should agree with the synchronous operator, ties included', async () => {
 		// The two share one window implementation precisely so this holds. The
 		// dataset is mostly ties, which is where two heaps would disagree.
-		const players = Array.from({ length: 500 }, (_, index) => ({
-			name: `player-${index}`,
-			score: index % 7,
-		}));
+		const players = Array.from({ length: 500 }, (_, index) => {
+			return {
+				name: `player-${String(index)}`,
+				score: index % 7,
+			};
+		});
 
 		const expected = SequenceCollection.from(players)
 			.topBy((player) => player.score, 10)
@@ -258,9 +254,7 @@ describe('topBy', () => {
 		// element and is bounded by nothing at all.
 		const size = 50_000;
 
-		const best = await AsyncSequenceCollection.from(
-			streamOf([...Array(size).keys()]),
-		)
+		const best = await AsyncSequenceCollection.from(streamOf([...Array(size).keys()]))
 			.topBy((value) => value, 5)
 			.toArray();
 
@@ -268,9 +262,7 @@ describe('topBy', () => {
 	});
 
 	it('should await a key that has to be fetched', async () => {
-		const best = AsyncSequenceCollection.from(
-			streamOf(['a', 'bbb', 'bb']),
-		).topBy(async (value) => {
+		const best = AsyncSequenceCollection.from(streamOf(['a', 'bbb', 'bb'])).topBy(async (value) => {
 			await Promise.resolve();
 			return value.length;
 		}, 2);
@@ -283,18 +275,18 @@ describe('topBy', () => {
 		// finishes in an order with nothing to do with the input. Every score is
 		// identical here, which leaves the answer entirely to the tie-break — and
 		// it must still be the first three that arrived.
-		const players = Array.from({ length: 24 }, (_, index) => ({
-			index,
-			score: 1,
-		}));
+		const players = Array.from({ length: 24 }, (_, index) => {
+			return {
+				index,
+				score: 1,
+			};
+		});
 
 		const best = await AsyncSequenceCollection.from(streamOf(players))
 			.topByAwait(
 				async (player) => {
 					// Deliberately uneven: the later ones finish first.
-					await new Promise((resolve) =>
-						setTimeout(resolve, 24 - player.index),
-					);
+					await new Promise((resolve) => setTimeout(resolve, 24 - player.index));
 					return player.score;
 				},
 				3,
@@ -331,10 +323,7 @@ describe('topBy', () => {
 	it.each([0, -1])('should yield nothing for a count of %s', async (count) => {
 		const { source, pulled } = counted([1, 2, 3]);
 
-		const best = AsyncSequenceCollection.from(source).topBy(
-			(value) => value,
-			count,
-		);
+		const best = AsyncSequenceCollection.from(source).topBy((value) => value, count);
 
 		expect(await best.toArray()).toEqual([]);
 		expect(pulled()).toBe(0);
@@ -345,11 +334,9 @@ describe('tap', () => {
 	it('should yield every element unchanged', async () => {
 		const seen: number[] = [];
 
-		const values = AsyncSequenceCollection.from(streamOf([1, 2, 3])).tap(
-			(value) => {
-				seen.push(value);
-			},
-		);
+		const values = AsyncSequenceCollection.from(streamOf([1, 2, 3])).tap((value) => {
+			seen.push(value);
+		});
 
 		expect(await values.toArray()).toEqual([1, 2, 3]);
 		expect(seen).toEqual([1, 2, 3]);
@@ -360,19 +347,19 @@ describe('tap', () => {
 		// behind the elements it is meant to be observing.
 		const order: string[] = [];
 
-		const source: AsyncIterable<number> = {
-			async *[Symbol.asyncIterator](): AsyncIterator<number> {
+		const source: AsyncIterable<number> = asyncSourceOf({
+			*[Symbol.iterator](): Iterator<number> {
 				for (const value of [1, 2]) {
-					order.push(`pulled ${value}`);
+					order.push(`pulled ${String(value)}`);
 					yield value;
 				}
 			},
-		};
+		});
 
 		await AsyncSequenceCollection.from(source)
 			.tap(async (value) => {
 				await new Promise((resolve) => setTimeout(resolve, 5));
-				order.push(`observed ${value}`);
+				order.push(`observed ${String(value)}`);
 			})
 			.toArray();
 
@@ -403,5 +390,35 @@ describe('tap', () => {
 			.toArray();
 
 		expect(positions).toEqual([0, 1, 2]);
+	});
+});
+
+describe('what ofType and cast infer', () => {
+	class Admin {
+		constructor(public readonly name: string) {}
+	}
+
+	interface Account {
+		readonly id: number;
+	}
+
+	const accountTest: TypeTest<Account> = {
+		matches: (value) => typeof value === 'object' && value !== null && 'id' in value,
+	};
+
+	const mixed = AsyncSequenceCollection.from<Admin | Account | string | number>([]);
+
+	it('should narrow ofType to the type each of its four forms names', () => {
+		expectTypeOf(mixed.ofType('string')).toEqualTypeOf<AsyncSequence<string>>();
+		expectTypeOf(mixed.ofType(Admin)).toEqualTypeOf<AsyncSequence<Admin>>();
+		expectTypeOf(mixed.ofType<Admin>()).toEqualTypeOf<AsyncSequence<Admin>>();
+		expectTypeOf(mixed.ofType(accountTest)).toEqualTypeOf<AsyncSequence<Account>>();
+	});
+
+	it('should re-type cast to the type each of its four forms names', () => {
+		expectTypeOf(mixed.cast('number')).toEqualTypeOf<AsyncSequence<number>>();
+		expectTypeOf(mixed.cast(Admin)).toEqualTypeOf<AsyncSequence<Admin>>();
+		expectTypeOf(mixed.cast<Admin>()).toEqualTypeOf<AsyncSequence<Admin>>();
+		expectTypeOf(mixed.cast(accountTest)).toEqualTypeOf<AsyncSequence<Account>>();
 	});
 });

@@ -35,9 +35,7 @@ import { createError } from '@fulcro/errors';
  * @returns The declared keys, in the order they were written.
  * @throws {Error} When the call was not resolved at compile time.
  */
-export const keysOf = <T>(
-	keys?: readonly (string & keyof T)[],
-): readonly (string & keyof T)[] => {
+export const keysOf = <T>(keys?: readonly (string & keyof T)[]): readonly (string & keyof T)[] => {
 	if (keys === undefined) {
 		throw createError('FULCRO4001', { operation: 'keysOf' });
 	}

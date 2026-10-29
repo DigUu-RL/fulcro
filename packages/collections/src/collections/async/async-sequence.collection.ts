@@ -1,6 +1,6 @@
 import { createError } from '@fulcro/errors';
 
-import {
+import type {
 	AsyncAccumulator,
 	AsyncAction,
 	AsyncOptionalSelector,
@@ -15,11 +15,11 @@ import {
 	TypeNames,
 	TypeTest,
 	TypeToken,
-} from '@/@types';
-import { AsyncSequence } from '@/@types/collections/async';
-import { Group } from '@/@types/collections/group';
-import { Sequence } from '@/@types/collections/sequence';
-import { createGroup } from '@/collections/factories';
+} from '@/src/@types';
+import type { AsyncSequence } from '@/src/@types/collections/async';
+import type { Group } from '@/src/@types/collections/group';
+import type { Sequence } from '@/src/@types/collections/sequence';
+import { createGroup } from '@/src/collections/factories';
 // Imported through the barrel rather than the class file, because loading it is
 // what registers the factories `createGroup` resolves through.
 //
@@ -29,14 +29,10 @@ import { createGroup } from '@/collections/factories';
 // are both already in hand and nothing about them is waiting. The cost is that
 // a bundle importing only `@fulcro/collections/async` now carries the
 // synchronous sequence as well.
-import { SequenceCollection } from '@/collections/sequence';
-import { assertConcurrency, mapConcurrent } from '@/functions/concurrency';
-import { TopWindow } from '@/functions/ranking';
-import {
-	describeExpected,
-	describeType,
-	resolveTypeTest,
-} from '@/functions/types';
+import { SequenceCollection } from '@/src/collections/sequence';
+import { assertConcurrency, mapConcurrent } from '@/src/functions/concurrency';
+import { TopWindow } from '@/src/functions/ranking';
+import { describeExpected, describeType, resolveTypeTest } from '@/src/functions/types';
 
 /**
  * Marks the absence of an element, so that one which is itself `null` or
@@ -99,10 +95,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	 */
 	private static normalize<T>(
 		source:
-			| AsyncIterable<T>
-			| Iterable<T>
-			| Iterable<PromiseLike<T>>
-			| Iterable<T | PromiseLike<T>>,
+			AsyncIterable<T> | Iterable<T> | Iterable<PromiseLike<T>> | Iterable<T | PromiseLike<T>>,
 	): AsyncIterable<T> {
 		if (Symbol.asyncIterator in Object(source)) {
 			return source as AsyncIterable<T>;
@@ -118,33 +111,20 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	}
 
 	/**
-	 * Creates a sequence over a source that produces over time.
+	 * Creates a sequence over a source that produces over time, or over a
+	 * synchronous one, so that it can be used where an asynchronous one is
+	 * wanted.
+	 *
+	 * Elements of a synchronous source that are promises are awaited on the way
+	 * through, which covers the common `ids.map(load)` shape.
 	 *
 	 * @template T Type of the elements contained in the sequence.
-	 * @param source Asynchronous iterable wrapped by the sequence.
+	 * @param source Asynchronous iterable, or iterable of values and promises,
+	 * wrapped by the sequence.
 	 * @returns The created sequence.
 	 */
-	static from<T>(source: AsyncIterable<T>): AsyncSequence<T>;
-
-	/**
-	 * Creates a sequence over a synchronous source, so that it can be used
-	 * where an asynchronous one is wanted.
-	 *
-	 * Elements that are promises are awaited on the way through, which covers
-	 * the common `ids.map(load)` shape.
-	 *
-	 * @template T Type of the elements contained in the sequence.
-	 * @param source Iterable wrapped by the sequence.
-	 * @returns The created sequence.
-	 */
-	static from<T>(source: Iterable<T | PromiseLike<T>>): AsyncSequence<T>;
-
-	static from<T>(
-		source: AsyncIterable<T> | Iterable<T | PromiseLike<T>>,
-	): AsyncSequence<T> {
-		return new AsyncSequenceCollection<T>(
-			AsyncSequenceCollection.normalize<T>(source),
-		);
+	static from<T>(source: AsyncIterable<T> | Iterable<T | PromiseLike<T>>): AsyncSequence<T> {
+		return new AsyncSequenceCollection<T>(AsyncSequenceCollection.normalize<T>(source));
 	}
 
 	/**
@@ -222,9 +202,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	 * @param selector Projection returning an iterable for each element.
 	 * @returns A deferred sequence with all the inner elements concatenated.
 	 */
-	selectMany<R>(
-		selector: AsyncSelector<T, Iterable<R> | AsyncIterable<R>>,
-	): AsyncSequence<R> {
+	selectMany<R>(selector: AsyncSelector<T, Iterable<R> | AsyncIterable<R>>): AsyncSequence<R> {
 		const source: AsyncIterable<T> = this.source;
 
 		return AsyncSequenceCollection.deferred<R>({
@@ -451,17 +429,12 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	 * @returns A deferred sequence with the projected elements.
 	 * @throws {Error} When `concurrency` is not a positive integer.
 	 */
-	selectAwait<R>(
-		selector: AsyncSelector<T, R>,
-		options: ConcurrencyOptions,
-	): AsyncSequence<R> {
+	selectAwait<R>(selector: AsyncSelector<T, R>, options: ConcurrencyOptions): AsyncSequence<R> {
 		// Thrown here rather than on first iteration, so a bad limit fails where
 		// it was written instead of somewhere down the chain.
 		assertConcurrency('selectAwait', options.concurrency);
 
-		return AsyncSequenceCollection.deferred<R>(
-			mapConcurrent(this.source, selector, options),
-		);
+		return AsyncSequenceCollection.deferred<R>(mapConcurrent(this.source, selector, options));
 	}
 
 	/**
@@ -472,10 +445,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	 * @returns A deferred sequence with the matching elements.
 	 * @throws {Error} When `concurrency` is not a positive integer.
 	 */
-	whereAwait(
-		predicate: AsyncPredicate<T>,
-		options: ConcurrencyOptions,
-	): AsyncSequence<T> {
+	whereAwait(predicate: AsyncPredicate<T>, options: ConcurrencyOptions): AsyncSequence<T> {
 		assertConcurrency('whereAwait', options.concurrency);
 
 		// The element is carried alongside its verdict rather than looked up
@@ -592,10 +562,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	 * @param options Cancellation for this consumption.
 	 * @returns A promise of whether no element failed.
 	 */
-	async all(
-		predicate: AsyncPredicate<T>,
-		options?: TerminalOptions,
-	): Promise<boolean> {
+	async all(predicate: AsyncPredicate<T>, options?: TerminalOptions): Promise<boolean> {
 		for await (const item of this.source) {
 			AsyncSequenceCollection.checkAborted(options);
 
@@ -676,9 +643,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	 * @param options Cancellation for this consumption.
 	 * @returns The last element, or the sentinel when there was none.
 	 */
-	private async resolveLast(
-		options?: TerminalOptions,
-	): Promise<T | typeof NOT_FOUND> {
+	private async resolveLast(options?: TerminalOptions): Promise<T | typeof NOT_FOUND> {
 		let found: T | typeof NOT_FOUND = NOT_FOUND;
 
 		for await (const item of this.source) {
@@ -696,10 +661,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	 * @param options Cancellation for this consumption.
 	 * @returns A promise of the element, or of `null` when out of range.
 	 */
-	async elementAtOrNull(
-		index: number,
-		options?: TerminalOptions,
-	): Promise<T | null> {
+	async elementAtOrNull(index: number, options?: TerminalOptions): Promise<T | null> {
 		if (!Number.isInteger(index) || index < 0) return null;
 
 		let position = 0;
@@ -722,10 +684,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	 * @param options Cancellation for this consumption.
 	 * @returns A promise settling when every element has been dealt with.
 	 */
-	async forEach(
-		action: AsyncAction<T>,
-		options?: TerminalOptions,
-	): Promise<void> {
+	async forEach(action: AsyncAction<T>, options?: TerminalOptions): Promise<void> {
 		let index = 0;
 
 		for await (const item of this.source) {
@@ -766,9 +725,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	 * @param selector Projection returning a value, or nothing.
 	 * @returns A deferred sequence with the values the projection produced.
 	 */
-	choose<R>(
-		selector: AsyncOptionalSelector<T, R>,
-	): AsyncSequence<NonNullable<R>> {
+	choose<R>(selector: AsyncOptionalSelector<T, R>): AsyncSequence<NonNullable<R>> {
 		const source: AsyncIterable<T> = this.source;
 
 		return AsyncSequenceCollection.deferred<NonNullable<R>>({
@@ -779,7 +736,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 					// Only nullish results are dropped. `0`, `''` and `false` are
 					// answers like any other.
 					if (projected !== null && projected !== undefined) {
-						yield projected as NonNullable<R>;
+						yield projected;
 					}
 				}
 			},
@@ -815,7 +772,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 				// not change how many of those there are.
 				for await (const result of projected) {
 					if (result !== null && result !== undefined) {
-						yield result as NonNullable<R>;
+						yield result;
 					}
 				}
 			},
@@ -829,35 +786,18 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	 * @param type Name of the type, a constructor, or a shape test.
 	 * @returns A deferred sequence narrowed to that type.
 	 */
-	ofType<K extends keyof TypeNames>(
-		type: K,
-	): AsyncSequence<Narrowed<T, TypeNames[K]>>;
+	ofType<K extends keyof TypeNames>(type: K): AsyncSequence<Narrowed<T, TypeNames[K]>>;
 
 	/**
-	 * Keeps only the elements built from a given class.
-	 *
-	 * @template R Type produced by the constructor.
-	 * @param type Constructor the elements are tested against.
-	 * @returns A deferred sequence narrowed to that type.
-	 */
-	ofType<R>(type: Constructor<R>): AsyncSequence<Narrowed<T, R>>;
-
-	/**
-	 * Keeps only the elements passing a test over their shape.
-	 *
-	 * @template R Type a passing value is taken to be.
-	 * @param test Test over the shape of each element.
-	 * @returns A deferred sequence narrowed to that type.
-	 */
-	ofType<R>(test: TypeTest<R>): AsyncSequence<Narrowed<T, R>>;
-
-	/**
-	 * Keeps only the elements of the given type, written as a type.
+	 * Keeps only the elements of a class, of a shape, or of a type written as a
+	 * type argument.
 	 *
 	 * @template R Type to keep.
+	 * @param type Constructor the elements are tested against, or a test over
+	 * their shape; omitted when the type argument names the type.
 	 * @returns A deferred sequence narrowed to that type.
 	 */
-	ofType<R>(): AsyncSequence<Narrowed<T, R>>;
+	ofType<R>(type?: Constructor<R> | TypeTest<R>): AsyncSequence<Narrowed<T, R>>;
 
 	ofType(type?: TypeToken): AsyncSequence<unknown> {
 		const source: AsyncIterable<T> = this.source;
@@ -885,35 +825,23 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	cast<K extends keyof TypeNames>(type: K): AsyncSequence<TypeNames[K]>;
 
 	/**
-	 * Re-types the sequence to a class.
-	 *
-	 * @template R Type produced by the constructor.
-	 * @param type Constructor every element must be an instance of.
-	 * @returns A deferred sequence typed as that type.
-	 */
-	cast<R>(type: Constructor<R>): AsyncSequence<R>;
-
-	/**
-	 * Re-types the sequence, checking each element against a shape test.
+	 * Re-types the sequence to a class, to a shape, or to a type written as a
+	 * type argument.
 	 *
 	 * @template R Type every element must be.
-	 * @param test Test over the shape of each element.
+	 * @param type Constructor every element must be an instance of, or a test
+	 * over the shape of each element; omitted when the type argument names the
+	 * type.
 	 * @returns A deferred sequence typed as that type.
 	 */
-	cast<R>(test: TypeTest<R>): AsyncSequence<R>;
-
-	/**
-	 * Re-types the sequence to the given type, written as a type.
-	 *
-	 * @template R Type every element must be.
-	 * @returns A deferred sequence typed as that type.
-	 */
-	cast<R>(): AsyncSequence<R>;
+	cast<R>(type?: Constructor<R> | TypeTest<R>): AsyncSequence<R>;
 
 	cast(type?: TypeToken): AsyncSequence<unknown> {
 		const source: AsyncIterable<T> = this.source;
 		const matches: Predicate<unknown> = resolveTypeTest(type, 'cast');
-		const expected: string = describeExpected(type as TypeToken);
+		// Present by now: the line above refuses a missing token by throwing, so
+		// the empty text is never used.
+		const expected: string = type === undefined ? '' : describeExpected(type);
 
 		return AsyncSequenceCollection.deferred<unknown>({
 			async *[Symbol.asyncIterator](): AsyncIterator<unknown> {
@@ -1004,11 +932,13 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 
 				const keyed = mapConcurrent(
 					numbered,
-					async (entry) => ({
-						item: entry.item,
-						arrival: entry.arrival,
-						key: await keySelector(entry.item),
-					}),
+					async (entry) => {
+						return {
+							item: entry.item,
+							arrival: entry.arrival,
+							key: await keySelector(entry.item),
+						};
+					},
 					options,
 				);
 
@@ -1036,10 +966,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	 * @param options Cancellation for this consumption.
 	 * @returns The total, or `0` when nothing arrived.
 	 */
-	async sum(
-		selector?: AsyncSelector<T, number>,
-		options?: TerminalOptions,
-	): Promise<number> {
+	async sum(selector?: AsyncSelector<T, number>, options?: TerminalOptions): Promise<number> {
 		let total = 0;
 
 		for await (const item of this.source) {
@@ -1058,10 +985,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	 * @returns The arithmetic mean.
 	 * @throws {Error} When the sequence is empty.
 	 */
-	async average(
-		selector?: AsyncSelector<T, number>,
-		options?: TerminalOptions,
-	): Promise<number> {
+	async average(selector?: AsyncSelector<T, number>, options?: TerminalOptions): Promise<number> {
 		let total = 0;
 		let count = 0;
 
@@ -1084,10 +1008,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	 * @returns The smallest value.
 	 * @throws {Error} When the sequence is empty.
 	 */
-	async min(
-		selector?: AsyncSelector<T, number>,
-		options?: TerminalOptions,
-	): Promise<number> {
+	async min(selector?: AsyncSelector<T, number>, options?: TerminalOptions): Promise<number> {
 		return AsyncSequenceCollection.extreme(
 			this.source,
 			selector,
@@ -1105,10 +1026,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	 * @returns The largest value.
 	 * @throws {Error} When the sequence is empty.
 	 */
-	async max(
-		selector?: AsyncSelector<T, number>,
-		options?: TerminalOptions,
-	): Promise<number> {
+	async max(selector?: AsyncSelector<T, number>, options?: TerminalOptions): Promise<number> {
 		return AsyncSequenceCollection.extreme(
 			this.source,
 			selector,
@@ -1127,10 +1045,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	 * @returns The element whose key is smallest.
 	 * @throws {Error} When the sequence is empty.
 	 */
-	async minBy<K>(
-		keySelector: AsyncSelector<T, K>,
-		options?: TerminalOptions,
-	): Promise<T> {
+	async minBy<K>(keySelector: AsyncSelector<T, K>, options?: TerminalOptions): Promise<T> {
 		return AsyncSequenceCollection.extremeBy(
 			this.source,
 			keySelector,
@@ -1149,10 +1064,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	 * @returns The element whose key is largest.
 	 * @throws {Error} When the sequence is empty.
 	 */
-	async maxBy<K>(
-		keySelector: AsyncSelector<T, K>,
-		options?: TerminalOptions,
-	): Promise<T> {
+	async maxBy<K>(keySelector: AsyncSelector<T, K>, options?: TerminalOptions): Promise<T> {
 		return AsyncSequenceCollection.extremeBy(
 			this.source,
 			keySelector,
@@ -1199,7 +1111,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 			throw createError('FULCRO1020', { operation: 'single' });
 		}
 
-		return only as T;
+		return only;
 	}
 
 	/**
@@ -1216,7 +1128,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 			'singleOrNull',
 		);
 
-		return only === NOT_FOUND ? null : (only as T);
+		return only === NOT_FOUND ? null : only;
 	}
 
 	/**
@@ -1250,11 +1162,10 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	): Promise<boolean> {
 		// Walked in step and stopped at the first difference, rather than reading
 		// either side to the end to find out.
-		const other = (
+		const other =
 			Symbol.asyncIterator in Object(second)
 				? (second as AsyncIterable<T>)[Symbol.asyncIterator]()
-				: (second as Iterable<T>)[Symbol.iterator]()
-		) as AsyncIterator<T> | Iterator<T>;
+				: (second as Iterable<T>)[Symbol.iterator]();
 
 		for await (const item of this.source) {
 			AsyncSequenceCollection.checkAborted(options);
@@ -1324,9 +1235,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 
 			mapped.set(
 				key,
-				elementSelector === undefined
-					? (item as unknown as R)
-					: await elementSelector(item),
+				elementSelector === undefined ? (item as unknown as R) : await elementSelector(item),
 			);
 		}
 
@@ -1356,9 +1265,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 			const key: K = await keySelector(item);
 
 			const value: R =
-				elementSelector === undefined
-					? (item as unknown as R)
-					: await elementSelector(item);
+				elementSelector === undefined ? (item as unknown as R) : await elementSelector(item);
 
 			const bucket: R[] | undefined = mapped.get(key);
 
@@ -1386,11 +1293,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 		selector?: AsyncSelector<T, number>,
 		options?: TerminalOptions,
 	): Promise<number> {
-		const { count, squares } = await AsyncSequenceCollection.spread(
-			this.source,
-			selector,
-			options,
-		);
+		const { count, squares } = await AsyncSequenceCollection.spread(this.source, selector, options);
 
 		if (count === 0) {
 			throw createError('FULCRO1019', { operation: 'standardDeviation' });
@@ -1412,11 +1315,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 		selector?: AsyncSelector<T, number>,
 		options?: TerminalOptions,
 	): Promise<number> {
-		const { count, squares } = await AsyncSequenceCollection.spread(
-			this.source,
-			selector,
-			options,
-		);
+		const { count, squares } = await AsyncSequenceCollection.spread(this.source, selector, options);
 
 		if (count < 2) {
 			throw createError('FULCRO1022', { operation: 'sampleStandardDeviation' });
@@ -1433,13 +1332,8 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	 * @param selector Optional projection returning its value.
 	 * @returns The value.
 	 */
-	private static async valueOf<V>(
-		item: V,
-		selector?: AsyncSelector<V, number>,
-	): Promise<number> {
-		return selector === undefined
-			? (item as unknown as number)
-			: await selector(item);
+	private static async valueOf<V>(item: V, selector?: AsyncSelector<V, number>): Promise<number> {
+		return selector === undefined ? (item as unknown as number) : await selector(item);
 	}
 
 	/**
@@ -1466,19 +1360,16 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 		for await (const item of source) {
 			AsyncSequenceCollection.checkAborted(options);
 
-			const value: number = await AsyncSequenceCollection.valueOf(
-				item,
-				selector,
-			);
+			const value: number = await AsyncSequenceCollection.valueOf(item, selector);
 
-			if (best === NOT_FOUND || wins(value, best as number)) best = value;
+			if (best === NOT_FOUND || wins(value, best)) best = value;
 		}
 
 		if (best === NOT_FOUND) {
 			throw createError('FULCRO1019', { operation: operator });
 		}
 
-		return best as number;
+		return best;
 	}
 
 	/**
@@ -1512,7 +1403,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 
 			const key: K = await keySelector(item);
 
-			if (bestKey === NOT_FOUND || wins(key, bestKey as K)) {
+			if (bestKey === NOT_FOUND || wins(key, bestKey)) {
 				best = item;
 				bestKey = key;
 			}
@@ -1522,7 +1413,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 			throw createError('FULCRO1019', { operation: operator });
 		}
 
-		return best as V;
+		return best;
 	}
 
 	/**
@@ -1583,10 +1474,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 		for await (const item of source) {
 			AsyncSequenceCollection.checkAborted(options);
 
-			const value: number = await AsyncSequenceCollection.valueOf(
-				item,
-				selector,
-			);
+			const value: number = await AsyncSequenceCollection.valueOf(item, selector);
 
 			count++;
 
@@ -1610,9 +1498,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	 * @param source Source being read.
 	 * @returns Everything it produced.
 	 */
-	private static async collect<V>(
-		source: Iterable<V> | AsyncIterable<V>,
-	): Promise<V[]> {
+	private static async collect<V>(source: Iterable<V> | AsyncIterable<V>): Promise<V[]> {
 		const collected: V[] = [];
 
 		if (Symbol.asyncIterator in Object(source)) {
@@ -1730,7 +1616,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 				let previous: T | typeof NOT_FOUND = NOT_FOUND;
 
 				for await (const item of source) {
-					if (previous !== NOT_FOUND) yield [previous as T, item];
+					if (previous !== NOT_FOUND) yield [previous, item];
 
 					previous = item;
 				}
@@ -1830,9 +1716,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	 * @param keySelector Projection returning the key of each element.
 	 * @returns A deferred sequence of groups.
 	 */
-	groupAdjacent<K>(
-		keySelector: AsyncSelector<T, K>,
-	): AsyncSequence<Group<K, T>> {
+	groupAdjacent<K>(keySelector: AsyncSelector<T, K>): AsyncSequence<Group<K, T>> {
 		const source: AsyncIterable<T> = this.source;
 
 		return AsyncSequenceCollection.deferred<Group<K, T>>({
@@ -1854,13 +1738,13 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 						continue;
 					}
 
-					yield createGroup(currentKey as K, run);
+					yield createGroup(currentKey, run);
 
 					currentKey = key;
 					run = [item];
 				}
 
-				if (currentKey !== NOT_FOUND) yield createGroup(currentKey as K, run);
+				if (currentKey !== NOT_FOUND) yield createGroup(currentKey, run);
 			},
 		});
 	}
@@ -1884,11 +1768,10 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 			async *[Symbol.asyncIterator](): AsyncIterator<R> {
 				// Pulled in step rather than one side being read first, which is what
 				// lets an endless source be zipped with a finite one.
-				const other = (
+				const other =
 					Symbol.asyncIterator in Object(second)
 						? (second as AsyncIterable<S>)[Symbol.asyncIterator]()
-						: (second as Iterable<S>)[Symbol.iterator]()
-				) as AsyncIterator<S> | Iterator<S>;
+						: (second as Iterable<S>)[Symbol.iterator]();
 
 				for await (const item of source) {
 					const next = await other.next();
@@ -2107,15 +1990,10 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 				// Indexed once rather than scanned per outer element, which is the
 				// difference between one pass over the inner side and one per
 				// element of a stream that may never end.
-				const indexed = await AsyncSequenceCollection.index(
-					innerCollection,
-					innerKeySelector,
-				);
+				const indexed = await AsyncSequenceCollection.index(innerCollection, innerKeySelector);
 
 				for await (const outer of source) {
-					const matches: I[] | undefined = indexed.get(
-						await outerKeySelector(outer),
-					);
+					const matches: I[] | undefined = indexed.get(await outerKeySelector(outer));
 
 					if (matches === undefined) continue;
 
@@ -2147,10 +2025,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 
 		return AsyncSequenceCollection.deferred<R>({
 			async *[Symbol.asyncIterator](): AsyncIterator<R> {
-				const indexed = await AsyncSequenceCollection.index(
-					innerCollection,
-					innerKeySelector,
-				);
+				const indexed = await AsyncSequenceCollection.index(innerCollection, innerKeySelector);
 
 				for await (const outer of source) {
 					const matches: I[] = indexed.get(await outerKeySelector(outer)) ?? [];

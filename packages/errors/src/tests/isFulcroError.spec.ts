@@ -1,21 +1,22 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { createError } from '@/createError';
-import { FulcroError } from '@/fulcroError';
-import { isFulcroError } from '@/isFulcroError';
-import { prefixError } from '@/prefixError';
+import { createError } from '@/src/createError';
+import type { FulcroError } from '@/src/fulcroError';
+import { isFulcroError } from '@/src/isFulcroError';
+import { prefixError } from '@/src/prefixError';
 
 /**
  * Behaviour suite for `isFulcroError`.
  */
 
 /** An error as `@fulcro/memory` throws it for an index past the end. */
-const outside = (): RangeError & FulcroError<'FULCRO7002'> =>
-	createError('FULCRO7002', {
+const outside = (): RangeError & FulcroError<'FULCRO7002'> => {
+	return createError('FULCRO7002', {
 		operation: 'ManagedStorage.get',
 		index: 12,
 		length: 10,
 	});
+};
 
 describe('isFulcroError', () => {
 	it('should accept an error a package created', () => {

@@ -123,14 +123,10 @@ Reach values by byte address — a field in the middle of a struct, the same
 bytes read as another type, what a WebAssembly module wrote — with no copy:
 
 ```ts
-const memory: LinearMemory = createLinearMemory(
-	instance.exports.memory as WebAssembly.Memory,
-);
+const memory: LinearMemory = createLinearMemory(instance.exports.memory as WebAssembly.Memory);
 const particle: NativePointer<Particle> = nativePointerTo(memory, 64, Particle);
 
-particle
-	.at(Particle.layout.fields.velocity.offset, Point)
-	.set(Point.from({ x: 0, y: -9.8 })); // writes the field, in place
+particle.at(Particle.layout.fields.velocity.offset, Point).set(Point.from({ x: 0, y: -9.8 })); // writes the field, in place
 ```
 
 | Function                                    | Returns                                                          |
@@ -176,3 +172,4 @@ bundler — refuses the same uses when the code is compiled. It rewrites nothing
 
 **Full guide:** [docs/memory.md](../../docs/memory.md) — choosing a strategy,
 what each one costs, and the failure modes worth knowing before you meet them.
+🇧🇷 [Leia em português](../../docs/pt-BR/memory.md).

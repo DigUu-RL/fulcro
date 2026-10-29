@@ -1,13 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { asReadOnlyView } from '@/asReadOnlyView';
-import { borrow } from '@/borrow';
-import { borrowMutable } from '@/borrowMutable';
-import { createManagedStorage } from '@/managedStorage';
-import { own } from '@/own';
-import type { Owned } from '@/owned';
-
-import { coded } from './coded';
+import { asReadOnlyView } from '@/src/asReadOnlyView';
+import { borrow } from '@/src/borrow';
+import { borrowMutable } from '@/src/borrowMutable';
+import { createManagedStorage } from '@/src/managedStorage';
+import { own } from '@/src/own';
+import type { Owned } from '@/src/owned';
+import { coded } from '@/src/tests/coded';
 
 /**
  * Runtime refusals of a shared borrow: it ends when its owner is lent for
@@ -20,13 +19,14 @@ import { coded } from './coded';
  */
 
 /** The error an ended borrow throws, for an operation. */
-const ended = (operation: string): Error =>
-	coded(
+const ended = (operation: string): Error => {
+	return coded(
 		new Error(
 			`FULCRO7024: ${operation}: the borrow has ended — its owner was moved or disposed, or borrowed again in a way it cannot share; borrow again.`,
 		),
 		{ operation },
 	);
+};
 
 describe('borrow, unchecked', () => {
 	it('should end every shared borrow once the owner is lent for writing', () => {
@@ -49,9 +49,7 @@ describe('borrow, unchecked', () => {
 		borrowMutable(owner);
 
 		expect(() => subview.get(0)).toThrow(ended('ReadOnlyView.get'));
-		expect(() => viewed.get(0)).toThrow(
-			expect.objectContaining({ code: 'FULCRO7024' }),
-		);
+		expect(() => viewed.get(0)).toThrow(expect.objectContaining({ code: 'FULCRO7024' }));
 	});
 
 	it('should end an exclusive borrow taken before it, and not the other way round', () => {

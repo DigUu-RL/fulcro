@@ -1,7 +1,7 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import type { IntegerType } from '@/integer';
-import { SignedInteger } from '@/signedInteger';
+import type { IntegerType } from '@/src/integer';
+import { SignedInteger } from '@/src/signedInteger';
 
 /**
  * Behaviour suite for `SignedInteger`.
@@ -27,8 +27,9 @@ const RANGES = [
  * @param value Exact value.
  * @returns A `number` up to 32 bits, a `bigint` from 64.
  */
-const carried = (width: number, value: bigint): number | bigint =>
-	width >= 64 ? value : Number(value);
+const carried = (width: number, value: bigint): number | bigint => {
+	return width >= 64 ? value : Number(value);
+};
 
 describe('SignedInteger', () => {
 	describe.each(RANGES)('at $width bits', ({ width, minimum, maximum }) => {
@@ -39,7 +40,7 @@ describe('SignedInteger', () => {
 			expect(type.maximum).toBe(carried(width, maximum));
 			expect(type.width).toBe(width);
 			expect(type.signed).toBe(true);
-			expect(type.name).toBe(`SignedInteger<${width}>`);
+			expect(type.name).toBe(`SignedInteger<${String(width)}>`);
 		});
 
 		it('should accept both ends of the range', () => {
@@ -50,8 +51,9 @@ describe('SignedInteger', () => {
 		it('should refuse one past either end, naming the range', () => {
 			expect(() => type.from(maximum + 1n)).toThrow(RangeError);
 			expect(() => type.from(minimum - 1n)).toThrow(RangeError);
+
 			expect(() => type.from(maximum + 1n)).toThrow(
-				`SignedInteger<${width}>.from: ${maximum + 1n}n is outside [${minimum}, ${maximum}].`,
+				`SignedInteger<${String(width)}>.from: ${String(maximum + 1n)}n is outside [${String(minimum)}, ${String(maximum)}].`,
 			);
 		});
 
@@ -75,15 +77,8 @@ describe('SignedInteger', () => {
 		it('should wrap modulo 2^width, whatever the magnitude', () => {
 			const modulus: bigint = 2n ** BigInt(width);
 
-			for (const value of [
-				maximum + 1n,
-				minimum - 1n,
-				modulus * 3n + 7n,
-				-modulus * 5n - 9n,
-			]) {
-				expect(type.wrap(value)).toBe(
-					carried(width, BigInt.asIntN(width, value)),
-				);
+			for (const value of [maximum + 1n, minimum - 1n, modulus * 3n + 7n, -modulus * 5n - 9n]) {
+				expect(type.wrap(value)).toBe(carried(width, BigInt.asIntN(width, value)));
 			}
 
 			expect(type.wrap(carried(width, maximum))).toBe(carried(width, maximum));
@@ -92,61 +87,40 @@ describe('SignedInteger', () => {
 		it('should add and subtract up to the boundary and refuse past it', () => {
 			const one = type.from(1);
 
-			expect(type.add(type.from(carried(width, maximum - 1n)), one)).toBe(
-				type.maximum,
-			);
-			expect(type.subtract(type.from(carried(width, minimum + 1n)), one)).toBe(
-				type.minimum,
-			);
-			expect(() => type.add(type.maximum, one)).toThrow(
-				`SignedInteger<${width}>.add`,
-			);
+			expect(type.add(type.from(carried(width, maximum - 1n)), one)).toBe(type.maximum);
+			expect(type.subtract(type.from(carried(width, minimum + 1n)), one)).toBe(type.minimum);
+			expect(() => type.add(type.maximum, one)).toThrow(`SignedInteger<${String(width)}>.add`);
 			expect(() => type.subtract(type.minimum, one)).toThrow(RangeError);
 		});
 
 		it('should multiply exactly and refuse an overflowing product', () => {
-			expect(type.multiply(type.from(-7), type.from(11))).toBe(
-				carried(width, -77n),
-			);
-			expect(() => type.multiply(type.maximum, type.from(2))).toThrow(
-				RangeError,
-			);
-			expect(() => type.multiply(type.minimum, type.from(-1))).toThrow(
-				RangeError,
-			);
+			expect(type.multiply(type.from(-7), type.from(11))).toBe(carried(width, -77n));
+			expect(() => type.multiply(type.maximum, type.from(2))).toThrow(RangeError);
+			expect(() => type.multiply(type.minimum, type.from(-1))).toThrow(RangeError);
 		});
 
 		it('should divide truncating towards zero', () => {
 			expect(type.divide(type.from(7), type.from(2))).toBe(carried(width, 3n));
-			expect(type.divide(type.from(-7), type.from(2))).toBe(
-				carried(width, -3n),
-			);
-			expect(type.divide(type.from(7), type.from(-2))).toBe(
-				carried(width, -3n),
-			);
+			expect(type.divide(type.from(-7), type.from(2))).toBe(carried(width, -3n));
+			expect(type.divide(type.from(7), type.from(-2))).toBe(carried(width, -3n));
 		});
 
 		it('should refuse the one quotient out of range, minimum by -1', () => {
-			expect(() => type.divide(type.minimum, type.from(-1))).toThrow(
-				RangeError,
-			);
+			expect(() => type.divide(type.minimum, type.from(-1))).toThrow(RangeError);
 		});
 
 		it('should take the sign of the dividend in the remainder', () => {
-			expect(type.remainder(type.from(-7), type.from(2))).toBe(
-				carried(width, -1n),
-			);
-			expect(type.remainder(type.from(7), type.from(-2))).toBe(
-				carried(width, 1n),
-			);
+			expect(type.remainder(type.from(-7), type.from(2))).toBe(carried(width, -1n));
+			expect(type.remainder(type.from(7), type.from(-2))).toBe(carried(width, 1n));
 		});
 
 		it('should refuse a zero divisor, naming the operation', () => {
 			expect(() => type.divide(type.from(1), type.from(0))).toThrow(
-				`SignedInteger<${width}>.divide: division by zero.`,
+				`SignedInteger<${String(width)}>.divide: division by zero.`,
 			);
+
 			expect(() => type.remainder(type.from(1), type.from(0))).toThrow(
-				`SignedInteger<${width}>.remainder: division by zero.`,
+				`SignedInteger<${String(width)}>.remainder: division by zero.`,
 			);
 		});
 
@@ -163,12 +137,8 @@ describe('SignedInteger', () => {
 
 		it('should normalise -0 to 0, since an integer has one zero', () => {
 			expect(Object.is(Int32.from(-0), 0)).toBe(true);
-			expect(Object.is(Int32.multiply(Int32.from(-3), Int32.from(0)), 0)).toBe(
-				true,
-			);
-			expect(Object.is(Int32.remainder(Int32.from(-4), Int32.from(2)), 0)).toBe(
-				true,
-			);
+			expect(Object.is(Int32.multiply(Int32.from(-3), Int32.from(0)), 0)).toBe(true);
+			expect(Object.is(Int32.remainder(Int32.from(-4), Int32.from(2)), 0)).toBe(true);
 			expect(Object.is(Int32.wrap(-(2 ** 32)), 0)).toBe(true);
 		});
 
@@ -179,9 +149,7 @@ describe('SignedInteger', () => {
 		it('should detect an overflowing product beyond 2^53', () => {
 			// 2^31 - 1 squared is past 2^61; the rounded double is out of range
 			// just as the exact product is.
-			expect(() => Int32.multiply(Int32.maximum, Int32.maximum)).toThrow(
-				RangeError,
-			);
+			expect(() => Int32.multiply(Int32.maximum, Int32.maximum)).toThrow(RangeError);
 		});
 	});
 
@@ -189,71 +157,72 @@ describe('SignedInteger', () => {
 		'the operations behind the operators, at $width bits',
 		({ width, minimum, maximum }) => {
 			const type = SignedInteger(width) as IntegerType<number | bigint>;
-			const of = (value: bigint) => type.from(carried(width, value));
+			const convert = (value: bigint): number | bigint => type.from(carried(width, value));
 
 			it('should raise to a power by squaring, checked', () => {
-				expect(type.power(of(-2n), of(3n))).toBe(carried(width, -8n));
-				expect(type.power(of(5n), of(0n))).toBe(carried(width, 1n));
-				expect(type.power(of(-1n), of(maximum))).toBe(carried(width, -1n));
-				expect(() => type.power(of(2n), of(BigInt(width - 1)))).toThrow(
-					`SignedInteger<${width}>.power`,
+				expect(type.power(convert(-2n), convert(3n))).toBe(carried(width, -8n));
+				expect(type.power(convert(5n), convert(0n))).toBe(carried(width, 1n));
+				expect(type.power(convert(-1n), convert(maximum))).toBe(carried(width, -1n));
+
+				expect(() => type.power(convert(2n), convert(BigInt(width - 1)))).toThrow(
+					`SignedInteger<${String(width)}>.power`,
 				);
-				expect(() => type.power(of(2n), of(-1n))).toThrow(
+
+				expect(() => type.power(convert(2n), convert(-1n))).toThrow(
 					'expected an exponent of zero or more',
 				);
 			});
 
 			it('should negate, refusing the minimum', () => {
-				expect(type.negate(of(5n))).toBe(carried(width, -5n));
+				expect(type.negate(convert(5n))).toBe(carried(width, -5n));
 				expect(type.negate(type.maximum)).toBe(carried(width, -maximum));
 				expect(() => type.negate(type.minimum)).toThrow(RangeError);
 			});
 
 			it('should step by one, refusing to step past either end', () => {
-				expect(type.increment(of(1n))).toBe(carried(width, 2n));
-				expect(type.decrement(of(1n))).toBe(carried(width, 0n));
+				expect(type.increment(convert(1n))).toBe(carried(width, 2n));
+				expect(type.decrement(convert(1n))).toBe(carried(width, 0n));
+
 				expect(() => type.increment(type.maximum)).toThrow(
-					`SignedInteger<${width}>.increment`,
+					`SignedInteger<${String(width)}>.increment`,
 				);
+
 				expect(() => type.decrement(type.minimum)).toThrow(
-					`SignedInteger<${width}>.decrement`,
+					`SignedInteger<${String(width)}>.decrement`,
 				);
 			});
 
 			it('should compare as the operators do', () => {
-				expect(type.equals(of(3n), of(3n))).toBe(true);
+				expect(type.equals(convert(3n), convert(3n))).toBe(true);
 				expect(type.lessThan(type.minimum, type.maximum)).toBe(true);
-				expect(type.lessThanOrEqual(of(3n), of(3n))).toBe(true);
-				expect(type.greaterThan(of(3n), of(3n))).toBe(false);
-				expect(type.greaterThanOrEqual(of(4n), of(3n))).toBe(true);
+				expect(type.lessThanOrEqual(convert(3n), convert(3n))).toBe(true);
+				expect(type.greaterThan(convert(3n), convert(3n))).toBe(false);
+				expect(type.greaterThanOrEqual(convert(4n), convert(3n))).toBe(true);
 			});
 
 			it('should combine bits within the width, two’s complement', () => {
-				expect(type.bitwiseAnd(of(-1n), of(5n))).toBe(carried(width, 5n));
-				expect(type.bitwiseOr(of(4n), of(1n))).toBe(carried(width, 5n));
-				expect(type.bitwiseXor(of(-1n), of(0n))).toBe(carried(width, -1n));
-				expect(type.bitwiseNot(of(0n))).toBe(carried(width, -1n));
+				expect(type.bitwiseAnd(convert(-1n), convert(5n))).toBe(carried(width, 5n));
+				expect(type.bitwiseOr(convert(4n), convert(1n))).toBe(carried(width, 5n));
+				expect(type.bitwiseXor(convert(-1n), convert(0n))).toBe(carried(width, -1n));
+				expect(type.bitwiseNot(convert(0n))).toBe(carried(width, -1n));
 				expect(type.bitwiseNot(type.maximum)).toBe(type.minimum);
 			});
 
 			it('should shift, discarding what leaves the width', () => {
-				const last = of(BigInt(width - 1));
+				const last = convert(BigInt(width - 1));
 
-				expect(type.shiftLeft(of(1n), last)).toBe(type.minimum);
-				expect(type.shiftLeft(type.maximum, of(1n))).toBe(carried(width, -2n));
+				expect(type.shiftLeft(convert(1n), last)).toBe(type.minimum);
+				expect(type.shiftLeft(type.maximum, convert(1n))).toBe(carried(width, -2n));
 				expect(type.shiftRight(type.minimum, last)).toBe(carried(width, -1n));
-				expect(type.shiftRightLogical(of(-1n), last)).toBe(carried(width, 1n));
-				expect(type.shiftRightLogical(of(-1n), of(0n))).toBe(
-					carried(width, -1n),
-				);
+				expect(type.shiftRightLogical(convert(-1n), last)).toBe(carried(width, 1n));
+				expect(type.shiftRightLogical(convert(-1n), convert(0n))).toBe(carried(width, -1n));
 			});
 
 			it('should refuse a shift count outside the width', () => {
-				expect(() => type.shiftLeft(of(1n), of(BigInt(width)))).toThrow(
-					RangeError,
-				);
-				expect(() => type.shiftRight(of(1n), of(-1n))).toThrow(
-					`SignedInteger<${width}>.shiftRight: expected a count from 0 to ${width - 1}`,
+				expect(() => type.shiftLeft(convert(1n), convert(BigInt(width)))).toThrow(RangeError);
+
+				expect(() => type.shiftRight(convert(1n), convert(-1n))).toThrow(
+					`SignedInteger<${String(width)}>.shiftRight: expected a count from 0 to ${String(width - 1)}`,
 				);
 			});
 
@@ -278,15 +247,13 @@ describe('SignedInteger', () => {
 
 	it('should infer a number up to 32 bits and a bigint from 64', () => {
 		expectTypeOf(SignedInteger(32).from(1)).toEqualTypeOf<SignedInteger<32>>();
-		expectTypeOf(SignedInteger(32).from(1)).toMatchTypeOf<number>();
-		expectTypeOf(SignedInteger(64).from(1)).toMatchTypeOf<bigint>();
-		expectTypeOf(SignedInteger(128).maximum).toEqualTypeOf<
-			SignedInteger<128>
-		>();
+		expectTypeOf(SignedInteger(32).from(1)).toExtend<number>();
+		expectTypeOf(SignedInteger(64).from(1)).toExtend<bigint>();
+		expectTypeOf(SignedInteger(128).maximum).toEqualTypeOf<SignedInteger<128>>();
 	});
 
 	it('should keep the widths apart at the type level', () => {
-		expectTypeOf<SignedInteger<8>>().not.toMatchTypeOf<SignedInteger<32>>();
-		expectTypeOf<number>().not.toMatchTypeOf<SignedInteger<32>>();
+		expectTypeOf<SignedInteger<8>>().not.toExtend<SignedInteger<32>>();
+		expectTypeOf<number>().not.toExtend<SignedInteger<32>>();
 	});
 });

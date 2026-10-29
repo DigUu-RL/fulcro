@@ -1,6 +1,6 @@
 import { createError } from '@fulcro/errors';
 
-import { Predicate, TypeNames, TypeTest, TypeToken } from '@/@types';
+import type { Predicate, TypeNames, TypeTest, TypeToken } from '@/src/@types';
 
 /**
  * What `ofType` and `cast` do with the token they are given.
@@ -18,10 +18,16 @@ import { Predicate, TypeNames, TypeTest, TypeToken } from '@/@types';
  * @param type Token handed to the operator.
  * @returns `true` when the token carries its own test.
  */
-export const isTypeTest = <R>(type: TypeToken): type is TypeTest<R> =>
-	typeof type === 'object' &&
-	type !== null &&
-	typeof (type as TypeTest<R>).matches === 'function';
+export const isTypeTest = <R>(type: TypeToken): type is TypeTest<R> => {
+	// Read as what a JavaScript caller can actually pass: `null` among it.
+	const received: unknown = type;
+
+	return (
+		typeof received === 'object' &&
+		received !== null &&
+		typeof (received as TypeTest<R>).matches === 'function'
+	);
+};
 
 /**
  * Turns a token into the test the operators run for each element.

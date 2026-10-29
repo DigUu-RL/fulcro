@@ -40,10 +40,7 @@ export const readLayoutMember = (
 
 	if ((type.flags & typescript.TypeFlags.TypeParameter) !== 0) return null;
 
-	const layout: typescript.Symbol | undefined = checker.getPropertyOfType(
-		type,
-		'~layout',
-	);
+	const layout: typescript.Symbol | undefined = checker.getPropertyOfType(type, '~layout');
 
 	if (layout === undefined) return null;
 
@@ -54,14 +51,9 @@ export const readLayoutMember = (
 
 	if (property === undefined) return null;
 
-	const value: typescript.Type = checker.getTypeOfSymbolAtLocation(
-		property,
-		call,
-	);
+	const value: typescript.Type = checker.getTypeOfSymbolAtLocation(property, call);
 
-	return value.isNumberLiteral()
-		? factory.createNumericLiteral(value.value)
-		: null;
+	return value.isNumberLiteral() ? factory.createNumericLiteral(value.value) : null;
 };
 
 /** A field, placed: where it sits and how much room it takes. */
@@ -95,17 +87,11 @@ const readNumber = (
 	checker: typescript.TypeChecker,
 	call: typescript.Node,
 ): number | null => {
-	const property: typescript.Symbol | undefined = checker.getPropertyOfType(
-		type,
-		member,
-	);
+	const property: typescript.Symbol | undefined = checker.getPropertyOfType(type, member);
 
 	if (property === undefined) return null;
 
-	const value: typescript.Type = checker.getTypeOfSymbolAtLocation(
-		property,
-		call,
-	);
+	const value: typescript.Type = checker.getTypeOfSymbolAtLocation(property, call);
 
 	return value.isNumberLiteral() ? value.value : null;
 };
@@ -142,30 +128,18 @@ export const readLayout = (
 
 	if ((type.flags & typescript.TypeFlags.TypeParameter) !== 0) return null;
 
-	const symbol: typescript.Symbol | undefined = checker.getPropertyOfType(
-		type,
-		'~layout',
-	);
+	const symbol: typescript.Symbol | undefined = checker.getPropertyOfType(type, '~layout');
 
 	if (symbol === undefined) return null;
 
-	const layout: typescript.Type = checker.getTypeOfSymbolAtLocation(
-		symbol,
-		call,
-	);
+	const layout: typescript.Type = checker.getTypeOfSymbolAtLocation(symbol, call);
 	const size: number | null = readNumber(layout, 'size', checker, call);
-	const alignment: number | null = readNumber(
-		layout,
-		'alignment',
-		checker,
-		call,
-	);
+	const alignment: number | null = readNumber(layout, 'alignment', checker, call);
 
 	if (size === null || alignment === null) return null;
 
-	const members: readonly typescript.Type[] = layout.isUnion()
-		? layout.types
-		: [layout];
+	const members: readonly typescript.Type[] = layout.isUnion() ? layout.types : [layout];
+
 	const listsFields: boolean = members.some(
 		(member) => checker.getPropertyOfType(member, 'fields') !== undefined,
 	);
@@ -174,31 +148,19 @@ export const readLayout = (
 
 	if (layout.isUnion()) return null;
 
-	const fieldsSymbol = checker.getPropertyOfType(
-		layout,
-		'fields',
-	) as typescript.Symbol;
+	const fieldsSymbol: typescript.Symbol | undefined = checker.getPropertyOfType(layout, 'fields');
+
+	// Present whenever the single member lists fields; declined rather than guessed otherwise.
+	if (fieldsSymbol === undefined) return null;
+
 	const declared: { name: string; size: number; alignment: number }[] = [];
 
 	for (const field of checker.getPropertiesOfType(
 		checker.getTypeOfSymbolAtLocation(fieldsSymbol, call),
 	)) {
-		const fieldType: typescript.Type = checker.getTypeOfSymbolAtLocation(
-			field,
-			call,
-		);
-		const fieldSize: number | null = readNumber(
-			fieldType,
-			'size',
-			checker,
-			call,
-		);
-		const fieldAlignment: number | null = readNumber(
-			fieldType,
-			'alignment',
-			checker,
-			call,
-		);
+		const fieldType: typescript.Type = checker.getTypeOfSymbolAtLocation(field, call);
+		const fieldSize: number | null = readNumber(fieldType, 'size', checker, call);
+		const fieldAlignment: number | null = readNumber(fieldType, 'alignment', checker, call);
 
 		if (fieldSize === null || fieldAlignment === null) return null;
 
@@ -214,19 +176,23 @@ export const readLayout = (
 
 	// `sort` is stable, which keeps declaration order among equals — the same
 	// statement, for the same reason, as the one in `struct()`.
-	for (const field of [...declared].sort(
-		(left, right) => right.alignment - left.alignment,
-	)) {
+	for (const field of [...declared].sort((left, right) => right.alignment - left.alignment)) {
 		offsets.set(field.name, end);
 		end += field.size;
 	}
 
-	return {
-		size,
-		alignment,
-		fields: declared.map((field) => ({
-			...field,
-			offset: offsets.get(field.name) as number,
-		})),
-	};
+	const fields: PlacedField[] = [];
+
+	for (const field of declared) {
+		const offset: number | undefined = offsets.get(field.name);
+
+		// Every declared field was just given an offset. Should one ever be
+		// missing, the call is declined: an offset made up here would be a wrong
+		// answer the runtime could not correct.
+		if (offset === undefined) return null;
+
+		fields.push({ ...field, offset });
+	}
+
+	return { size, alignment, fields };
 };

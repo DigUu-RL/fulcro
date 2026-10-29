@@ -3,9 +3,8 @@ import * as path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { failure, type Result, success } from '@/result';
-
-import { compileFixture, COMPILERS, reportedLines } from './compileFixture';
+import { failure, type Result, success } from '@/src/result';
+import { compileFixture, COMPILERS, reportedLines } from '@/src/tests/compileFixture';
 
 describe('success', () => {
 	it('should carry the value and a null error', () => {
@@ -83,6 +82,7 @@ describe('failure', () => {
 describe('Result', () => {
 	it('should run only the branch of its own variant', () => {
 		const ran: string[] = [];
+
 		const cases = {
 			success: (): void => void ran.push('success'),
 			failure: (): void => void ran.push('failure'),
@@ -158,9 +158,7 @@ const FIXTURE = 'result.fixture.ts';
 /** Lines of the fixture carrying the refusal marker, 1-based. */
 const REFUSED: number[] = readFileSync(path.resolve(__dirname, FIXTURE), 'utf8')
 	.split('\n')
-	.flatMap((line, index) =>
-		line.trimEnd().endsWith('// refused') ? [index + 1] : [],
-	);
+	.flatMap((line, index) => (line.trimEnd().endsWith('// refused') ? [index + 1] : []));
 
 describe.each(COMPILERS)('Result at compile time, on %s', (_label, name) => {
 	const report: string = compileFixture(FIXTURE, name);

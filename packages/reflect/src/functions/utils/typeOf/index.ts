@@ -178,8 +178,17 @@ export interface DeclaredMember {
  * describes what a type *says*. They answer different questions and are not
  * interchangeable: a value cannot tell you its members are optional, and a type
  * cannot tell you whether the thing in front of you is `NaN`.
+ *
+ * @template T Type described; `unknown` when it was not named.
  */
-export interface TypeMetadata {
+export interface TypeMetadata<T = unknown> {
+	/**
+	 * The type described, carried in the type only: never present on the
+	 * metadata itself, it keeps the metadata of one type from passing for the
+	 * metadata of another.
+	 */
+	readonly '~type'?: T;
+
 	/** The type exactly as the compiler renders it. */
 	readonly text: string;
 
@@ -228,7 +237,7 @@ export interface TypeOfSignature {
 	 * @returns Everything the compiler knows about it.
 	 * @throws {Error} When the call was not resolved at compile time.
 	 */
-	<T>(): TypeMetadata;
+	<T>(): TypeMetadata<T>;
 
 	/**
 	 * Describes a value.
@@ -315,8 +324,7 @@ const NULL_PROTOTYPE_NAME = '(null prototype)';
  * @param value Value being inspected.
  * @returns The tag, without its `[object ...]` wrapper.
  */
-const tagOf = (value: unknown): string =>
-	Object.prototype.toString.call(value).slice(8, -1);
+const tagOf = (value: unknown): string => Object.prototype.toString.call(value).slice(8, -1);
 
 /**
  * Resolves the identifier of a callable.
@@ -359,7 +367,7 @@ const resolveObjectId = (value: object): TypeId => {
 	if (TYPED_ARRAY_TAGS.has(tag)) return 'typed-array';
 	if (BOXED_PRIMITIVE_TAGS.has(tag)) return 'boxed-primitive';
 
-	const prototype: object | null = Object.getPrototypeOf(value);
+	const prototype: object | null = Reflect.getPrototypeOf(value);
 
 	if (prototype === null) return 'null-prototype-object';
 	if (prototype === Object.prototype) return 'plain-object';
@@ -406,7 +414,7 @@ const resolveTypeId = (value: unknown): TypeId => {
 		case 'function':
 			return resolveCallableId(value as () => unknown);
 		default:
-			return resolveObjectId(value as object);
+			return resolveObjectId(value);
 	}
 };
 
@@ -426,9 +434,10 @@ const resolveName = (value: unknown, typeId: TypeId): string => {
 		return value.name.length > 0 ? value.name : ANONYMOUS_NAME;
 	}
 
-	const constructorName: unknown = (
-		value as { constructor?: { name?: unknown } }
-	)?.constructor?.name;
+	// `null` and `undefined` were answered above, so the value has a constructor
+	// to ask about, unless its prototype chain was cut short.
+	const constructorName: unknown = (value as { constructor?: { name?: unknown } }).constructor
+		?.name;
 
 	if (typeof constructorName === 'string' && constructorName.length > 0) {
 		return constructorName;
@@ -450,12 +459,11 @@ const resolveLineage = (value: unknown): readonly string[] => {
 
 	// Boxing a primitive exposes the chain behind it — `1` reports
 	// `['Number', 'Object']` — without altering the value itself.
-	let prototype: object | null = Object.getPrototypeOf(Object(value));
+	let prototype: object | null = Reflect.getPrototypeOf(Object(value) as object);
 
 	while (prototype !== null) {
-		const constructorName: unknown = (
-			prototype as { constructor?: { name?: unknown } }
-		).constructor?.name;
+		const constructorName: unknown = (prototype as { constructor?: { name?: unknown } }).constructor
+			?.name;
 
 		lineage.push(
 			typeof constructorName === 'string' && constructorName.length > 0
@@ -463,7 +471,7 @@ const resolveLineage = (value: unknown): readonly string[] => {
 				: NULL_PROTOTYPE_NAME,
 		);
 
-		prototype = Object.getPrototypeOf(prototype);
+		prototype = Reflect.getPrototypeOf(prototype);
 	}
 
 	return lineage;
@@ -478,10 +486,7 @@ const resolveLineage = (value: unknown): readonly string[] => {
 const isIterable = (value: unknown): boolean => {
 	if (value === null || value === undefined) return false;
 
-	return (
-		typeof (value as { [Symbol.iterator]?: unknown })[Symbol.iterator] ===
-		'function'
-	);
+	return typeof (value as { [Symbol.iterator]?: unknown })[Symbol.iterator] === 'function';
 };
 
 /**
@@ -516,9 +521,7 @@ const isIterable = (value: unknown): boolean => {
  * by hand: the transformer appends it, and it stays `undefined` otherwise.
  * @returns The description of the value.
  */
-export const typeOf: TypeOfSignature = ((
-	...args: readonly unknown[]
-): TypeOf => {
+export const typeOf: TypeOfSignature = ((...args: readonly unknown[]): TypeOf => {
 	// Zero arguments is the generic form, `typeOf<T>()`, arriving unresolved.
 	// It is told apart by arity rather than by the value being `undefined`,
 	// because `typeOf(undefined)` is a perfectly ordinary call that has to keep

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { BigInteger } from '@/bigInteger';
+import { BigInteger } from '@/src/bigInteger';
 
 /**
  * Performance suite for `BigInteger`.
@@ -49,9 +49,7 @@ describe('BigInteger', () => {
 		const right = BigInteger.from(7n ** 1_500n);
 
 		const baseline: number = timed(20_000, () => left * right);
-		const multiplied: number = timed(20_000, () =>
-			BigInteger.multiply(left, right),
-		);
+		const multiplied: number = timed(20_000, () => BigInteger.multiply(left, right));
 
 		expect(multiplied).toBeLessThan(baseline * 3);
 	});

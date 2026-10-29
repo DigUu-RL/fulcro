@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { createError } from '@/createError';
-import { prefixError } from '@/prefixError';
+import { createError } from '@/src/createError';
+import { prefixError } from '@/src/prefixError';
 
 /**
  * Behaviour suite for `prefixError`.
@@ -27,6 +27,7 @@ describe('prefixError', () => {
 			operation: 'Decimal.from',
 			received: '"1.2.3"',
 		});
+
 		const located = prefixError(inner, "Price.from: field 'amount'");
 
 		expect(located.code).toBe('FULCRO6023');
@@ -39,6 +40,7 @@ describe('prefixError', () => {
 			operation: 'Point.from',
 			field: 'y',
 		});
+
 		const located = prefixError(inner, "Segment.from: field 'end'");
 
 		expect(located.details).toBe(inner.details);
@@ -50,6 +52,7 @@ describe('prefixError', () => {
 			operation: 'Point.from',
 			field: 'y',
 		});
+
 		const located = prefixError(inner, "Segment.from: field 'end'");
 
 		expect(located.cause).toBe(inner);
@@ -61,12 +64,14 @@ describe('prefixError', () => {
 			operation: 'Point.from',
 			field: 'y',
 		});
+
 		const middle = prefixError(inner, "Segment.from: field 'end'");
 		const outer = prefixError(middle, "Path.from: field 'last'");
 
 		expect(outer.message).toBe(
 			"FULCRO6021: Path.from: field 'last': Segment.from: field 'end': Point.from: missing field 'y'.",
 		);
+
 		expect(outer.code).toBe('FULCRO6021');
 		expect(outer.details).toBe(inner.details);
 	});
@@ -96,6 +101,9 @@ describe('prefixError', () => {
 
 	it('should return a value that is not an error as it came', () => {
 		expect(prefixError('a string', 'context')).toBe('a string');
-		expect(prefixError(undefined, 'context')).toBeUndefined();
+		// Handed over as a caller would hold it: of a type nobody knows.
+		const nothing: unknown = undefined;
+
+		expect(prefixError(nothing, 'context')).toBeUndefined();
 	});
 });

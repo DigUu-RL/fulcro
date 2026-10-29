@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import type { MemoryReference } from '@/memoryReference';
-import { referenceTo } from '@/referenceTo';
+import type { MemoryReference } from '@/src/memoryReference';
+import { referenceTo } from '@/src/referenceTo';
 
 /**
  * Performance suite for `referenceTo`.
@@ -21,34 +21,33 @@ const VOLUME = 100_000;
  * @param touches Counter to increment.
  * @returns The settings, behind a counting proxy.
  */
-const watchedSettings = (touches: { count: number }): object =>
-	new Proxy(
+const watchedSettings = (touches: { count: number }): object => {
+	return new Proxy(
 		{ verbose: true, level: 3 },
 		{
-			get: (target, key, receiver) => {
+			get: (target, key, receiver): unknown => {
 				touches.count++;
 
 				return Reflect.get(target, key, receiver);
 			},
-			ownKeys: (target) => {
+			ownKeys: (target): (string | symbol)[] => {
 				touches.count += 1_000;
 
 				return Reflect.ownKeys(target);
 			},
-			getPrototypeOf: (target) => {
+			getPrototypeOf: (target): object | null => {
 				touches.count++;
 
 				return Reflect.getPrototypeOf(target);
 			},
 		},
 	);
+};
 
 describe('referenceTo, counted', () => {
 	it('should not look inside the value it holds, however often it is used', () => {
 		const touches = { count: 0 };
-		const reference: MemoryReference<object> = referenceTo(
-			watchedSettings(touches),
-		);
+		const reference: MemoryReference<object> = referenceTo(watchedSettings(touches));
 
 		for (let round = 0; round < VOLUME; round++) {
 			reference.set(reference.get());

@@ -1,12 +1,12 @@
-import type { Branded } from '@/brand';
+import type { Branded } from '@/src/brand';
 import {
 	type ByteSize,
 	createIntegerType,
 	type IntegerRepresentation,
 	type IntegerType,
 	type IntegerWidth,
-} from '@/integer';
-import type { Layout } from '@/layout';
+} from '@/src/integer';
+import type { Layout } from '@/src/layout';
 
 /**
  * A two's complement integer of `N` bits: from -2^(N-1) to 2^(N-1) - 1.
@@ -52,13 +52,11 @@ const descriptors = new Map<IntegerWidth, IntegerType<unknown>>();
  * @returns The descriptor of that width.
  * @throws {RangeError} When the width is not 8, 16, 32, 64 or 128.
  */
-export const SignedInteger = <N extends IntegerWidth>(
-	width: N,
-): IntegerType<SignedInteger<N>> => {
+export const SignedInteger = <N extends IntegerWidth>(width: N): IntegerType<SignedInteger<N>> => {
 	let descriptor: IntegerType<unknown> | undefined = descriptors.get(width);
 
 	if (descriptor === undefined) {
-		descriptor = createIntegerType(true, width, `SignedInteger<${width}>`);
+		descriptor = createIntegerType(true, width, `SignedInteger<${String(width)}>`);
 		descriptors.set(width, descriptor);
 	}
 

@@ -1,4 +1,4 @@
-import type { GrowableMemory } from '@/linearMemory';
+import type { GrowableMemory } from '@/src/linearMemory';
 
 /** A growable memory that counts how often its buffer is asked for. */
 export interface CountedMemory {
@@ -14,7 +14,7 @@ export interface CountedMemory {
 	 *
 	 * @param bytes How many bytes to add.
 	 */
-	grow(bytes: number): void;
+	readonly grow: (bytes: number) => void;
 }
 
 /**

@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import * as operatingSystem from 'node:os';
 import * as path from 'node:path';
 
 /**
@@ -31,17 +32,8 @@ export const COMPILERS = [
  * @param packageName Package the compiler is installed under.
  * @returns Everything the compiler printed, which is empty on success.
  */
-export const compileFixture = (
-	fixture: string,
-	packageName: string,
-): string => {
-	const tsc: string = path.join(
-		WORKSPACE_ROOT,
-		'node_modules',
-		packageName,
-		'bin',
-		'tsc',
-	);
+export const compileFixture = (fixture: string, packageName: string): string => {
+	const tsc: string = path.join(WORKSPACE_ROOT, 'node_modules', packageName, 'bin', 'tsc');
 
 	try {
 		execFileSync(
@@ -60,7 +52,10 @@ export const compileFixture = (
 				path.resolve(__dirname, fixture),
 			],
 			{
-				cwd: WORKSPACE_ROOT,
+				// Outside the workspace: TypeScript 7 refuses files named on the command line when the directory it
+				// runs in, or any above it, holds a `tsconfig.json` (TS5112), and the root and every package have
+				// one. Every path above is absolute, and resolution of `@fulcro/functions` starts from the fixture.
+				cwd: operatingSystem.tmpdir(),
 				encoding: 'utf8',
 				stdio: ['ignore', 'pipe', 'pipe'],
 			},
@@ -84,12 +79,12 @@ export const compileFixture = (
  * @param fixture File name of the fixture.
  * @returns The line numbers, ascending.
  */
-export const reportedLines = (report: string, fixture: string): number[] => [
-	...new Set(
-		[
-			...report.matchAll(
-				new RegExp(`${fixture.replaceAll('.', '\\.')}[:(](\\d+)`, 'g'),
+export const reportedLines = (report: string, fixture: string): number[] => {
+	return [
+		...new Set(
+			[...report.matchAll(new RegExp(`${fixture.replaceAll('.', '\\.')}[:(](\\d+)`, 'g'))].map(
+				(match) => Number(match[1]),
 			),
-		].map((match) => Number(match[1])),
-	),
-];
+		),
+	];
+};

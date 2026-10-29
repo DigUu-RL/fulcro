@@ -8,12 +8,7 @@
  * `error.code`, its values from `error.details`, and its meaning from
  * `docs/errors/`, never from the table.
  */
-export {
-	type CodedError,
-	createError,
-	type DetailsOf,
-	type ErrorCode,
-} from '@/createError';
-export { FulcroError } from '@/fulcroError';
-export { isFulcroError } from '@/isFulcroError';
-export { prefixError } from '@/prefixError';
+export { createError, type DetailsOf, type ErrorCode } from '@/src/createError';
+export { FulcroError } from '@/src/fulcroError';
+export { isFulcroError } from '@/src/isFulcroError';
+export { prefixError } from '@/src/prefixError';

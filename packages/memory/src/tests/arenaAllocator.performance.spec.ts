@@ -1,9 +1,8 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, assert, describe, expect, it, vi } from 'vitest';
 
-import type { Allocation } from '@/allocator';
-import { type ArenaAllocator, createArenaAllocator } from '@/arenaAllocator';
-
-import { watchBuffers } from './watchBuffers';
+import type { Allocation } from '@/src/allocator';
+import { type ArenaAllocator, createArenaAllocator } from '@/src/arenaAllocator';
+import { watchBuffers } from '@/src/tests/watchBuffers';
 
 /**
  * Performance suite for `createArenaAllocator`.
@@ -31,8 +30,9 @@ afterEach(() => {
  * @param arena Arena to fill.
  * @returns The allocations.
  */
-const fill = (arena: ArenaAllocator): Allocation[] =>
-	Array.from({ length: VOLUME }, () => arena.allocate(SIZE, 8));
+const fill = (arena: ArenaAllocator): Allocation[] => {
+	return Array.from({ length: VOLUME }, () => arena.allocate(SIZE, 8));
+};
 
 describe('createArenaAllocator, counted', () => {
 	it('should make nothing when it is created', () => {
@@ -69,8 +69,9 @@ describe('createArenaAllocator, counted', () => {
 	it('should release every allocation without visiting one', () => {
 		const arena: ArenaAllocator = createArenaAllocator(CHUNK);
 		const allocations: Allocation[] = fill(arena);
-		const last = allocations[VOLUME - 1] as Allocation;
+		const last: Allocation | undefined = allocations[VOLUME - 1];
 
+		assert.isDefined(last);
 		last.bytes.setFloat64(0, 42);
 		arena.reset();
 

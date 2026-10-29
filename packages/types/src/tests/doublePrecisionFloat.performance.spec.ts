@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DoublePrecisionFloat } from '@/doublePrecisionFloat';
+import { DoublePrecisionFloat } from '@/src/doublePrecisionFloat';
 
 /**
  * Performance suite for `DoublePrecisionFloat`.
@@ -39,12 +39,13 @@ const timed = (multiply: (left: number, right: number) => number): number => {
 describe('DoublePrecisionFloat', () => {
 	it('should cost a small multiple of the bare operator', () => {
 		const baseline: number = timed((left, right) => left * right);
-		const described: number = timed((left, right) =>
-			DoublePrecisionFloat.multiply(
+
+		const described: number = timed((left, right) => {
+			return DoublePrecisionFloat.multiply(
 				left as DoublePrecisionFloat,
 				right as DoublePrecisionFloat,
-			),
-		);
+			);
+		});
 
 		expect(described).toBeLessThan(baseline * 25);
 	});

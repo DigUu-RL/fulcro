@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import type { WithLayout } from '@/functions/utils/layout';
-import { sizeOf } from '@/functions/utils/sizeOf';
+import type { TypeLayout, WithLayout } from '@/src/functions/utils/layout';
+import { sizeOf } from '@/src/functions/utils/sizeOf';
 
 /**
  * Behaviour suite for `sizeOf`.
@@ -55,10 +55,18 @@ describe('sizeOf', () => {
 	});
 
 	it('should leave a generic parameter to throw, having nothing substituted yet', () => {
-		const measure = <T extends WithLayout>(): number => sizeOf<T>();
+		const measure = <T extends WithLayout>(): TypeLayout<T>['size'] => sizeOf<T>();
 
 		expect(() => measure<Half>()).toThrow(
 			'a generic parameter has no layout until it is substituted',
 		);
+	});
+});
+
+describe('what sizeOf declares', () => {
+	it('should return the size the layout declares, as its literal', () => {
+		expectTypeOf<ReturnType<typeof sizeOf<Half>>>().toEqualTypeOf<2>();
+		expectTypeOf<ReturnType<typeof sizeOf<Declared>>>().toEqualTypeOf<12>();
+		expectTypeOf<ReturnType<typeof sizeOf<Wide>>>().toExtend<number>();
 	});
 });

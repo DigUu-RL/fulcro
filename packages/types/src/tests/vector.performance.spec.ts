@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { DoublePrecisionFloat } from '@/doublePrecisionFloat';
-import { Vector } from '@/vector';
+import { DoublePrecisionFloat } from '@/src/doublePrecisionFloat';
+import { Vector } from '@/src/vector';
 
 /**
  * Performance suite for `Vector`.
@@ -20,11 +20,9 @@ const LENGTH = 10_000;
  *
  * @returns The elements.
  */
-const scattered = (): number[] =>
-	Array.from(
-		{ length: LENGTH },
-		(_item, index) => ((index * 7919) % 1009) - 504,
-	);
+const scattered = (): number[] => {
+	return Array.from({ length: LENGTH }, (_item, index) => ((index * 7919) % 1009) - 504);
+};
 
 const Long = Vector(DoublePrecisionFloat, LENGTH, 1);
 const long = Long.from(scattered());

@@ -12,6 +12,8 @@
  * calls it directly rather than spawning a process and reading exit codes.
  */
 
+import { text } from 'node:stream/consumers';
+
 /**
  * Operations a human has deliberately re-opened for this session.
  *
@@ -23,30 +25,29 @@
  * with the exception written out, which is the deliberate act the exception is
  * supposed to be.
  *
- * @returns {Set<string>} The rule identifiers that are allowed through.
+ * @returns The rule identifiers that are allowed through.
  */
-export const exceptions = () =>
-	new Set(
+export const exceptions = (): Set<string> => {
+	return new Set(
 		(process.env.FULCRO_HOOKS_ALLOW ?? '')
 			.split(/[,\s]+/)
 			.filter((entry) => entry !== '')
 			.map((entry) => entry.toLowerCase()),
 	);
+};
 
 /**
  * Reads the hook event from standard input.
  *
- * @returns {Promise<object | null>} The event, or `null` if it cannot be read.
+ * @returns The event, or `null` if it cannot be read.
  */
-const event = async () => {
-	const chunks = [];
-
-	for await (const chunk of process.stdin) {
-		chunks.push(chunk);
-	}
+const event = async (): Promise<object | null> => {
+	const received = await text(process.stdin);
 
 	try {
-		return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+		const parsed: unknown = JSON.parse(received);
+
+		return typeof parsed === 'object' ? parsed : null;
 	} catch {
 		return null;
 	}
@@ -55,19 +56,21 @@ const event = async () => {
 /**
  * Runs a guard over the tool call Claude Code is about to make.
  *
- * @param {(input: object) => string | null} review Returns the reason the call
+ * @param review Returns the reason the call
  *   is refused, or `null` to let it through.
- * @returns {Promise<void>} Resolves once the process has been told to exit.
+ * @returns Resolves once the process has been told to exit.
  */
-export const guard = async (review) => {
+export const guard = async (review: (input: object) => string | null): Promise<void> => {
 	const received = await event();
-	const input = received?.tool_input;
+
+	const input: unknown =
+		received !== null && 'tool_input' in received ? received.tool_input : undefined;
 
 	if (input === null || typeof input !== 'object') {
 		process.exit(0);
 	}
 
-	let refusal = null;
+	let refusal: string | null = null;
 
 	try {
 		refusal = review(input);
@@ -75,7 +78,7 @@ export const guard = async (review) => {
 		// A guard that throws is a bug in the guard, and the bug is worth
 		// seeing — but on standard output, where it reaches the transcript
 		// without being read as a refusal.
-		process.stdout.write(`A repository hook failed to run: ${error}\n`);
+		process.stdout.write(`A repository hook failed to run: ${String(error)}\n`);
 		process.exit(0);
 	}
 

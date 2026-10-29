@@ -1,11 +1,7 @@
 import typescript from 'typescript';
 
-import {
-	buildStructuralTest,
-	CallRewriter,
-	RewriteContext,
-	utilityModuleSegment,
-} from '@fulcro/transform-core';
+import type { CallRewriter, RewriteContext } from '@fulcro/transform-core';
+import { buildStructuralTest, utilityModuleSegment } from '@fulcro/transform-core';
 
 /**
  * The rewrite `is` and `as` share.
@@ -38,55 +34,47 @@ import {
  * message nobody asks for.
  * @returns The rewriter.
  */
-export const checkRewriter = (
-	functionName: string,
-	explain: boolean,
-): CallRewriter => ({
-	functionName,
-	moduleSegment: utilityModuleSegment(functionName),
+export const checkRewriter = (functionName: string, explain: boolean): CallRewriter => {
+	return {
+		functionName,
+		moduleSegment: utilityModuleSegment(functionName),
 
-	rewrite: (
-		call: typescript.CallExpression,
-		context: RewriteContext,
-	): typescript.Node | null => {
-		const [typeArgument] = call.typeArguments ?? [];
-		const [value] = call.arguments;
+		rewrite: (call: typescript.CallExpression, context: RewriteContext): typescript.Node | null => {
+			const [typeArgument] = call.typeArguments ?? [];
+			const [value] = call.arguments;
 
-		// Written with a test already, or with no type to resolve: the argument
-		// the consumer wrote wins, and a call with nothing to check is left for
-		// the runtime to refuse.
-		if (typeArgument === undefined || value === undefined) return null;
-		if (call.arguments.length > 1) return null;
+			// Written with a test already, or with no type to resolve: the argument
+			// the consumer wrote wins, and a call with nothing to check is left for
+			// the runtime to refuse.
+			if (typeArgument === undefined || value === undefined) return null;
+			if (call.arguments.length > 1) return null;
 
-		const { checker, factory } = context;
+			const { checker, factory } = context;
 
-		const type: typescript.Type = checker.getTypeFromTypeNode(typeArgument);
+			const type: typescript.Type = checker.getTypeFromTypeNode(typeArgument);
 
-		const written: string = checker.typeToString(
-			type,
-			undefined,
-			typescript.TypeFormatFlags.NoTruncation,
-		);
+			const written: string = checker.typeToString(
+				type,
+				undefined,
+				typescript.TypeFormatFlags.NoTruncation,
+			);
 
-		const test: typescript.Expression | null = buildStructuralTest(
-			type,
-			written,
-			call,
-			context,
-			{ explain },
-		);
+			const test: typescript.Expression | null = buildStructuralTest(type, written, call, context, {
+				explain,
+			});
 
-		// Left exactly as written when the type cannot be checked honestly, so
-		// the runtime refuses out loud rather than a half-check being emitted.
-		if (test === null) return null;
+			// Left exactly as written when the type cannot be checked honestly, so
+			// the runtime refuses out loud rather than a half-check being emitted.
+			if (test === null) return null;
 
-		return factory.updateCallExpression(
-			call,
-			context.visit(call.expression) as typescript.Expression,
-			// Dropped: the type argument has done its work, and leaving it would
-			// no longer match the signature now that a second argument is passed.
-			undefined,
-			[context.visit(value) as typescript.Expression, test],
-		);
-	},
-});
+			return factory.updateCallExpression(
+				call,
+				context.visit(call.expression) as typescript.Expression,
+				// Dropped: the type argument has done its work, and leaving it would
+				// no longer match the signature now that a second argument is passed.
+				undefined,
+				[context.visit(value) as typescript.Expression, test],
+			);
+		},
+	};
+};

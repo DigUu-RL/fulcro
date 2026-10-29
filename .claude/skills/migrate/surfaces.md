@@ -25,7 +25,7 @@ the same change, so the next migration searches it from the start.
 | 11  | `.claude/` and tooling     | `git grep -nw <name> -- .claude tools`                                                                                          | Instructions to a session, and lint rules matching names   |
 | 12  | Pending changesets         | `git grep -nw <name> -- .changeset`                                                                                             | A release note about to ship naming the old name           |
 | 13  | Changelogs                 | `git grep -nw <name> -- 'packages/*/CHANGELOG.md'`                                                                              | History — found to be `kept`, never edited                 |
-| 14  | Roadmap                    | `Grep <name>` under `.roadmap/`                                                                                                 | Gitignored, so `git grep` does not see it                  |
+| 14  | Roadmap                    | `gh issue list --state all --search "<name> in:title,body"`                                                                     | GitHub issues, so `git grep` does not see them             |
 
 `-w` matches the whole word, so `takeWhile` does not find `takeWhileAsync`.
 Run each search a second time without `-w` and read the extra hits: a name

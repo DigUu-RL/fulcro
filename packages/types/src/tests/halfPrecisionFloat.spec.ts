@@ -1,6 +1,7 @@
-import { describe, expect, expectTypeOf, it } from 'vitest';
+import { assert, describe, expect, expectTypeOf, it } from 'vitest';
 
-import { HalfPrecisionFloat } from '@/halfPrecisionFloat';
+import { HalfPrecisionFloat } from '@/src/halfPrecisionFloat';
+import type { SinglePrecisionFloat } from '@/src/singlePrecisionFloat';
 
 /**
  * Behaviour suite for `HalfPrecisionFloat`.
@@ -35,10 +36,12 @@ const decode = (bits: number): number => {
 const POSITIVE_FINITE: readonly {
 	readonly bits: number;
 	readonly value: number;
-}[] = Array.from({ length: 0x7c00 }, (_, bits) => ({
-	bits,
-	value: decode(bits),
-}));
+}[] = Array.from({ length: 0x7c00 }, (_, bits) => {
+	return {
+		bits,
+		value: decode(bits),
+	};
+});
 
 describe('HalfPrecisionFloat', () => {
 	it('should convert every one of the 65,536 patterns to itself', () => {
@@ -48,11 +51,7 @@ describe('HalfPrecisionFloat', () => {
 			const value: number = decode(bits);
 			const converted: number = HalfPrecisionFloat.from(value);
 
-			if (
-				!(Number.isNaN(value)
-					? Number.isNaN(converted)
-					: Object.is(converted, value))
-			) {
+			if (!(Number.isNaN(value) ? Number.isNaN(converted) : Object.is(converted, value))) {
 				mismatches++;
 			}
 		}
@@ -66,6 +65,10 @@ describe('HalfPrecisionFloat', () => {
 		for (let index = 0; index + 1 < POSITIVE_FINITE.length; index++) {
 			const low = POSITIVE_FINITE[index];
 			const high = POSITIVE_FINITE[index + 1];
+
+			assert.isDefined(low);
+			assert.isDefined(high);
+
 			const midpoint: number = (low.value + high.value) / 2;
 			const even: number = low.bits % 2 === 0 ? low.value : high.value;
 
@@ -80,11 +83,18 @@ describe('HalfPrecisionFloat', () => {
 		const wrong: number[] = [];
 
 		for (let index = 0; index + 1 < POSITIVE_FINITE.length; index += 7) {
-			const low: number = POSITIVE_FINITE[index].value;
-			const high: number = POSITIVE_FINITE[index + 1].value;
+			const lowNeighbour = POSITIVE_FINITE[index];
+			const highNeighbour = POSITIVE_FINITE[index + 1];
+
+			assert.isDefined(lowNeighbour);
+			assert.isDefined(highNeighbour);
+
+			const low: number = lowNeighbour.value;
+			const high: number = highNeighbour.value;
 			const step: number = (high - low) / 4;
 
 			if (HalfPrecisionFloat.from(low + step) !== low) wrong.push(low + step);
+
 			if (HalfPrecisionFloat.from(high - step) !== high) {
 				wrong.push(high - step);
 			}
@@ -119,21 +129,16 @@ describe('HalfPrecisionFloat', () => {
 
 		// 1 + 2^-11 is exactly between 1 and 1 + 2^-10: ties to even, back to 1.
 		expect(HalfPrecisionFloat.add(one, tiny)).toBe(1);
-		expect(HalfPrecisionFloat.divide(one, HalfPrecisionFloat.from(3))).toBe(
-			0.333251953125,
-		);
+		expect(HalfPrecisionFloat.divide(one, HalfPrecisionFloat.from(3))).toBe(0.333251953125);
+
 		expect(
-			HalfPrecisionFloat.multiply(
-				HalfPrecisionFloat.from(300),
-				HalfPrecisionFloat.from(300),
-			),
+			HalfPrecisionFloat.multiply(HalfPrecisionFloat.from(300), HalfPrecisionFloat.from(300)),
 		).toBe(Infinity);
+
 		expect(HalfPrecisionFloat.subtract(one, one)).toBe(0);
+
 		expect(
-			HalfPrecisionFloat.remainder(
-				HalfPrecisionFloat.from(7.5),
-				HalfPrecisionFloat.from(2),
-			),
+			HalfPrecisionFloat.remainder(HalfPrecisionFloat.from(7.5), HalfPrecisionFloat.from(2)),
 		).toBe(1.5);
 	});
 
@@ -149,21 +154,19 @@ describe('HalfPrecisionFloat', () => {
 
 		expect(HalfPrecisionFloat.increment(large)).toBe(2048);
 		expect(HalfPrecisionFloat.decrement(one)).toBe(0);
-		expect(
-			Object.is(HalfPrecisionFloat.negate(HalfPrecisionFloat.from(0)), -0),
-		).toBe(true);
-		expect(
-			HalfPrecisionFloat.power(
-				HalfPrecisionFloat.from(3),
-				HalfPrecisionFloat.from(0.5),
-			),
-		).toBe(1.732421875);
+		expect(Object.is(HalfPrecisionFloat.negate(HalfPrecisionFloat.from(0)), -0)).toBe(true);
+
+		expect(HalfPrecisionFloat.power(HalfPrecisionFloat.from(3), HalfPrecisionFloat.from(0.5))).toBe(
+			1.732421875,
+		);
+
 		expect(
 			HalfPrecisionFloat.equals(
 				HalfPrecisionFloat.from(Number.NaN),
 				HalfPrecisionFloat.from(Number.NaN),
 			),
 		).toBe(false);
+
 		expect(HalfPrecisionFloat.lessThan(one, large)).toBe(true);
 	});
 
@@ -182,12 +185,9 @@ describe('HalfPrecisionFloat', () => {
 	});
 
 	it('should stay a number at the type level, and not a single precision one', () => {
-		expectTypeOf(
-			HalfPrecisionFloat.from(1),
-		).toEqualTypeOf<HalfPrecisionFloat>();
-		expectTypeOf<HalfPrecisionFloat>().toMatchTypeOf<number>();
-		expectTypeOf<HalfPrecisionFloat>().not.toMatchTypeOf<
-			import('@/singlePrecisionFloat').SinglePrecisionFloat
-		>();
+		expectTypeOf(HalfPrecisionFloat.from(1)).toEqualTypeOf<HalfPrecisionFloat>();
+		expectTypeOf<HalfPrecisionFloat>().toExtend<number>();
+
+		expectTypeOf<HalfPrecisionFloat>().not.toExtend<SinglePrecisionFloat>();
 	});
 });

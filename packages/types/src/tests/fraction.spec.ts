@@ -1,12 +1,12 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { BigInteger } from '@/bigInteger';
-import { type Fraction, Fraction as FractionOf } from '@/fraction';
-import type { Layout } from '@/layout';
-import { SignedInteger } from '@/signedInteger';
-import { SinglePrecisionFloat } from '@/singlePrecisionFloat';
-import { struct } from '@/struct';
-import { UnsignedInteger } from '@/unsignedInteger';
+import { BigInteger } from '@/src/bigInteger';
+import { type Fraction, Fraction as FractionOf } from '@/src/fraction';
+import type { Layout } from '@/src/layout';
+import { SignedInteger } from '@/src/signedInteger';
+import { SinglePrecisionFloat } from '@/src/singlePrecisionFloat';
+import { struct } from '@/src/struct';
+import { UnsignedInteger } from '@/src/unsignedInteger';
 
 /**
  * Behaviour suite for `Fraction`.
@@ -25,14 +25,12 @@ import { UnsignedInteger } from '@/unsignedInteger';
  * @param details The details the error is expected to carry.
  * @returns The same error, carrying that code and those details.
  */
-const coded = <T extends Error>(
-	error: T,
-	details: Readonly<Record<string, unknown>>,
-): T =>
-	Object.assign(error, {
+const coded = <T extends Error>(error: T, details: Readonly<Record<string, unknown>>): T => {
+	return Object.assign(error, {
 		code: error.message.slice(0, 'FULCRO0000'.length),
 		details,
 	});
+};
 
 const Ratio = FractionOf(SignedInteger(32));
 
@@ -41,8 +39,9 @@ const Ratio = FractionOf(SignedInteger(32));
  * @param denominator Denominator.
  * @returns The fraction, reduced.
  */
-const ratio = (numerator: number, denominator = 1) =>
-	Ratio.from({ numerator, denominator });
+const ratio = (numerator: number, denominator = 1): Fraction<SignedInteger<32>> => {
+	return Ratio.from({ numerator, denominator });
+};
 
 describe('Fraction', () => {
 	describe('values', () => {
@@ -71,15 +70,9 @@ describe('Fraction', () => {
 
 		it('should recognise only fractions in normal form', () => {
 			expect(Ratio.is(ratio(2, 4))).toBe(true);
-			expect(Ratio.is(Object.freeze({ numerator: 2, denominator: 4 }))).toBe(
-				false,
-			);
-			expect(Ratio.is(Object.freeze({ numerator: 1, denominator: -2 }))).toBe(
-				false,
-			);
-			expect(Ratio.is(Object.freeze({ numerator: 1, denominator: 2 }))).toBe(
-				true,
-			);
+			expect(Ratio.is(Object.freeze({ numerator: 2, denominator: 4 }))).toBe(false);
+			expect(Ratio.is(Object.freeze({ numerator: 1, denominator: -2 }))).toBe(false);
+			expect(Ratio.is(Object.freeze({ numerator: 1, denominator: 2 }))).toBe(true);
 			expect(Ratio.is({ numerator: 1, denominator: 2 })).toBe(false);
 		});
 	});
@@ -87,10 +80,12 @@ describe('Fraction', () => {
 	describe('arithmetic', () => {
 		it('should add and subtract over the least common denominator', () => {
 			expect(Ratio.add(ratio(1, 6), ratio(1, 4))).toEqual(ratio(5, 12));
+
 			expect(Ratio.add(ratio(1, 3), ratio(2, 3))).toEqual({
 				numerator: 1,
 				denominator: 1,
 			});
+
 			expect(Ratio.subtract(ratio(1, 4), ratio(1, 2))).toEqual(ratio(-1, 4));
 		});
 
@@ -151,12 +146,12 @@ describe('Fraction', () => {
 		it("should throw the integer type's error when an intermediate leaves its range", () => {
 			const Small = FractionOf(SignedInteger(8));
 
-			expect(() =>
-				Small.add(
+			expect(() => {
+				return Small.add(
 					Small.from({ numerator: 1, denominator: 127 }),
 					Small.from({ numerator: 1, denominator: 126 }),
-				),
-			).toThrow(RangeError);
+				);
+			}).toThrow(RangeError);
 		});
 	});
 
@@ -166,23 +161,21 @@ describe('Fraction', () => {
 				readonly size: 8;
 				readonly alignment: 4;
 			}>();
-			expectTypeOf<Fraction<BigInteger>>().not.toMatchTypeOf<
-				Layout<number, number>
-			>();
+
+			expectTypeOf<Fraction<BigInteger>>().not.toExtend<Layout<number, number>>();
 		});
 
 		it('should be stored by a struct as its two parts', () => {
 			const Scale = struct('Scale', {
 				factor: FractionOf(UnsignedInteger(16)),
 			});
+
 			const view = new DataView(new ArrayBuffer(Scale.layout.size));
 			const value = Scale.from({ factor: { numerator: 3, denominator: 4 } });
 
 			Scale.write(view, 0, value);
 
-			expect([view.getUint16(0, true), view.getUint16(2, true)]).toEqual([
-				3, 4,
-			]);
+			expect([view.getUint16(0, true), view.getUint16(2, true)]).toEqual([3, 4]);
 			expect(Scale.equals(Scale.read(view, 0), value)).toBe(true);
 		});
 	});
@@ -201,37 +194,26 @@ describe('Fraction', () => {
 
 		it('should refuse a zero denominator', () => {
 			expect(() => ratio(1, 0)).toThrow(
+				coded(new RangeError('FULCRO6001: Fraction<SignedInteger<32>>.from: division by zero.'), {
+					operation: 'Fraction<SignedInteger<32>>.from',
+				}),
+			);
+		});
+
+		it.each(['divide', 'remainder'] as const)('should refuse to %s by zero', (operation) => {
+			expect(() => Ratio[operation](ratio(1), ratio(0))).toThrow(
 				coded(
-					new RangeError(
-						'FULCRO6001: Fraction<SignedInteger<32>>.from: division by zero.',
-					),
-					{ operation: 'Fraction<SignedInteger<32>>.from' },
+					new RangeError(`FULCRO6001: Fraction<SignedInteger<32>>.${operation}: division by zero.`),
+					{ operation: `Fraction<SignedInteger<32>>.${operation}` },
 				),
 			);
 		});
 
-		it.each(['divide', 'remainder'] as const)(
-			'should refuse to %s by zero',
-			(operation) => {
-				expect(() => Ratio[operation](ratio(1), ratio(0))).toThrow(
-					coded(
-						new RangeError(
-							`FULCRO6001: Fraction<SignedInteger<32>>.${operation}: division by zero.`,
-						),
-						{ operation: `Fraction<SignedInteger<32>>.${operation}` },
-					),
-				);
-			},
-		);
-
 		it('should refuse a power of zero with a negative exponent', () => {
 			expect(() => Ratio.power(ratio(0), ratio(-1))).toThrow(
-				coded(
-					new RangeError(
-						'FULCRO6001: Fraction<SignedInteger<32>>.power: division by zero.',
-					),
-					{ operation: 'Fraction<SignedInteger<32>>.power' },
-				),
+				coded(new RangeError('FULCRO6001: Fraction<SignedInteger<32>>.power: division by zero.'), {
+					operation: 'Fraction<SignedInteger<32>>.power',
+				}),
 			);
 		});
 

@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { borrow } from '@/borrow';
-import type { Borrowed } from '@/borrowed';
-import { own } from '@/own';
-
-import { countedStorage } from './countedSource';
+import { borrow } from '@/src/borrow';
+import type { Borrowed } from '@/src/borrowed';
+import { own } from '@/src/own';
+import { countedStorage } from '@/src/tests/countedSource';
 
 /**
  * Performance suite for `Owned<T>[Symbol.dispose]`.

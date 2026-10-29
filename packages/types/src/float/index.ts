@@ -1,6 +1,6 @@
 import { createError } from '@fulcro/errors';
 
-import type { BoundedNumericType } from '@/numericType';
+import type { BoundedNumericType } from '@/src/numericType';
 
 /**
  * Machinery shared by the three binary floating point types.
@@ -30,60 +30,56 @@ export const createFloatType = <T>(
 	name: string,
 	maximum: number,
 	round: (value: number) => number,
-): BoundedNumericType<T, number> => ({
-	name,
-	minimum: -maximum as T,
-	maximum: maximum as T,
+): BoundedNumericType<T, number> => {
+	return {
+		name,
+		minimum: -maximum as T,
+		maximum: maximum as T,
 
-	from: (value: number): T => {
-		// A `bigint` is refused rather than converted: turning it into a double
-		// first and then into the format rounds twice, and the second rounding
-		// can land on the wrong neighbour.
-		if (typeof value !== 'number') {
-			throw createError('FULCRO6006', {
-				operation: `${name}.from`,
-				received: typeof value,
-			});
-		}
+		from: (value: number): T => {
+			// A `bigint` is refused rather than converted: turning it into a double
+			// first and then into the format rounds twice, and the second rounding
+			// can land on the wrong neighbour.
+			if (typeof value !== 'number') {
+				throw createError('FULCRO6006', {
+					operation: `${name}.from`,
+					received: typeof value,
+				});
+			}
 
-		return round(value) as T;
-	},
+			return round(value) as T;
+		},
 
-	is: (value: unknown): value is T =>
-		typeof value === 'number' &&
-		(Number.isNaN(value) || Object.is(round(value), value)),
+		is: (value: unknown): value is T => {
+			return typeof value === 'number' && (Number.isNaN(value) || Object.is(round(value), value));
+		},
 
-	add: (left: T, right: T): T =>
-		round((left as number) + (right as number)) as T,
+		add: (left: T, right: T): T => round((left as number) + (right as number)) as T,
 
-	subtract: (left: T, right: T): T =>
-		round((left as number) - (right as number)) as T,
+		subtract: (left: T, right: T): T => round((left as number) - (right as number)) as T,
 
-	multiply: (left: T, right: T): T =>
-		round((left as number) * (right as number)) as T,
+		multiply: (left: T, right: T): T => round((left as number) * (right as number)) as T,
 
-	divide: (left: T, right: T): T =>
-		round((left as number) / (right as number)) as T,
+		divide: (left: T, right: T): T => round((left as number) / (right as number)) as T,
 
-	remainder: (left: T, right: T): T =>
-		round((left as number) % (right as number)) as T,
+		remainder: (left: T, right: T): T => round((left as number) % (right as number)) as T,
 
-	// Unlike the four above, `Math.pow` is not correctly rounded even in double
-	// precision, so the result is the platform's double power rounded once into
-	// the format: faithful, and not promised to be the nearest.
-	power: (base: T, exponent: T): T =>
-		round((base as number) ** (exponent as number)) as T,
+		// Unlike the four above, `Math.pow` is not correctly rounded even in double
+		// precision, so the result is the platform's double power rounded once into
+		// the format: faithful, and not promised to be the nearest.
+		power: (base: T, exponent: T): T => round((base as number) ** (exponent as number)) as T,
 
-	// Exact in every format: only the sign bit changes.
-	negate: (value: T): T => -(value as number) as T,
+		// Exact in every format: only the sign bit changes.
+		negate: (value: T): T => -(value as number) as T,
 
-	increment: (value: T): T => round((value as number) + 1) as T,
+		increment: (value: T): T => round((value as number) + 1) as T,
 
-	decrement: (value: T): T => round((value as number) - 1) as T,
+		decrement: (value: T): T => round((value as number) - 1) as T,
 
-	equals: (left: T, right: T): boolean => left === right,
-	lessThan: (left: T, right: T): boolean => left < right,
-	lessThanOrEqual: (left: T, right: T): boolean => left <= right,
-	greaterThan: (left: T, right: T): boolean => left > right,
-	greaterThanOrEqual: (left: T, right: T): boolean => left >= right,
-});
+		equals: (left: T, right: T): boolean => left === right,
+		lessThan: (left: T, right: T): boolean => left < right,
+		lessThanOrEqual: (left: T, right: T): boolean => left <= right,
+		greaterThan: (left: T, right: T): boolean => left > right,
+		greaterThanOrEqual: (left: T, right: T): boolean => left >= right,
+	};
+};

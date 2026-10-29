@@ -1,9 +1,6 @@
-import {
-	hasCollectionFactories,
-	registerCollectionFactories,
-} from '@/collections/factories';
-import { GroupCollection } from '@/collections/group/group.collection';
-import { OrderedSequenceCollection } from '@/collections/ordered/ordered.collection';
+import { hasCollectionFactories, registerCollectionFactories } from '@/src/collections/factories';
+import { GroupCollection } from '@/src/collections/group/group.collection';
+import { OrderedSequenceCollection } from '@/src/collections/ordered/ordered.collection';
 
 /**
  * Composition root of the library.
@@ -24,7 +21,7 @@ export const bootstrapCollections = (): void => {
 	if (hasCollectionFactories()) return;
 
 	registerCollectionFactories({
-		group: GroupCollection.createGroupProxy,
-		ordered: OrderedSequenceCollection.createOrderedProxy,
+		group: (key, source) => GroupCollection.createGroupProxy(key, source),
+		ordered: (source, criteria) => OrderedSequenceCollection.createOrderedProxy(source, criteria),
 	});
 };

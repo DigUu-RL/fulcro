@@ -1,5 +1,5 @@
-import { Group } from '@/@types/collections/group';
-import { SequenceCollection } from '@/collections/sequence/sequence.collection';
+import type { Group } from '@/src/@types/collections/group';
+import { SequenceCollection } from '@/src/collections/sequence/sequence.collection';
 
 /**
  * Implementation of {@link Group}: a sequence of elements sharing the same key.
@@ -14,10 +14,7 @@ import { SequenceCollection } from '@/collections/sequence/sequence.collection';
  * @template K Type of the key shared by the elements.
  * @template T Type of the grouped elements.
  */
-export class GroupCollection<K, T>
-	extends SequenceCollection<T>
-	implements Group<K, T>
-{
+export class GroupCollection<K, T> extends SequenceCollection<T> implements Group<K, T> {
 	/** Key shared by every element of the group. */
 	public readonly key: K;
 
@@ -49,8 +46,6 @@ export class GroupCollection<K, T>
 	static createGroupProxy<K, T>(key: K, source: Iterable<T>): Group<K, T> {
 		const instance = new GroupCollection<K, T>(key, source);
 
-		return SequenceCollection.createIndexedProxy<T, GroupCollection<K, T>>(
-			instance,
-		);
+		return SequenceCollection.createIndexedProxy<T, GroupCollection<K, T>>(instance);
 	}
 }

@@ -1,6 +1,6 @@
 import { createError } from '@fulcro/errors';
 
-import { describeValue } from '@/storage/describeValue';
+import { describeValue } from '@/src/storage/describeValue';
 
 /**
  * A position or a count as an error detail: the number when it is one — a
@@ -9,8 +9,9 @@ import { describeValue } from '@/storage/describeValue';
  * @param value Value handed in.
  * @returns The detail.
  */
-const reported = (value: unknown): number | string =>
-	typeof value === 'number' ? value : describeValue(value);
+const reported = (value: unknown): number | string => {
+	return typeof value === 'number' ? value : describeValue(value);
+};
 
 /**
  * Refuses a part that does not fit inside what it is cut from, and says how
@@ -35,8 +36,7 @@ export const requirePart = (
 	length: number | undefined,
 	available: number,
 ): number => {
-	const resolved: number =
-		length === undefined ? Math.max(0, available - start) : length;
+	const resolved: number = length ?? Math.max(0, available - start);
 
 	if (
 		!Number.isSafeInteger(start) ||

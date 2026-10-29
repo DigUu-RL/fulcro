@@ -1,9 +1,9 @@
 import { createError } from '@fulcro/errors';
 
-import type { Allocation, AllocationDomain } from '@/allocator';
-import { requireRequest } from '@/allocator/requireRequest';
-import { bump, type BumpRegion, remaining } from '@/bump';
-import { describeBuffer } from '@/storage/describeBuffer';
+import type { Allocation, AllocationDomain } from '@/src/allocator';
+import { requireRequest } from '@/src/allocator/requireRequest';
+import { bump, type BumpRegion, remaining } from '@/src/bump';
+import { describeBuffer } from '@/src/storage/describeBuffer';
 
 /**
  * An allocator over a buffer the caller supplied, handed out front to back and
@@ -18,7 +18,7 @@ export interface FixedBufferAllocator extends AllocationDomain {
 	 * front of the buffer. Every allocation made before it reports `isLive()` as
 	 * `false` from now on.
 	 */
-	reset(): void;
+	readonly reset: () => void;
 }
 
 /**
@@ -42,9 +42,7 @@ export interface FixedBufferAllocator extends AllocationDomain {
  * @returns The allocator, frozen.
  * @throws {TypeError} When `buffer` is not an `ArrayBuffer`.
  */
-export const createFixedBufferAllocator = (
-	buffer: ArrayBuffer,
-): FixedBufferAllocator => {
+export const createFixedBufferAllocator = (buffer: ArrayBuffer): FixedBufferAllocator => {
 	if (!(buffer instanceof ArrayBuffer)) {
 		throw createError('FULCRO7013', {
 			operation: 'createFixedBufferAllocator',

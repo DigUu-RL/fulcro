@@ -91,8 +91,8 @@ The thirteen, each present or deliberately answered:
 - [ ] No role-play without operational criteria.
 - [ ] No unconditional "fix everything" branch.
 - [ ] No step that edits a test to make it pass.
-- [ ] No silencing (`eslint-disable`, `@ts-ignore`, `@ts-expect-error`, `skip`)
-      without explicit approval and a reason written at the site.
+- [ ] No silencing (`eslint-disable`, `@ts-ignore`, `@ts-expect-error`, `skip`,
+      a rule switched off for some files), offered or applied.
 - [ ] No step that pushes, publishes, merges, or discards uncommitted work.
       `.claude/rules/protected-operations.md` holds regardless; a skill that
       names one of those is written against a wall it will hit.

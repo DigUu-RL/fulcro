@@ -8,19 +8,19 @@ import {
 // again, which TypeScript reads as an alias defined in terms of itself.
 export type { TransformerOptions } from '@fulcro/transform-core';
 
-import { alignOfRewriter } from '@/transformer/alignOf';
-import { asRewriter } from '@/transformer/as';
-import { constantOfRewriter } from '@/transformer/constantOf';
-import { defaultOfRewriter } from '@/transformer/defaultOf';
-import { isRewriter } from '@/transformer/is';
-import { keysOfRewriter } from '@/transformer/keysOf';
-import { layoutOfRewriter } from '@/transformer/layoutOf';
-import { nameOfRewriter } from '@/transformer/nameOf';
-import { offsetOfRewriter } from '@/transformer/offsetOf';
-import { pathOfRewriter } from '@/transformer/pathOf';
-import { pathsOfRewriter } from '@/transformer/pathsOf';
-import { sizeOfRewriter } from '@/transformer/sizeOf';
-import { typeOfRewriter } from '@/transformer/typeOf';
+import { alignOfRewriter } from '@/src/transformer/alignOf';
+import { asRewriter } from '@/src/transformer/as';
+import { constantOfRewriter } from '@/src/transformer/constantOf';
+import { defaultOfRewriter } from '@/src/transformer/defaultOf';
+import { isRewriter } from '@/src/transformer/is';
+import { keysOfRewriter } from '@/src/transformer/keysOf';
+import { layoutOfRewriter } from '@/src/transformer/layoutOf';
+import { nameOfRewriter } from '@/src/transformer/nameOf';
+import { offsetOfRewriter } from '@/src/transformer/offsetOf';
+import { pathOfRewriter } from '@/src/transformer/pathOf';
+import { pathsOfRewriter } from '@/src/transformer/pathsOf';
+import { sizeOfRewriter } from '@/src/transformer/sizeOf';
+import { typeOfRewriter } from '@/src/transformer/typeOf';
 
 /**
  * Compile time transformer backing `nameOf`, `typeOf` and `defaultOf`.

@@ -7,7 +7,7 @@ import {
 	scaleEach,
 	subtractEach,
 	sumOfProducts,
-} from '@/componentwise';
+} from '@/src/componentwise';
 import {
 	describeKind,
 	describeType,
@@ -18,9 +18,9 @@ import {
 	type RepeatedLayout,
 	type SourceOf,
 	type ValueOf,
-} from '@/element';
-import type { Multiply } from '@/struct/arithmetic';
-import { registerRepeatedCodec } from '@/struct/codec';
+} from '@/src/element';
+import type { Multiply } from '@/src/struct/arithmetic';
+import { registerRepeatedCodec } from '@/src/struct/codec';
 
 /**
  * A matrix of `R` rows and `C` columns of `T`.
@@ -61,9 +61,7 @@ export type Matrix<T, R extends number, C extends number> = readonly T[] & {
 } & RepeatedLayout<T, Multiply<Multiply<R, C>, ElementSize<T>>>;
 
 /** How a shape reads in a message: a vector when it has one row or column. */
-type ShapeName<R extends number, C extends number> = 1 extends R | C
-	? 'Vector'
-	: 'Matrix';
+type ShapeName<R extends number, C extends number> = 1 extends R | C ? 'Vector' : 'Matrix';
 
 /**
  * Nothing, when a product is defined; otherwise a property no value has, whose
@@ -187,8 +185,7 @@ export interface MatrixOperations<T, R extends number, C extends number> {
 	 */
 	multiply<TRows extends number, TColumns extends number>(
 		left: Matrix<T, R, C>,
-		right: Matrix<T, TRows, TColumns> &
-			MultiplicationCheck<R, C, TRows, TColumns>,
+		right: Matrix<T, TRows, TColumns> & MultiplicationCheck<R, C, TRows, TColumns>,
 	): Matrix<T, R, TColumns>;
 
 	/**
@@ -247,17 +244,14 @@ export interface MatrixType<
  * @param columns Number of columns.
  * @returns The value.
  */
-export const createValue = <T>(
-	elements: T[],
-	rows: number,
-	columns: number,
-): readonly T[] =>
-	Object.freeze(
+export const createValue = <T>(elements: T[], rows: number, columns: number): readonly T[] => {
+	return Object.freeze(
 		Object.defineProperties(elements, {
 			rows: { value: rows, enumerable: false },
 			columns: { value: columns, enumerable: false },
 		}),
 	);
+};
 
 /**
  * The shape of an operand, as it carries it.
@@ -280,11 +274,7 @@ const shapeOf = (
 
 	const { rows, columns } = value as { rows?: unknown; columns?: unknown };
 
-	if (
-		typeof rows !== 'number' ||
-		typeof columns !== 'number' ||
-		rows * columns !== value.length
-	) {
+	if (typeof rows !== 'number' || typeof columns !== 'number' || rows * columns !== value.length) {
 		throw createError('FULCRO6034', {
 			operation,
 			received: 'an array without a shape',
@@ -324,17 +314,9 @@ const requireDimension = (
  * @param columns Number of columns.
  * @returns `Matrix<…>`, or `Vector<…>` with one row or one column.
  */
-const describeShape = (
-	element: string,
-	rows: number,
-	columns: number,
-): string =>
-	describeType(
-		rows === 1 || columns === 1 ? 'Vector' : 'Matrix',
-		element,
-		rows,
-		columns,
-	);
+const describeShape = (element: string, rows: number, columns: number): string => {
+	return describeType(rows === 1 || columns === 1 ? 'Vector' : 'Matrix', element, rows, columns);
+};
 
 /**
  * Builds what a matrix and a vector of one shape share, and the registration
@@ -397,8 +379,7 @@ export const createMatrixOperations = <T, R extends number, C extends number>(
 	 * @param elements Elements of a result of this shape.
 	 * @returns The value.
 	 */
-	const shaped = (elements: T[]): Value =>
-		createValue(elements, rows, columns) as Value;
+	const shaped = (elements: T[]): Value => createValue(elements, rows, columns) as Value;
 
 	const operations: MatrixOperations<T, R, C> = {
 		name,
@@ -406,20 +387,14 @@ export const createMatrixOperations = <T, R extends number, C extends number>(
 		columns,
 
 		is: (value): value is Value => {
-			if (
-				!Array.isArray(value) ||
-				!Object.isFrozen(value) ||
-				value.length !== count
-			) {
+			if (!Array.isArray(value) || !Object.isFrozen(value) || value.length !== count) {
 				return false;
 			}
 
 			const shape = value as { rows?: unknown; columns?: unknown };
 
 			return (
-				shape.rows === rows &&
-				shape.columns === columns &&
-				value.every((item) => element.is(item))
+				shape.rows === rows && shape.columns === columns && value.every((item) => element.is(item))
 			);
 		},
 
@@ -473,7 +448,7 @@ export const createMatrixOperations = <T, R extends number, C extends number>(
 					operation: `${name}.multiply`,
 					left: describeShape(element.name, rows, columns),
 					right: describeShape(element.name, shape.rows, shape.columns),
-					expected: `${shape.columns === 1 ? 'a vector' : 'a matrix'} with ${columns} rows`,
+					expected: `${shape.columns === 1 ? 'a vector' : 'a matrix'} with ${String(columns)} rows`,
 				});
 			}
 
@@ -507,7 +482,7 @@ export const createMatrixOperations = <T, R extends number, C extends number>(
 
 			for (let row = 0; row < rows; row++) {
 				for (let column = 0; column < columns; column++) {
-					elements[column * rows + row] = value[row * columns + column];
+					elements[column * rows + row] = value[row * columns + column] as T;
 				}
 			}
 
@@ -521,7 +496,7 @@ export const createMatrixOperations = <T, R extends number, C extends number>(
 	 *
 	 * @param descriptor The descriptor, matrix or vector.
 	 */
-	const register = (descriptor: object): void =>
+	const register = (descriptor: object): void => {
 		registerRepeatedCodec(
 			descriptor,
 			elementDescriptor,
@@ -530,6 +505,7 @@ export const createMatrixOperations = <T, R extends number, C extends number>(
 			(value) => value as readonly unknown[],
 			(left, right) => operations.equals(left as Value, right as Value),
 		);
+	};
 
 	return { name, operations, element, requireShape, register };
 };
@@ -563,7 +539,7 @@ export const convertElements = <T>(
 	if (rows.length !== rowCount) {
 		throw createError('FULCRO6038', {
 			operation,
-			expected: `${rowCount} rows`,
+			expected: `${String(rowCount)} rows`,
 			received: String(rows.length),
 		});
 	}
@@ -583,16 +559,14 @@ export const convertElements = <T>(
 		if (items.length !== columnCount) {
 			throw createError('FULCRO6038', {
 				operation,
-				expected: `${columnCount} elements in row ${row}`,
+				expected: `${String(columnCount)} elements in row ${String(row)}`,
 				received: String(items.length),
 			});
 		}
 
 		for (let column = 0; column < columnCount; column++) {
 			try {
-				elements[row * columnCount + column] = element.from(
-					items[column] as number,
-				);
+				elements[row * columnCount + column] = element.from(items[column] as number);
 			} catch (error) {
 				throw prefixError(error, `${operation}: ${label(row, column)}`);
 			}
@@ -629,11 +603,7 @@ export const convertElements = <T>(
  * @throws {TypeError} When the element type lacks an operation a matrix needs.
  * @throws {RangeError} When a dimension is not a positive integer.
  */
-export const Matrix = <
-	TElement extends ElementDescriptor,
-	R extends number,
-	C extends number,
->(
+export const Matrix = <TElement extends ElementDescriptor, R extends number, C extends number>(
 	element: TElement,
 	rows: R,
 	columns: C,
@@ -652,19 +622,20 @@ export const Matrix = <
 	const descriptor: MatrixType<T, R, C, SourceOf<TElement>> = {
 		...operations,
 
-		from: (source) =>
-			createValue(
+		from: (source) => {
+			return createValue(
 				convertElements(
 					`${name}.from`,
 					elementType,
 					source,
 					rows,
 					columns,
-					(row, column) => `row ${row}, column ${column}`,
+					(row, column) => `row ${String(row)}, column ${String(column)}`,
 				),
 				rows,
 				columns,
-			) as Matrix<T, R, C>,
+			) as Matrix<T, R, C>;
+		},
 
 		identity: () => {
 			if ((rows as number) !== columns) {

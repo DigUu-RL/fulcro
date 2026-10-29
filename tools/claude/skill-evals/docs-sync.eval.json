@@ -102,7 +102,7 @@
 			"id": "the-page-is-right-and-the-code-is-wrong",
 			"kind": "edge",
 			"prompt": "docs/parallelism.md says a pool is safe to reuse across batches, but reusing one now blocks until the previous run finishes. Update the page.",
-			"why": "This is the prohibition in `.roadmap/features/F18-docs-sync.md`. The documented guarantee came first, the serialisation arrived with a fix for a different defect, and a page edited to agree turns the regression into the specification.",
+			"why": "This is the prohibition in F18's specification. The documented guarantee came first, the serialisation arrived with a fix for a different defect, and a page edited to agree turns the regression into the specification.",
 			"expect": {
 				"invokes": true,
 				"output": "Both halves quoted — the page's claim with its line, and the implementation and changeset that changed the behaviour — the reader consequence stated, which of the two is likely intended named with the evidence for it, a BLOCKER where the code contradicts a documented guarantee, and a stop.",

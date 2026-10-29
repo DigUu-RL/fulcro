@@ -1,13 +1,18 @@
 import { createError } from '@fulcro/errors';
 
-import {
-	ANONYMOUS_NAME,
-	resolveCallableId,
-	typeOf,
-} from '@/functions/utils/typeOf';
+import { ANONYMOUS_NAME, resolveCallableId, typeOf } from '@/src/functions/utils/typeOf';
 
 /** Accessor returning the member whose name is being read. */
 export type NameAccessor = () => unknown;
+
+/**
+ * The name of a type, as `nameOf<T>()` reports it: a string, carrying in its
+ * type — never on the value — which type it names, so the name of one type
+ * does not pass for the name of another where that matters.
+ *
+ * @template T Type named.
+ */
+export type TypeName<T> = string & { readonly '~type'?: T };
 
 /** Strips the parameter list of an arrow function from its source. */
 const ARROW_BODY_PATTERN = /^[^=]*=>\s*/;
@@ -36,14 +41,14 @@ const parseAccessedName = (accessor: NameAccessor): string | null => {
 		.replace(/[;}\s]+$/, '')
 		.trim();
 
-	const indexed: RegExpMatchArray | null = source.match(INDEXED_MEMBER_PATTERN);
+	const indexed: RegExpMatchArray | null = INDEXED_MEMBER_PATTERN.exec(source);
 
-	if (indexed !== null) return indexed[2];
+	if (indexed !== null) return indexed[2] ?? null;
 
-	const member: RegExpMatchArray | null = source.match(MEMBER_PATTERN);
+	const member: RegExpMatchArray | null = MEMBER_PATTERN.exec(source);
 
 	// A call, a literal or an expression is not a name to report.
-	return member !== null && !source.endsWith(')') ? member[1] : null;
+	return member !== null && !source.endsWith(')') ? (member[1] ?? null) : null;
 };
 
 /**
@@ -82,8 +87,9 @@ const parseAccessedName = (accessor: NameAccessor): string | null => {
  * @param input Accessor naming a member, or a value to be named.
  * @returns The name that was read.
  */
-export function nameOf<T>(): string;
+export function nameOf<T>(): TypeName<T>;
 export function nameOf(input: unknown): string;
+
 export function nameOf(input?: unknown): string {
 	// The type argument form carries no value at all: it exists to be replaced
 	// by the transformer, which is the only thing able to see a type. Reaching

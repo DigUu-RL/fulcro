@@ -5,11 +5,11 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 import { isFulcroError } from '@fulcro/errors';
 import { type Result } from '@fulcro/functions';
 
-import { type Task, type TaskScope } from '@/@types/index.js';
-import { createCancellationSource } from '@/cancellation/index.js';
-import { createTaskScope } from '@/task/index.js';
-
-import { controlledWork, flush } from './controlled-work.js';
+import { type Task, type TaskScope } from '@/src/@types/index.js';
+import { createCancellationSource } from '@/src/cancellation/index.js';
+import { createTaskScope } from '@/src/task/index.js';
+import { controlledWork, flush } from '@/src/tests/controlled-work';
+import { rejectedWith } from '@/src/tests/rejectedWith';
 
 /**
  * Task scope suite.
@@ -103,8 +103,8 @@ describe('spawn', () => {
 			const scope = createTaskScope();
 			const sibling = scope.spawn(controlledWork<number>().work);
 
-			const task = scope.spawn(() => Promise.reject(thrown));
-			const settled: Result<unknown, unknown> = await task.settled;
+			const task = scope.spawn(() => rejectedWith(thrown));
+			const settled: Result<unknown> = await task.settled;
 			const failure: unknown = settled.isFailure() ? settled.error : undefined;
 
 			expect(isFulcroError(failure, 'FULCRO3013')).toBe(true);
@@ -126,7 +126,7 @@ describe('spawn', () => {
 		const leaving = async (): Promise<void> => {
 			await using scope = createTaskScope();
 
-			failure = await scope.spawn(() => Promise.reject(undefined)).settled;
+			failure = await scope.spawn(() => rejectedWith(undefined)).settled;
 		};
 
 		const thrown: unknown = await rejectionOf(leaving());
@@ -252,7 +252,11 @@ describe('join', () => {
 
 			await flush();
 
-			expect(accepted && joined).toBe(false);
+			// Read through a call: both are set inside callbacks, which the compiler
+			// does not follow, so read directly it takes them for still `false`.
+			const acceptedAndJoined = (): boolean => accepted && joined;
+
+			expect(acceptedAndJoined()).toBe(false);
 
 			late.succeed(2);
 			await joining;
@@ -303,12 +307,13 @@ describe('the first failure', () => {
 
 		scope.spawn(() => Promise.reject(first));
 
-		scope.spawn(
-			(token) =>
-				new Promise((_resolve, reject) => {
-					token.onCancelled(() => reject(new Error('answering the cancel')));
-				}),
-		);
+		scope.spawn((token) => {
+			return new Promise((_resolve, reject) => {
+				token.onCancelled(() => {
+					reject(new Error('answering the cancel'));
+				});
+			});
+		});
 
 		expect(await rejectionOf(scope.join())).toBe(first);
 	});
@@ -465,7 +470,7 @@ describe('await using', () => {
 			await flush();
 		}
 
-		expect(token?.isCancelled).toBe(true);
+		expect(token.isCancelled).toBe(true);
 		expect(work.token()?.isCancelled).toBe(true);
 	});
 
@@ -513,9 +518,7 @@ describe('await using', () => {
 
 		await scope[Symbol.asyncDispose]();
 
-		expect(() => scope.spawn(() => 1)).toThrow(
-			expect.objectContaining({ code: 'FULCRO3011' }),
-		);
+		expect(() => scope.spawn(() => 1)).toThrow(expect.objectContaining({ code: 'FULCRO3011' }));
 	});
 });
 
@@ -546,18 +549,15 @@ describe('a task nobody awaits', () => {
 });
 
 describe('concurrency', () => {
-	it.each([0, -1, 1.5, Number.NaN])(
-		'should refuse %s with FULCRO3012',
-		(concurrency) => {
-			expect(() => createTaskScope({ concurrency })).toThrow(
-				expect.objectContaining({
-					code: 'FULCRO3012',
-					name: 'RangeError',
-					details: { operation: 'createTaskScope', concurrency },
-				}),
-			);
-		},
-	);
+	it.each([0, -1, 1.5, Number.NaN])('should refuse %s with FULCRO3012', (concurrency) => {
+		expect(() => createTaskScope({ concurrency })).toThrow(
+			expect.objectContaining({
+				code: 'FULCRO3012',
+				name: 'RangeError',
+				details: { operation: 'createTaskScope', concurrency },
+			}),
+		);
+	});
 
 	it('should accept Infinity, which is also the default', async () => {
 		const scope = createTaskScope({ concurrency: Number.POSITIVE_INFINITY });
@@ -588,7 +588,7 @@ describe('types', () => {
 		const scope = createTaskScope();
 
 		expectTypeOf(scope.spawn(() => 1)).toEqualTypeOf<Task<number>>();
-		expectTypeOf(scope.spawn(async () => 'text')).toEqualTypeOf<Task<string>>();
+		expectTypeOf(scope.spawn(() => Promise.resolve('text'))).toEqualTypeOf<Task<string>>();
 
 		void scope.join();
 	});
@@ -596,9 +596,7 @@ describe('types', () => {
 	it('should be awaitable as its value, and settle as a Result', () => {
 		expectTypeOf<Awaited<Task<number>>>().toEqualTypeOf<number>();
 
-		expectTypeOf<Task<number>['settled']>().toEqualTypeOf<
-			Promise<Result<number, unknown>>
-		>();
+		expectTypeOf<Task<number>['settled']>().toEqualTypeOf<Promise<Result<number>>>();
 	});
 
 	it('should be async disposable, so await using ends it', () => {

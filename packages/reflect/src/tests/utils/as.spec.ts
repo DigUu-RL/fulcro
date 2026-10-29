@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { as } from '@/functions/utils/as';
+import { as } from '@/src/functions/utils/as';
 
 /**
  * Behaviour suite for `as`.
@@ -26,13 +26,15 @@ interface Order {
 }
 
 /** A value satisfying every clause, for the cases below to spoil. */
-const valid = (): Record<string, unknown> => ({
-	id: 1,
-	tags: ['a'],
-	customer: { email: 'a@b.c' },
-	status: 'pending',
-	placedAt: new Date(),
-});
+const valid = (): Record<string, unknown> => {
+	return {
+		id: 1,
+		tags: ['a'],
+		customer: { email: 'a@b.c' },
+		status: 'pending',
+		placedAt: new Date(),
+	};
+};
 
 describe('what it lets through', () => {
 	it('should hand back the value itself, not a copy', () => {
@@ -56,30 +58,28 @@ describe('what it lets through', () => {
 describe('what it refuses, and what it says', () => {
 	it('should throw a TypeError naming the type', () => {
 		expect(() => as<Order>({ ...valid(), id: 'wrong' })).toThrow(TypeError);
-		expect(() => as<Order>({ ...valid(), id: 'wrong' })).toThrow(
-			/as<Order>\(\)/,
-		);
+		expect(() => as<Order>({ ...valid(), id: 'wrong' })).toThrow(/as<Order>\(\)/);
 	});
 
 	it.each([
 		[
 			'a top level property',
-			() => ({ ...valid(), id: 'x' }),
+			(): { id: string } => ({ ...valid(), id: 'x' }),
 			/id: expected number, got string/,
 		],
 		[
 			'a nested property',
-			() => ({ ...valid(), customer: { email: 7 } }),
+			(): { customer: { email: number } } => ({ ...valid(), customer: { email: 7 } }),
 			/customer\.email: expected string, got number/,
 		],
 		[
 			'an element of an array',
-			() => ({ ...valid(), tags: ['a', 'b', 4] }),
+			(): { tags: (string | number)[] } => ({ ...valid(), tags: ['a', 'b', 4] }),
 			/tags\[2\]: expected string, got number/,
 		],
 		[
 			'a missing property',
-			() => {
+			(): Record<string, unknown> => {
 				const value = valid();
 				delete value.id;
 				return value;
@@ -112,20 +112,20 @@ describe('what it refuses, and what it says', () => {
 
 describe('the escape hatch', () => {
 	it('should accept a test written by hand, and use its name', () => {
-		expect(() =>
-			as<{ id: number }>('wrong', {
+		expect(() => {
+			return as<{ id: number }>('wrong', {
 				name: 'Identified',
 				matches: () => false,
-			}),
-		).toThrow(/as<Identified>\(\)/);
+			});
+		}).toThrow(/as<Identified>\(\)/);
 	});
 
 	it('should fall back to describing the value with no explainer', () => {
 		// A hand written test carries no walker, so there is no path to name —
 		// the message says what arrived instead of inventing where.
-		expect(() =>
-			as<{ id: number }>(42, { name: 'Identified', matches: () => false }),
-		).toThrow(/refused a value of type number/);
+		expect(() => as<{ id: number }>(42, { name: 'Identified', matches: () => false })).toThrow(
+			/refused a value of type number/,
+		);
 	});
 
 	it('should refuse a call nothing resolved', () => {

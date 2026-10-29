@@ -42,21 +42,33 @@ comes from its catalog, with a `FULCRO` code from that package's range. See
 Run from the repository root. These are the scripts that exist today — read
 `package.json` before trusting any command that is not on this list.
 
-| Command                                   | What it does                                                                |
-| ----------------------------------------- | --------------------------------------------------------------------------- |
-| `npm run build`                           | Builds `errors`, then `transform-core`, then every workspace                |
-| `npm run typecheck`                       | `tsc --noEmit` per package, then `tsconfig.tests.json`                      |
-| `npm test`                                | Builds, then runs Vitest                                                    |
-| `npx vitest run --configLoader native`    | The suites without rebuilding                                               |
-| `npx eslint .`                            | Lint, including the local `brace-wrapped-branches` and `coded-errors` rules |
-| `npm run format:check` / `npm run format` | Prettier check / write                                                      |
-| `npx --yes markdownlint-cli2`             | Markdown lint (`.markdownlint-cli2.jsonc`)                                  |
-| `npm run validate:claude`                 | Structural validation of the `.claude` tree                                 |
-| `npm run changeset`                       | Records a version bump for a shipped change                                 |
+| Command                                   | What it does                                                               |
+| ----------------------------------------- | -------------------------------------------------------------------------- |
+| `npm run build`                           | Builds `errors`, then `transform-core`, then every workspace               |
+| `npm run typecheck`                       | `tsc` per package, then the root `tsconfig.json` (suites, tooling, hooks)  |
+| `npm test`                                | Builds, then runs Vitest                                                   |
+| `npx vitest run --configLoader native`    | The suites without rebuilding                                              |
+| `npx eslint .`                            | Lint under `eslint.config.ts`, with the four local rules in `tools/eslint` |
+| `npm run format:check` / `npm run format` | Prettier check / write                                                     |
+| `npx --yes markdownlint-cli2`             | Markdown lint (`.markdownlint-cli2.jsonc`)                                 |
+| `npm run validate:claude`                 | Structural validation of the `.claude` tree                                |
+| `npm run changeset`                       | Records a version bump for a shipped change                                |
 
-Each package builds with
-`tsc -p tsconfig.build.json && node ../../tools/build/rewrite-aliases.mjs`: the
-second step turns the `@/…` imports `tsc` leaves in `dist` into relative paths.
+Every package is an ES module built by `tsdown` from its `tsdown.config.ts`,
+one output file per source module, with `tsconfig.build.json` for the
+declarations. `tsc` only type-checks: `tsconfig.base.json` sets `noEmit`. The
+configuration follows midnight-indigo-ui's to the letter, with two deliberate
+exceptions: `erasableSyntaxOnly` stays off, because the packages support their
+consumers' enums, and `lib` is `ES2024`, for `Promise.withResolvers` and
+resizable `ArrayBuffer`s. Every package but `@fulcro/parallel`, which speaks to
+the browser's `Worker`, also leaves the DOM out of its `lib`: nothing else calls
+a browser API, and the DOM declarations made every program the transformers
+build over two times slower. Imports go through the `@/` alias, which is the
+package root (`@/src/...`).
+
+Node 22.12 is the floor: a compiler plugin loader that still calls `require`
+reaches a transformer through Node's `require` of an ES module, which needs it,
+and which is also why nothing may use a top-level `await`.
 
 `npm test` builds first on purpose: the harness loads the transformers from
 `dist`, and the entry point suite runs entirely against built output.
@@ -64,8 +76,8 @@ second step turns the `@/…` imports `tsc` leaves in `dist` into relative paths
 ## Build output
 
 Built output goes to each package's `dist/` and never beside its source. A
-`.js` or `.d.ts` appearing next to a `.ts` in `src/` is a misconfigured
-`outDir`, not something to commit.
+`.js` or `.d.ts` appearing next to a `.ts` in `src/` is a misconfigured build,
+not something to commit.
 
 ## Branches and releases
 
@@ -134,9 +146,13 @@ it and say what breaks; do not slip it in alongside an implementation change.
 
 ## Warnings
 
-A warning is diagnosed, never merely silenced. `eslint-disable`, `@ts-ignore`,
-`@ts-expect-error` and `skip` are last resorts and each needs explicit
-approval. See the `fix-warnings` skill.
+A warning is diagnosed and fixed, never silenced. `eslint-disable` in any form,
+`@ts-ignore`, `@ts-expect-error`, `skip`, and a configuration block that turns
+a rule off for some files are not used in this repository at all, approved or
+not: each leaves the finding true and hides it. Where a rule seems wrong for a
+construct, the fix is a change that makes it hold — a truer type, a different
+structure — and it must cost nothing at runtime; when no such change can be
+found, report that with the evidence. See the `fix-warnings` skill.
 
 ## Performance claims
 
@@ -176,9 +192,19 @@ editing the page to agree.
 - `tools/claude/` — the validators of everything above, the eval suites in
   `tools/claude/skill-evals/` and the rule fixtures in
   `tools/claude/rule-fixtures/`; `tests/claude/` is their suite. They run on a
-  bare checkout, with no dependency beyond Node.
-- `.roadmap/` — the implementation plan, and not part of the checkout:
-  `.gitignore` keeps it local. `.roadmap/MASTER-ROADMAP.md` is the ordering,
-  `.roadmap/CHECKLIST-MASTER.md` the state, `.roadmap/features/` one spec per
-  feature.
+  bare checkout, with no dependency beyond Node 22.18, which runs their
+  TypeScript directly. Like the hooks, they are `.mts`: Node runs them with
+  plain `node`, so they import their siblings by relative `.mts` path rather
+  than through the `@/` alias.
+- The roadmap — GitHub issues on `DigUu-RL/fulcro`, not files in the
+  checkout. A feature is an issue labelled `feature` and titled
+  `F<n> — <name>`, found with
+  `gh issue list --label feature --state all --search "F43 in:title"` and
+  read with `gh issue view <number>`. Its body
+  carries the priority, the phase, the dependencies as linked issues and the
+  acceptance criteria; the `P0`–`P2` and `fase <n>` labels repeat the first
+  two. An open issue is not done, one closed as completed is done, one closed
+  as not planned was dropped. Some specifications of the original roadmap
+  were lost, and their issues say the criteria were reconstructed. The
+  canonical vocabulary is the pinned glossary issue, #113.
 - `docs/` — library documentation, `docs/testing.md` for the testing standard.

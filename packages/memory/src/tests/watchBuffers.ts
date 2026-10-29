@@ -24,7 +24,7 @@ export const watchBuffers = (): BufferCount => {
 	vi.stubGlobal(
 		'ArrayBuffer',
 		new Proxy(ArrayBuffer, {
-			construct: (target, args: unknown[], newTarget) => {
+			construct: (target, args: unknown[], newTarget): object => {
 				count.made++;
 				count.bytes += Number(args[0] ?? 0);
 

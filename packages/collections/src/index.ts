@@ -21,8 +21,8 @@
  * acyclic; it is wiring, not API. Publishing it would turn every change to that
  * wiring into a breaking change.
  */
-export * from '@/@types';
-export * from '@/@types/collections/group';
-export * from '@/@types/collections/ordered';
-export * from '@/@types/collections/sequence';
-export { SequenceCollection } from '@/collections/sequence';
+export type * from '@/src/@types';
+export type * from '@/src/@types/collections/group';
+export type * from '@/src/@types/collections/ordered';
+export type * from '@/src/@types/collections/sequence';
+export { SequenceCollection } from '@/src/collections/sequence';

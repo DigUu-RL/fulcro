@@ -1,5 +1,31 @@
 # @fulcro/types
 
+## 2.0.0
+
+### Major Changes
+
+- 3b1d05f: Ship every package as an ES module only, built by tsdown, and require Node 22.12 or later.
+
+  What breaks:
+
+  - **No CommonJS build**, where `@fulcro/parallel` already had none. `require('@fulcro/…')` on Node older than 22.12 fails. On 22.12 and later it still works, through Node's `require` of an ES module, so a compiler plugin loader that calls `require` keeps loading `./transformer`.
+  - **A CommonJS TypeScript project compiled with `module: node16`** gets TS1479 on every `@fulcro/…` import, as it already did on `@fulcro/parallel`'s, since that setting does not let a CommonJS file `require` an ES module. Under `module: nodenext` the same imports compile, and so they do under `moduleResolution: node10`.
+  - **`engines` is `>=22.12`** (was `>=22`).
+  - **`./unplugin` ships `.js` and `.d.ts`** (was `.mjs` and `.d.mts`). The subpath is the same, so an import through it is unaffected; a path that reached into `dist` directly has to follow.
+
+  What improves: the declarations ship with declaration maps and the TypeScript sources they point at, without the suites, so Go to Definition in an editor lands in the source rather than in a `.d.ts`. And the `./unplugin` adapters of `@fulcro/collections`, `@fulcro/reflect` and `@fulcro/memory` are now declared with `TransformerUnplugin` from `@fulcro/transform-core`. Their declarations used to name `WebpackPluginInstance`, `RspackPluginInstance`, `EsbuildPlugin` and `JsPlugin` without importing them, so an editor showed those adapters as `any`.
+
+- 86d6e60: - `@fulcro/reflect`: `TypeLayout<T>['fields']` for a type whose layout lists no fields is `Readonly<Record<string, never>>`, every field name leading to nothing, instead of `{}`, which stood for any value at all.
+  - `@fulcro/types`: the methods parameter of a struct's descriptor no longer defaults to `{}`. `StructType<TFields>` written without methods now means methods in general, and the descriptor of a struct declared without methods carries, as its second argument, a marker that holds one optional slot, `'~noMethods'`, and no method. Every struct still assigns to `StructType<any>`, to `StructType<Record<string, any>>` and to `StructType<TFields>` of its own fields, with methods or without, and the values of every struct are typed exactly as before.
+
+    What can break: code that reads the methods argument back out of a descriptor. `typeof Plain extends StructType<infer F, infer M>` infers `M` as that marker where it inferred `{}`, so `keyof M` is `'~noMethods'` rather than `never`; and an editor shows the marker as the second argument of `typeof Plain`. `Struct<typeof Plain>` is the way to ask for a struct's values, and it is unchanged.
+
+### Patch Changes
+
+- Updated dependencies [3b1d05f]
+- Updated dependencies [f72897a]
+  - @fulcro/errors@3.0.0
+
 ## 1.3.0
 
 ### Minor Changes

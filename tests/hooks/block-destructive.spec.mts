@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { review } from '../../.claude/hooks/block-destructive.mjs';
+import { review } from '@/.claude/hooks/block-destructive.mts';
 
 /**
  * The hook that refuses the commands which throw work away.
@@ -19,17 +19,13 @@ describe('git reset --hard', () => {
 	it('refuses it wherever it appears in the line', () => {
 		expect(review({ command: 'git reset --hard' })).not.toBeNull();
 		expect(review({ command: 'git reset --hard HEAD~1' })).not.toBeNull();
-		expect(
-			review({ command: 'git fetch && git reset --hard origin/main' }),
-		).not.toBeNull();
+		expect(review({ command: 'git fetch && git reset --hard origin/main' })).not.toBeNull();
 	});
 
 	it('leaves a reset that keeps the files alone', () => {
 		expect(review({ command: 'git reset HEAD~1' })).toBeNull();
 		expect(review({ command: 'git reset --soft HEAD~1' })).toBeNull();
-		expect(
-			review({ command: 'git restore packages/collections/src/index.ts' }),
-		).toBeNull();
+		expect(review({ command: 'git restore packages/collections/src/index.ts' })).toBeNull();
 		expect(review({ command: 'git stash' })).toBeNull();
 	});
 });
@@ -62,9 +58,7 @@ describe('recursive deletion', () => {
 
 	it('refuses the same target under another shell', () => {
 		expect(review({ command: 'Remove-Item -Recurse -Force .' })).not.toBeNull();
-		expect(
-			review({ command: 'Remove-Item -Recurse -Force %USERPROFILE%' }),
-		).not.toBeNull();
+		expect(review({ command: 'Remove-Item -Recurse -Force %USERPROFILE%' })).not.toBeNull();
 		expect(review({ command: 'rmdir /s /q .' })).not.toBeNull();
 	});
 
@@ -85,9 +79,7 @@ describe('recursive deletion', () => {
 describe('what is not a command', () => {
 	it('lets through a refused shape that only appears inside a string', () => {
 		expect(review({ command: 'echo "rm -rf /"' })).toBeNull();
-		expect(
-			review({ command: 'git commit -m "undo the git reset --hard advice"' }),
-		).toBeNull();
+		expect(review({ command: 'git commit -m "undo the git reset --hard advice"' })).toBeNull();
 	});
 
 	it('has nothing to say about an event carrying no command', () => {

@@ -1,3 +1,32 @@
+/** One element the window keeps, with what it is ranked by. */
+interface Entry<T, K> {
+	element: T;
+	key: K;
+	/** Position it arrived at, for breaking ties. */
+	arrival: number;
+}
+
+/**
+ * Tells whether one entry is the worse of two.
+ *
+ * Ordering is by key descending; equal keys fall back to arrival order, which
+ * is what keeps this agreeing with a stable sort down to which of two tied
+ * elements survives.
+ *
+ * @param left One entry.
+ * @param right The other.
+ * @returns `true` when the left entry is worse.
+ */
+const worse = <T, K>(left: Entry<T, K>, right: Entry<T, K>): boolean => {
+	if (left.key < right.key) return true;
+	if (left.key > right.key) return false;
+
+	// Tied: the one that arrived later is the one to lose. Compared by arrival
+	// rather than by position, because a concurrent producer stores them in
+	// whatever order its work finished in.
+	return left.arrival > right.arrival;
+};
+
 /**
  * The bounded window behind `topBy`, on both kinds of sequence.
  *
@@ -19,17 +48,8 @@ export class TopWindow<T, K> {
 	/** How many elements the window keeps. */
 	private readonly count: number;
 
-	/** Elements kept so far, in the order they were accepted. */
-	private readonly elements: T[] = [];
-
-	/** Key of each kept element, addressable by the same position. */
-	private readonly keys: K[] = [];
-
-	/** Arrival number of each kept element, for breaking ties. */
-	private readonly arrivals: number[] = [];
-
-	/** Positions of the kept elements, worst of them at the root. */
-	private readonly heap: number[] = [];
+	/** The kept entries, worst of them at the root. */
+	private readonly heap: Entry<T, K>[] = [];
 
 	/**
 	 * Opens a window.
@@ -52,18 +72,16 @@ export class TopWindow<T, K> {
 	 */
 	offer(element: T, key: K, arrival: number): void {
 		if (this.heap.length < this.count) {
-			this.elements.push(element);
-			this.keys.push(key);
-			this.arrivals.push(arrival);
-			this.heap.push(this.elements.length - 1);
+			this.heap.push({ element, key, arrival });
 			this.siftUp(this.heap.length - 1);
 			return;
 		}
 
-		const worstSlot: number = this.heap[0];
-		const worstKey: K = this.keys[worstSlot];
+		const worst = this.heap[0];
 
-		if (key < worstKey) return;
+		// A window of no elements keeps nothing, so it has no worst to beat.
+		if (worst === undefined) return;
+		if (key < worst.key) return;
 
 		// On a tie, the earlier arrival wins — and it has to be compared, not
 		// assumed. Offering order is arrival order only while the producer is
@@ -71,19 +89,16 @@ export class TopWindow<T, K> {
 		// the window fills with whichever finished first. Testing the key alone
 		// let those incumbents hold their places against elements that arrived
 		// before them, and the answer silently became "whichever was quickest".
-		if (!(key > worstKey) && arrival > this.arrivals[worstSlot]) return;
+		if (!(key > worst.key) && arrival > worst.arrival) return;
 
-		// The winner takes the loser's slot rather than a new one. Appending
-		// instead would grow these arrays once per winner, which on keys that
-		// happen to arrive in ascending order is every single element — and the
-		// bounded memory that lets this rank a stream it never collects would be
-		// bounded by nothing at all. Positions stay valid because a tie is
-		// broken by the recorded arrival, never by the slot it sits in.
-		const slot: number = worstSlot;
-
-		this.elements[slot] = element;
-		this.keys[slot] = key;
-		this.arrivals[slot] = arrival;
+		// The winner takes the loser's entry rather than a new one. A new entry
+		// per winner would allocate once per winner, which on keys that happen to
+		// arrive in ascending order is every single element — and the bounded
+		// memory that lets this rank a stream it never collects would be bounded
+		// by nothing at all.
+		worst.element = element;
+		worst.key = key;
+		worst.arrival = arrival;
 
 		this.siftDown(0);
 	}
@@ -100,36 +115,12 @@ export class TopWindow<T, K> {
 	drain(): T[] {
 		return this.heap
 			.slice()
-			.sort((left, right) => (this.worse(left, right) ? 1 : -1))
-			.map((position) => this.elements[position]);
+			.sort((left, right) => (worse(left, right) ? 1 : -1))
+			.map((entry) => entry.element);
 	}
 
 	/**
-	 * Tells whether the element at one position is the worse of two.
-	 *
-	 * Ordering is by key descending; equal keys fall back to arrival order,
-	 * which is what keeps this agreeing with a stable sort down to which of two
-	 * tied elements survives.
-	 *
-	 * @param left Position of the left element.
-	 * @param right Position of the right element.
-	 * @returns `true` when the left element is worse.
-	 */
-	private worse(left: number, right: number): boolean {
-		const leftKey: K = this.keys[left];
-		const rightKey: K = this.keys[right];
-
-		if (leftKey < rightKey) return true;
-		if (leftKey > rightKey) return false;
-
-		// Tied: the one that arrived later is the one to lose. Compared by
-		// arrival rather than by position, because a concurrent producer stores
-		// them in whatever order its work finished in.
-		return this.arrivals[left] > this.arrivals[right];
-	}
-
-	/**
-	 * Moves an element up until its parent is no worse than it.
+	 * Moves an entry up until its parent is no worse than it.
 	 *
 	 * @param start Position in the heap to move from.
 	 */
@@ -138,51 +129,66 @@ export class TopWindow<T, K> {
 
 		while (child > 0) {
 			const parent: number = (child - 1) >> 1;
+			const childEntry = this.heap[child];
+			const parentEntry = this.heap[parent];
 
-			if (!this.worse(this.heap[child], this.heap[parent])) break;
+			if (childEntry === undefined || parentEntry === undefined) return;
+			if (!worse(childEntry, parentEntry)) return;
 
-			// Swapped through a temporary rather than by destructuring, which
+			// Swapped through the two locals rather than by destructuring, which
 			// would allocate an array on every level of every sift.
-			const held: number = this.heap[parent];
-			this.heap[parent] = this.heap[child];
-			this.heap[child] = held;
+			this.heap[parent] = childEntry;
+			this.heap[child] = parentEntry;
 
 			child = parent;
 		}
 	}
 
 	/**
-	 * Moves an element down until both children are no worse than it.
+	 * Moves an entry down until both children are no worse than it.
+	 *
+	 * Each child is read only once its position is known to be inside the heap:
+	 * a read past the end of an array is a slow path of its own, whatever the
+	 * value it answers.
 	 *
 	 * @param start Position in the heap to move from.
 	 */
 	private siftDown(start: number): void {
+		const length: number = this.heap.length;
 		let parent: number = start;
 
 		for (;;) {
+			const parentEntry = this.heap[parent];
+
+			if (parentEntry === undefined) return;
+
 			const left: number = parent * 2 + 1;
 			const right: number = left + 1;
 			let worst: number = parent;
+			let worstEntry: Entry<T, K> = parentEntry;
 
-			if (
-				left < this.heap.length &&
-				this.worse(this.heap[left], this.heap[worst])
-			) {
-				worst = left;
+			if (left < length) {
+				const leftEntry = this.heap[left];
+
+				if (leftEntry !== undefined && worse(leftEntry, worstEntry)) {
+					worst = left;
+					worstEntry = leftEntry;
+				}
 			}
 
-			if (
-				right < this.heap.length &&
-				this.worse(this.heap[right], this.heap[worst])
-			) {
-				worst = right;
+			if (right < length) {
+				const rightEntry = this.heap[right];
+
+				if (rightEntry !== undefined && worse(rightEntry, worstEntry)) {
+					worst = right;
+					worstEntry = rightEntry;
+				}
 			}
 
-			if (worst === parent) break;
+			if (worst === parent) return;
 
-			const held: number = this.heap[parent];
-			this.heap[parent] = this.heap[worst];
-			this.heap[worst] = held;
+			this.heap[parent] = worstEntry;
+			this.heap[worst] = parentEntry;
 
 			parent = worst;
 		}

@@ -8,7 +8,7 @@ import {
 	isRepositoryWide,
 	nameOf,
 	runs,
-} from '../../.claude/hooks/command-line.mjs';
+} from '@/.claude/hooks/command-line.mts';
 
 /**
  * The reader the two guards share.
@@ -50,9 +50,7 @@ describe('commandsOf', () => {
 	});
 
 	it('keeps quoted text in one token, so a command named in a string is not one', () => {
-		expect(commandsOf('echo "git push && rm -rf ."')).toEqual([
-			['echo', 'git push && rm -rf .'],
-		]);
+		expect(commandsOf('echo "git push && rm -rf ."')).toEqual([['echo', 'git push && rm -rf .']]);
 
 		expect(commandsOf("git commit -m 'do not publish'")).toEqual([
 			['git', 'commit', '-m', 'do not publish'],
@@ -119,15 +117,10 @@ describe('runs', () => {
 	});
 
 	it('is not thrown off by flags sitting between the words', () => {
+		expect(runs(invocationOf(['git', 'push', '--force', 'origin']), ['git', 'push'])).toBe(true);
+
 		expect(
-			runs(invocationOf(['git', 'push', '--force', 'origin']), ['git', 'push']),
-		).toBe(true);
-		expect(
-			runs(invocationOf(['npm', 'run', '--silent', 'release']), [
-				'npm',
-				'run',
-				'release',
-			]),
+			runs(invocationOf(['npm', 'run', '--silent', 'release']), ['npm', 'run', 'release']),
 		).toBe(true);
 	});
 
@@ -138,37 +131,21 @@ describe('runs', () => {
 
 describe('hasFlag', () => {
 	it('finds a flag written out in full, whatever its case', () => {
-		expect(hasFlag(invocationOf(['git', 'reset', '--hard']), '--hard')).toBe(
-			true,
-		);
-		expect(
-			hasFlag(invocationOf(['Remove-Item', 'dist', '-Recurse']), '-recurse'),
-		).toBe(true);
-		expect(hasFlag(invocationOf(['git', 'reset', 'HEAD~1']), '--hard')).toBe(
-			false,
-		);
+		expect(hasFlag(invocationOf(['git', 'reset', '--hard']), '--hard')).toBe(true);
+		expect(hasFlag(invocationOf(['Remove-Item', 'dist', '-Recurse']), '-recurse')).toBe(true);
+		expect(hasFlag(invocationOf(['git', 'reset', 'HEAD~1']), '--hard')).toBe(false);
 	});
 
 	it('finds a short flag bundled with its neighbours', () => {
-		expect(hasFlag(invocationOf(['rm', '-rf', 'dist']), '--force', 'f')).toBe(
-			true,
-		);
-		expect(
-			hasFlag(invocationOf(['git', 'clean', '-fdx']), '--force', 'f'),
-		).toBe(true);
-		expect(hasFlag(invocationOf(['git', 'clean', '-nd']), '--force', 'f')).toBe(
-			false,
-		);
+		expect(hasFlag(invocationOf(['rm', '-rf', 'dist']), '--force', 'f')).toBe(true);
+		expect(hasFlag(invocationOf(['git', 'clean', '-fdx']), '--force', 'f')).toBe(true);
+		expect(hasFlag(invocationOf(['git', 'clean', '-nd']), '--force', 'f')).toBe(false);
 	});
 
 	it('does not read a PowerShell parameter as a bundle of short flags', () => {
 		// `-Recurse` contains an `r`, an `e` and an `s`. None of them is a flag.
-		expect(
-			hasFlag(invocationOf(['Remove-Item', '-Recurse']), '--force', 'f'),
-		).toBe(false);
-		expect(
-			hasFlag(invocationOf(['Remove-Item', '-Recurse']), '--silent', 's'),
-		).toBe(false);
+		expect(hasFlag(invocationOf(['Remove-Item', '-Recurse']), '--force', 'f')).toBe(false);
+		expect(hasFlag(invocationOf(['Remove-Item', '-Recurse']), '--silent', 's')).toBe(false);
 	});
 });
 
@@ -208,26 +185,18 @@ describe('isRepositoryWide', () => {
 
 describe('deletionTargets', () => {
 	it('reports the targets of a recursive deletion, whatever spells it', () => {
-		expect(deletionTargets(invocationOf(['rm', '-rf', 'dist']))).toEqual([
+		expect(deletionTargets(invocationOf(['rm', '-rf', 'dist']))).toEqual(['dist']);
+		expect(deletionTargets(invocationOf(['rm', '-r', '-f', 'a', 'b']))).toEqual(['a', 'b']);
+
+		expect(deletionTargets(invocationOf(['Remove-Item', '-Recurse', '-Force', 'dist']))).toEqual([
 			'dist',
 		]);
-		expect(deletionTargets(invocationOf(['rm', '-r', '-f', 'a', 'b']))).toEqual(
-			['a', 'b'],
-		);
-		expect(
-			deletionTargets(
-				invocationOf(['Remove-Item', '-Recurse', '-Force', 'dist']),
-			),
-		).toEqual(['dist']);
-		expect(
-			deletionTargets(invocationOf(['rmdir', '/s', '/q', 'dist'])),
-		).toEqual(['dist']);
+
+		expect(deletionTargets(invocationOf(['rmdir', '/s', '/q', 'dist']))).toEqual(['dist']);
 	});
 
 	it('keeps a POSIX path that starts the way a cmd switch does', () => {
-		expect(deletionTargets(invocationOf(['rm', '-rf', '/usr']))).toEqual([
-			'/usr',
-		]);
+		expect(deletionTargets(invocationOf(['rm', '-rf', '/usr']))).toEqual(['/usr']);
 	});
 
 	it('reports nothing for a command that deletes no tree', () => {

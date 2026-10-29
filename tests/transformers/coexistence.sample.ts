@@ -1,11 +1,5 @@
 import { SequenceCollection } from '@fulcro/collections';
-import {
-	borrow,
-	borrowMutable,
-	createManagedStorage,
-	move,
-	own,
-} from '@fulcro/memory';
+import { borrow, borrowMutable, createManagedStorage, move, own } from '@fulcro/memory';
 import { as, defaultOf, is, nameOf, typeOf } from '@fulcro/reflect';
 
 /**
@@ -42,11 +36,9 @@ export const named = (): string => nameOf<Order>();
 export const described = (): unknown => typeOf(payload).declared;
 
 /** Claimed by `@fulcro/collections`, as methods on a sequence. */
-export const filtered = (): Order[] =>
-	SequenceCollection.from(rows).ofType<Order>().toArray();
+export const filtered = (): Order[] => SequenceCollection.from(rows).ofType<Order>().toArray();
 
-export const checked = (): Order[] =>
-	SequenceCollection.from(rows).cast<Order>().toArray();
+export const checked = (): Order[] => SequenceCollection.from(rows).cast<Order>().toArray();
 
 /** Both in one expression, which is where interference would show. */
 export const together = (): Order[] =>
@@ -68,7 +60,6 @@ export const owned = (): boolean => {
 	const first: unknown = reading.get(0);
 
 	return (
-		is<Order>(first) &&
-		SequenceCollection.from([first]).ofType<Order>().toArray().length === 1
+		is<Order>(first) && SequenceCollection.from([first]).ofType<Order>().toArray().length === 1
 	);
 };

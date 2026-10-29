@@ -12,9 +12,9 @@ scopes the rule to nothing, and a rule scoped to nothing looks exactly like a
 rule nobody needed. Nothing fails, nothing is logged, and the invariant is
 simply never read again.
 
-`node tools/claude/validate-claude-config.mjs` reads every fixture here,
+`node tools/claude/validate-claude-config.mts` reads every fixture here,
 matches each path against the rule's globs with the matcher in
-`tools/claude/glob.mjs`, and reports a rule that would not load for a file it
+`tools/claude/glob.mts`, and reports a rule that would not load for a file it
 claims, a rule that would load for a file it disclaims, and a path-scoped rule
 with no fixture at all. The paths are checked against the repository as well:
 a fixture naming a file that is not there proves nothing about a glob.
@@ -24,9 +24,7 @@ a fixture naming a file that is not there proves nothing about a glob.
 ```json
 {
 	"rule": "collections-performance.md",
-	"loads": [
-		"packages/collections/src/collections/sequence/sequence.collection.ts"
-	],
+	"loads": ["packages/collections/src/collections/sequence/sequence.collection.ts"],
 	"ignores": ["packages/parallel/src/pool/index.ts"]
 }
 ```

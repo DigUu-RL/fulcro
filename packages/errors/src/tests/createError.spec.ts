@@ -1,9 +1,10 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { catalog } from '@/catalog';
-import { createError, DetailsOf, ErrorCode } from '@/createError';
-import { ErrorDefinition } from '@/definition';
-import { sampleDetails } from '@/tests/sampleDetails';
+import { catalog } from '@/src/catalog';
+import type { DetailsOf, ErrorCode } from '@/src/createError';
+import { createError } from '@/src/createError';
+import type { ErrorDefinition } from '@/src/definition';
+import { sampleDetails } from '@/src/tests/sampleDetails';
 
 /**
  * Behaviour suite for `createError`.
@@ -26,29 +27,22 @@ const KINDS = [Error, RangeError, SyntaxError, TypeError] as const;
  * @param code The code.
  * @returns The error.
  */
-const createAny = (
-	code: ErrorCode,
-): Error & { code: string; details: unknown } =>
-	(
-		createError as (
-			code: string,
-			details: unknown,
-		) => Error & { code: string; details: unknown }
+const createAny = (code: ErrorCode): Error & { code: string; details: unknown } => {
+	return (
+		createError as (code: string, details: unknown) => Error & { code: string; details: unknown }
 	)(code, sampleDetails());
+};
 
 describe('createError', () => {
 	it('should register at least one code', () => {
 		expect(ENTRIES.length).toBeGreaterThan(0);
 	});
 
-	it.each(ENTRIES)(
-		'%s should carry its code as the prefix of its message',
-		(code) => {
-			const error: Error = createAny(code);
+	it.each(ENTRIES)('%s should carry its code as the prefix of its message', (code) => {
+		const error: Error = createAny(code);
 
-			expect(error.message.startsWith(`${code}: `)).toBe(true);
-		},
-	);
+		expect(error.message.startsWith(`${code}: `)).toBe(true);
+	});
 
 	it.each(ENTRIES)('%s should carry the same code as a property', (code) => {
 		const error = createAny(code) as Error & { code: string };
@@ -73,17 +67,14 @@ describe('createError', () => {
 		},
 	);
 
-	it.each(ENTRIES)(
-		'%s should carry its details, frozen, with the operation',
-		(code) => {
-			const error = createAny(code) as Error & {
-				details: { operation: string };
-			};
+	it.each(ENTRIES)('%s should carry its details, frozen, with the operation', (code) => {
+		const error = createAny(code) as Error & {
+			details: { operation: string };
+		};
 
-			expect(Object.isFrozen(error.details)).toBe(true);
-			expect(error.details.operation).toBe('operation');
-		},
-	);
+		expect(Object.isFrozen(error.details)).toBe(true);
+		expect(error.details.operation).toBe('operation');
+	});
 
 	it('should build the text from the details it was given', () => {
 		const error = createError('FULCRO6021', {
@@ -108,6 +99,7 @@ describe('createError', () => {
 			index: 12,
 			length: 10,
 		});
+
 		expect(error.details.index).toBe(12);
 	});
 
@@ -136,9 +128,7 @@ describe('createError', () => {
 	it('should keep the text exactly as a template that reads no detail writes it', () => {
 		const error = createError('FULCRO3002', { operation: 'worker' });
 
-		expect(error.message).toBe(
-			'FULCRO3002: This module is only meaningful inside a worker.',
-		);
+		expect(error.message).toBe('FULCRO3002: This module is only meaningful inside a worker.');
 	});
 
 	it('should set the cause a code declares, even when it is undefined', () => {
@@ -146,6 +136,7 @@ describe('createError', () => {
 			operation: 'tryCatch',
 			thrown: null,
 		});
+
 		const fromUndefined = createError('FULCRO2001', {
 			operation: 'tryCatch',
 			thrown: undefined,
@@ -158,9 +149,7 @@ describe('createError', () => {
 	});
 
 	it('should set no cause for a code that declares none', () => {
-		expect(
-			Object.hasOwn(createError('FULCRO1001', { operation: 'first' }), 'cause'),
-		).toBe(false);
+		expect(Object.hasOwn(createError('FULCRO1001', { operation: 'first' }), 'cause')).toBe(false);
 	});
 
 	it('should leave its own frame out of the stack', () => {
@@ -183,8 +172,6 @@ describe('createError', () => {
 			.filter((line) => line.trimStart().startsWith('at '));
 
 		expect(frames[0]).toContain('thrower');
-		expect(frames.some((frame) => /\bat createError\b/.test(frame))).toBe(
-			false,
-		);
+		expect(frames.some((frame) => /\bat createError\b/.test(frame))).toBe(false);
 	});
 });

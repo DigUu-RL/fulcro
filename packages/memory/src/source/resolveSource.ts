@@ -1,14 +1,9 @@
 import { createError } from '@fulcro/errors';
 
-import type { MemoryReference } from '@/memoryReference';
-import {
-	arraySource,
-	referenceSource,
-	type Source,
-	storageSource,
-} from '@/source';
-import { pointerPositions } from '@/source/pointerPositions';
-import type { Storage } from '@/storage';
+import type { MemoryReference } from '@/src/memoryReference';
+import { arraySource, referenceSource, type Source, storageSource } from '@/src/source';
+import { pointerPositions } from '@/src/source/pointerPositions';
+import type { Storage } from '@/src/storage';
 
 /** What a value handed in as a source turned out to be. */
 export interface ResolvedSource<T> {
@@ -89,8 +84,7 @@ export const resolveSource = <T>(
 
 		const candidate = value as Partial<Record<string, unknown>>;
 		const readable = typeof candidate.get === 'function';
-		const writableIfNeeded =
-			access === 'read' || typeof candidate.set === 'function';
+		const writableIfNeeded = access === 'read' || typeof candidate.set === 'function';
 
 		if (readable && writableIfNeeded) {
 			return typeof candidate.length === 'number'

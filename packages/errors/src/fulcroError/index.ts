@@ -1,5 +1,5 @@
-import type { DetailsOf, ErrorCode } from '@/createError';
-import { isFulcroError } from '@/isFulcroError';
+import type { DetailsOf, ErrorCode } from '@/src/createError';
+import { isFulcroError } from '@/src/isFulcroError';
 
 /**
  * An error thrown by a `@fulcro` package: its code, and the details its
@@ -21,13 +21,12 @@ import { isFulcroError } from '@/isFulcroError';
  *
  * @template TCode The code, or every code when left out.
  */
-export type FulcroError<TCode extends ErrorCode = ErrorCode> =
-	TCode extends ErrorCode
-		? Error & {
-				readonly code: TCode;
-				readonly details: DetailsOf<TCode>;
-			}
-		: never;
+export type FulcroError<TCode extends ErrorCode = ErrorCode> = TCode extends ErrorCode
+	? Error & {
+			readonly code: TCode;
+			readonly details: DetailsOf<TCode>;
+		}
+	: never;
 
 /**
  * Recognises, with `instanceof`, any error a `@fulcro` package created.
@@ -46,6 +45,5 @@ export type FulcroError<TCode extends ErrorCode = ErrorCode> =
 export const FulcroError: {
 	readonly [Symbol.hasInstance]: (value: unknown) => value is FulcroError;
 } = Object.freeze({
-	[Symbol.hasInstance]: (value: unknown): value is FulcroError =>
-		isFulcroError(value),
+	[Symbol.hasInstance]: (value: unknown): value is FulcroError => isFulcroError(value),
 });

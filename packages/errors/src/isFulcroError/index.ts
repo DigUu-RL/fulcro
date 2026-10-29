@@ -1,6 +1,6 @@
-import { catalog } from '@/catalog';
-import type { ErrorCode } from '@/createError';
-import type { FulcroError } from '@/fulcroError';
+import { catalog } from '@/src/catalog';
+import type { ErrorCode } from '@/src/createError';
+import type { FulcroError } from '@/src/fulcroError';
 
 /**
  * Tells whether a thrown value is an error a `@fulcro` package created, and,

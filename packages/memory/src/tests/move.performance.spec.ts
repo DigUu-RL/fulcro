@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { borrow } from '@/borrow';
-import { move } from '@/move';
-import { own } from '@/own';
-import type { Owned } from '@/owned';
-
-import { countedStorage } from './countedSource';
+import { borrow } from '@/src/borrow';
+import { move } from '@/src/move';
+import { own } from '@/src/own';
+import type { Owned } from '@/src/owned';
+import { countedStorage } from '@/src/tests/countedSource';
 
 /**
  * Performance suite for `move`.

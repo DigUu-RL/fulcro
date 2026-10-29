@@ -2,19 +2,18 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import { SinglePrecisionFloat, type Struct, struct } from '@fulcro/types';
 
-import { allocate } from '@/allocate';
-import { borrow } from '@/borrow';
-import type { Borrowed } from '@/borrowed';
-import { borrowMutable } from '@/borrowMutable';
-import { createManagedStorage } from '@/managedStorage';
-import { move } from '@/move';
-import type { MutableBorrow } from '@/mutableBorrow';
-import { own } from '@/own';
-import type { Owned } from '@/owned';
-import { pointerTo } from '@/pointerTo';
-import { createStackAllocator } from '@/stackAllocator';
-
-import { coded } from './coded';
+import { allocate } from '@/src/allocate';
+import { borrow } from '@/src/borrow';
+import type { Borrowed } from '@/src/borrowed';
+import { borrowMutable } from '@/src/borrowMutable';
+import { createManagedStorage } from '@/src/managedStorage';
+import { move } from '@/src/move';
+import type { MutableBorrow } from '@/src/mutableBorrow';
+import { own } from '@/src/own';
+import type { Owned } from '@/src/owned';
+import { pointerTo } from '@/src/pointerTo';
+import { createStackAllocator } from '@/src/stackAllocator';
+import { coded } from '@/src/tests/coded';
 
 /**
  * Behaviour suite for `Owned<T>[Symbol.dispose]`: the ownership ending with
@@ -27,22 +26,24 @@ import { coded } from './coded';
  */
 
 /** The error a disposed owner throws, for an operation. */
-const disposed = (operation: string): Error =>
-	coded(
+const disposed = (operation: string): Error => {
+	return coded(
 		new Error(
 			`FULCRO7030: ${operation}: the owner was disposed when its scope ended; nothing can be borrowed or moved from it any more.`,
 		),
 		{ operation },
 	);
+};
 
 /** The error an ended borrow throws, for an operation. */
-const ended = (operation: string): Error =>
-	coded(
+const ended = (operation: string): Error => {
+	return coded(
 		new Error(
 			`FULCRO7024: ${operation}: the borrow has ended — its owner was moved or disposed, or borrowed again in a way it cannot share; borrow again.`,
 		),
 		{ operation },
 	);
+};
 
 const Particle = struct('Particle', {
 	x: SinglePrecisionFloat,
@@ -62,8 +63,11 @@ describe('Owned[Symbol.dispose]', () => {
 			expect(writing.get(0)).toBe(7);
 		}
 
-		expect(() => writing?.get(0)).toThrow(ended('View.get'));
-		expect(() => writing?.set(0, 1)).toThrow(ended('View.set'));
+		expect(() => writing.get(0)).toThrow(ended('View.get'));
+
+		expect(() => {
+			writing.set(0, 1);
+		}).toThrow(ended('View.set'));
 	});
 
 	it('should end what was cut from a borrow as well', () => {
@@ -77,9 +81,7 @@ describe('Owned[Symbol.dispose]', () => {
 
 		expect(() => subview.get(0)).toThrow(ended('View.get'));
 		expect(() => readOnly.get(0)).toThrow(ended('ReadOnlyView.get'));
-		expect(() => pointer.get()).toThrow(
-			expect.objectContaining({ code: 'FULCRO7024' }),
-		);
+		expect(() => pointer.get()).toThrow(expect.objectContaining({ code: 'FULCRO7024' }));
 	});
 
 	it('should end every shared borrow too', () => {
@@ -124,7 +126,10 @@ describe('Owned[Symbol.dispose]', () => {
 
 		scores[Symbol.dispose]();
 
-		expect(() => scores[Symbol.dispose]()).not.toThrow();
+		expect(() => {
+			scores[Symbol.dispose]();
+		}).not.toThrow();
+
 		expect(() => borrow(scores)).toThrow(disposed('borrow'));
 	});
 
@@ -156,8 +161,8 @@ describe('Owned[Symbol.dispose]', () => {
 			kept = second;
 		}
 
-		expect(() => reading?.get(0)).toThrow(ended('ReadOnlyView.get'));
-		expect(() => borrow(kept as Owned<number>)).toThrow(disposed('borrow'));
+		expect(() => reading.get(0)).toThrow(ended('ReadOnlyView.get'));
+		expect(() => borrow(kept)).toThrow(disposed('borrow'));
 	});
 
 	it('should end with the frame its memory came from, in one scope', () => {
@@ -174,7 +179,7 @@ describe('Owned[Symbol.dispose]', () => {
 
 		// The borrow ended with its owner, and the frame gave back everything it
 		// lent: the stack allocates from its front again.
-		expect(() => writing?.get(0)).toThrow(ended('View.get'));
+		expect(() => writing.get(0)).toThrow(ended('View.get'));
 		expect(stack.allocate(8, 8).bytes.byteOffset).toBe(0);
 	});
 

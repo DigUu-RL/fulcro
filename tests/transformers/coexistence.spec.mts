@@ -2,7 +2,7 @@ import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import ts from 'typescript';
+import typescript from 'typescript';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 /**
@@ -24,16 +24,10 @@ import { beforeAll, describe, expect, it } from 'vitest';
 const require = createRequire(import.meta.url);
 
 /** Root of the repository, which this file sits two levels below. */
-const ROOT = path.resolve(
-	path.dirname(fileURLToPath(import.meta.url)),
-	'../..',
-);
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 /** Fixture fed to the compiler. */
-const FIXTURE = path.resolve(
-	path.dirname(fileURLToPath(import.meta.url)),
-	'coexistence.sample.ts',
-);
+const FIXTURE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'coexistence.sample.ts');
 
 /** JavaScript emitted for the fixture, shared by every assertion. */
 let emitted = '';
@@ -44,38 +38,40 @@ let emitted = '';
  * @returns The emitted JavaScript.
  */
 const compileFixture = (): string => {
-	const reflect = require('@fulcro/reflect/transformer')
-		.default as ts.TransformerFactory<ts.SourceFile> extends never
-		? never
-		: (program: ts.Program) => ts.TransformerFactory<ts.SourceFile>;
+	const reflect = (
+		require('@fulcro/reflect/transformer') as {
+			readonly default: (
+				program: typescript.Program,
+			) => typescript.TransformerFactory<typescript.SourceFile>;
+		}
+	).default;
 
-	const collections = require('@fulcro/collections/transformer')
-		.default as typeof reflect;
+	const collections = (
+		require('@fulcro/collections/transformer') as { readonly default: typeof reflect }
+	).default;
 
-	const memory = require('@fulcro/memory/transformer')
-		.default as typeof reflect;
+	const memory = (require('@fulcro/memory/transformer') as { readonly default: typeof reflect })
+		.default;
 
-	const program: ts.Program = ts.createProgram([FIXTURE], {
-		target: ts.ScriptTarget.ES2022,
-		module: ts.ModuleKind.ESNext,
+	const program: typescript.Program = typescript.createProgram([FIXTURE], {
+		target: typescript.ScriptTarget.ES2022,
+		module: typescript.ModuleKind.ESNext,
 		// `Bundler`, because `Node10` finds a package's main entry but not its
 		// `exports` subpaths — and a type the checker cannot see is a call
 		// neither transformer can claim, silently.
-		moduleResolution: ts.ModuleResolutionKind.Bundler,
+		moduleResolution: typescript.ModuleResolutionKind.Bundler,
 		strict: true,
 		noEmitOnError: false,
 		skipLibCheck: true,
 	});
 
-	const errors: readonly ts.Diagnostic[] = ts
+	const errors: readonly typescript.Diagnostic[] = typescript
 		.getPreEmitDiagnostics(program, program.getSourceFile(FIXTURE))
-		.filter(
-			(diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error,
-		);
+		.filter((diagnostic) => diagnostic.category === typescript.DiagnosticCategory.Error);
 
 	if (errors.length > 0) {
 		throw new Error(
-			ts.formatDiagnostics(errors, {
+			typescript.formatDiagnostics(errors, {
 				getCanonicalFileName: (name) => name,
 				getCurrentDirectory: () => ROOT,
 				getNewLine: () => '\n',
@@ -156,28 +152,31 @@ describe('the plugins on one file', () => {
 			path.dirname(fileURLToPath(import.meta.url)),
 			'coexistence.rejected.sample.ts',
 		);
-		const reflect = require('@fulcro/reflect/transformer').default as (
-			program: ts.Program,
-		) => ts.TransformerFactory<ts.SourceFile>;
-		const memory = require('@fulcro/memory/transformer')
-			.default as typeof reflect;
-		const program: ts.Program = ts.createProgram([rejected], {
-			target: ts.ScriptTarget.ES2022,
-			module: ts.ModuleKind.ESNext,
-			moduleResolution: ts.ModuleResolutionKind.Bundler,
+
+		const reflect = (
+			require('@fulcro/reflect/transformer') as {
+				readonly default: (
+					program: typescript.Program,
+				) => typescript.TransformerFactory<typescript.SourceFile>;
+			}
+		).default;
+
+		const memory = (require('@fulcro/memory/transformer') as { readonly default: typeof reflect })
+			.default;
+
+		const program: typescript.Program = typescript.createProgram([rejected], {
+			target: typescript.ScriptTarget.ES2022,
+			module: typescript.ModuleKind.ESNext,
+			moduleResolution: typescript.ModuleResolutionKind.Bundler,
 			strict: true,
 			skipLibCheck: true,
 		});
 
-		expect(() =>
-			program.emit(
-				program.getSourceFile(rejected),
-				() => undefined,
-				undefined,
-				false,
-				{ before: [reflect(program), memory(program)] },
-			),
-		).toThrow(
+		expect(() => {
+			return program.emit(program.getSourceFile(rejected), () => undefined, undefined, false, {
+				before: [reflect(program), memory(program)],
+			});
+		}).toThrow(
 			/coexistence\.rejected\.sample\.ts\(19,26\): FULCRO7027: move: 'orders' is used after it was moved at line 17/,
 		);
 	});

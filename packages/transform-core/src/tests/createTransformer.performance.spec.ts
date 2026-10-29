@@ -1,12 +1,11 @@
 import * as path from 'node:path';
 
 import typescript from 'typescript';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, assert, beforeAll, describe, expect, it } from 'vitest';
 
-import type { FileAnalyzer } from '@/shared';
-import { createTransformer } from '@/transformer';
-
-import { createWorkspace } from './workspace';
+import type { FileAnalyzer } from '@/src/shared';
+import { createWorkspace } from '@/src/tests/workspace';
+import { createTransformer } from '@/src/transformer';
 
 /**
  * Performance suite for `createTransformer`, on the analyzers it runs.
@@ -29,19 +28,19 @@ let fileNames: string[];
 beforeAll(() => {
 	const body: string = [
 		'const flag = (value: number): number => value;',
-		...Array.from({ length: CALLS }, (_, index) => `flag(${index});`),
+		...Array.from({ length: CALLS }, (_, index) => `flag(${String(index)});`),
 		'',
 	].join('\n');
+
 	const files: Record<string, string> = {};
 
 	for (let index = 0; index < FILES; index++) {
-		files[`src/file${index}.ts`] = body;
+		files[`src/file${String(index)}.ts`] = body;
 	}
 
 	workspace = createWorkspace(files);
-	fileNames = Object.keys(files).map((name) =>
-		path.join(workspace.root, ...name.split('/')),
-	);
+	fileNames = Object.keys(files).map((name) => path.join(workspace.root, ...name.split('/')));
+
 	program = typescript.createProgram(fileNames, {
 		module: typescript.ModuleKind.ESNext,
 		strict: true,
@@ -54,23 +53,25 @@ afterAll(() => {
 
 describe('createTransformer with analyzers, counted', () => {
 	it('should invoke each analyzer once per file, however many calls it holds', () => {
-		const counts: number[] = [0, 0];
-		const counting = (slot: 0 | 1): FileAnalyzer => ({
-			functionNames: ['flag'],
-			analyze: (): void => {
-				counts[slot]++;
-			},
-		});
-		const transformer = createTransformer(
-			[],
-			[counting(0), counting(1)],
-		)(program);
+		const counts: [number, number] = [0, 0];
+
+		const counting = (slot: 0 | 1): FileAnalyzer => {
+			return {
+				functionNames: ['flag'],
+				analyze: (): void => {
+					counts[slot]++;
+				},
+			};
+		};
+
+		const transformer = createTransformer([], [counting(0), counting(1)])(program);
 
 		for (const fileName of fileNames) {
-			const source = program.getSourceFile(
+			const source: typescript.SourceFile | undefined = program.getSourceFile(
 				fileName.split(path.sep).join('/'),
-			) as typescript.SourceFile;
+			);
 
+			assert.isDefined(source);
 			typescript.transform(source, [transformer]).dispose();
 		}
 

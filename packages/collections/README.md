@@ -314,3 +314,4 @@ don't add an override.
 
 **Full guide:** [docs/sequences.md](../../docs/sequences.md) — scenarios, worked
 examples and the failure modes worth knowing before you meet them.
+🇧🇷 [Leia em português](../../docs/pt-BR/sequences.md).

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { compileFixture, COMPILERS } from './compileFixture';
+import { compileFixture, COMPILERS } from '@/src/tests/compileFixture';
 
 /**
  * Exhaustiveness suite.
@@ -32,36 +32,33 @@ import { compileFixture, COMPILERS } from './compileFixture';
 /** Fixture fed to the compilers. */
 const FIXTURE = 'exhaustive.fixture.ts';
 
-describe.each(COMPILERS)(
-	'switchFor exhaustiveness, on %s',
-	(_label, packageName) => {
-		const reported: string = compileFixture(FIXTURE, packageName);
+describe.each(COMPILERS)('switchFor exhaustiveness, on %s', (_label, packageName) => {
+	const reported: string = compileFixture(FIXTURE, packageName);
 
-		it('should reject a call that leaves a member unhandled', () => {
-			expect(reported).not.toBe('');
-		});
+	it('should reject a call that leaves a member unhandled', () => {
+		expect(reported).not.toBe('');
+	});
 
-		it('should blame the exhaustive form rather than the predicate one', () => {
-			// The whole diagnostic hangs on this. `SwitchCase` here means the
-			// caller is being told about the form they did not use, and the
-			// missing member goes unmentioned.
-			expect(reported).toContain('ExhaustiveCases');
-			expect(reported).not.toContain('SwitchCase');
-		});
+	it('should blame the exhaustive form rather than the predicate one', () => {
+		// The whole diagnostic hangs on this. `SwitchCase` here means the
+		// caller is being told about the form they did not use, and the
+		// missing member goes unmentioned.
+		expect(reported).toContain('ExhaustiveCases');
+		expect(reported).not.toContain('SwitchCase');
+	});
 
-		it('should point at the branch that is missing', () => {
-			// 5.x names the member, 7.x names the key it compiles to. Either
-			// locates the gap; neither is the vague assignability complaint that
-			// appears when the overloads are ordered the other way.
-			expect(reported).toMatch(/Status\.Archived|Property '2'/);
-			expect(reported).toContain('is missing');
-		});
+	it('should point at the branch that is missing', () => {
+		// 5.x names the member, 7.x names the key it compiles to. Either
+		// locates the gap; neither is the vague assignability complaint that
+		// appears when the overloads are ordered the other way.
+		expect(reported).toMatch(/Status\.Archived|Property '2'/);
+		expect(reported).toContain('is missing');
+	});
 
-		it('should accept every call that handles all the members', () => {
-			// The fixture holds three complete calls above the incomplete one — a
-			// value, a statement, and the predicate form. Exactly one thing in it
-			// is wrong, so exactly one thing may be reported.
-			expect(reported.split('error TS')).toHaveLength(2);
-		});
-	},
-);
+	it('should accept every call that handles all the members', () => {
+		// The fixture holds three complete calls above the incomplete one — a
+		// value, a statement, and the predicate form. Exactly one thing in it
+		// is wrong, so exactly one thing may be reported.
+		expect(reported.split('error TS')).toHaveLength(2);
+	});
+});

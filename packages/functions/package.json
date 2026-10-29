@@ -1,7 +1,8 @@
 {
 	"name": "@fulcro/functions",
-	"version": "2.1.0",
+	"version": "3.0.0",
 	"description": "Runtime helpers turning control flow into values: an exhaustive switchFor, a throwing-free tryCatch, and Result and Option handled exhaustively.",
+	"type": "module",
 	"keywords": [
 		"switch",
 		"exhaustive",
@@ -23,14 +24,16 @@
 		"./package.json": "./package.json"
 	},
 	"files": [
-		"dist"
+		"dist",
+		"src",
+		"!src/tests"
 	],
 	"sideEffects": false,
 	"dependencies": {
-		"@fulcro/errors": "^2.0.0"
+		"@fulcro/errors": "^3.0.0"
 	},
 	"engines": {
-		"node": ">=22"
+		"node": ">=22.12"
 	},
 	"publishConfig": {
 		"access": "public"
@@ -45,8 +48,8 @@
 		"url": "https://github.com/DigUu-RL/fulcro/issues"
 	},
 	"scripts": {
-		"build": "tsc -p tsconfig.build.json && node ../../tools/build/rewrite-aliases.mjs",
-		"typecheck": "tsc --noEmit -p tsconfig.json",
+		"build": "tsdown",
+		"typecheck": "tsc -p tsconfig.json",
 		"prepublishOnly": "npm run build"
 	}
 }

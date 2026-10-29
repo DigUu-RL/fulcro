@@ -1,12 +1,8 @@
 import { createError } from '@fulcro/errors';
 
-import {
-	CollectionFactories,
-	GroupFactory,
-	OrderedSequenceFactory,
-} from '@/@types/collections/factories';
-import { Group } from '@/@types/collections/group';
-import { OrderedSequence, SortCriterion } from '@/@types/collections/ordered';
+import type { CollectionFactories } from '@/src/@types/collections/factories';
+import type { Group } from '@/src/@types/collections/group';
+import type { OrderedSequence, SortCriterion } from '@/src/@types/collections/ordered';
 
 /**
  * Registry holding the concrete collection factories.
@@ -29,9 +25,7 @@ let registeredFactories: CollectionFactories | undefined;
  *
  * @param factories Concrete implementations used by the base sequence.
  */
-export const registerCollectionFactories = (
-	factories: CollectionFactories,
-): void => {
+export const registerCollectionFactories = (factories: CollectionFactories): void => {
 	registeredFactories = factories;
 };
 
@@ -40,8 +34,7 @@ export const registerCollectionFactories = (
  *
  * @returns `true` once {@link registerCollectionFactories} has been called.
  */
-export const hasCollectionFactories = (): boolean =>
-	registeredFactories !== undefined;
+export const hasCollectionFactories = (): boolean => registeredFactories !== undefined;
 
 /**
  * Resolves the registered factories.
@@ -56,7 +49,8 @@ const resolveFactories = (operation: string): CollectionFactories => {
 };
 
 /**
- * Creates a {@link Group} through the registered {@link GroupFactory}.
+ * Creates a {@link Group} through the registered
+ * {@link CollectionFactories.group | group factory}.
  *
  * @template K Type of the key shared by the elements.
  * @template T Type of the grouped elements.
@@ -71,7 +65,7 @@ export const createGroup = <K, T>(key: K, source: Iterable<T>): Group<K, T> => {
 
 /**
  * Creates an {@link OrderedSequence} through the registered
- * {@link OrderedSequenceFactory}.
+ * {@link CollectionFactories.ordered | ordered sequence factory}.
  *
  * @template T Type of the elements contained in the sequence.
  * @param source Sequence to be sorted.

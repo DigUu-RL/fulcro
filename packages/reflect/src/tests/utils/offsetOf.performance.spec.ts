@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { offsetOf } from '@/functions/utils/offsetOf';
+import { offsetOf } from '@/src/functions/utils/offsetOf';
 
 /**
  * Performance suite for `offsetOf`.

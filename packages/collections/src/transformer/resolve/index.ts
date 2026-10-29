@@ -1,6 +1,7 @@
 import typescript from 'typescript';
 
-import { buildStructuralTest, RewriteContext } from '@fulcro/transform-core';
+import type { RewriteContext } from '@fulcro/transform-core';
+import { buildStructuralTest } from '@fulcro/transform-core';
 
 /**
  * Turning a written type into a runtime test.
@@ -63,8 +64,7 @@ const primitiveNameOf = (type: typescript.Type): string | null => {
  * @returns The symbol of the class, or `null`.
  */
 const classSymbolOf = (type: typescript.Type): typescript.Symbol | null => {
-	const symbol: typescript.Symbol | undefined =
-		type.getSymbol() ?? type.aliasSymbol;
+	const symbol: typescript.Symbol | undefined = type.getSymbol() ?? type.aliasSymbol;
 
 	if (symbol === undefined) return null;
 
@@ -83,37 +83,39 @@ const classSymbolOf = (type: typescript.Type): typescript.Symbol | null => {
  * or simply not be imported at all.
  *
  * @param name Name being looked up.
- * @param at Node the lookup happens from, for scope.
+ * @param site Node the lookup happens from, for scope.
  * @param checker Checker of the program being compiled.
  * @returns `true` when the name survives into the emitted code as a value.
  */
 const isValueInScope = (
 	name: string,
-	at: typescript.Node,
+	site: typescript.Node,
 	checker: typescript.TypeChecker,
 ): boolean => {
 	const resolved: typescript.Symbol | undefined = checker.resolveName(
 		name,
-		at,
+		site,
 		typescript.SymbolFlags.Value,
 		false,
 	);
 
 	if (resolved === undefined) return false;
 
-	const declarations: readonly typescript.Declaration[] =
-		resolved.declarations ?? [];
+	const declarations: readonly typescript.Declaration[] = resolved.declarations ?? [];
 
 	// A type-only import resolves as a value here but is elided on emit, so the
 	// declaration itself has to be checked.
 	return !declarations.some((declaration) => {
 		if (typescript.isImportSpecifier(declaration)) {
 			return (
-				declaration.isTypeOnly || declaration.parent.parent.isTypeOnly === true
+				declaration.isTypeOnly ||
+				declaration.parent.parent.phaseModifier === typescript.SyntaxKind.TypeKeyword
 			);
 		}
 
-		if (typescript.isImportClause(declaration)) return declaration.isTypeOnly;
+		if (typescript.isImportClause(declaration)) {
+			return declaration.phaseModifier === typescript.SyntaxKind.TypeKeyword;
+		}
 
 		return false;
 	});

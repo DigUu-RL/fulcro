@@ -1,12 +1,11 @@
 import * as path from 'node:path';
 
 import typescript from 'typescript';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, assert, beforeAll, describe, expect, it } from 'vitest';
 
-import type { CallRewriter, FileAnalyzer } from '@/shared';
-import { createTransformer } from '@/transformer';
-
-import { createWorkspace } from './workspace';
+import type { CallRewriter, FileAnalyzer } from '@/src/shared';
+import { createWorkspace } from '@/src/tests/workspace';
+import { createTransformer } from '@/src/transformer';
 
 /**
  * Behaviour suite for `createTransformer`, on the analyzers it runs.
@@ -38,9 +37,13 @@ beforeAll(() => {
 		target: typescript.ScriptTarget.ES2022,
 		strict: true,
 	});
-	fixture = program.getSourceFile(
+
+	const source: typescript.SourceFile | undefined = program.getSourceFile(
 		fileName.split(path.sep).join('/'),
-	) as typescript.SourceFile;
+	);
+
+	assert.isDefined(source);
+	fixture = source;
 });
 
 afterAll(() => {
@@ -53,26 +56,28 @@ afterAll(() => {
  * @param seen Receives the text of each file the analyzer was given.
  * @returns The analyzer.
  */
-const flagging = (seen: string[]): FileAnalyzer => ({
-	functionNames: ['flag'],
-	analyze: (sourceFile, context): void => {
-		seen.push(sourceFile.getText());
+const flagging = (seen: string[]): FileAnalyzer => {
+	return {
+		functionNames: ['flag'],
+		analyze: (sourceFile, context): void => {
+			seen.push(sourceFile.getText());
 
-		const visit = (node: typescript.Node): void => {
-			if (
-				typescript.isCallExpression(node) &&
-				typescript.isIdentifier(node.expression) &&
-				node.expression.text === 'flag'
-			) {
-				context.report(node, 'FULCRO5999: flag is refused here.');
-			}
+			const visit = (node: typescript.Node): void => {
+				if (
+					typescript.isCallExpression(node) &&
+					typescript.isIdentifier(node.expression) &&
+					node.expression.text === 'flag'
+				) {
+					context.report(node, 'FULCRO5999: flag is refused here.');
+				}
 
-			typescript.forEachChild(node, visit);
-		};
+				typescript.forEachChild(node, visit);
+			};
 
-		visit(sourceFile);
-	},
-});
+			visit(sourceFile);
+		},
+	};
+};
 
 /**
  * Turns every call to `rename` into a call to `renamed`, visiting its
@@ -81,15 +86,14 @@ const flagging = (seen: string[]): FileAnalyzer => ({
 const renaming: CallRewriter = {
 	functionName: 'rename',
 	moduleSegment: 'fixture',
-	rewrite: (call, context) =>
-		context.factory.updateCallExpression(
+	rewrite: (call, context) => {
+		return context.factory.updateCallExpression(
 			call,
 			context.factory.createIdentifier('renamed'),
 			undefined,
-			call.arguments.map(
-				(argument) => context.visit(argument) as typescript.Expression,
-			),
-		),
+			call.arguments.map((argument) => context.visit(argument) as typescript.Expression),
+		);
+	},
 };
 
 /**
@@ -104,11 +108,18 @@ const run = (
 	addDiagnostic?: (diagnostic: typescript.Diagnostic) => unknown,
 ): string => {
 	const result = typescript.transform(fixture, [
-		createTransformer([renaming], analyzers)(program, {}, { addDiagnostic }),
+		createTransformer([renaming], analyzers)(
+			program,
+			{},
+			addDiagnostic === undefined ? {} : { addDiagnostic },
+		),
 	]);
-	const printed: string = typescript
-		.createPrinter()
-		.printFile(result.transformed[0] as typescript.SourceFile);
+
+	const [transformed] = result.transformed;
+
+	assert.isDefined(transformed);
+
+	const printed: string = typescript.createPrinter().printFile(transformed);
 
 	result.dispose();
 
@@ -131,14 +142,16 @@ describe('createTransformer with analyzers', () => {
 		run([flagging([])], (diagnostic) => diagnostics.push(diagnostic));
 
 		expect(
-			diagnostics.map((diagnostic) => ({
-				code: diagnostic.code,
-				text: fixture.text.slice(
-					diagnostic.start,
-					(diagnostic.start ?? 0) + (diagnostic.length ?? 0),
-				),
-				source: diagnostic.source,
-			})),
+			diagnostics.map((diagnostic) => {
+				return {
+					code: diagnostic.code,
+					text: fixture.text.slice(
+						diagnostic.start,
+						(diagnostic.start ?? 0) + (diagnostic.length ?? 0),
+					),
+					source: diagnostic.source,
+				};
+			}),
 		).toEqual([
 			{ code: 5999, text: 'flag(1)', source: 'fulcro' },
 			{ code: 5999, text: 'flag(2)', source: 'fulcro' },
@@ -159,12 +172,14 @@ describe('createTransformer with analyzers', () => {
 
 	it('should hand the analyzer the file as written when another transformer ran first', () => {
 		const seen: typescript.SourceFile[] = [];
+
 		const recording: FileAnalyzer = {
 			functionNames: ['flag'],
 			analyze: (sourceFile): void => {
 				seen.push(sourceFile);
 			},
 		};
+
 		const result = typescript.transform(fixture, [
 			createTransformer([renaming])(program),
 			createTransformer([], [recording])(program),

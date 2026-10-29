@@ -2,7 +2,9 @@ import { createRequire } from 'node:module';
 
 import { beforeAll, describe, expect, it } from 'vitest';
 
-import { type CompiledStructs, compileStructs } from './struct.fixture.mjs';
+import type * as FulcroTypes from '@fulcro/types';
+
+import { type CompiledStructs, compileStructs } from '@/tests/transformers/struct.fixture.mts';
 
 /**
  * `offsetOf` across the package boundary.
@@ -33,13 +35,11 @@ const offsetsOf = (descriptor: {
 	readonly layout: {
 		readonly fields: Readonly<Record<string, { readonly offset: number }>>;
 	};
-}): Record<string, number> =>
-	Object.fromEntries(
-		Object.entries(descriptor.layout.fields).map(([name, field]) => [
-			name,
-			field.offset,
-		]),
+}): Record<string, number> => {
+	return Object.fromEntries(
+		Object.entries(descriptor.layout.fields).map(([name, field]) => [name, field.offset]),
 	);
+};
 
 describe('offsetOf over the structs of @fulcro/types', () => {
 	it.each(['Mixed', 'Reversed', 'Outer', 'Account'])(
@@ -54,12 +54,8 @@ describe('offsetOf over the structs of @fulcro/types', () => {
 	);
 
 	it('should place a struct shipped as a declaration only by its declared order', () => {
-		const {
-			DoublePrecisionFloat,
-			SinglePrecisionFloat,
-			UnsignedInteger,
-			struct,
-		} = require('@fulcro/types') as typeof import('@fulcro/types');
+		const { DoublePrecisionFloat, SinglePrecisionFloat, UnsignedInteger, struct } =
+			require('@fulcro/types') as typeof FulcroTypes;
 
 		const Shipped = struct('Shipped', {
 			small: SinglePrecisionFloat,

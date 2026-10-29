@@ -1,13 +1,13 @@
-import type { Borrowed } from '@/borrowed';
-import type { Owned } from '@/owned';
+import type { Borrowed } from '@/src/borrowed';
+import type { Owned } from '@/src/owned';
 import {
 	borrowedSource,
 	endBorrows,
 	type Ownership,
 	recordBorrow,
 	requireOwnership,
-} from '@/ownership';
-import { createReadOnlyView } from '@/region';
+} from '@/src/ownership';
+import { createReadOnlyView } from '@/src/region';
 
 /**
  * Lends the values of an owner for reading.

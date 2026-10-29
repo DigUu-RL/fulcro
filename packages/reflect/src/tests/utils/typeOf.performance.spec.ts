@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { typeOf } from '@/functions/utils/typeOf';
+import { typeOf } from '@/src/functions/utils/typeOf';
 
 /**
  * Performance suite for `typeOf`.
@@ -29,11 +29,11 @@ describe('typeOf', () => {
 		let reads = 0;
 
 		const watched = new Proxy(value, {
-			get(target, key, receiver) {
+			get(target, key, receiver): unknown {
 				reads++;
 				return Reflect.get(target, key, receiver);
 			},
-			ownKeys(target) {
+			ownKeys(target): (string | symbol)[] {
 				// Enumerating the keys would make the cost grow with the value,
 				// which is the thing being ruled out. Counted heavily so it cannot
 				// hide among the handful of legitimate reads.

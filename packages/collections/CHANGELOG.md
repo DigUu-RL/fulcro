@@ -1,5 +1,57 @@
 # @fulcro/collections
 
+## 2.0.0
+
+### Major Changes
+
+- 3b1d05f: Ship every package as an ES module only, built by tsdown, and require Node 22.12 or later.
+
+  What breaks:
+
+  - **No CommonJS build**, where `@fulcro/parallel` already had none. `require('@fulcro/…')` on Node older than 22.12 fails. On 22.12 and later it still works, through Node's `require` of an ES module, so a compiler plugin loader that calls `require` keeps loading `./transformer`.
+  - **A CommonJS TypeScript project compiled with `module: node16`** gets TS1479 on every `@fulcro/…` import, as it already did on `@fulcro/parallel`'s, since that setting does not let a CommonJS file `require` an ES module. Under `module: nodenext` the same imports compile, and so they do under `moduleResolution: node10`.
+  - **`engines` is `>=22.12`** (was `>=22`).
+  - **`./unplugin` ships `.js` and `.d.ts`** (was `.mjs` and `.d.mts`). The subpath is the same, so an import through it is unaffected; a path that reached into `dist` directly has to follow.
+
+  What improves: the declarations ship with declaration maps and the TypeScript sources they point at, without the suites, so Go to Definition in an editor lands in the source rather than in a `.d.ts`. And the `./unplugin` adapters of `@fulcro/collections`, `@fulcro/reflect` and `@fulcro/memory` are now declared with `TransformerUnplugin` from `@fulcro/transform-core`. Their declarations used to name `WebpackPluginInstance`, `RspackPluginInstance`, `EsbuildPlugin` and `JsPlugin` without importing them, so an editor showed those adapters as `any`.
+
+- 4416d08: The utilities whose type argument the transformer reads now say, in what they return, what that type argument is for:
+
+  - `sizeOf<T>()` returns `TypeLayout<T>['size']` and `alignOf<T>()` returns `TypeLayout<T>['alignment']`: the number literal the layout of `T` declares, the same one `layoutOf<T>()` reports, instead of `number`. `let size = sizeOf<Point>(); size += 4` stops compiling, since `size` is typed as that literal; a variable that accumulates sizes is annotated `: number`.
+  - `nameOf<T>()` returns `TypeName<T>`, a `string` carrying the type it names. It is still assignable to `string`, and a plain string can still be assigned to it.
+  - `typeOf<T>()` returns `TypeMetadata<T>`, and `pathsOf<T>()` takes and returns `readonly TypePath<T>[]`. Both default their parameter to `unknown`, so `TypeMetadata` and `TypePath` written without one keep their meaning, and the metadata or paths of one type no longer pass for another's.
+  - `defaultOf<T>()` returns `Defaulted<T>`, which is `T`: `const order: Order = defaultOf()` still infers `Order`.
+  - `TypeTest<R>`, in `@fulcro/reflect`, `@fulcro/collections` and `@fulcro/transform-core` alike, carries the type it vouches for. The three stay assignable to one another: they share `matches` and the optional `name` and `'~type'`, and only `@fulcro/collections`' leaves out the optional `explain`. A `TypeTest<Account>` is no longer accepted where a `TypeTest<User>` is asked for. It never vouched for one, and the transformer's own tests are unaffected.
+
+  `TypeName` and `Defaulted` are new exports of `@fulcro/reflect`. The runtime is unchanged, and so is everything the transformers emit.
+
+- f72897a: Require TypeScript 5.9 or later for the transformers: the optional `typescript` peer is now `>=5.9 <7` (was `>=5.3.3 <7`).
+
+  The transformers tell a type-only import apart through the compiler's `phaseModifier`, which replaced the deprecated `isTypeOnly` and first appears in 5.9. The runtime halves of these packages need no compiler, but npm checks the peer range on install all the same, observed with npm 11:
+
+  - a project whose `typescript` range admits 5.9, such as `^5.8.3`, has its installed compiler moved up to the newest 5.x by the install, without being asked;
+  - a project pinned below 5.9, such as `"typescript": "5.8.3"`, is refused with `ERESOLVE`. With `--legacy-peer-deps` the install goes through, the compiler stays where it was, and the runtime halves work; the transformers need 5.9.
+
+### Minor Changes
+
+- bac2b43: `ofType` and `cast`, on `Sequence` and `AsyncSequence`, now declare the class, shape-test and type-argument forms as one signature, `(type?: Constructor<R> | TypeTest<R>)`, after the unchanged `typeof`-name overload. `AsyncSequenceCollection.from` likewise takes `AsyncIterable<T> | Iterable<T | PromiseLike<T>>` in one signature.
+
+  Every call that compiled before still compiles, and infers the same type but for one, which now infers a narrower one: a `TypeTest<User>` from `@fulcro/reflect` passed to `ofType` gives `Sequence<User>`, where it gave back the sequence's own element type, `Sequence<User | number | string>` for a `Sequence<User | number | string>`. A `TypeTest` from `@fulcro/collections` already narrowed, and still does. The new type-level tests pin the rest down. What is new is accepted:
+
+  - a value typed `Constructor<R> | TypeTest<R>` can be passed directly, where before it had to be narrowed to one form first;
+  - `SequenceCollection#ofType` and `#cast` accept a shape test, which the `Sequence` interface they implement already did.
+
+  Code that reads the overloads themselves — `Parameters<Sequence<T>['ofType']>`, or a type built over the overload list — sees one signature where it saw three.
+
+### Patch Changes
+
+- Updated dependencies [3b1d05f]
+- Updated dependencies [f72897a]
+- Updated dependencies [4416d08]
+- Updated dependencies [f72897a]
+  - @fulcro/errors@3.0.0
+  - @fulcro/transform-core@2.0.0
+
 ## 1.3.0
 
 ### Minor Changes

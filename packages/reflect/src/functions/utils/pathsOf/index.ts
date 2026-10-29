@@ -1,7 +1,17 @@
 import { createError } from '@fulcro/errors';
 
-/** One reachable leaf of a type, and what is at the end of it. */
-export interface TypePath {
+/**
+ * One reachable leaf of a type, and what is at the end of it.
+ *
+ * @template T Type the path belongs to; `unknown` when it was not named.
+ */
+export interface TypePath<T = unknown> {
+	/**
+	 * The type the path belongs to, carried in the type only: never present on
+	 * a path, it keeps the paths of one type from passing for another's.
+	 */
+	readonly '~type'?: T;
+
 	/**
 	 * The path, in the notation a person writes.
 	 *
@@ -61,9 +71,7 @@ export interface TypePath {
  * @returns Every leaf, in the order the properties were declared.
  * @throws {Error} When the call was not resolved at compile time.
  */
-export const pathsOf = <T>(
-	paths?: readonly TypePath[],
-): readonly TypePath[] => {
+export const pathsOf = <T>(paths?: readonly TypePath<T>[]): readonly TypePath<T>[] => {
 	if (paths === undefined) {
 		throw createError('FULCRO4005', { operation: 'pathsOf' });
 	}

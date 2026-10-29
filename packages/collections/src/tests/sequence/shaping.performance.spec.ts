@@ -1,6 +1,6 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { assert, beforeAll, describe, expect, it } from 'vitest';
 
-import { SequenceCollection } from '@/collections/sequence';
+import { SequenceCollection } from '@/src/collections/sequence';
 
 /**
  * Performance suite for `choose`, `ofType`, `cast`, `topBy` and `tap`.
@@ -39,25 +39,36 @@ interface Order {
 	readonly reference: string | null;
 }
 
+/** Statuses the dataset is spread across. */
+const STATUSES: readonly Order['status'][] = ['pending', 'paid', 'shipped'];
+
 let orders: readonly Order[] = [];
 
 beforeAll(() => {
 	// Built once: a dataset rebuilt per test would make every count below a
 	// measurement of the builder.
-	orders = Array.from({ length: SIZE }, (_, index) => ({
-		id: index,
-		region: ['north', 'south', 'east', 'west'][index % 4],
-		status: (['pending', 'paid', 'shipped'] as const)[index % 3],
-		// Spread by a prime so the ranking cannot be satisfied by arrival order,
-		// and so the best elements are not clustered at either end.
-		total: (index * 7919) % 50_000,
-		placedAt: new Date(2020, 0, 1 + (index % 1_000)),
-		items: [
-			{ sku: `sku-${index % 97}`, quantity: (index % 5) + 1 },
-			{ sku: `sku-${index % 89}`, quantity: (index % 3) + 1 },
-		],
-		reference: index % 4 === 0 ? null : `ref-${index}`,
-	}));
+	orders = Array.from({ length: SIZE }, (_, index) => {
+		const region: string | undefined = ['north', 'south', 'east', 'west'][index % 4];
+		const status: Order['status'] | undefined = STATUSES[index % 3];
+
+		assert.isDefined(region);
+		assert.isDefined(status);
+
+		return {
+			id: index,
+			region,
+			status,
+			// Spread by a prime so the ranking cannot be satisfied by arrival order,
+			// and so the best elements are not clustered at either end.
+			total: (index * 7919) % 50_000,
+			placedAt: new Date(2020, 0, 1 + (index % 1_000)),
+			items: [
+				{ sku: `sku-${String(index % 97)}`, quantity: (index % 5) + 1 },
+				{ sku: `sku-${String(index % 89)}`, quantity: (index % 3) + 1 },
+			],
+			reference: index % 4 === 0 ? null : `ref-${String(index)}`,
+		};
+	});
 });
 
 /** Conversions observed by the counting keys of the test in hand. */
@@ -72,12 +83,14 @@ let conversions = 0;
  * @param value Value the key stands for.
  * @returns The counting key.
  */
-const countingKey = (value: number): object => ({
-	[Symbol.toPrimitive]: (): number => {
-		conversions++;
-		return value;
-	},
-});
+const countingKey = (value: number): object => {
+	return {
+		[Symbol.toPrimitive]: (): number => {
+			conversions++;
+			return value;
+		},
+	};
+};
 
 /**
  * A source that counts what is pulled out of it.
@@ -89,17 +102,16 @@ const countingKey = (value: number): object => ({
  * @param counter Called for each element as it is pulled.
  * @returns The instrumented source.
  */
-const counted = <T>(
-	values: readonly T[],
-	counter: () => void,
-): Iterable<T> => ({
-	*[Symbol.iterator](): Iterator<T> {
-		for (const value of values) {
-			counter();
-			yield value;
-		}
-	},
-});
+const counted = <T>(values: readonly T[], counter: () => void): Iterable<T> => {
+	return {
+		*[Symbol.iterator](): Iterator<T> {
+			for (const value of values) {
+				counter();
+				yield value;
+			}
+		},
+	};
+};
 
 describe('topBy', () => {
 	it('should make one comparison per element, whatever the volume', () => {
@@ -172,15 +184,19 @@ describe('topBy', () => {
 		// A window scanned linearly instead of kept as a heap would show up here
 		// as the larger window costing a hundred times the smaller.
 		conversions = 0;
+
 		SequenceCollection.from(orders)
 			.topBy((order) => countingKey(order.total), 1)
 			.toArray();
+
 		const forOne: number = conversions;
 
 		conversions = 0;
+
 		SequenceCollection.from(orders)
 			.topBy((order) => countingKey(order.total), 1_000)
 			.toArray();
+
 		const forThousand: number = conversions;
 
 		expect(forThousand).toBeLessThan(forOne * 3);
@@ -211,9 +227,7 @@ describe('choose', () => {
 		let pulled = 0;
 		let projected = 0;
 
-		const references = SequenceCollection.from(
-			counted(orders, () => pulled++),
-		).choose((order) => {
+		const references = SequenceCollection.from(counted(orders, () => pulled++)).choose((order) => {
 			projected++;
 			return order.reference;
 		});
@@ -271,10 +285,7 @@ describe('choose', () => {
 
 describe('ofType and cast', () => {
 	it('should each read the source exactly once', () => {
-		const mixed: readonly unknown[] = orders.flatMap((order) => [
-			order,
-			order.id,
-		]);
+		const mixed: readonly unknown[] = orders.flatMap((order) => [order, order.id]);
 
 		let pulledByOfType = 0;
 		let pulledByCast = 0;
@@ -292,10 +303,7 @@ describe('ofType and cast', () => {
 	});
 
 	it('should stop where a bounded chain stops', () => {
-		const mixed: readonly unknown[] = orders.flatMap((order) => [
-			order,
-			order.id,
-		]);
+		const mixed: readonly unknown[] = orders.flatMap((order) => [order, order.id]);
 
 		let pulled = 0;
 
@@ -314,11 +322,11 @@ describe('ofType and cast', () => {
 
 		let pulled = 0;
 
-		expect(() =>
-			SequenceCollection.from(counted(broken, () => pulled++))
+		expect(() => {
+			return SequenceCollection.from(counted(broken, () => pulled++))
 				.cast('object')
-				.toArray(),
-		).toThrow(TypeError);
+				.toArray();
+		}).toThrow(TypeError);
 
 		expect(pulled).toBe(6);
 	});
@@ -374,27 +382,29 @@ describe('the shape check the transformer writes', () => {
 		// A ratio, not a budget: what is asserted is that the generated code is
 		// not doing something pathological, and a loaded machine scales both
 		// sides. The hand-written version below checks exactly the same clauses.
+		// Read as a check meets a record: every field possibly anything.
+		type Unchecked = { readonly [Key in keyof Shaped]?: unknown };
+		type UncheckedItem = { readonly [Key in keyof Shaped['items'][number]]?: unknown };
+
 		const byHand = (value: unknown): boolean => {
-			const order = value as Shaped;
+			if (value === null || typeof value !== 'object') return false;
+
+			const order = value as Unchecked;
 
 			return (
-				order !== null &&
-				typeof order === 'object' &&
 				typeof order.id === 'number' &&
 				typeof order.region === 'string' &&
-				(order.status === 'pending' ||
-					order.status === 'paid' ||
-					order.status === 'shipped') &&
+				(order.status === 'pending' || order.status === 'paid' || order.status === 'shipped') &&
 				typeof order.total === 'number' &&
 				order.placedAt instanceof Date &&
 				Array.isArray(order.items) &&
-				order.items.every(
-					(item) =>
-						item !== null &&
-						typeof item === 'object' &&
-						typeof item.sku === 'string' &&
-						typeof item.quantity === 'number',
-				) &&
+				(order.items as readonly unknown[]).every((item) => {
+					if (item === null || typeof item !== 'object') return false;
+
+					const line = item as UncheckedItem;
+
+					return typeof line.sku === 'string' && typeof line.quantity === 'number';
+				}) &&
 				(order.reference === null || typeof order.reference === 'string')
 			);
 		};
@@ -404,9 +414,7 @@ describe('the shape check the transformer writes', () => {
 		const hand: number = Math.max(performance.now() - handStart, 1);
 
 		const generatedStart: number = performance.now();
-		const generatedKept: number = SequenceCollection.from(orders)
-			.ofType<Shaped>()
-			.count();
+		const generatedKept: number = SequenceCollection.from(orders).ofType<Shaped>().count();
 		const generated: number = performance.now() - generatedStart;
 
 		// Both have to agree on the answer before their costs mean anything.
@@ -418,9 +426,7 @@ describe('the shape check the transformer writes', () => {
 	it('should stay within a generous ceiling over a hundred thousand records', () => {
 		const started: number = performance.now();
 
-		const kept: number = SequenceCollection.from(orders)
-			.ofType<Shaped>()
-			.count();
+		const kept: number = SequenceCollection.from(orders).ofType<Shaped>().count();
 
 		// A smoke ceiling. Validating every field of every record, including the
 		// nested line items, is real work — this exists to catch the regression
@@ -465,20 +471,14 @@ describe('a recursive shape check', () => {
 	 * @param next Counter handing out ids.
 	 * @returns The root comment.
 	 */
-	const treeOf = (
-		depth: number,
-		breadth: number,
-		next: { value: number },
-	): Comment => ({
-		id: next.value++,
-		text: `comment ${next.value}`,
-		replies:
-			depth === 0
-				? []
-				: Array.from({ length: breadth }, () =>
-						treeOf(depth - 1, breadth, next),
-					),
-	});
+	const treeOf = (depth: number, breadth: number, next: { value: number }): Comment => {
+		return {
+			id: next.value++,
+			text: `comment ${String(next.value)}`,
+			replies:
+				depth === 0 ? [] : Array.from({ length: breadth }, () => treeOf(depth - 1, breadth, next)),
+		};
+	};
 
 	let forest: readonly Comment[] = [];
 
@@ -502,9 +502,7 @@ describe('a recursive shape check', () => {
 			},
 		};
 
-		const kept: number = SequenceCollection.from(observed)
-			.ofType<Comment>()
-			.count();
+		const kept: number = SequenceCollection.from(observed).ofType<Comment>().count();
 
 		expect(kept).toBe(forest.length);
 		expect(built).toBe(1);
@@ -553,9 +551,7 @@ describe('a recursive shape check', () => {
 	it('should stay within a generous ceiling over a forest', () => {
 		const started: number = performance.now();
 
-		const kept: number = SequenceCollection.from(forest)
-			.ofType<Comment>()
-			.count();
+		const kept: number = SequenceCollection.from(forest).ofType<Comment>().count();
 
 		// A smoke ceiling. Walking every node of a thousand trees is real work;
 		// this is here to catch the regression that turns it into minutes.

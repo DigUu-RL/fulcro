@@ -1,8 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { validateSkills } from '../../tools/claude/validate-skills.mjs';
-
-import { discardTrees, tree } from './fixture.mjs';
+import { discardTrees, tree } from '@/tests/claude/fixture.mts';
+import { validateSkills } from '@/tools/claude/validate-skills.mts';
 
 /**
  * The structural validation of `.claude/skills`.
@@ -21,10 +20,11 @@ afterEach(discardTrees);
  * @param level Which half of the report to read.
  * @returns The rule identifiers, in the order they were reported.
  */
-const rules = (root: string, level: 'error' | 'warning' = 'error'): string[] =>
-	validateSkills(root)
+const rules = (root: string, level: 'error' | 'warning' = 'error'): string[] => {
+	return validateSkills(root)
 		.filter((finding) => finding.level === level)
 		.map((finding) => finding.rule);
+};
 
 const WELL_FORMED = [
 	'name: exports-audit',
@@ -43,15 +43,9 @@ describe('the frontmatter', () => {
 	it('refuses a key Claude Code does not read', () => {
 		const fixture = tree();
 
-		fixture.skill(
-			'exports-audit',
-			`${WELL_FORMED}\nauto-invoke: always\nmodel: opus`,
-		);
+		fixture.skill('exports-audit', `${WELL_FORMED}\nauto-invoke: always\nmodel: opus`);
 
-		expect(rules(fixture.root)).toEqual([
-			'frontmatter-unknown-key',
-			'frontmatter-unknown-key',
-		]);
+		expect(rules(fixture.root)).toEqual(['frontmatter-unknown-key', 'frontmatter-unknown-key']);
 	});
 
 	it('refuses a name that is not the directory, or not kebab case', () => {
@@ -69,10 +63,7 @@ describe('the frontmatter', () => {
 		const fixture = tree();
 
 		fixture.skill('exports-audit', WELL_FORMED);
-		fixture.write(
-			'.claude/skills/api-audit/SKILL.md',
-			`---\n${WELL_FORMED}\n---\n\n# api-audit\n`,
-		);
+		fixture.write('.claude/skills/api-audit/SKILL.md', `---\n${WELL_FORMED}\n---\n\n# api-audit\n`);
 
 		expect(rules(fixture.root)).toContain('name-duplicate');
 	});
@@ -94,19 +85,13 @@ describe('the frontmatter', () => {
 		fixture.write('.claude/skills/no-block/SKILL.md', '# no-block\n');
 		fixture.skill('nameless', 'description: Does a thing. Use when asked.');
 
-		expect(rules(fixture.root)).toEqual([
-			'name-missing',
-			'frontmatter-missing',
-		]);
+		expect(rules(fixture.root)).toEqual(['name-missing', 'frontmatter-missing']);
 	});
 
 	it('warns when a description never says when to use the skill', () => {
 		const fixture = tree();
 
-		fixture.skill(
-			'exports-audit',
-			'name: exports-audit\ndescription: Helps with API quality.',
-		);
+		fixture.skill('exports-audit', 'name: exports-audit\ndescription: Helps with API quality.');
 
 		expect(rules(fixture.root, 'warning')).toContain('description-trigger');
 	});
@@ -131,15 +116,13 @@ describe('the frontmatter', () => {
 			'exports-audit',
 			'name: exports-audit\ndescription: Audits the exports maps. Use when a surface changed: before a release.',
 		);
+
 		fixture.skill(
 			'entry-audit',
 			'name: entry-audit\ndescription: Counts the # of entry points. Use before a release.',
 		);
 
-		expect(rules(fixture.root)).toEqual([
-			'frontmatter-unreadable',
-			'frontmatter-unreadable',
-		]);
+		expect(rules(fixture.root)).toEqual(['frontmatter-unreadable', 'frontmatter-unreadable']);
 	});
 
 	it('accepts the quoting and the colons that are actually valid', () => {
@@ -161,10 +144,7 @@ describe('the frontmatter', () => {
 			`${WELL_FORMED}\ndisable-model-invocation: yes\ncontext: isolated`,
 		);
 
-		expect(rules(fixture.root)).toEqual([
-			'frontmatter-type',
-			'frontmatter-type',
-		]);
+		expect(rules(fixture.root)).toEqual(['frontmatter-type', 'frontmatter-type']);
 	});
 });
 
@@ -188,10 +168,7 @@ describe('what a skill names', () => {
 			'Read `criteria.md` and then [the notes](notes/ranking.md).\n',
 		);
 
-		expect(rules(fixture.root)).toEqual([
-			'reference-missing',
-			'reference-missing',
-		]);
+		expect(rules(fixture.root)).toEqual(['reference-missing', 'reference-missing']);
 	});
 
 	it('accepts one that is, beside the skill or anywhere in the repository', () => {
@@ -246,11 +223,7 @@ describe('what a skill names', () => {
 	it('refuses a subagent that is not declared', () => {
 		const fixture = tree();
 
-		fixture.skill(
-			'exports-audit',
-			WELL_FORMED,
-			'Delegate to `.claude/agents/api-reviewer.md`.\n',
-		);
+		fixture.skill('exports-audit', WELL_FORMED, 'Delegate to `.claude/agents/api-reviewer.md`.\n');
 
 		expect(rules(fixture.root)).toContain('agent-missing');
 	});
@@ -259,11 +232,7 @@ describe('what a skill names', () => {
 		const fixture = tree();
 
 		fixture.write('.claude/agents/api-reviewer.md', '# api-reviewer\n');
-		fixture.skill(
-			'exports-audit',
-			WELL_FORMED,
-			'Delegate to `.claude/agents/api-reviewer.md`.\n',
-		);
+		fixture.skill('exports-audit', WELL_FORMED, 'Delegate to `.claude/agents/api-reviewer.md`.\n');
 
 		expect(rules(fixture.root)).toEqual([]);
 	});
@@ -274,6 +243,7 @@ describe('path scoping', () => {
 		const fixture = tree();
 
 		fixture.write('packages/collections/package.json', '{}\n');
+
 		fixture.skill(
 			'exports-audit',
 			`${WELL_FORMED}\npaths: [packages/*/src/**, libraries/*/src/**]`,
@@ -292,10 +262,9 @@ describe('path scoping', () => {
 });
 
 describe('the operations a human keeps', () => {
-	const body = (fence: string): string =>
-		[`\`\`\`${fence}`, 'npm run build', 'git push origin dev', '```'].join(
-			'\n',
-		);
+	const body = (fence: string): string => {
+		return [`\`\`\`${fence}`, 'npm run build', 'git push origin dev', '```'].join('\n');
+	};
 
 	it('refuses a model-invocable skill that runs one', () => {
 		const fixture = tree();
@@ -308,11 +277,7 @@ describe('the operations a human keeps', () => {
 	it('accepts it once the skill has opted out of automatic invocation', () => {
 		const fixture = tree();
 
-		fixture.skill(
-			'exports-audit',
-			`${WELL_FORMED}\ndisable-model-invocation: true`,
-			body('sh'),
-		);
+		fixture.skill('exports-audit', `${WELL_FORMED}\ndisable-model-invocation: true`, body('sh'));
 
 		expect(rules(fixture.root)).toEqual([]);
 	});
@@ -330,19 +295,20 @@ describe('size', () => {
 	it('warns past the guidance and not before it', () => {
 		const fixture = tree();
 
-		fixture.skill('exports-audit', WELL_FORMED, `${'A line.\n'.repeat(400)}`);
+		fixture.skill('exports-audit', WELL_FORMED, 'A line.\n'.repeat(400));
 		expect(rules(fixture.root, 'warning')).not.toContain('size');
 
 		const long = tree();
 
-		long.skill('exports-audit', WELL_FORMED, `${'A line.\n'.repeat(600)}`);
+		long.skill('exports-audit', WELL_FORMED, 'A line.\n'.repeat(600));
 		expect(rules(long.root, 'warning')).toContain('size');
 	});
 });
 
 describe('the eval suites', () => {
-	const suite = (cases: unknown[]): string =>
-		`${JSON.stringify({ skill: 'exports-audit', cases }, null, '\t')}\n`;
+	const suite = (cases: unknown[]): string => {
+		return `${JSON.stringify({ skill: 'exports-audit', cases }, null, '\t')}\n`;
+	};
 
 	const complete = [
 		{
@@ -369,10 +335,7 @@ describe('the eval suites', () => {
 		const fixture = tree();
 
 		fixture.skill('exports-audit', WELL_FORMED);
-		fixture.write(
-			'tools/claude/skill-evals/exports-audit.eval.json',
-			suite(complete),
-		);
+		fixture.write('tools/claude/skill-evals/exports-audit.eval.json', suite(complete));
 
 		expect(rules(fixture.root)).toEqual([]);
 		expect(rules(fixture.root, 'warning')).toEqual([]);
@@ -387,25 +350,16 @@ describe('the eval suites', () => {
 		const partial = tree();
 
 		partial.skill('exports-audit', WELL_FORMED);
-		partial.write(
-			'tools/claude/skill-evals/exports-audit.eval.json',
-			suite(complete.slice(0, 1)),
-		);
+		partial.write('tools/claude/skill-evals/exports-audit.eval.json', suite(complete.slice(0, 1)));
 
-		expect(rules(partial.root, 'warning')).toEqual([
-			'eval-coverage',
-			'eval-coverage',
-		]);
+		expect(rules(partial.root, 'warning')).toEqual(['eval-coverage', 'eval-coverage']);
 	});
 
 	it('refuses a suite naming a skill that is not there, or a file named for another', () => {
 		const fixture = tree();
 
 		fixture.skill('exports-audit', WELL_FORMED);
-		fixture.write(
-			'tools/claude/skill-evals/api-audit.eval.json',
-			suite(complete),
-		);
+		fixture.write('tools/claude/skill-evals/api-audit.eval.json', suite(complete));
 
 		expect(rules(fixture.root)).toEqual(['eval-file-name']);
 
@@ -423,6 +377,7 @@ describe('the eval suites', () => {
 		const fixture = tree();
 
 		fixture.skill('exports-audit', WELL_FORMED);
+
 		fixture.write(
 			'tools/claude/skill-evals/exports-audit.eval.json',
 			suite([
@@ -464,10 +419,7 @@ describe('the eval suites', () => {
 		const fixture = tree();
 
 		fixture.skill('exports-audit', WELL_FORMED);
-		fixture.write(
-			'tools/claude/skill-evals/exports-audit.eval.json',
-			'nearly\n',
-		);
+		fixture.write('tools/claude/skill-evals/exports-audit.eval.json', 'nearly\n');
 
 		expect(rules(fixture.root)).toEqual(['eval-unreadable']);
 

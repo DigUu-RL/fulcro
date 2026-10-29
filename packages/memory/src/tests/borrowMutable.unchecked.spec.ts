@@ -1,13 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { asView } from '@/asView';
-import { borrow } from '@/borrow';
-import { borrowMutable } from '@/borrowMutable';
-import { createManagedStorage } from '@/managedStorage';
-import { own } from '@/own';
-import type { Owned } from '@/owned';
-
-import { coded } from './coded';
+import { asView } from '@/src/asView';
+import { borrow } from '@/src/borrow';
+import { borrowMutable } from '@/src/borrowMutable';
+import { createManagedStorage } from '@/src/managedStorage';
+import { own } from '@/src/own';
+import type { Owned } from '@/src/owned';
+import { coded } from '@/src/tests/coded';
 
 /**
  * Runtime refusals of an exclusive borrow: it ends as soon as its owner is
@@ -20,13 +19,14 @@ import { coded } from './coded';
  */
 
 /** The error an ended borrow throws, for an operation. */
-const ended = (operation: string): Error =>
-	coded(
+const ended = (operation: string): Error => {
+	return coded(
 		new Error(
 			`FULCRO7024: ${operation}: the borrow has ended — its owner was moved or disposed, or borrowed again in a way it cannot share; borrow again.`,
 		),
 		{ operation },
 	);
+};
 
 describe('borrowMutable, unchecked', () => {
 	it('should end the exclusive borrow before it', () => {
@@ -34,7 +34,10 @@ describe('borrowMutable, unchecked', () => {
 		const first = borrowMutable(owner);
 		const second = borrowMutable(owner);
 
-		expect(() => first.set(0, 1)).toThrow(ended('View.set'));
+		expect(() => {
+			first.set(0, 1);
+		}).toThrow(ended('View.set'));
+
 		expect(() => first.get(0)).toThrow(ended('View.get'));
 
 		second.set(0, 2);
@@ -48,7 +51,9 @@ describe('borrowMutable, unchecked', () => {
 
 		borrow(owner);
 
-		expect(() => writing.set(1, 1)).toThrow(ended('View.set'));
+		expect(() => {
+			writing.set(1, 1);
+		}).toThrow(ended('View.set'));
 	});
 
 	it('should end what was made from it as well', () => {
@@ -60,11 +65,15 @@ describe('borrowMutable, unchecked', () => {
 
 		borrowMutable(owner);
 
-		expect(() => subview.set(0, 1)).toThrow(ended('View.set'));
+		expect(() => {
+			subview.set(0, 1);
+		}).toThrow(ended('View.set'));
+
 		expect(() => readOnly.get(0)).toThrow(ended('ReadOnlyView.get'));
-		expect(() => viewed.set(0, 1)).toThrow(
-			expect.objectContaining({ code: 'FULCRO7024' }),
-		);
+
+		expect(() => {
+			viewed.set(0, 1);
+		}).toThrow(expect.objectContaining({ code: 'FULCRO7024' }));
 	});
 
 	it('should leave the values written before it ended in place', () => {
@@ -74,7 +83,10 @@ describe('borrowMutable, unchecked', () => {
 		writing.set(0, 9);
 		borrow(owner);
 
-		expect(() => writing.set(0, 1)).toThrow(ended('View.set'));
+		expect(() => {
+			writing.set(0, 1);
+		}).toThrow(ended('View.set'));
+
 		expect(borrow(owner).get(0)).toBe(9);
 	});
 });

@@ -1,7 +1,7 @@
 import { createError } from '@fulcro/errors';
 
-import type { Branded } from '@/brand';
-import type { NumericType } from '@/numericType';
+import type { Branded } from '@/src/brand';
+import type { NumericType } from '@/src/numericType';
 
 /**
  * An integer of any size.
@@ -81,14 +81,11 @@ export const BigInteger: NumericType<BigInteger, number | bigint | string> = {
 
 	is: (value: unknown): value is BigInteger => typeof value === 'bigint',
 
-	add: (left: BigInteger, right: BigInteger): BigInteger =>
-		(left + right) as BigInteger,
+	add: (left: BigInteger, right: BigInteger): BigInteger => (left + right) as BigInteger,
 
-	subtract: (left: BigInteger, right: BigInteger): BigInteger =>
-		(left - right) as BigInteger,
+	subtract: (left: BigInteger, right: BigInteger): BigInteger => (left - right) as BigInteger,
 
-	multiply: (left: BigInteger, right: BigInteger): BigInteger =>
-		(left * right) as BigInteger,
+	multiply: (left: BigInteger, right: BigInteger): BigInteger => (left * right) as BigInteger,
 
 	divide: (left: BigInteger, right: BigInteger): BigInteger => {
 		requireDivisor('divide', right);
@@ -106,14 +103,14 @@ export const BigInteger: NumericType<BigInteger, number | bigint | string> = {
 		if (exponent < 0n) {
 			throw createError('FULCRO6005', {
 				operation: 'BigInteger.power',
-				received: `${exponent}n`,
+				received: `${String(exponent)}n`,
 			});
 		}
 
 		return (base ** exponent) as BigInteger;
 	},
 
-	negate: (value: BigInteger): BigInteger => -value as BigInteger,
+	negate: (value: BigInteger): BigInteger => -(value as bigint) as BigInteger,
 
 	increment: (value: BigInteger): BigInteger => (value + 1n) as BigInteger,
 
@@ -121,9 +118,7 @@ export const BigInteger: NumericType<BigInteger, number | bigint | string> = {
 
 	equals: (left: BigInteger, right: BigInteger): boolean => left === right,
 	lessThan: (left: BigInteger, right: BigInteger): boolean => left < right,
-	lessThanOrEqual: (left: BigInteger, right: BigInteger): boolean =>
-		left <= right,
+	lessThanOrEqual: (left: BigInteger, right: BigInteger): boolean => left <= right,
 	greaterThan: (left: BigInteger, right: BigInteger): boolean => left > right,
-	greaterThanOrEqual: (left: BigInteger, right: BigInteger): boolean =>
-		left >= right,
+	greaterThanOrEqual: (left: BigInteger, right: BigInteger): boolean => left >= right,
 };

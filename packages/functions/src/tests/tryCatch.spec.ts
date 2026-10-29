@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { type Result } from '@/result';
-import { tryCatch } from '@/tryCatch';
+import { type Result } from '@/src/result';
+import { rejectedWith } from '@/src/tests/rejectedWith';
+import { tryCatch } from '@/src/tryCatch';
 
 describe('tryCatch', () => {
 	it('should report a produced value as a success', async () => {
@@ -27,45 +28,37 @@ describe('tryCatch', () => {
 		});
 
 		expect(result.value).toBeNull();
-		expect((result.error as Error).message).toBe(
-			'thrown before any promise existed',
-		);
+		expect((result.error as Error).message).toBe('thrown before any promise existed');
 	});
 
 	it('should run a callback that resolves asynchronously', async () => {
-		const result = await tryCatch(async () => 'value');
+		const result = await tryCatch(() => Promise.resolve('value'));
 
 		expect(result.error).toBeNull();
 		expect(result.value).toBe('value');
 	});
 
 	it('should keep a thrown non-error exactly as it was thrown', async () => {
-		const result: Result<number> = await tryCatch<number>(
-			Promise.reject('a bare string'),
-		);
+		const result: Result<number> = await tryCatch<number>(rejectedWith('a bare string'));
 
 		expect(result.value).toBeNull();
 		expect(result.error).toBe('a bare string');
 	});
 
-	it.each([null, undefined])(
-		'should keep %s from defeating the discriminant',
-		async (thrown) => {
-			// Storing a nullish throw as it came would make the failure read as
-			// a success, since `error === null` is what tells the two apart.
-			const result: Result<number> = await tryCatch<number>(
-				Promise.reject(thrown),
-			);
+	it.each([null, undefined])('should keep %s from defeating the discriminant', async (thrown) => {
+		// Storing a nullish throw as it came would make the failure read as
+		// a success, since `error === null` is what tells the two apart.
+		const result: Result<number> = await tryCatch<number>(rejectedWith(thrown));
 
-			expect(result.error).not.toBeNull();
-			expect(result.error).toBeInstanceOf(Error);
-			expect((result.error as Error).cause).toBe(thrown);
-			expect(result.error).toMatchObject({
-				code: 'FULCRO2001',
-				message: `FULCRO2001: Operation rejected with ${String(thrown)}`,
-			});
-		},
-	);
+		expect(result.error).not.toBeNull();
+		expect(result.error).toBeInstanceOf(Error);
+		expect((result.error as Error).cause).toBe(thrown);
+
+		expect(result.error).toMatchObject({
+			code: 'FULCRO2001',
+			message: `FULCRO2001: Operation rejected with ${String(thrown)}`,
+		});
+	});
 
 	it('should discriminate a falsy success from a failure', async () => {
 		// `if (result.value)` reports every one of these as a failure, which is
@@ -79,16 +72,13 @@ describe('tryCatch', () => {
 	});
 
 	it('should return a result that tells its variant by method', async () => {
-		const succeeded = await tryCatch(async () => 1);
-		const failed = await tryCatch(async () => {
-			throw new Error('x');
-		});
+		const succeeded = await tryCatch(() => Promise.resolve(1));
+
+		const failed = await tryCatch(() => Promise.reject(new Error('x')));
 
 		expect(succeeded.isSuccess()).toBe(true);
 		expect(failed.isFailure()).toBe(true);
-		expect(
-			failed.handle({ success: () => 'success', failure: () => 'failure' }),
-		).toBe('failure');
+		expect(failed.handle({ success: () => 'success', failure: () => 'failure' })).toBe('failure');
 	});
 
 	it('should narrow to the produced value once the error is ruled out', async () => {

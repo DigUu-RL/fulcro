@@ -1,4 +1,4 @@
-import { type CancellationToken, type TaskWork } from '@/@types/index.js';
+import { type CancellationToken, type TaskWork } from '@/src/@types/index.js';
 
 /**
  * Work the test finishes by hand.
@@ -56,11 +56,11 @@ export const controlledWork = <T>(
 	const work: TaskWork<T> = (token) => {
 		handedToken = token;
 
-		return new Promise<T>((resolve, reject) => {
+		// Settled once an outcome is known; the failure is then thrown as it came,
+		// which may be a cancellation reason of any kind.
+		const decided = new Promise<{ readonly value: T } | { readonly error: unknown }>((resolve) => {
 			settle = (): void => {
-				if (outcome === undefined) return;
-				if ('value' in outcome) resolve(outcome.value);
-				if ('error' in outcome) reject(outcome.error);
+				if (outcome !== undefined) resolve(outcome);
 			};
 
 			if (options.honoursCancellation !== false) {
@@ -72,17 +72,23 @@ export const controlledWork = <T>(
 
 			settle();
 		});
+
+		return decided.then((decision) => {
+			if ('error' in decision) throw decision.error;
+
+			return decision.value;
+		});
 	};
 
 	return {
 		work,
 		started: () => handedToken !== undefined,
 		token: () => handedToken,
-		succeed: (value) => {
+		succeed: (value): void => {
 			outcome ??= { value };
 			settle?.();
 		},
-		fail: (error) => {
+		fail: (error): void => {
 			outcome ??= { error };
 			settle?.();
 		},
@@ -97,7 +103,8 @@ export const controlledWork = <T>(
  *
  * @returns A promise settling on the next turn of the event loop.
  */
-export const flush = (): Promise<void> =>
-	new Promise<void>((resolve) => {
+export const flush = (): Promise<void> => {
+	return new Promise<void>((resolve) => {
 		setTimeout(resolve, 0);
 	});
+};

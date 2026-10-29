@@ -7,6 +7,7 @@ Shared machinery behind the Fulcro compile time transformers.
 a transformer will too. It is published
 because they depend on it, not because it is meant to be used directly, and its
 shape is theirs to change without notice.
+🇧🇷 [Leia a documentação em português](../../docs/pt-BR/README.md).
 
 If you are looking for the compiler plugin, it lives in the package whose calls
 it rewrites:
@@ -44,20 +45,32 @@ Everything with nothing to do with any particular utility:
 | `createTransformer`         | Walks a source file once and hands each call to the rewriter that claims it                                                            |
 | `FileAnalyzer`              | Checks a whole file as written, once, before any rewriter — for a rule no single call decides                                          |
 | `createFileTransformer`     | Builds and keeps a program, for the bundlers that have no checker                                                                      |
-| `createTransformerUnplugin` | The adapter surface Vite, Rollup, Webpack, Rspack, esbuild and Farm expect                                                             |
+| `createTransformerUnplugin` | The adapter surface Vite, Rollup, Webpack, Rspack, esbuild and Farm expect, from `./unplugin`                                          |
+| `buildStructuralTest`       | Writes out the shape test for a type the compiler can prove completely, or declines — what `ofType<T>()` and `as<T>()` receive         |
+| `isTupleType`               | Tells a tuple from a plain array, for every transformer that describes or fills one                                                    |
+| `utilityModuleSegment`      | The path segment a declaration has to sit under for a call to be claimed                                                               |
+| `IDENTIFIER_PATTERN`        | Which property names can be emitted unquoted                                                                                           |
+
+The types exported beside them — `CallRewriter`, `CallTarget`, `CallForm`,
+`RewriteContext`, `AnalysisContext`, `TransformerOptions`, `TransformerExtras`,
+`TransformerFactory`, `FileTransformer`, `TransformCoreOptions`, `TypeTest`,
+`StructuralOptions`, and `TransformerUnplugin` and `PluginOptions` from
+`./unplugin` — are what those functions take and return.
 
 What lives in each library instead is the part that knows what to **emit** — how
 `defaultOf` fills a tuple, how a type argument becomes a runtime test. That
 split is why a package can own its compile time behaviour without a second
 install, and why two of them can do so without knowing about each other.
 
-## TypeScript 5 and 6 only
+## TypeScript 5.9 and 6 only
 
 ```json
-{ "typescript": ">=5.3.3 <7" }
+{ "typescript": ">=5.9 <7" }
 ```
 
-7.x is the native port, and its package no longer exposes the compiler API this
+5.9 is where the compiler marks a type-only import through `phaseModifier`, which
+replaced the deprecated `isTypeOnly` the transformers used to read. 7.x is the
+native port, and its package no longer exposes the compiler API this
 is built on. Declared as an **optional** peer dependency, so that a project only
 using the runtime half of a library never has to install a compiler it is not
 going to run.

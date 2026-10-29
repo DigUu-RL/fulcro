@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { asView } from '@/asView';
-import type { View } from '@/view';
-
-import { countedArray, countedStorage } from './countedSource';
+import { asView } from '@/src/asView';
+import { countedArray, countedStorage } from '@/src/tests/countedSource';
+import type { View } from '@/src/view';
 
 /**
  * Performance suite for `asView`, and for the `View<T>` it returns.
@@ -63,8 +62,12 @@ describe('asView, counted', () => {
 		const { storage, counts } = countedStorage(VOLUME);
 		const view: View<number> = asView(storage, 0, 10);
 
-		expect(() => view.get(10)).toThrowError(RangeError);
-		expect(() => view.set(-1, 0)).toThrowError(RangeError);
+		expect(() => view.get(10)).toThrow(RangeError);
+
+		expect(() => {
+			view.set(-1, 0);
+		}).toThrow(RangeError);
+
 		expect(counts).toEqual({ reads: 0, writes: 0 });
 	});
 

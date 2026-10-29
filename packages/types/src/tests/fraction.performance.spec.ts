@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { BigInteger } from '@/bigInteger';
-import { Fraction } from '@/fraction';
+import { BigInteger } from '@/src/bigInteger';
+import { Fraction } from '@/src/fraction';
 
 /**
  * Performance suite for `Fraction`.
@@ -51,6 +51,7 @@ describe('Fraction', () => {
 	it('should grow its cost linearly with the index of the worst case', () => {
 		const Exact = Fraction(BigInteger);
 		const remainder = vi.spyOn(BigInteger, 'remainder');
+
 		const counts: number[] = [100, 200, 400].map((index) => {
 			const [smaller, larger] = fibonacci(index);
 
@@ -60,8 +61,10 @@ describe('Fraction', () => {
 			return remainder.mock.calls.length;
 		});
 
-		expect(counts[1] / counts[0]).toBeCloseTo(2, 0);
-		expect(counts[2] / counts[1]).toBeCloseTo(2, 0);
+		const [first, second, third] = counts as [number, number, number];
+
+		expect(second / first).toBeCloseTo(2, 0);
+		expect(third / second).toBeCloseTo(2, 0);
 	});
 
 	it('should skip the divisions when the fraction is already in lowest terms', () => {

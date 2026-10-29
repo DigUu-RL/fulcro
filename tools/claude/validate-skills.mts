@@ -20,10 +20,13 @@
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { review as destructive } from '../../.claude/hooks/block-destructive.mjs';
-import { review as protectedOperation } from '../../.claude/hooks/protect-publish.mjs';
+import { review as destructive } from '../../.claude/hooks/block-destructive.mts';
+import { review as protectedOperation } from '../../.claude/hooks/protect-publish.mts';
 
-import { error, report, warning } from './report.mjs';
+import { isList, isRecord } from './json.mts';
+import type { Finding } from './report.mts';
+import { error, report, warning } from './report.mts';
+import type { Evals, Skill } from './tree.mts';
 import {
 	agentsOf,
 	basenamesOf,
@@ -34,14 +37,14 @@ import {
 	repositoryRoot,
 	scriptsOf,
 	skillsOf,
-} from './tree.mjs';
+} from './tree.mts';
 
 /**
  * The frontmatter keys a skill may set.
  *
  * Seven come from the contract in `.claude/skills/skill-authoring/SKILL.md`;
- * `paths` is the path-scoping key that `.roadmap/features/F04-skill-eval-harness.md`
- * asks to be validated where it is used. A key outside this set is an error
+ * `paths` is the path-scoping key that F04's specification (issue #105) asks to
+ * be validated where it is used. A key outside this set is an error
  * rather than a warning because of how it fails: Claude Code ignores it in
  * silence, so the skill runs with whatever the missing key was meant to
  * prevent.
@@ -123,16 +126,7 @@ const BUNDLED = new Set([
  * describe rather than instruct, and reading those as instructions is how a
  * checker earns the reputation that gets it switched off.
  */
-const SHELLS = new Set([
-	'',
-	'sh',
-	'bash',
-	'shell',
-	'console',
-	'pwsh',
-	'powershell',
-	'zsh',
-]);
+const SHELLS = new Set(['', 'sh', 'bash', 'shell', 'console', 'pwsh', 'powershell', 'zsh']);
 
 /**
  * Extensions a reference has to carry to be checked as a path.
@@ -154,10 +148,10 @@ const EXTENSIONS = /\.(md|mjs|cjs|js|mts|cts|ts|tsx|json|jsonc|ya?ml|toml)$/;
  * command, a good-and-bad pair of descriptions, an invocation naming a skill
  * that does not exist yet and is the whole point of the example.
  *
- * @param {string} body The body of `SKILL.md`.
- * @returns {string} The prose that makes claims about this repository.
+ * @param body The body of `SKILL.md`.
+ * @returns The prose that makes claims about this repository.
  */
-export const claimingProse = (body) => {
+export const claimingProse = (body: string): string => {
 	const kept = [];
 
 	let fenced = false;
@@ -176,7 +170,7 @@ export const claimingProse = (body) => {
 		const heading = /^#{1,6}\s+(.*)$/.exec(line);
 
 		if (heading !== null) {
-			quoting = /examples?\b/i.test(heading[1]);
+			quoting = /examples?\b/i.test(heading[1] ?? '');
 			continue;
 		}
 
@@ -191,10 +185,10 @@ export const claimingProse = (body) => {
 /**
  * The fenced blocks holding commands, as lines.
  *
- * @param {string} body The body of `SKILL.md`.
- * @returns {string[]} One entry per line of every shell fence.
+ * @param body The body of `SKILL.md`.
+ * @returns One entry per line of every shell fence.
  */
-export const commandLines = (body) => {
+export const commandLines = (body: string): string[] => {
 	const lines = [];
 
 	let language = null;
@@ -203,7 +197,7 @@ export const commandLines = (body) => {
 		const fence = /^\s*```(\S*)/.exec(line);
 
 		if (fence !== null) {
-			language = language === null ? fence[1].toLowerCase() : null;
+			language = language === null ? (fence[1] ?? '').toLowerCase() : null;
 			continue;
 		}
 
@@ -220,13 +214,13 @@ export const commandLines = (body) => {
  *
  * Both spellings a skill uses: a Markdown link, and a path in backticks.
  *
- * @param {string} prose The prose to read.
- * @returns {string[]} The references, deduplicated.
+ * @param prose The prose to read.
+ * @returns The references, deduplicated.
  */
-export const referencesIn = (prose) => {
-	const found = new Set();
+export const referencesIn = (prose: string): string[] => {
+	const found = new Set<string>();
 
-	const consider = (candidate) => {
+	const consider = (candidate: string): void => {
 		const reference = candidate.trim();
 
 		if (reference === '') return;
@@ -238,15 +232,15 @@ export const referencesIn = (prose) => {
 		// kind of file, not a reference to one.
 		if (/^\.(d\.)?[a-z]+$/.test(reference)) return;
 
-		found.add(reference.split('#')[0]);
+		found.add(reference.split('#')[0] ?? '');
 	};
 
 	for (const match of prose.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)) {
-		consider(match[1]);
+		consider(match[1] ?? '');
 	}
 
 	for (const match of prose.matchAll(/`([^`\n]+)`/g)) {
-		consider(match[1]);
+		consider(match[1] ?? '');
 	}
 
 	return [...found];
@@ -260,12 +254,12 @@ export const referencesIn = (prose) => {
  * `CLAUDE.md`, all written that way in the prose that names them — is
  * answered by whether a file of that name exists anywhere in the repository.
  *
- * @param {string} reference The reference as written.
- * @param {string} directory The absolute path of the skill directory.
- * @param {string} root The repository root.
- * @returns {boolean} Whether something is there.
+ * @param reference The reference as written.
+ * @param directory The absolute path of the skill directory.
+ * @param root The repository root.
+ * @returns Whether something is there.
  */
-export const resolves = (reference, directory, root) => {
+export const resolves = (reference: string, directory: string, root: string): boolean => {
 	if (exists(path.join(directory, reference))) return true;
 	if (exists(path.join(root, reference))) return true;
 
@@ -275,18 +269,23 @@ export const resolves = (reference, directory, root) => {
 /**
  * The references of a document that point at nothing.
  *
- * Shared with `validate-claude-config.mjs`, because the contract and the rules
+ * Shared with `validate-claude-config.mts`, because the contract and the rules
  * name files the same way a skill does and a reference is broken for the same
  * reason in all three. What git deliberately keeps out of the checkout is not
  * one of them — see `ignoredIn`.
  *
- * @param {string} prose The prose that makes claims about this repository.
- * @param {string} directory The directory the document sits in.
- * @param {string} root The repository root.
- * @param {string} where The path as a report spells it.
- * @returns {import('./report.mjs').Finding[]} One finding per dangling name.
+ * @param prose The prose that makes claims about this repository.
+ * @param directory The directory the document sits in.
+ * @param root The repository root.
+ * @param where The path as a report spells it.
+ * @returns One finding per dangling name.
  */
-export const missingReferences = (prose, directory, root, where) => {
+export const missingReferences = (
+	prose: string,
+	directory: string,
+	root: string,
+	where: string,
+): Finding[] => {
 	const unresolved = referencesIn(prose).filter(
 		(reference) => !resolves(reference, directory, root),
 	);
@@ -295,31 +294,125 @@ export const missingReferences = (prose, directory, root, where) => {
 
 	return unresolved
 		.filter((reference) => !ignored.has(reference))
-		.map((reference) =>
-			error(
+		.map((reference) => {
+			return error(
 				'reference-missing',
 				where,
 				`Names \`${reference}\`, which is not in the repository.`,
+			);
+		});
+};
+
+/**
+ * Checks the name a skill declares, and claims it for that skill.
+ *
+ * @param name The `name` value, as read.
+ * @param skill The skill.
+ * @param where The path as a report spells it.
+ * @param names Names already taken, to the directory; gains this one when it
+ * is free.
+ * @returns What was found.
+ */
+const checkName = (
+	name: unknown,
+	skill: Skill,
+	where: string,
+	names: Map<string, string>,
+): Finding[] => {
+	if (typeof name !== 'string' || name === '') {
+		return [error('name-missing', where, '`name` is not set.')];
+	}
+
+	const findings = [];
+
+	if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(name)) {
+		findings.push(error('name-shape', `${where} (name)`, `\`${name}\` is not kebab case.`));
+	}
+
+	if (name !== skill.directory) {
+		findings.push(
+			error(
+				'name-directory',
+				`${where} (name)`,
+				`\`${name}\` does not match the directory \`${skill.directory}\`.`,
 			),
 		);
+	}
+
+	if (RESERVED.has(name)) {
+		findings.push(
+			error(
+				'name-reserved',
+				`${where} (name)`,
+				`\`${name}\` is a built-in Claude Code command; a skill with this name is never reached.`,
+			),
+		);
+	}
+
+	const owner: string | undefined = names.get(name);
+
+	if (owner !== undefined) {
+		findings.push(
+			error('name-duplicate', `${where} (name)`, `\`${name}\` is already used by \`${owner}\`.`),
+		);
+	}
+
+	// The first skill to claim a name keeps it, so every later one is reported
+	// against the same owner.
+	names.set(name, owner ?? skill.directory);
+
+	if (BUNDLED.has(name) && !/replac/i.test(skill.manifest ?? '')) {
+		findings.push(
+			warning(
+				'name-shadows-bundled',
+				`${where} (name)`,
+				`\`${name}\` is the name of a skill Claude Code ships; say in the file that replacing it is the point, or prefix the name.`,
+			),
+		);
+	}
+
+	return findings;
+};
+
+/**
+ * Checks the description a skill declares.
+ *
+ * @param description The `description` value, as read.
+ * @param where The path as a report spells it.
+ * @returns What was found.
+ */
+const checkDescription = (description: unknown, where: string): Finding[] => {
+	if (typeof description !== 'string' || description.trim() === '') {
+		return [error('description-missing', where, '`description` is not set.')];
+	}
+
+	if (!/\b(use|when|usar|quando)\b/i.test(description)) {
+		return [
+			warning(
+				'description-trigger',
+				`${where} (description)`,
+				'Says what the skill does but never when to use it, which is where triggering is won or lost.',
+			),
+		];
+	}
+
+	return [];
 };
 
 /**
  * Checks the frontmatter of one skill.
  *
- * @param {import('./tree.mjs').Skill} skill The skill.
- * @param {string} where The path as a report spells it.
- * @param {Map<string, string>} names Names already taken, to the directory.
- * @returns {import('./report.mjs').Finding[]} What was found.
+ * @param skill The skill.
+ * @param where The path as a report spells it.
+ * @param names Names already taken, to the directory.
+ * @returns What was found.
  */
-const checkFrontmatter = (skill, where, names) => {
+const checkFrontmatter = (skill: Skill, where: string, names: Map<string, string>): Finding[] => {
 	const findings = [];
 	const block = skill.frontmatter;
 
-	if (block === null || !block.present) {
-		return [
-			error('frontmatter-missing', where, 'There is no frontmatter block.'),
-		];
+	if (!block?.present) {
+		return [error('frontmatter-missing', where, 'There is no frontmatter block.')];
 	}
 
 	for (const problem of block.problems) {
@@ -338,99 +431,20 @@ const checkFrontmatter = (skill, where, names) => {
 		}
 	}
 
-	const name = block.values.name;
-
-	if (typeof name !== 'string' || name === '') {
-		findings.push(error('name-missing', where, '`name` is not set.'));
-	} else {
-		if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(name)) {
-			findings.push(
-				error(
-					'name-shape',
-					`${where} (name)`,
-					`\`${name}\` is not kebab case.`,
-				),
-			);
-		}
-
-		if (name !== skill.directory) {
-			findings.push(
-				error(
-					'name-directory',
-					`${where} (name)`,
-					`\`${name}\` does not match the directory \`${skill.directory}\`.`,
-				),
-			);
-		}
-
-		if (RESERVED.has(name)) {
-			findings.push(
-				error(
-					'name-reserved',
-					`${where} (name)`,
-					`\`${name}\` is a built-in Claude Code command; a skill with this name is never reached.`,
-				),
-			);
-		}
-
-		if (names.has(name)) {
-			findings.push(
-				error(
-					'name-duplicate',
-					`${where} (name)`,
-					`\`${name}\` is already used by \`${names.get(name)}\`.`,
-				),
-			);
-		} else {
-			names.set(name, skill.directory);
-		}
-
-		if (BUNDLED.has(name) && !/replac/i.test(skill.manifest ?? '')) {
-			findings.push(
-				warning(
-					'name-shadows-bundled',
-					`${where} (name)`,
-					`\`${name}\` is the name of a skill Claude Code ships; say in the file that replacing it is the point, or prefix the name.`,
-				),
-			);
-		}
-	}
-
-	const description = block.values.description;
-
-	if (typeof description !== 'string' || description.trim() === '') {
-		findings.push(
-			error('description-missing', where, '`description` is not set.'),
-		);
-	} else if (!/\b(use|when|usar|quando)\b/i.test(description)) {
-		findings.push(
-			warning(
-				'description-trigger',
-				`${where} (description)`,
-				'Says what the skill does but never when to use it, which is where triggering is won or lost.',
-			),
-		);
-	}
+	findings.push(
+		...checkName(block.values.name, skill, where, names),
+		...checkDescription(block.values.description, where),
+	);
 
 	for (const key of ['disable-model-invocation', 'user-invocable']) {
 		if (key in block.values && typeof block.values[key] !== 'boolean') {
-			findings.push(
-				error(
-					'frontmatter-type',
-					`${where} (${key})`,
-					'Takes `true` or `false`.',
-				),
-			);
+			findings.push(error('frontmatter-type', `${where} (${key})`, 'Takes `true` or `false`.'));
 		}
 	}
 
 	if ('context' in block.values && block.values.context !== 'fork') {
 		findings.push(
-			error(
-				'frontmatter-type',
-				`${where} (context)`,
-				'`fork` is the only value this key takes.',
-			),
+			error('frontmatter-type', `${where} (context)`, '`fork` is the only value this key takes.'),
 		);
 	}
 
@@ -444,17 +458,17 @@ const checkFrontmatter = (skill, where, names) => {
  * a directory that is not there scopes the skill to nothing, and does it
  * without a word.
  *
- * @param {import('./tree.mjs').Skill} skill The skill.
- * @param {string} where The path as a report spells it.
- * @param {string} root The repository root.
- * @returns {import('./report.mjs').Finding[]} What was found.
+ * @param skill The skill.
+ * @param where The path as a report spells it.
+ * @param root The repository root.
+ * @returns What was found.
  */
-const checkPaths = (skill, where, root) => {
+const checkPaths = (skill: Skill, where: string, root: string): Finding[] => {
 	const value = skill.frontmatter?.values.paths;
 
 	if (value === undefined) return [];
 
-	const globs = Array.isArray(value) ? value : [`${value}`];
+	const globs = Array.isArray(value) ? value : [String(value)];
 	const findings = [];
 
 	if (globs.length === 0) {
@@ -462,7 +476,7 @@ const checkPaths = (skill, where, root) => {
 	}
 
 	for (const glob of globs) {
-		const base = glob.split(/[*?[]/)[0].replace(/\/[^/]*$/, '');
+		const base = (glob.split(/[*?[]/)[0] ?? '').replace(/\/[^/]*$/, '');
 
 		if (base === '' || exists(path.join(root, base))) continue;
 
@@ -481,13 +495,18 @@ const checkPaths = (skill, where, root) => {
 /**
  * Checks what the body of one skill names.
  *
- * @param {import('./tree.mjs').Skill} skill The skill.
- * @param {string} where The path as a report spells it.
- * @param {string} root The repository root.
- * @param {{ scripts: Set<string>, agents: Set<string> }} available What exists.
- * @returns {import('./report.mjs').Finding[]} What was found.
+ * @param skill The skill.
+ * @param where The path as a report spells it.
+ * @param root The repository root.
+ * @param available What exists.
+ * @returns What was found.
  */
-const checkBody = (skill, where, root, available) => {
+const checkBody = (
+	skill: Skill,
+	where: string,
+	root: string,
+	available: { scripts: Set<string>; agents: Set<string> },
+): Finding[] => {
 	const findings = [];
 	const body = skill.frontmatter?.body ?? '';
 	const directory = path.join(root, '.claude', 'skills', skill.directory);
@@ -496,36 +515,34 @@ const checkBody = (skill, where, root, available) => {
 	findings.push(...missingReferences(prose, directory, root, where));
 
 	for (const match of body.matchAll(/npm run ([a-z][\w:-]*)/g)) {
-		if (available.scripts.has(match[1])) continue;
+		if (available.scripts.has(match[1] ?? '')) continue;
 
 		findings.push(
 			error(
 				'script-missing',
 				where,
-				`Names \`npm run ${match[1]}\`, which is not a script in \`package.json\`.`,
+				`Names \`npm run ${String(match[1])}\`, which is not a script in \`package.json\`.`,
 			),
 		);
 	}
 
 	for (const match of body.matchAll(/\.claude\/agents\/([\w-]+)\.md/g)) {
-		if (available.agents.has(match[1])) continue;
+		if (available.agents.has(match[1] ?? '')) continue;
 
 		findings.push(
 			error(
 				'agent-missing',
 				where,
-				`Delegates to the subagent \`${match[1]}\`, which is not declared under \`.claude/agents\`.`,
+				`Delegates to the subagent \`${String(match[1])}\`, which is not declared under \`.claude/agents\`.`,
 			),
 		);
 	}
 
-	const optedOut =
-		skill.frontmatter?.values['disable-model-invocation'] === true;
+	const optedOut = skill.frontmatter?.values['disable-model-invocation'] === true;
 
 	if (!optedOut) {
 		for (const line of commandLines(body)) {
-			const refused =
-				protectedOperation({ command: line }) ?? destructive({ command: line });
+			const refused = protectedOperation({ command: line }) ?? destructive({ command: line });
 
 			if (refused === null) continue;
 
@@ -544,7 +561,7 @@ const checkBody = (skill, where, root, available) => {
 			warning(
 				'size',
 				where,
-				`${skill.lines} lines; past about 500 the parts that matter are diluted by the parts that do not.`,
+				`${String(skill.lines)} lines; past about 500 the parts that matter are diluted by the parts that do not.`,
 			),
 		);
 	}
@@ -553,24 +570,90 @@ const checkBody = (skill, where, root, available) => {
 };
 
 /**
+ * Checks the `id` of one eval case, and claims it for the suite.
+ *
+ * @param id The `id` value, as read.
+ * @param ids The ids the suite has already used; gains this one when it is
+ * new.
+ * @param position The case as a report spells it.
+ * @returns What was found.
+ */
+const checkCaseId = (id: unknown, ids: Set<unknown>, position: string): Finding[] => {
+	if (typeof id !== 'string' || id === '') {
+		return [error('eval-case-id', position, '`id` is missing.')];
+	}
+
+	if (ids.has(id)) return [error('eval-case-id', position, `\`${id}\` is used twice.`)];
+
+	ids.add(id);
+
+	return [];
+};
+
+/**
+ * Checks the `kind` of one eval case, and counts it towards the suite's
+ * coverage.
+ *
+ * @param kind The `kind` value, as read.
+ * @param kinds The kinds the suite covers; gains this one when it is known.
+ * @param position The case as a report spells it.
+ * @returns What was found.
+ */
+const checkCaseKind = (kind: unknown, kinds: Set<string>, position: string): Finding[] => {
+	if (kind !== 'positive' && kind !== 'negative' && kind !== 'edge') {
+		return [
+			error('eval-case-kind', position, '`kind` is one of `positive`, `negative` or `edge`.'),
+		];
+	}
+
+	kinds.add(kind);
+
+	return [];
+};
+
+/**
+ * Checks that what a case expects to invoke agrees with its kind.
+ *
+ * @param invokes The `expect.invokes` value, as read.
+ * @param kind The `kind` value, as read.
+ * @param position The case as a report spells it.
+ * @returns What was found.
+ */
+const checkInvokes = (invokes: unknown, kind: unknown, position: string): Finding[] => {
+	if (typeof invokes !== 'boolean') {
+		return [error('eval-case-expect', position, '`expect.invokes` is `true` or `false`.')];
+	}
+
+	if (kind === 'positive' && !invokes) {
+		return [error('eval-case-expect', position, 'A positive case is one that invokes the skill.')];
+	}
+
+	if (kind === 'negative' && invokes) {
+		return [
+			error('eval-case-expect', position, 'A negative case is one that does not invoke the skill.'),
+		];
+	}
+
+	return [];
+};
+
+/**
  * Checks one eval suite, and reports the coverage it gives its skill.
  *
- * @param {import('./tree.mjs').Evals} suite The suite.
- * @param {Map<string, string>} known The skill names, to their directories.
- * @param {Map<string, Set<string>>} covered Filled in with the kinds covered.
- * @returns {import('./report.mjs').Finding[]} What was found.
+ * @param suite The suite.
+ * @param known The skill names, to their directories.
+ * @param covered Filled in with the kinds covered.
+ * @returns What was found.
  */
-const checkEvals = (suite, known, covered) => {
+const checkEvals = (
+	suite: Evals,
+	known: Map<string, string>,
+	covered: Map<string, Set<string>>,
+): Finding[] => {
 	const where = `tools/claude/skill-evals/${suite.file}`;
 
 	if (suite.problem !== null || suite.document === null) {
-		return [
-			error(
-				'eval-unreadable',
-				where,
-				`Not readable as JSON: ${suite.problem}.`,
-			),
-		];
+		return [error('eval-unreadable', where, `Not readable as JSON: ${String(suite.problem)}.`)];
 	}
 
 	const findings = [];
@@ -582,7 +665,7 @@ const checkEvals = (suite, known, covered) => {
 			error(
 				'eval-unknown-skill',
 				where,
-				`\`skill\` names \`${skill}\`, which is not a skill in \`.claude/skills\`.`,
+				`\`skill\` names \`${String(skill)}\`, which is not a skill in \`.claude/skills\`.`,
 			),
 		);
 	}
@@ -601,96 +684,52 @@ const checkEvals = (suite, known, covered) => {
 
 	const cases = document.cases;
 
-	if (!Array.isArray(cases) || cases.length === 0) {
+	if (!isList(cases) || cases.length === 0) {
 		findings.push(error('eval-empty', where, 'There are no cases.'));
 
 		return findings;
 	}
 
-	const ids = new Set();
-	const kinds = new Set();
+	const ids = new Set<unknown>();
+	const kinds = new Set<string>();
 
 	for (const [index, entry] of cases.entries()) {
-		const at = `${where} (case ${index + 1})`;
+		const position = `${where} (case ${String(index + 1)})`;
 
-		if (typeof entry !== 'object' || entry === null) {
-			findings.push(error('eval-case-shape', at, 'Not an object.'));
+		if (!isRecord(entry)) {
+			findings.push(error('eval-case-shape', position, 'Not an object.'));
 			continue;
 		}
 
-		const { id, kind, prompt, expect } =
-			/** @type {Record<string, unknown>} */ (entry);
+		const { id, kind, prompt, expect } = entry;
 
-		if (typeof id !== 'string' || id === '') {
-			findings.push(error('eval-case-id', at, '`id` is missing.'));
-		} else if (ids.has(id)) {
-			findings.push(error('eval-case-id', at, `\`${id}\` is used twice.`));
-		} else {
-			ids.add(id);
-		}
-
-		if (kind !== 'positive' && kind !== 'negative' && kind !== 'edge') {
-			findings.push(
-				error(
-					'eval-case-kind',
-					at,
-					'`kind` is one of `positive`, `negative` or `edge`.',
-				),
-			);
-		} else {
-			kinds.add(kind);
-		}
+		findings.push(...checkCaseId(id, ids, position), ...checkCaseKind(kind, kinds, position));
 
 		if (typeof prompt !== 'string' || prompt.trim() === '') {
-			findings.push(error('eval-case-prompt', at, '`prompt` is missing.'));
+			findings.push(error('eval-case-prompt', position, '`prompt` is missing.'));
 		}
 
-		if (typeof expect !== 'object' || expect === null) {
-			findings.push(error('eval-case-expect', at, '`expect` is missing.'));
+		if (!isRecord(expect)) {
+			findings.push(error('eval-case-expect', position, '`expect` is missing.'));
 			continue;
 		}
 
-		const expectation = /** @type {Record<string, unknown>} */ (expect);
+		const expectation = expect;
 
-		if (typeof expectation.invokes !== 'boolean') {
-			findings.push(
-				error('eval-case-expect', at, '`expect.invokes` is `true` or `false`.'),
-			);
-		} else if (kind === 'positive' && !expectation.invokes) {
-			findings.push(
-				error(
-					'eval-case-expect',
-					at,
-					'A positive case is one that invokes the skill.',
-				),
-			);
-		} else if (kind === 'negative' && expectation.invokes) {
-			findings.push(
-				error(
-					'eval-case-expect',
-					at,
-					'A negative case is one that does not invoke the skill.',
-				),
-			);
-		}
+		findings.push(...checkInvokes(expectation.invokes, kind, position));
 
-		if (
-			expectation.invokes === true &&
-			typeof expectation.output !== 'string'
-		) {
+		if (expectation.invokes === true && typeof expectation.output !== 'string') {
 			findings.push(
 				error(
 					'eval-case-expect',
-					at,
+					position,
 					'`expect.output` says what shape the run has to produce; a case that cannot be judged is not a case.',
 				),
 			);
 		}
 
 		if ('refuses' in expectation && typeof expectation.refuses !== 'string') {
-			findings.push(
-				error('eval-case-expect', at, '`expect.refuses` is a sentence.'),
-			);
+			findings.push(error('eval-case-expect', position, '`expect.refuses` is a sentence.'));
 		}
 	}
 
@@ -702,14 +741,14 @@ const checkEvals = (suite, known, covered) => {
 /**
  * Validates the whole skill tree.
  *
- * @param {string} [root] The repository root.
- * @returns {import('./report.mjs').Finding[]} Everything found.
+ * @param [root] The repository root.
+ * @returns Everything found.
  */
-export const validateSkills = (root = repositoryRoot) => {
+export const validateSkills = (root: string = repositoryRoot): Finding[] => {
 	const findings = [];
 	const skills = skillsOf(root);
 	const available = { scripts: scriptsOf(root), agents: agentsOf(root) };
-	const names = new Map();
+	const names = new Map<string, string>();
 
 	for (const skill of skills) {
 		const where = displayed(root, skill.path);
@@ -731,8 +770,7 @@ export const validateSkills = (root = repositoryRoot) => {
 		findings.push(...checkBody(skill, where, root, available));
 	}
 
-	/** @type {Map<string, Set<string>>} */
-	const covered = new Map();
+	const covered = new Map<string, Set<string>>();
 
 	for (const suite of evalsOf(root)) {
 		findings.push(...checkEvals(suite, names, covered));
@@ -771,10 +809,7 @@ export const validateSkills = (root = repositoryRoot) => {
 };
 
 // Run from the command line, imported by its tests.
-if (
-	process.argv[1] !== undefined &&
-	import.meta.url === pathToFileURL(process.argv[1]).href
-) {
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
 	const strict = process.argv.includes('--strict');
 
 	process.exitCode = report('Skills', validateSkills(), { strict });

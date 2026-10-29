@@ -64,10 +64,17 @@ export interface RunOptions {
 	 * read it. For large binary payloads that is the difference between
 	 * worthwhile and not.
 	 *
+	 * Typed as objects rather than as the browser's `Transferable`, which a
+	 * project without the DOM library cannot name. The browser and Node each
+	 * transfer their own list of types, and neither list exists in the other's
+	 * declarations; the platform's `postMessage` refuses what it cannot
+	 * transfer, as it did when the type claimed what only the browser accepts.
+	 *
 	 * @param value Element about to be sent.
-	 * @returns The buffers to transfer along with it.
+	 * @returns The buffers, or other transferable objects, to transfer along
+	 * with it.
 	 */
-	readonly transfer?: (value: unknown) => readonly Transferable[];
+	readonly transfer?: (value: unknown) => readonly object[];
 }
 
 /** A worker as the pool needs to see it, whatever runtime it came from. */
@@ -78,7 +85,7 @@ export interface WorkerHandle {
 	 * @param message Message to send.
 	 * @param transfer Values whose ownership moves rather than being copied.
 	 */
-	readonly post: (message: unknown, transfer?: readonly Transferable[]) => void;
+	readonly post: (message: unknown, transfer?: readonly object[]) => void;
 
 	/**
 	 * Registers what to do with what comes back.
@@ -92,9 +99,7 @@ export interface WorkerHandle {
 	 * itself.
 	 * @returns A function removing the handler.
 	 */
-	readonly listen: (
-		handler: (message: unknown, failure?: unknown) => void,
-	) => () => void;
+	readonly listen: (handler: (message: unknown, failure?: unknown) => void) => () => void;
 
 	/** Stops the worker, discarding whatever it was doing. */
 	readonly terminate: () => Promise<void>;
@@ -165,10 +170,7 @@ export interface WorkerPool<T, R> extends AsyncDisposable {
 	 * @returns The results, in completion order. Reading them rejects with
 	 * FULCRO3010 once the pool is closed.
 	 */
-	readonly stream: (
-		items: Iterable<T>,
-		options?: RunOptions,
-	) => AsyncIterable<R>;
+	readonly stream: (items: Iterable<T>, options?: RunOptions) => AsyncIterable<R>;
 
 	/**
 	 * Stops every worker.
@@ -316,7 +318,7 @@ export interface Task<T> extends PromiseLike<T> {
 	 * with what the work threw — or with the reason, when the task was called
 	 * off.
 	 */
-	readonly settled: Promise<Result<T, unknown>>;
+	readonly settled: Promise<Result<T>>;
 
 	/** Says when this task has been called off, by itself or by its scope. */
 	readonly token: CancellationToken;

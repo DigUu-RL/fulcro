@@ -1,6 +1,6 @@
 import { createError } from '@fulcro/errors';
 
-import { SpawnWorker, WorkerHandle } from '@/@types/index.js';
+import type { SpawnWorker, WorkerHandle } from '@/src/@types/index.js';
 
 /**
  * Starts workers with the platform `Worker`.
@@ -20,7 +20,9 @@ export const spawnWorker: SpawnWorker = (url: URL): WorkerHandle => {
 	const worker = new Worker(url, { type: 'module' });
 
 	return {
-		post: (message: unknown, transfer?: readonly Transferable[]): void => {
+		post: (message: unknown, transfer?: readonly object[]): void => {
+			// The pool takes any object to transfer; this platform's own list is
+			// what `postMessage` checks it against.
 			worker.postMessage(message, (transfer ?? []) as Transferable[]);
 		},
 
@@ -42,10 +44,7 @@ export const spawnWorker: SpawnWorker = (url: URL): WorkerHandle => {
 			// A message the structured clone algorithm could not carry. Silent
 			// otherwise, and it would leave a run waiting forever.
 			const onMessageError = (): void => {
-				handler(
-					undefined,
-					createError('FULCRO3009', { operation: 'spawnWorker' }),
-				);
+				handler(undefined, createError('FULCRO3009', { operation: 'spawnWorker' }));
 			};
 
 			worker.addEventListener('message', onMessage);
@@ -59,8 +58,10 @@ export const spawnWorker: SpawnWorker = (url: URL): WorkerHandle => {
 			};
 		},
 
-		terminate: async (): Promise<void> => {
+		terminate: (): Promise<void> => {
 			worker.terminate();
+
+			return Promise.resolve();
 		},
 	};
 };

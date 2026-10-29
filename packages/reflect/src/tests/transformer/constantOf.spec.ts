@@ -1,10 +1,11 @@
 import * as path from 'node:path';
+import { runInThisContext } from 'node:vm';
 
-import * as ts from 'typescript';
-import { beforeAll, describe, expect, it } from 'vitest';
+import * as typescript from 'typescript';
+import { assert, beforeAll, describe, expect, it } from 'vitest';
 
-import { constantOf } from '@/functions/utils/constantOf';
-import transformer from '@/transformer';
+import { constantOf } from '@/src/functions/utils/constantOf';
+import transformer from '@/src/transformer';
 
 /**
  * Transformer suite for `constantOf`.
@@ -20,10 +21,10 @@ import transformer from '@/transformer';
 const PROJECT_ROOT = path.resolve(__dirname, '../../..');
 
 /** Options every fixture compiles with. */
-const COMPILER_OPTIONS: ts.CompilerOptions = {
-	target: ts.ScriptTarget.ES2022,
-	module: ts.ModuleKind.ESNext,
-	moduleResolution: ts.ModuleResolutionKind.Node10,
+const COMPILER_OPTIONS: typescript.CompilerOptions = {
+	target: typescript.ScriptTarget.ES2022,
+	module: typescript.ModuleKind.ESNext,
+	moduleResolution: typescript.ModuleResolutionKind.Node10,
 	strict: true,
 	noEmitOnError: false,
 	skipLibCheck: true,
@@ -32,7 +33,7 @@ const COMPILER_OPTIONS: ts.CompilerOptions = {
 /** What compiling one fixture produced. */
 interface Compiled {
 	readonly emitted: string;
-	readonly refused: readonly ts.Diagnostic[];
+	readonly refused: readonly typescript.Diagnostic[];
 }
 
 /**
@@ -44,13 +45,15 @@ interface Compiled {
  */
 const compile = (fileName: string): Compiled => {
 	const fixture: string = path.resolve(__dirname, fileName);
-	const program: ts.Program = ts.createProgram([fixture], COMPILER_OPTIONS);
-	const refused: ts.Diagnostic[] = [];
+	const program: typescript.Program = typescript.createProgram([fixture], COMPILER_OPTIONS);
+	const refused: typescript.Diagnostic[] = [];
+
 	const transform = transformer(
 		program,
 		{ projectRoot: PROJECT_ROOT },
 		{ addDiagnostic: (diagnostic) => refused.push(diagnostic) },
 	);
+
 	let emitted = '';
 
 	program.emit(
@@ -84,13 +87,17 @@ beforeAll(() => {
  * @returns The value the expression produces.
  */
 const evaluate = (binding: string): unknown => {
-	const match: RegExpMatchArray | null = accepted.emitted.match(
-		new RegExp(`export const ${binding} = (.*);\\r?\\n`),
+	const match: RegExpMatchArray | null = new RegExp(`export const ${binding} = (.*);\\r?\\n`).exec(
+		accepted.emitted,
 	);
 
 	if (match === null) throw new Error(`${binding} was not emitted`);
 
-	return new Function(`return ${match[1]};`)();
+	// Evaluated in this realm, so what it builds has the prototypes the
+	// assertions compare against.
+	const value: unknown = runInThisContext(`(${String(match[1])})`);
+
+	return value;
 };
 
 /**
@@ -99,10 +106,13 @@ const evaluate = (binding: string): unknown => {
  * @param value Value to inspect.
  * @returns `true` when nothing in it can be changed.
  */
-const deeplyFrozen = (value: unknown): boolean =>
-	typeof value !== 'object' ||
-	value === null ||
-	(Object.isFrozen(value) && Object.values(value).every(deeplyFrozen));
+const deeplyFrozen = (value: unknown): boolean => {
+	return (
+		typeof value !== 'object' ||
+		value === null ||
+		(Object.isFrozen(value) && Object.values(value).every(deeplyFrozen))
+	);
+};
 
 /**
  * The line of the fixture a diagnostic points at, trimmed.
@@ -110,11 +120,14 @@ const deeplyFrozen = (value: unknown): boolean =>
  * @param diagnostic The diagnostic.
  * @returns The source line.
  */
-const lineOf = (diagnostic: ts.Diagnostic): string => {
-	const file = diagnostic.file as ts.SourceFile;
+const lineOf = (diagnostic: typescript.Diagnostic): string => {
+	const file: typescript.SourceFile | undefined = diagnostic.file;
+
+	assert.isDefined(file);
+
 	const { line } = file.getLineAndCharacterOfPosition(diagnostic.start ?? 0);
 
-	return file.text.split(/\r?\n/)[line].trim();
+	return (file.text.split(/\r?\n/)[line] ?? '').trim();
 };
 
 /**
@@ -124,28 +137,26 @@ const lineOf = (diagnostic: ts.Diagnostic): string => {
  * @returns The message.
  */
 const refusalOf = (binding: string): string => {
+	const file: typescript.SourceFile | undefined = rejected.refused[0]?.file;
+
 	const declaration: number =
-		rejected.refused.length === 0
-			? -1
-			: (rejected.refused[0].file as ts.SourceFile).text.indexOf(
-					`export const ${binding} =`,
-				);
-	const found: ts.Diagnostic | undefined = rejected.refused.find(
-		(diagnostic) =>
+		file === undefined ? -1 : file.text.indexOf(`export const ${binding} =`);
+
+	const found: typescript.Diagnostic | undefined = rejected.refused.find((diagnostic) => {
+		return (
 			declaration >= 0 &&
 			(diagnostic.start ?? 0) > declaration &&
 			// The first refusal after the declaration is its own: every binding
 			// of the fixture declares exactly one call.
 			!rejected.refused.some(
-				(other) =>
-					(other.start ?? 0) > declaration &&
-					(other.start ?? 0) < (diagnostic.start ?? 0),
-			),
-	);
+				(other) => (other.start ?? 0) > declaration && (other.start ?? 0) < (diagnostic.start ?? 0),
+			)
+		);
+	});
 
 	if (found === undefined) throw new Error(`${binding} was not refused`);
 
-	return String(found.messageText);
+	return typescript.flattenDiagnosticMessageText(found.messageText, '\n');
 };
 
 describe('constantOf at compile time', () => {
@@ -186,25 +197,13 @@ describe('constantOf at compile time', () => {
 			expect(special[0]).toBeNaN();
 			expect(special.slice(1, 3)).toEqual([Infinity, -Infinity]);
 			expect(Object.is(special[3], -0)).toBe(true);
-			expect(special.slice(4)).toEqual([
-				2n ** 70n,
-				-5n,
-				undefined,
-				null,
-				true,
-				'text',
-			]);
+			expect(special.slice(4)).toEqual([2n ** 70n, -5n, undefined, null, true, 'text']);
 		});
 
 		it('should keep keys that cannot be written bare, __proto__ included, as fields', () => {
 			const record = evaluate('record') as Record<string, unknown>;
 
-			expect(Object.keys(record)).toEqual([
-				'name',
-				'two words',
-				'__proto__',
-				'nested',
-			]);
+			expect(Object.keys(record)).toEqual(['name', 'two words', '__proto__', 'nested']);
 			expect(Object.getPrototypeOf(record)).toBe(Object.prototype);
 			expect(record.nested).toEqual({ list: [1, { deep: true }] });
 		});
@@ -236,13 +235,16 @@ describe('constantOf at compile time', () => {
 	describe('what it refuses', () => {
 		it('should refuse every call of the fixture, and write none of them', () => {
 			expect(rejected.refused).toHaveLength(10);
+
 			expect(
-				rejected.refused.every(
-					(diagnostic) =>
-						diagnostic.category === ts.DiagnosticCategory.Error &&
-						diagnostic.source === 'fulcro',
-				),
+				rejected.refused.every((diagnostic) => {
+					return (
+						diagnostic.category === typescript.DiagnosticCategory.Error &&
+						diagnostic.source === 'fulcro'
+					);
+				}),
 			).toBe(true);
+
 			expect(rejected.emitted.match(/constantOf\(/g)).toHaveLength(10);
 		});
 
@@ -311,31 +313,26 @@ describe('constantOf at compile time', () => {
 		});
 
 		it('should throw every refusal of a file at once without a place to report them', () => {
-			const fixture: string = path.resolve(
-				__dirname,
-				'constantOf.rejected.fixture.ts',
-			);
-			const program: ts.Program = ts.createProgram([fixture], COMPILER_OPTIONS);
+			const fixture: string = path.resolve(__dirname, 'constantOf.rejected.fixture.ts');
+			const program: typescript.Program = typescript.createProgram([fixture], COMPILER_OPTIONS);
 			const transform = transformer(program, { projectRoot: PROJECT_ROOT });
 
 			let thrown: unknown;
 
 			try {
-				program.emit(
-					program.getSourceFile(fixture),
-					() => undefined,
-					undefined,
-					false,
-					{ before: [transform] },
-				);
+				program.emit(program.getSourceFile(fixture), () => undefined, undefined, false, {
+					before: [transform],
+				});
 			} catch (error) {
 				thrown = error;
 			}
 
 			expect(thrown).toBeInstanceOf(Error);
+
 			expect((thrown as Error).message).toMatch(
 				/^FULCRO5003: The Fulcro transformer refused calls it could not answer at compile time:\n/,
 			);
+
 			expect((thrown as Error).message.match(/FULCRO401\d/g)).toHaveLength(10);
 		});
 	});
@@ -346,9 +343,11 @@ describe('constantOf at compile time', () => {
 		it('should stop a function that never returns, and refuse it', () => {
 			const { refused } = compile('constantOf.timeout.fixture.ts');
 
-			expect(
-				refused.map((diagnostic) => String(diagnostic.messageText)),
-			).toEqual([
+			const messages: string[] = refused.map((diagnostic) => {
+				return typescript.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
+			});
+
+			expect(messages).toEqual([
 				'FULCRO4013: constantOf(…) did not finish within 5000 ms at compile time.',
 			]);
 		}, 60_000);

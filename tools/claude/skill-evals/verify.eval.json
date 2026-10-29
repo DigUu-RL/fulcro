@@ -95,7 +95,7 @@
 			"why": "A package missing from vitest.config.mts has no suites to fail, so a narrow run reports a clean pass over code nothing executed.",
 			"expect": {
 				"invokes": true,
-				"output": "The four wiring checks read before anything is run — the project registered in vitest.config.mts, rootDir/outDir pointing at src and dist, the exports map covered by tests/entrypoints.spec.mts, a changeset for the first version — then the full pass, with any missing wiring reported as a failure.",
+				"output": "The four wiring checks read before anything is run — the project registered in vitest.config.mts, tsdown building src into dist, the exports map covered by tests/entrypoints.spec.mts, a changeset for the first version — then the full pass, with any missing wiring reported as a failure.",
 				"refuses": "Reporting PASS when the new package has no Vitest project and therefore ran no suites."
 			}
 		},

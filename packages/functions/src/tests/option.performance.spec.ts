@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { none, type Option, optionOf, some } from '@/option';
+import { none, type Option, optionOf, some } from '@/src/option';
 
 /**
  * Performance suite.
@@ -16,10 +16,9 @@ import { none, type Option, optionOf, some } from '@/option';
 const OPTIONS = 10_000;
 
 /** Options alternating between present and absent, through `optionOf`. */
-const mixed = (): Option<number>[] =>
-	[...Array(OPTIONS).keys()].map((index) =>
-		optionOf(index % 2 === 0 ? index : null),
-	);
+const mixed = (): Option<number>[] => {
+	return [...Array(OPTIONS).keys()].map((index) => optionOf(index % 2 === 0 ? index : null));
+};
 
 describe('Option', () => {
 	it('should allocate nothing for an absent value', () => {
@@ -36,18 +35,14 @@ describe('Option', () => {
 
 	it('should share one prototype per variant, however many options exist', () => {
 		const prototypes = new Set(
-			[...mixed(), some(null)].map(
-				(option) => Object.getPrototypeOf(option) as object,
-			),
+			[...mixed(), some(null)].map((option) => Object.getPrototypeOf(option) as object),
 		);
 
 		expect(prototypes.size).toBe(2);
 	});
 
 	it('should carry one own property, and no methods', () => {
-		const counts = new Set(
-			mixed().map((option) => Reflect.ownKeys(option).length),
-		);
+		const counts = new Set(mixed().map((option) => Reflect.ownKeys(option).length));
 
 		expect([...counts]).toEqual([1]);
 	});

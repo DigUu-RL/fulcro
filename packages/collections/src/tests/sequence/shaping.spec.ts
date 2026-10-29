@@ -1,6 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { SequenceCollection } from '@/collections/sequence';
+import { SequenceCollection } from '@/src/collections/sequence';
+import type { TypeTest } from '@/src/@types';
+import type { Sequence } from '@/src/@types/collections/sequence';
 
 /**
  * Behaviour suite for the operators that shape a sequence rather than reduce
@@ -32,14 +34,14 @@ interface Player {
  * @param distinctScores How many different scores to spread them across.
  * @returns The players, in a fixed order.
  */
-const playersWithTies = (
-	count: number,
-	distinctScores: number,
-): readonly Player[] =>
-	Array.from({ length: count }, (_, index) => ({
-		name: `player-${index}`,
-		score: index % distinctScores,
-	}));
+const playersWithTies = (count: number, distinctScores: number): readonly Player[] => {
+	return Array.from({ length: count }, (_, index) => {
+		return {
+			name: `player-${String(index)}`,
+			score: index % distinctScores,
+		};
+	});
+};
 
 describe('choose', () => {
 	it('should keep what the projection produced and drop what it did not', () => {
@@ -94,13 +96,8 @@ describe('ofType', () => {
 	it('should keep only the elements of a primitive type', () => {
 		const mixed: (string | number | null)[] = ['a', 1, null, 'b', 2];
 
-		expect(SequenceCollection.from(mixed).ofType('string').toArray()).toEqual([
-			'a',
-			'b',
-		]);
-		expect(SequenceCollection.from(mixed).ofType('number').toArray()).toEqual([
-			1, 2,
-		]);
+		expect(SequenceCollection.from(mixed).ofType('string').toArray()).toEqual(['a', 'b']);
+		expect(SequenceCollection.from(mixed).ofType('number').toArray()).toEqual([1, 2]);
 	});
 
 	it('should not accept null as an object', () => {
@@ -126,14 +123,14 @@ describe('ofType', () => {
 	});
 
 	it('should recognise a subclass as an instance of its base', () => {
-		class Base {}
+		class Base {
+			readonly tier: string = 'base';
+		}
 		class Derived extends Base {}
 
 		const values: unknown[] = [new Derived(), new Base(), 'neither'];
 
-		expect(SequenceCollection.from(values).ofType(Base).toArray()).toHaveLength(
-			2,
-		);
+		expect(SequenceCollection.from(values).ofType(Base).toArray()).toHaveLength(2);
 	});
 
 	it('should narrow the element type it hands back', () => {
@@ -150,6 +147,7 @@ describe('ofType', () => {
 
 	it('should stay deferred until something reads it', () => {
 		let pulled = 0;
+
 		const source = {
 			*[Symbol.iterator](): Iterator<unknown> {
 				for (const value of ['a', 1]) {
@@ -179,9 +177,7 @@ describe('cast', () => {
 	it('should throw on the first element of another type', () => {
 		const values: unknown[] = ['a', 'b', 7, 'c'];
 
-		expect(() =>
-			SequenceCollection.from(values).cast('string').toArray(),
-		).toThrow(TypeError);
+		expect(() => SequenceCollection.from(values).cast('string').toArray()).toThrow(TypeError);
 	});
 
 	it('should say what it found and where', () => {
@@ -189,9 +185,9 @@ describe('cast', () => {
 		// with one bad element is only actionable if the error points at it.
 		const values: unknown[] = ['a', 'b', 7];
 
-		expect(() =>
-			SequenceCollection.from(values).cast('string').toArray(),
-		).toThrow(/cast\('string'\) found a number at index 2\./);
+		expect(() => SequenceCollection.from(values).cast('string').toArray()).toThrow(
+			/cast\('string'\) found a number at index 2\./,
+		);
 	});
 
 	it('should name the class of what it found', () => {
@@ -205,9 +201,9 @@ describe('cast', () => {
 	it('should describe null rather than calling it an object', () => {
 		const values: unknown[] = [{ a: 1 }, null];
 
-		expect(() =>
-			SequenceCollection.from(values).cast('object').toArray(),
-		).toThrow(/found a null at index 1/);
+		expect(() => SequenceCollection.from(values).cast('object').toArray()).toThrow(
+			/found a null at index 1/,
+		);
 	});
 
 	it('should accept instances of a class', () => {
@@ -229,13 +225,8 @@ describe('cast', () => {
 		// the only difference is what happens to the element that does not fit.
 		const values: unknown[] = ['a', 7, 'b'];
 
-		expect(SequenceCollection.from(values).ofType('string').toArray()).toEqual([
-			'a',
-			'b',
-		]);
-		expect(() =>
-			SequenceCollection.from(values).cast('string').toArray(),
-		).toThrow(TypeError);
+		expect(SequenceCollection.from(values).ofType('string').toArray()).toEqual(['a', 'b']);
+		expect(() => SequenceCollection.from(values).cast('string').toArray()).toThrow(TypeError);
 	});
 
 	it('should not throw before the bad element is reached', () => {
@@ -302,10 +293,8 @@ describe('ofType and cast, written as a type', () => {
 		const strings: unknown[] = ['a', 'b'];
 		const admins: unknown[] = [new Admin('root')];
 
-		expect(SequenceCollection.from(strings).cast<string>().toArray()).toEqual([
-			'a',
-			'b',
-		]);
+		expect(SequenceCollection.from(strings).cast<string>().toArray()).toEqual(['a', 'b']);
+
 		expect(
 			SequenceCollection.from(admins)
 				.cast<Admin>()
@@ -327,9 +316,7 @@ describe('ofType and cast, written as a type', () => {
 	});
 
 	it('should refuse an index signature', () => {
-		interface Settings {
-			readonly [key: string]: string;
-		}
+		type Settings = Readonly<Record<string, string>>;
 
 		// Arbitrary keys leave no fixed set of properties to check, and a check
 		// over no properties would accept any object at all.
@@ -343,11 +330,10 @@ describe('ofType and cast, written as a type', () => {
 	it('should refuse before reading anything', () => {
 		// A wiring error, not a data error: there is nothing to gain by letting
 		// the chain be built and failing on the first read instead.
-		interface Settings {
-			readonly [key: string]: string;
-		}
+		type Settings = Readonly<Record<string, string>>;
 
 		let pulled = 0;
+
 		const source = {
 			*[Symbol.iterator](): Iterator<unknown> {
 				pulled++;
@@ -385,8 +371,9 @@ describe('a type that contains itself', () => {
 	 * @param value Value being tested.
 	 * @returns Whether the check kept it.
 	 */
-	const accepts = (value: unknown): boolean =>
-		SequenceCollection.from([value]).ofType<Comment>().count() === 1;
+	const accepts = (value: unknown): boolean => {
+		return SequenceCollection.from([value]).ofType<Comment>().count() === 1;
+	};
 
 	it('should accept a tree that is valid all the way down', () => {
 		expect(
@@ -413,18 +400,13 @@ describe('a type that contains itself', () => {
 	// after the first level would pass every test above while being worthless,
 	// so each of these is wrong only at a depth the check has to reach.
 	it.each([
-		[
-			'one level down',
-			{ id: 1, text: 'a', replies: [{ id: 'wrong', text: 'b', replies: [] }] },
-		],
+		['one level down', { id: 1, text: 'a', replies: [{ id: 'wrong', text: 'b', replies: [] }] }],
 		[
 			'two levels down',
 			{
 				id: 1,
 				text: 'a',
-				replies: [
-					{ id: 2, text: 'b', replies: [{ id: 3, text: 4, replies: [] }] },
-				],
+				replies: [{ id: 2, text: 'b', replies: [{ id: 3, text: 4, replies: [] }] }],
 			},
 		],
 		[
@@ -469,8 +451,9 @@ describe('a type that contains itself', () => {
 			posts: [{ title: 'a post', author: { name: 7, posts: [] } }],
 		};
 
-		const kept = (value: unknown): number =>
-			SequenceCollection.from([value]).ofType<Author>().count();
+		const kept = (value: unknown): number => {
+			return SequenceCollection.from([value]).ofType<Author>().count();
+		};
 
 		expect(kept(author)).toBe(1);
 		expect(kept(wrong)).toBe(0);
@@ -482,7 +465,7 @@ describe('a type that contains itself', () => {
 		let deepest: Comment = { id: 100, text: 'bottom', replies: [] };
 
 		for (let level = 99; level >= 0; level--) {
-			deepest = { id: level, text: `level ${level}`, replies: [deepest] };
+			deepest = { id: level, text: `level ${String(level)}`, replies: [deepest] };
 		}
 
 		expect(accepts(deepest)).toBe(true);
@@ -492,18 +475,18 @@ describe('a type that contains itself', () => {
 		let broken: unknown = { id: 100, text: 7, replies: [] };
 
 		for (let level = 99; level >= 0; level--) {
-			broken = { id: level, text: `level ${level}`, replies: [broken] };
+			broken = { id: level, text: `level ${String(level)}`, replies: [broken] };
 		}
 
 		expect(accepts(broken)).toBe(false);
 	});
 
 	it('should name the type in the error cast throws', () => {
-		expect(() =>
-			SequenceCollection.from([{ id: 1, text: 'a', replies: [] }, 'wrong'])
+		expect(() => {
+			return SequenceCollection.from([{ id: 1, text: 'a', replies: [] }, 'wrong'])
 				.cast<Comment>()
-				.toArray(),
-		).toThrow(/cast\('Comment'\)/);
+				.toArray();
+		}).toThrow(/cast\('Comment'\)/);
 	});
 });
 
@@ -522,13 +505,15 @@ describe('the shape check the transformer writes', () => {
 	}
 
 	/** A value that satisfies every clause, for the cases below to spoil. */
-	const valid = (): Record<string, unknown> => ({
-		id: 1,
-		tags: ['a'],
-		customer: { email: 'a@b.c' },
-		status: 'pending',
-		placedAt: new Date(),
-	});
+	const valid = (): Record<string, unknown> => {
+		return {
+			id: 1,
+			tags: ['a'],
+			customer: { email: 'a@b.c' },
+			status: 'pending',
+			placedAt: new Date(),
+		};
+	};
 
 	/**
 	 * Runs one value through the check.
@@ -536,8 +521,9 @@ describe('the shape check the transformer writes', () => {
 	 * @param value Value being tested.
 	 * @returns Whether the check kept it.
 	 */
-	const accepts = (value: unknown): boolean =>
-		SequenceCollection.from([value]).ofType<Order>().count() === 1;
+	const accepts = (value: unknown): boolean => {
+		return SequenceCollection.from([value]).ofType<Order>().count() === 1;
+	};
 
 	it('should accept a value that satisfies every clause', () => {
 		expect(accepts(valid())).toBe(true);
@@ -558,27 +544,35 @@ describe('the shape check the transformer writes', () => {
 	// every test above while being worthless, so each clause is spoiled on its
 	// own and has to be the one that rejects.
 	it.each([
-		['a missing required property', () => ({ ...valid(), id: undefined })],
-		['a required property of the wrong type', () => ({ ...valid(), id: '1' })],
-		['an optional property of the wrong type', () => ({ ...valid(), note: 7 })],
-		['an array that is not one', () => ({ ...valid(), tags: 'a' })],
-		['an array with a wrong element', () => ({ ...valid(), tags: ['a', 2] })],
-		['a nested object missing its field', () => ({ ...valid(), customer: {} })],
+		['a missing required property', (): { id: undefined } => ({ ...valid(), id: undefined })],
+		['a required property of the wrong type', (): { id: string } => ({ ...valid(), id: '1' })],
+		['an optional property of the wrong type', (): { note: number } => ({ ...valid(), note: 7 })],
+		['an array that is not one', (): { tags: string } => ({ ...valid(), tags: 'a' })],
+		[
+			'an array with a wrong element',
+			(): { tags: (string | number)[] } => ({ ...valid(), tags: ['a', 2] }),
+		],
+		[
+			'a nested object missing its field',
+			(): { customer: Record<string, never> } => ({ ...valid(), customer: {} }),
+		],
 		[
 			'a nested object of the wrong type',
-			() => ({ ...valid(), customer: 'a@b.c' }),
+			(): { customer: string } => ({ ...valid(), customer: 'a@b.c' }),
 		],
-		['a value outside the union', () => ({ ...valid(), status: 'shipped' })],
+		['a value outside the union', (): { status: string } => ({ ...valid(), status: 'shipped' })],
 		[
 			'a class field that is not an instance',
-			() => ({
-				...valid(),
-				placedAt: '2020-01-01',
-			}),
+			(): { placedAt: string } => {
+				return {
+					...valid(),
+					placedAt: '2020-01-01',
+				};
+			},
 		],
-		['null', () => null],
-		['a primitive', () => 'an order'],
-		['an array', () => []],
+		['null', (): null => null],
+		['a primitive', (): string => 'an order'],
+		['an array', (): never[] => []],
 	])('should reject %s', (_label, build) => {
 		expect(accepts(build())).toBe(false);
 	});
@@ -591,11 +585,9 @@ describe('the shape check the transformer writes', () => {
 	});
 
 	it('should name the type in the error cast throws', () => {
-		expect(() =>
-			SequenceCollection.from([valid(), 'not an order'])
-				.cast<Order>()
-				.toArray(),
-		).toThrow(/cast\('Order'\)/);
+		expect(() => {
+			return SequenceCollection.from([valid(), 'not an order']).cast<Order>().toArray();
+		}).toThrow(/cast\('Order'\)/);
 	});
 
 	it('should check every element of an array, not just the first', () => {
@@ -612,10 +604,7 @@ describe('topBy', () => {
 			{ name: 'd', score: 40 },
 		];
 
-		const best = SequenceCollection.from(players).topBy(
-			(player) => player.score,
-			2,
-		);
+		const best = SequenceCollection.from(players).topBy((player) => player.score, 2);
 
 		expect(best.toArray().map((player) => player.name)).toEqual(['b', 'd']);
 	});
@@ -649,11 +638,7 @@ describe('topBy', () => {
 			.topBy((player) => player.score, 3)
 			.toArray();
 
-		expect(ranked.map((player) => player.name)).toEqual([
-			'player-0',
-			'player-1',
-			'player-2',
-		]);
+		expect(ranked.map((player) => player.name)).toEqual(['player-0', 'player-1', 'player-2']);
 	});
 
 	it('should extract each key exactly once', () => {
@@ -682,10 +667,7 @@ describe('topBy', () => {
 	});
 
 	it('should handle an empty sequence', () => {
-		const ranked = SequenceCollection.empty<Player>().topBy(
-			(player) => player.score,
-			5,
-		);
+		const ranked = SequenceCollection.empty<Player>().topBy((player) => player.score, 5);
 
 		expect(ranked.toArray()).toEqual([]);
 	});
@@ -787,8 +769,41 @@ describe('tap', () => {
 	});
 
 	it('should keep the cardinality of its source', () => {
-		const values = SequenceCollection.from([1, 2, 3, 4]).tap(() => {});
+		const values = SequenceCollection.from([1, 2, 3, 4]).tap(() => {
+			// Nothing to observe: what is asserted is the count that comes out.
+		});
 
 		expect(values.count()).toBe(4);
+	});
+});
+
+describe('what ofType and cast infer', () => {
+	class Admin {
+		constructor(public readonly name: string) {}
+	}
+
+	interface Account {
+		readonly id: number;
+	}
+
+	const accountTest: TypeTest<Account> = {
+		matches: (value) => typeof value === 'object' && value !== null && 'id' in value,
+	};
+
+	const mixed = SequenceCollection.from<Admin | Account | string | number>([]);
+
+	it('should narrow ofType to the type each of its four forms names', () => {
+		expectTypeOf(mixed.ofType('string')).toEqualTypeOf<Sequence<string>>();
+		expectTypeOf(mixed.ofType(Admin)).toEqualTypeOf<Sequence<Admin>>();
+		expectTypeOf(mixed.ofType<Admin>()).toEqualTypeOf<Sequence<Admin>>();
+		expectTypeOf(mixed.ofType(accountTest)).toEqualTypeOf<Sequence<Account>>();
+		expectTypeOf<TypeTest<Account>>().not.toExtend<TypeTest<Admin>>();
+	});
+
+	it('should re-type cast to the type each of its four forms names', () => {
+		expectTypeOf(mixed.cast('number')).toEqualTypeOf<Sequence<number>>();
+		expectTypeOf(mixed.cast(Admin)).toEqualTypeOf<Sequence<Admin>>();
+		expectTypeOf(mixed.cast<Admin>()).toEqualTypeOf<Sequence<Admin>>();
+		expectTypeOf(mixed.cast(accountTest)).toEqualTypeOf<Sequence<Account>>();
 	});
 });

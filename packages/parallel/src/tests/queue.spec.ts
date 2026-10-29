@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { createWaitingQueue, type Waiting } from '@/task/queue.js';
+import { createWaitingQueue, type Waiting } from '@/src/task/queue.js';
 
 /**
  * Waiting queue suite.
@@ -16,11 +16,13 @@ import { createWaitingQueue, type Waiting } from '@/task/queue.js';
  * @param name What it writes.
  * @returns The entry.
  */
-const entryFor = (started: string[], name: string): Waiting => ({
-	start: () => {
-		started.push(name);
-	},
-});
+const entryFor = (started: string[], name: string): Waiting => {
+	return {
+		start: (): void => {
+			started.push(name);
+		},
+	};
+};
 
 describe('startWhile', () => {
 	it('should start entries oldest first', () => {

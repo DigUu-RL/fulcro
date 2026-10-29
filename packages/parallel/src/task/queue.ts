@@ -78,7 +78,12 @@ export const createWaitingQueue = (): WaitingQueue => {
 		},
 		startWhile: (hasRoom: () => boolean): void => {
 			while (head < entries.length) {
-				const start: (() => void) | null = entries[head].start;
+				const entry: Waiting | undefined = entries[head];
+
+				// Never missing below `entries.length`; the guard only names that.
+				if (entry === undefined) break;
+
+				const start: (() => void) | null = entry.start;
 
 				// A withdrawn entry is passed over whether or not there is room,
 				// so it is let go now rather than when the next start comes.
@@ -89,7 +94,8 @@ export const createWaitingQueue = (): WaitingQueue => {
 
 				if (!hasRoom()) break;
 
-				entries[head++].start = null;
+				entry.start = null;
+				head++;
 				start();
 			}
 

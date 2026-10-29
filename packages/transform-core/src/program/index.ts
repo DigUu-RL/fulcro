@@ -1,12 +1,13 @@
-import * as fs from 'node:fs';
+import * as fileSystem from 'node:fs';
 import * as path from 'node:path';
 
 import typescript from 'typescript';
 
 import { createError } from '@fulcro/errors';
 
-import { CallRewriter, FileAnalyzer } from '@/shared';
-import { createTransformer, TransformerOptions } from '@/transformer';
+import type { CallRewriter, FileAnalyzer } from '@/src/shared';
+import type { TransformerOptions } from '@/src/transformer';
+import { createTransformer } from '@/src/transformer';
 
 /**
  * Type checking core shared by every bundler integration.
@@ -18,8 +19,7 @@ import { createTransformer, TransformerOptions } from '@/transformer';
  * transforms each file itself.
  *
  * Nothing here knows about any bundler: the adapters built on top only have to
- * call {@link createFileTransformer} and hand back what it returns. Kept as
- * CommonJS as well, because the compiler plugin loads it through `require`.
+ * call {@link createFileTransformer} and hand back what it returns.
  */
 
 /** Extensions carrying TypeScript this core is responsible for. */
@@ -61,8 +61,9 @@ const buildUtilityPattern = (
  * @param fileName Path in whatever spelling it arrived.
  * @returns The path as the compiler spells it.
  */
-export const toCompilerPath = (fileName: string): string =>
-	path.resolve(fileName).split(path.sep).join('/');
+export const toCompilerPath = (fileName: string): string => {
+	return path.resolve(fileName).split(path.sep).join('/');
+};
 
 /**
  * Keeps a TypeScript program alive across recompilations.
@@ -139,7 +140,7 @@ export class ProgramHost implements typescript.LanguageServiceHost {
 	 */
 	private matchesDisk(fileName: string, content: string): boolean {
 		try {
-			return fs.readFileSync(fileName, 'utf8') === content;
+			return fileSystem.readFileSync(fileName, 'utf8') === content;
 		} catch {
 			return false;
 		}
@@ -160,11 +161,9 @@ export class ProgramHost implements typescript.LanguageServiceHost {
 			return typescript.ScriptSnapshot.fromString(overlay);
 		}
 
-		if (!fs.existsSync(fileName)) return undefined;
+		if (!fileSystem.existsSync(fileName)) return undefined;
 
-		return typescript.ScriptSnapshot.fromString(
-			fs.readFileSync(fileName, 'utf8'),
-		);
+		return typescript.ScriptSnapshot.fromString(fileSystem.readFileSync(fileName, 'utf8'));
 	}
 
 	getCurrentDirectory(): string {
@@ -180,19 +179,28 @@ export class ProgramHost implements typescript.LanguageServiceHost {
 	}
 
 	readFile(fileName: string, encoding?: string): string | undefined {
-		return (
-			this.overlays.get(fileName) ?? typescript.sys.readFile(fileName, encoding)
-		);
+		return this.overlays.get(fileName) ?? typescript.sys.readFile(fileName, encoding);
 	}
 
 	fileExists(fileName: string): boolean {
 		return this.overlays.has(fileName) || typescript.sys.fileExists(fileName);
 	}
 
-	readDirectory = typescript.sys.readDirectory;
-	directoryExists = typescript.sys.directoryExists;
-	getDirectories = typescript.sys.getDirectories;
-	realpath = typescript.sys.realpath;
+	// Called through the system rather than taken off it: the compiler's own
+	// hosts do the same, and nothing promises these work detached.
+	readDirectory = (...parameters: Parameters<typescript.System['readDirectory']>): string[] => {
+		return typescript.sys.readDirectory(...parameters);
+	};
+
+	directoryExists = (directoryName: string): boolean => {
+		return typescript.sys.directoryExists(directoryName);
+	};
+
+	getDirectories = (directory: string): string[] => typescript.sys.getDirectories(directory);
+
+	// The system may not offer one; the path as given is what the compiler
+	// uses itself when a host has no `realpath`.
+	realpath = (path: string): string => typescript.sys.realpath?.(path) ?? path;
 }
 
 /**
@@ -210,21 +218,20 @@ export const parseTsconfig = (
 	const configPath: string | undefined =
 		explicit !== undefined
 			? path.resolve(root, explicit)
-			: typescript.findConfigFile(root, typescript.sys.fileExists);
+			: typescript.findConfigFile(root, (fileName) => typescript.sys.fileExists(fileName));
 
 	if (configPath === undefined) {
 		throw createError('FULCRO5001', { operation: 'parseTsconfig', root });
 	}
 
-	const read = typescript.readConfigFile(configPath, typescript.sys.readFile);
+	const read = typescript.readConfigFile(configPath, (fileName) => {
+		return typescript.sys.readFile(fileName);
+	});
 
 	if (read.error !== undefined) {
 		throw createError('FULCRO5002', {
 			operation: 'parseTsconfig',
-			diagnostic: typescript.flattenDiagnosticMessageText(
-				read.error.messageText,
-				'\n',
-			),
+			diagnostic: typescript.flattenDiagnosticMessageText(read.error.messageText, '\n'),
 		});
 	}
 
@@ -271,6 +278,19 @@ export interface FileTransformer {
 }
 
 /**
+ * The file a bundler identifier names, without the query some bundlers append
+ * to it, such as Vite's `?raw`.
+ *
+ * @param id Identifier of the file, as the bundler spells it.
+ * @returns The path of the file.
+ */
+const fileNameOf = (id: string): string => {
+	const query: number = id.indexOf('?');
+
+	return query === -1 ? id : id.slice(0, query);
+};
+
+/**
  * Creates the transformer core.
  *
  * The program is built on the first file that actually needs it, so a project
@@ -295,7 +315,7 @@ export const createFileTransformer = (
 	let service: typescript.LanguageService | undefined;
 
 	const handles = (id: string): boolean => {
-		const fileName: string = id.split('?')[0];
+		const fileName: string = fileNameOf(id);
 
 		if (!HANDLED_EXTENSIONS.includes(path.extname(fileName))) return false;
 
@@ -310,21 +330,17 @@ export const createFileTransformer = (
 		// would cost seconds for nothing.
 		if (!utilityPattern.test(code)) return null;
 
-		const fileName: string = toCompilerPath(id.split('?')[0]);
+		const fileName: string = toCompilerPath(fileNameOf(id));
 
 		if (host === undefined || service === undefined) {
 			host = new ProgramHost(parseTsconfig(root, options.tsconfig), root);
-			service = typescript.createLanguageService(
-				host,
-				typescript.createDocumentRegistry(),
-			);
+			service = typescript.createLanguageService(host, typescript.createDocumentRegistry());
 		}
 
 		host.update(fileName, code);
 
 		const program: typescript.Program | undefined = service.getProgram();
-		const sourceFile: typescript.SourceFile | undefined =
-			program?.getSourceFile(fileName);
+		const sourceFile: typescript.SourceFile | undefined = program?.getSourceFile(fileName);
 
 		if (program === undefined || sourceFile === undefined) return null;
 
@@ -334,12 +350,13 @@ export const createFileTransformer = (
 			program.getCompilerOptions(),
 		);
 
-		const [transformed] = result.transformed;
+		// One source file in, one transformed file out.
+		const transformed: typescript.SourceFile | undefined = result.transformed[0];
 
 		// Nothing rewritten — every file an analyzer only checks, and every file
 		// that merely mentions a utility's name. Printing it anyway would hand the
 		// bundler a reformatted copy without a source map for nothing.
-		if (transformed === sourceFile) {
+		if (transformed === undefined || transformed === sourceFile) {
 			result.dispose();
 
 			return null;

@@ -25,12 +25,10 @@ export interface Account {
 const values: unknown[] = ['a', 1, new Admin('root')];
 
 /** The primitive form, which becomes a `typeof` name. */
-export const strings = (): unknown =>
-	SequenceCollection.from(values).ofType<string>().toArray();
+export const strings = (): unknown => SequenceCollection.from(values).ofType<string>().toArray();
 
 /** The class form, which becomes a reference to the constructor. */
-export const admins = (): unknown =>
-	SequenceCollection.from(values).ofType<Admin>().toArray();
+export const admins = (): unknown => SequenceCollection.from(values).ofType<Admin>().toArray();
 
 /** The same two, through `cast`. */
 export const castStrings = (): unknown =>
@@ -42,16 +40,14 @@ export const castAdmins = (): unknown =>
 		.toArray();
 
 /** Written with a token already: nothing for the transformer to fill in. */
-export const explicit = (): unknown =>
-	SequenceCollection.from(values).ofType('number').toArray();
+export const explicit = (): unknown => SequenceCollection.from(values).ofType('number').toArray();
 
 /** Chained, so one rewritten call sits inside another. */
 export const chained = (): unknown =>
 	SequenceCollection.from(values).ofType<string>().cast<string>().toArray();
 
 /** An interface, written out as the checks its properties imply. */
-export const accounts = (): unknown =>
-	SequenceCollection.from(values).ofType<Account>().toArray();
+export const accounts = (): unknown => SequenceCollection.from(values).ofType<Account>().toArray();
 
 /** A record with an optional field, a nested object and an array. */
 export interface Order {
@@ -63,8 +59,7 @@ export interface Order {
 	readonly placedAt: Date;
 }
 
-export const orders = (): unknown =>
-	SequenceCollection.from(values).ofType<Order>().toArray();
+export const orders = (): unknown => SequenceCollection.from(values).ofType<Order>().toArray();
 
 /** A tuple of fixed length. */
 export const pairs = (): unknown =>
@@ -80,8 +75,7 @@ export interface Tree {
 	readonly children: Tree[];
 }
 
-export const trees = (): unknown =>
-	SequenceCollection.from(values).ofType<Tree>().toArray();
+export const trees = (): unknown => SequenceCollection.from(values).ofType<Tree>().toArray();
 
 /** Mutually recursive, where the cycle runs through a second type. */
 export interface Author {
@@ -94,8 +88,7 @@ export interface Post {
 	readonly author: Author;
 }
 
-export const authors = (): unknown =>
-	SequenceCollection.from(values).ofType<Author>().toArray();
+export const authors = (): unknown => SequenceCollection.from(values).ofType<Author>().toArray();
 
 /**
  * An index signature: still refused, and deliberately. Arbitrary keys mean
@@ -105,8 +98,7 @@ export interface Settings {
 	readonly [key: string]: string;
 }
 
-export const settings = (): unknown =>
-	SequenceCollection.from(values).ofType<Settings>().toArray();
+export const settings = (): unknown => SequenceCollection.from(values).ofType<Settings>().toArray();
 
 /**
  * The asynchronous sequence, which declares the same two operators in a
@@ -116,8 +108,7 @@ const streamed = async function* (): AsyncGenerator<unknown> {
 	yield* values;
 };
 
-export const streamedOrders = (): unknown =>
-	AsyncSequenceCollection.from(streamed()).cast<Order>();
+export const streamedOrders = (): unknown => AsyncSequenceCollection.from(streamed()).cast<Order>();
 
 export const streamedStrings = (): unknown =>
 	AsyncSequenceCollection.from(streamed()).ofType<string>();

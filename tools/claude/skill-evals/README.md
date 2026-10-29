@@ -5,7 +5,7 @@ invocations that must trigger it, the ones that must not, and the near misses
 that show where the boundary is — the same three the standard asks every skill
 to carry as examples, written where a machine can count them.
 
-`node tools/claude/validate-skills.mjs` validates the shape of every file here
+`node tools/claude/validate-skills.mts` validates the shape of every file here
 and reports a skill whose suite is missing a positive, a negative or an edge
 case. **What it does not do is run them.** Deciding whether a prompt triggers a
 skill needs a model, and a harness that pretended otherwise would report a pass

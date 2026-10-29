@@ -1,9 +1,10 @@
 import * as path from 'node:path';
+import { runInThisContext } from 'node:vm';
 
-import * as ts from 'typescript';
-import { beforeAll, describe, expect, it } from 'vitest';
+import * as typescript from 'typescript';
+import { assert, beforeAll, describe, expect, it } from 'vitest';
 
-import transformer from '@/transformer';
+import transformer from '@/src/transformer';
 
 /**
  * Transformer suite for `layoutOf`.
@@ -18,12 +19,12 @@ import transformer from '@/transformer';
 const PROJECT_ROOT = path.resolve(__dirname, '../../..');
 
 /** Options every fixture compiles with. */
-const COMPILER_OPTIONS: ts.CompilerOptions = {
-	target: ts.ScriptTarget.ES2022,
-	module: ts.ModuleKind.ESNext,
+const COMPILER_OPTIONS: typescript.CompilerOptions = {
+	target: typescript.ScriptTarget.ES2022,
+	module: typescript.ModuleKind.ESNext,
 	// An ESNext module defaults to the classic resolution, which never finds a
 	// package's `index` — the import would resolve to nothing.
-	moduleResolution: ts.ModuleResolutionKind.Node10,
+	moduleResolution: typescript.ModuleResolutionKind.Node10,
 	strict: true,
 	noEmitOnError: false,
 	skipLibCheck: true,
@@ -32,7 +33,7 @@ const COMPILER_OPTIONS: ts.CompilerOptions = {
 /** What compiling one fixture produced. */
 interface Compiled {
 	readonly emitted: string;
-	readonly errors: readonly ts.Diagnostic[];
+	readonly errors: readonly typescript.Diagnostic[];
 }
 
 /**
@@ -45,14 +46,15 @@ interface Compiled {
  * @returns For each fixture, its emitted JavaScript and its errors.
  */
 const compile = (...fileNames: string[]): Compiled[] => {
-	const fixtures: string[] = fileNames.map((fileName) =>
-		path.resolve(__dirname, fileName),
-	);
-	const program: ts.Program = ts.createProgram(fixtures, COMPILER_OPTIONS);
+	const fixtures: string[] = fileNames.map((fileName) => path.resolve(__dirname, fileName));
+	const program: typescript.Program = typescript.createProgram(fixtures, COMPILER_OPTIONS);
 	const transform = transformer(program, { projectRoot: PROJECT_ROOT });
 
 	return fixtures.map((fixture) => {
-		const source = program.getSourceFile(fixture) as ts.SourceFile;
+		const source: typescript.SourceFile | undefined = program.getSourceFile(fixture);
+
+		assert.isDefined(source);
+
 		let emitted = '';
 
 		program.emit(
@@ -65,11 +67,9 @@ const compile = (...fileNames: string[]): Compiled[] => {
 			{ before: [transform] },
 		);
 
-		const errors: readonly ts.Diagnostic[] = ts
+		const errors: readonly typescript.Diagnostic[] = typescript
 			.getPreEmitDiagnostics(program, source)
-			.filter(
-				(diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error,
-			);
+			.filter((diagnostic) => diagnostic.category === typescript.DiagnosticCategory.Error);
 
 		return { emitted, errors };
 	});
@@ -82,10 +82,10 @@ let accepted: Compiled;
 let rejected: Compiled;
 
 beforeAll(() => {
-	[accepted, rejected] = compile(
-		'fieldLayout.sample.ts',
-		'fieldLayout.rejected.fixture.ts',
-	);
+	[accepted, rejected] = compile('fieldLayout.sample.ts', 'fieldLayout.rejected.fixture.ts') as [
+		Compiled,
+		Compiled,
+	];
 });
 
 /**
@@ -95,13 +95,17 @@ beforeAll(() => {
  * @returns The value the expression produces.
  */
 const evaluate = (binding: string): unknown => {
-	const match: RegExpMatchArray | null = accepted.emitted.match(
-		new RegExp(`export const ${binding} = (.*);\\r?\\n`),
+	const match: RegExpMatchArray | null = new RegExp(`export const ${binding} = (.*);\\r?\\n`).exec(
+		accepted.emitted,
 	);
 
 	if (match === null) throw new Error(`${binding} was not emitted`);
 
-	return new Function(`return ${match[1]};`)();
+	// Evaluated in this realm, so what it builds has the prototypes the
+	// assertions compare against.
+	const value: unknown = runInThisContext(`(${String(match[1])})`);
+
+	return value;
 };
 
 /**
@@ -110,17 +114,20 @@ const evaluate = (binding: string): unknown => {
  * @param value Value to inspect.
  * @returns `true` when nothing in it can be changed.
  */
-const deeplyFrozen = (value: unknown): boolean =>
-	typeof value !== 'object' ||
-	value === null ||
-	(Object.isFrozen(value) && Object.values(value).every(deeplyFrozen));
+const deeplyFrozen = (value: unknown): boolean => {
+	return (
+		typeof value !== 'object' ||
+		value === null ||
+		(Object.isFrozen(value) && Object.values(value).every(deeplyFrozen))
+	);
+};
 
 describe('layoutOf at compile time', () => {
 	it('should compile the fixture without errors', () => {
 		expect(
-			accepted.errors.map((error) =>
-				ts.flattenDiagnosticMessageText(error.messageText, '\n'),
-			),
+			accepted.errors.map((error) => {
+				return typescript.flattenDiagnosticMessageText(error.messageText, '\n');
+			}),
 		).toEqual([]);
 	});
 
@@ -163,32 +170,25 @@ describe('layoutOf at compile time', () => {
 	});
 
 	it('should leave a generic parameter as a call', () => {
-		expect(accepted.emitted).toMatch(
-			/export const genericLayout = \(\) => layoutOf\(\);/,
-		);
+		expect(accepted.emitted).toMatch(/export const genericLayout = \(\) => layoutOf\(\);/);
 	});
 
 	it('should leave a union of structs placing their fields differently as a call', () => {
-		expect(accepted.emitted).toMatch(
-			/export const unionLayout = \(\) => layoutOf\(\);/,
-		);
+		expect(accepted.emitted).toMatch(/export const unionLayout = \(\) => layoutOf\(\);/);
 	});
 
 	it('should refuse a type with no layout at the call site', () => {
 		const refused: string[] = rejected.errors
 			.filter((error) => error.code === 2344)
 			.map((error) => {
-				const { line } = ts.getLineAndCharacterOfPosition(
-					error.file as ts.SourceFile,
-					error.start ?? 0,
-				);
+				assert.isDefined(error.file);
 
-				return (error.file as ts.SourceFile).text.split(/\r?\n/)[line].trim();
+				const { line } = typescript.getLineAndCharacterOfPosition(error.file, error.start ?? 0);
+
+				return (error.file.text.split(/\r?\n/)[line] ?? '').trim();
 			})
 			.filter((line) => line.includes('layoutOf'));
 
-		expect(refused).toEqual([
-			'export const stringLayout = layoutOf<string>();',
-		]);
+		expect(refused).toEqual(['export const stringLayout = layoutOf<string>();']);
 	});
 });

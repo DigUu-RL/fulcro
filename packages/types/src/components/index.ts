@@ -1,7 +1,7 @@
 import { createError, prefixError } from '@fulcro/errors';
 
-import type { ElementType } from '@/element';
-import { registerRepeatedCodec } from '@/struct/codec';
+import type { ElementType } from '@/src/element';
+import { registerRepeatedCodec } from '@/src/struct/codec';
 
 /**
  * Machinery shared by the types whose values are a few named components of one
@@ -50,10 +50,7 @@ export interface ComponentRecord<T, TValue> {
 	 * @param descriptor The descriptor.
 	 * @param equals How the type compares two values.
 	 */
-	readonly register: (
-		descriptor: object,
-		equals: (left: TValue, right: TValue) => boolean,
-	) => void;
+	readonly register: (descriptor: object, equals: (left: TValue, right: TValue) => boolean) => void;
 }
 
 /**
@@ -88,9 +85,13 @@ export const createComponentRecord = <T, TValue>(
 	const make = (...components: T[]): TValue => {
 		const value: Record<string, T> = {};
 
-		for (let index = 0; index < keys.length; index++) {
-			value[keys[index]] = components[index];
-		}
+		components.forEach((component, index) => {
+			const key: string | undefined = keys[index];
+
+			// Callers pass one component per key; one past the last key has no
+			// field to land in.
+			if (key !== undefined) value[key] = component;
+		});
 
 		return Object.freeze(value) as TValue;
 	};
@@ -121,16 +122,16 @@ export const createComponentRecord = <T, TValue>(
 		});
 	};
 
-	const isRecord = (value: unknown): value is TValue =>
-		isPlainObject(value) &&
-		Object.isFrozen(value) &&
-		Object.keys(value).length === keys.length &&
-		keys.every((key) => Object.hasOwn(value, key) && element.is(value[key]));
+	const isRecord = (value: unknown): value is TValue => {
+		return (
+			isPlainObject(value) &&
+			Object.isFrozen(value) &&
+			Object.keys(value).length === keys.length &&
+			keys.every((key) => Object.hasOwn(value, key) && element.is(value[key]))
+		);
+	};
 
-	const register = (
-		descriptor: object,
-		equals: (left: TValue, right: TValue) => boolean,
-	): void =>
+	const register = (descriptor: object, equals: (left: TValue, right: TValue) => boolean): void => {
 		registerRepeatedCodec(
 			descriptor,
 			elementDescriptor,
@@ -139,6 +140,7 @@ export const createComponentRecord = <T, TValue>(
 			(value) => keys.map((key) => (value as Record<string, unknown>)[key]),
 			(left, right) => equals(left as TValue, right as TValue),
 		);
+	};
 
 	return { make, convert, isRecord, register };
 };

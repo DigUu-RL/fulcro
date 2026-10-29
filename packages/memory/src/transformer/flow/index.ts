@@ -75,10 +75,7 @@ export interface FlowRules<TFacts> {
 	 * @param created The function, method or accessor.
 	 * @param facts The facts on this path, where it is created.
 	 */
-	readonly capture: (
-		created: typescript.FunctionLikeDeclaration,
-		facts: TFacts,
-	) => void;
+	readonly capture: (created: typescript.FunctionLikeDeclaration, facts: TFacts) => void;
 }
 
 /** The facts along one path, and whether any code runs on it at all. */
@@ -104,10 +101,13 @@ type FunctionWithBody = typescript.FunctionLikeDeclaration & {
  * @param node The node.
  * @returns `true` for a function, method, accessor or constructor with a body.
  */
-const isFunctionWithBody = (node: typescript.Node): node is FunctionWithBody =>
-	typescript.isFunctionLike(node) &&
-	'body' in node &&
-	(node as { body?: typescript.Node }).body !== undefined;
+const isFunctionWithBody = (node: typescript.Node): node is FunctionWithBody => {
+	return (
+		typescript.isFunctionLike(node) &&
+		'body' in node &&
+		(node as { body?: typescript.Node }).body !== undefined
+	);
+};
 
 /**
  * Walks every function of a file, the top level included, each from the
@@ -123,32 +123,38 @@ export const walkFlow = <TFacts>(
 ): void => {
 	const pending: typescript.Node[] = [sourceFile];
 
-	const start = (): Path<TFacts> => ({
-		facts: rules.initial(),
-		reachable: true,
-	});
+	const start = (): Path<TFacts> => {
+		return {
+			facts: rules.initial(),
+			reachable: true,
+		};
+	};
 
-	const unreachable = (): Path<TFacts> => ({
-		facts: rules.initial(),
-		reachable: false,
-	});
+	const unreachable = (): Path<TFacts> => {
+		return {
+			facts: rules.initial(),
+			reachable: false,
+		};
+	};
 
-	const fork = (path: Path<TFacts>): Path<TFacts> => ({
-		facts: rules.copy(path.facts),
-		reachable: path.reachable,
-	});
+	const fork = (path: Path<TFacts>): Path<TFacts> => {
+		return {
+			facts: rules.copy(path.facts),
+			reachable: path.reachable,
+		};
+	};
 
-	const merge = (first: Path<TFacts>, second: Path<TFacts>): Path<TFacts> =>
-		!first.reachable
+	const merge = (first: Path<TFacts>, second: Path<TFacts>): Path<TFacts> => {
+		return !first.reachable
 			? second
 			: !second.reachable
 				? first
 				: { facts: rules.join(first.facts, second.facts), reachable: true };
+	};
 
-	const mergeAll = (
-		first: Path<TFacts>,
-		rest: readonly Path<TFacts>[],
-	): Path<TFacts> => rest.reduce(merge, first);
+	const mergeAll = (first: Path<TFacts>, rest: readonly Path<TFacts>[]): Path<TFacts> => {
+		return rest.reduce(merge, first);
+	};
 
 	/**
 	 * Notes a function created here, and queues its body.
@@ -156,10 +162,7 @@ export const walkFlow = <TFacts>(
 	 * @param declaration The function.
 	 * @param path The path it is created on.
 	 */
-	const created = (
-		declaration: typescript.FunctionLikeDeclaration,
-		path: Path<TFacts>,
-	): void => {
+	const created = (declaration: typescript.FunctionLikeDeclaration, path: Path<TFacts>): void => {
 		if (path.reachable) rules.capture(declaration, path.facts);
 		if (isFunctionWithBody(declaration)) pending.push(declaration.body);
 	};
@@ -173,19 +176,13 @@ export const walkFlow = <TFacts>(
 	 * @param node The class.
 	 * @param path The path it is defined on.
 	 */
-	const defineClass = (
-		node: typescript.ClassLikeDeclaration,
-		path: Path<TFacts>,
-	): void => {
+	const defineClass = (node: typescript.ClassLikeDeclaration, path: Path<TFacts>): void => {
 		for (const member of node.members) {
 			if (isFunctionWithBody(member)) created(member, path);
 		}
 	};
 
-	const expression = (
-		node: typescript.Node,
-		path: Path<TFacts>,
-	): Path<TFacts> => {
+	const expression = (node: typescript.Node, path: Path<TFacts>): Path<TFacts> => {
 		if (typescript.isTypeNode(node)) return path;
 
 		if (typescript.isIdentifier(node)) {
@@ -229,10 +226,7 @@ export const walkFlow = <TFacts>(
 			return merge(whenTrue, expression(node.whenFalse, condition));
 		}
 
-		if (
-			typescript.isArrowFunction(node) ||
-			typescript.isFunctionExpression(node)
-		) {
+		if (typescript.isArrowFunction(node) || typescript.isFunctionExpression(node)) {
 			created(node, path);
 
 			return path;
@@ -283,10 +277,7 @@ export const walkFlow = <TFacts>(
 		return named;
 	};
 
-	const binary = (
-		node: typescript.BinaryExpression,
-		path: Path<TFacts>,
-	): Path<TFacts> => {
+	const binary = (node: typescript.BinaryExpression, path: Path<TFacts>): Path<TFacts> => {
 		const operator: typescript.SyntaxKind = node.operatorToken.kind;
 
 		// The right side of these runs only on some paths.
@@ -302,10 +293,7 @@ export const walkFlow = <TFacts>(
 
 		// A plain assignment gives the variable a new value; it does not read
 		// the old one.
-		if (
-			operator === typescript.SyntaxKind.EqualsToken &&
-			typescript.isIdentifier(node.left)
-		) {
+		if (operator === typescript.SyntaxKind.EqualsToken && typescript.isIdentifier(node.left)) {
 			const after: Path<TFacts> = expression(node.right, path);
 
 			if (after.reachable) rules.bind(node.left, node.right, after.facts);
@@ -316,11 +304,8 @@ export const walkFlow = <TFacts>(
 		return expression(node.right, expression(node.left, path));
 	};
 
-	const declare = (
-		list: typescript.VariableDeclarationList,
-		path: Path<TFacts>,
-	): Path<TFacts> =>
-		list.declarations.reduce((before, declaration) => {
+	const declare = (list: typescript.VariableDeclarationList, path: Path<TFacts>): Path<TFacts> => {
+		return list.declarations.reduce((before, declaration) => {
 			const after: Path<TFacts> =
 				declaration.initializer === undefined
 					? before
@@ -332,6 +317,7 @@ export const walkFlow = <TFacts>(
 
 			return after;
 		}, path);
+	};
 
 	/**
 	 * Walks a loop: once from where it is entered, and once more from what
@@ -354,10 +340,7 @@ export const walkFlow = <TFacts>(
 	): Path<TFacts> => {
 		const firstJumps: Jumps<TFacts> = { breaks: [], continues: [] };
 		const first: Path<TFacts> = iterate(fork(entry), firstJumps);
-		const again: Path<TFacts> = mergeAll(fork(entry), [
-			first,
-			...firstJumps.continues,
-		]);
+		const again: Path<TFacts> = mergeAll(fork(entry), [first, ...firstJumps.continues]);
 
 		if (rules.same(again.facts, entry.facts)) {
 			return mergeAll(again, firstJumps.breaks);
@@ -380,10 +363,7 @@ export const walkFlow = <TFacts>(
 		jumps: Jumps<TFacts> | undefined,
 	): Path<TFacts> => {
 		if (typescript.isBlock(node) || typescript.isSourceFile(node)) {
-			return node.statements.reduce(
-				(before, each) => statement(each, before, jumps),
-				path,
-			);
+			return node.statements.reduce((before, each) => statement(each, before, jumps), path);
 		}
 
 		if (typescript.isVariableStatement(node)) {
@@ -396,11 +376,7 @@ export const walkFlow = <TFacts>(
 
 		if (typescript.isIfStatement(node)) {
 			const condition: Path<TFacts> = expression(node.expression, path);
-			const whenTrue: Path<TFacts> = statement(
-				node.thenStatement,
-				fork(condition),
-				jumps,
-			);
+			const whenTrue: Path<TFacts> = statement(node.thenStatement, fork(condition), jumps);
 
 			return merge(
 				whenTrue,
@@ -410,10 +386,7 @@ export const walkFlow = <TFacts>(
 			);
 		}
 
-		if (
-			typescript.isReturnStatement(node) ||
-			typescript.isThrowStatement(node)
-		) {
+		if (typescript.isReturnStatement(node) || typescript.isThrowStatement(node)) {
 			if (node.expression !== undefined) expression(node.expression, path);
 
 			return unreachable();
@@ -432,15 +405,15 @@ export const walkFlow = <TFacts>(
 		}
 
 		if (typescript.isWhileStatement(node)) {
-			return loop(path, (each, own) =>
-				statement(node.statement, expression(node.expression, each), own),
-			);
+			return loop(path, (each, own) => {
+				return statement(node.statement, expression(node.expression, each), own);
+			});
 		}
 
 		if (typescript.isDoStatement(node)) {
-			return loop(path, (each, own) =>
-				expression(node.expression, statement(node.statement, each, own)),
-			);
+			return loop(path, (each, own) => {
+				return expression(node.expression, statement(node.statement, each, own));
+			});
 		}
 
 		if (typescript.isForStatement(node)) {
@@ -453,33 +426,28 @@ export const walkFlow = <TFacts>(
 
 			return loop(initialized, (each, own) => {
 				const tested: Path<TFacts> =
-					node.condition === undefined
-						? each
-						: expression(node.condition, each);
+					node.condition === undefined ? each : expression(node.condition, each);
+
 				const ran: Path<TFacts> = statement(node.statement, tested, own);
 				const continued: Path<TFacts> = mergeAll(ran, own.continues.splice(0));
 
-				return node.incrementor === undefined
-					? continued
-					: expression(node.incrementor, continued);
+				return node.incrementor === undefined ? continued : expression(node.incrementor, continued);
 			});
 		}
 
-		if (
-			typescript.isForOfStatement(node) ||
-			typescript.isForInStatement(node)
-		) {
+		if (typescript.isForOfStatement(node) || typescript.isForInStatement(node)) {
 			const iterated: Path<TFacts> = expression(node.expression, path);
 
 			return loop(iterated, (each, own) => {
-				const names: readonly typescript.Identifier[] =
-					typescript.isVariableDeclarationList(node.initializer)
-						? node.initializer.declarations
-								.map((declaration) => declaration.name)
-								.filter(typescript.isIdentifier)
-						: typescript.isIdentifier(node.initializer)
-							? [node.initializer]
-							: [];
+				const names: readonly typescript.Identifier[] = typescript.isVariableDeclarationList(
+					node.initializer,
+				)
+					? node.initializer.declarations
+							.map((declaration) => declaration.name)
+							.filter(typescript.isIdentifier)
+					: typescript.isIdentifier(node.initializer)
+						? [node.initializer]
+						: [];
 
 				if (each.reachable) {
 					for (const name of names) rules.bind(name, undefined, each.facts);
@@ -491,49 +459,38 @@ export const walkFlow = <TFacts>(
 
 		if (typescript.isSwitchStatement(node)) {
 			const tested: Path<TFacts> = expression(node.expression, path);
+
 			const own: Jumps<TFacts> = {
 				breaks: [],
 				continues: jumps?.continues ?? [],
 			};
+
 			let falling: Path<TFacts> = unreachable();
 			let hasDefault = false;
 
 			for (const clause of node.caseBlock.clauses) {
 				const entered: Path<TFacts> = merge(fork(tested), falling);
+
 				const matched: Path<TFacts> = typescript.isCaseClause(clause)
 					? expression(clause.expression, entered)
 					: entered;
 
 				hasDefault ||= typescript.isDefaultClause(clause);
-				falling = clause.statements.reduce(
-					(before, each) => statement(each, before, own),
-					matched,
-				);
+				falling = clause.statements.reduce((before, each) => statement(each, before, own), matched);
 			}
 
-			return mergeAll(falling, [
-				...own.breaks,
-				hasDefault ? unreachable() : tested,
-			]);
+			return mergeAll(falling, [...own.breaks, hasDefault ? unreachable() : tested]);
 		}
 
 		if (typescript.isTryStatement(node)) {
 			const tried: Path<TFacts> = statement(node.tryBlock, fork(path), jumps);
+
 			const caught: Path<TFacts> =
 				node.catchClause === undefined
 					? tried
-					: merge(
-							tried,
-							statement(
-								node.catchClause.block,
-								merge(fork(path), fork(tried)),
-								jumps,
-							),
-						);
+					: merge(tried, statement(node.catchClause.block, merge(fork(path), fork(tried)), jumps));
 
-			return node.finallyBlock === undefined
-				? caught
-				: statement(node.finallyBlock, caught, jumps);
+			return node.finallyBlock === undefined ? caught : statement(node.finallyBlock, caught, jumps);
 		}
 
 		if (typescript.isLabeledStatement(node)) {
@@ -573,9 +530,7 @@ export const walkFlow = <TFacts>(
 		return expression(node, path);
 	};
 
-	while (pending.length > 0) {
-		const body = pending.shift() as typescript.Node;
-
+	for (let body = pending.shift(); body !== undefined; body = pending.shift()) {
 		// An arrow function's body may be an expression rather than a block.
 		if (typescript.isBlock(body) || typescript.isSourceFile(body)) {
 			statement(body, start(), undefined);

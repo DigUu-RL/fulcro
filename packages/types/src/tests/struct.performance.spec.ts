@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { SinglePrecisionFloat } from '@/singlePrecisionFloat';
-import { struct } from '@/struct';
-import { UnsignedInteger } from '@/unsignedInteger';
+import { SinglePrecisionFloat } from '@/src/singlePrecisionFloat';
+import { struct } from '@/src/struct';
+import { UnsignedInteger } from '@/src/unsignedInteger';
 
 /**
  * Performance suite for `struct`.
@@ -63,22 +63,20 @@ const ACCESSORS = [
  * @param size Bytes of the view.
  * @returns The view, and a function reading the count.
  */
-const countingView = (
-	size: number,
-): { view: DataView; accesses: () => number } => {
+const countingView = (size: number): { view: DataView; accesses: () => number } => {
 	const view = new DataView(new ArrayBuffer(size));
 	let accesses = 0;
 
 	for (const accessor of ACCESSORS) {
-		const original = DataView.prototype[accessor] as (
-			...parameters: unknown[]
-		) => unknown;
-
 		Object.defineProperty(view, accessor, {
 			value: (...parameters: unknown[]): unknown => {
 				accesses++;
 
-				return original.apply(view, parameters);
+				// The prototype's own accessor, called on this view as its receiver.
+				return (DataView.prototype[accessor] as (...parameters: unknown[]) => unknown).apply(
+					view,
+					parameters,
+				);
 			},
 		});
 	}
@@ -106,6 +104,7 @@ describe('struct', () => {
 
 	it('should count a nested struct as its own fields, and a 128-bit field as two halves', () => {
 		const { view, accesses } = countingView(Tagged.layout.size);
+
 		const value = Tagged.from({
 			tag: 1,
 			position: { x: 1, y: 2, z: 3 },
@@ -174,23 +173,20 @@ describe('struct', () => {
 				},
 			},
 		);
+
 		const view = new DataView(new ArrayBuffer(Point.layout.size));
-		const prototypes = new Set<object>();
+		const prototypes = new Set<object | null>();
 		let ownFunctions = 0;
 
 		Point.write(view, 0, Point.from({ x: 3, y: 4 }));
 
 		for (let index = 0; index < VOLUME; index++) {
-			const value =
-				index % 2 === 0 ? Point.from({ x: 3, y: 4 }) : Point.read(view, 0);
+			const value = index % 2 === 0 ? Point.from({ x: 3, y: 4 }) : Point.read(view, 0);
 
-			prototypes.add(Object.getPrototypeOf(value));
+			prototypes.add(Reflect.getPrototypeOf(value));
 
 			for (const key of Reflect.ownKeys(value)) {
-				if (
-					typeof Object.getOwnPropertyDescriptor(value, key)?.value ===
-					'function'
-				) {
+				if (typeof Object.getOwnPropertyDescriptor(value, key)?.value === 'function') {
 					ownFunctions++;
 				}
 			}
@@ -210,6 +206,7 @@ describe('struct', () => {
 				},
 			},
 		);
+
 		const { view, accesses } = countingView(Point.layout.size);
 
 		Point.write(view, 0, Point.from({ x: 3, y: 4 }));
@@ -236,15 +233,29 @@ describe('struct', () => {
 			return Math.max(performance.now() - started, 1);
 		};
 
-		const baseline: number = timed((offset) => {
+		const byHand = (offset: number): void => {
 			view.setFloat32(offset, value.x, true);
 			view.setFloat32(offset + 4, value.y, true);
 			view.setFloat32(offset + 8, value.z, true);
-		});
-		const described: number = timed((offset) =>
-			Vector3.write(view, offset, value),
-		);
+		};
 
-		expect(described).toBeLessThan(baseline * 25);
+		const described = (offset: number): void => {
+			Vector3.write(view, offset, value);
+		};
+
+		// Interleaved, with the fastest round of each side compared. These windows
+		// last a few milliseconds, and one pause during a full run of the
+		// workspace once outlasted the baseline thirty times over. Interference
+		// only ever adds time, so the minimum is the one estimate it cannot reach,
+		// while a write that really cost more would raise every round alike.
+		const baselines: number[] = [];
+		const measured: number[] = [];
+
+		for (let round = 0; round < 5; round++) {
+			baselines.push(timed(byHand));
+			measured.push(timed(described));
+		}
+
+		expect(Math.min(...measured)).toBeLessThan(Math.min(...baselines) * 25);
 	});
 });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { createManagedStorage } from '@/managedStorage';
-import type { Storage } from '@/storage';
+import { createManagedStorage } from '@/src/managedStorage';
+import type { Storage } from '@/src/storage';
 
 /**
  * Performance suite for `createManagedStorage`.
@@ -28,27 +28,28 @@ interface Order {
  * @param touches Counter to increment.
  * @returns The order, behind a counting proxy.
  */
-const watchedOrder = (id: number, touches: { count: number }): Order =>
-	new Proxy(
+const watchedOrder = (id: number, touches: { count: number }): Order => {
+	return new Proxy(
 		{ id, region: 'north', total: id * 2 },
 		{
-			get: (target, key, receiver) => {
+			get: (target, key, receiver): unknown => {
 				touches.count++;
 
 				return Reflect.get(target, key, receiver);
 			},
-			ownKeys: (target) => {
+			ownKeys: (target): (string | symbol)[] => {
 				touches.count += 1_000;
 
 				return Reflect.ownKeys(target);
 			},
-			getPrototypeOf: (target) => {
+			getPrototypeOf: (target): object | null => {
 				touches.count++;
 
 				return Reflect.getPrototypeOf(target);
 			},
 		},
 	);
+};
 
 describe('createManagedStorage, counted', () => {
 	it('should not look inside the initial value, however long it is', () => {
@@ -61,10 +62,7 @@ describe('createManagedStorage, counted', () => {
 
 	it('should not look inside a value it holds or hands back', () => {
 		const touches = { count: 0 };
-		const orders: Storage<Order | null> = createManagedStorage<Order | null>(
-			VOLUME,
-			null,
-		);
+		const orders: Storage<Order | null> = createManagedStorage<Order | null>(VOLUME, null);
 
 		for (let index = 0; index < VOLUME; index++) {
 			orders.set(index, watchedOrder(index, touches));

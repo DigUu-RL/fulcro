@@ -5,13 +5,13 @@ import {
 	type RepeatedLayout,
 	type SourceOf,
 	type ValueOf,
-} from '@/element';
+} from '@/src/element';
 import {
 	createHypercomplexType,
 	type HypercomplexType,
 	type ProductRule,
-} from '@/hypercomplex';
-import type { Multiply } from '@/struct/arithmetic';
+} from '@/src/hypercomplex';
+import type { Multiply } from '@/src/struct/arithmetic';
 
 /**
  * A quaternion w + xi + yj + zk whose four components are of `T`.
@@ -71,9 +71,12 @@ const COMPONENTS: readonly string[] = ['w', 'x', 'y', 'z'];
 /** Hamilton's product, `left` then `right`. */
 const hamiltonProduct: ProductRule = <T>(
 	element: ElementType<T>,
-	[leftW, leftX, leftY, leftZ]: readonly T[],
-	[rightW, rightX, rightY, rightZ]: readonly T[],
+	left: readonly T[],
+	right: readonly T[],
 ): T[] => {
+	// A quaternion always has its four components.
+	const [leftW, leftX, leftY, leftZ] = left as readonly [T, T, T, T];
+	const [rightW, rightX, rightY, rightZ] = right as readonly [T, T, T, T];
 	const times = (left: T, right: T): T => element.multiply(left, right);
 
 	return [
@@ -85,10 +88,7 @@ const hamiltonProduct: ProductRule = <T>(
 			times(leftZ, rightZ),
 		),
 		element.subtract(
-			element.add(
-				element.add(times(leftW, rightX), times(leftX, rightW)),
-				times(leftY, rightZ),
-			),
+			element.add(element.add(times(leftW, rightX), times(leftX, rightW)), times(leftY, rightZ)),
 			times(leftZ, rightY),
 		),
 		element.add(
@@ -128,5 +128,6 @@ const hamiltonProduct: ProductRule = <T>(
  */
 export const Quaternion = <TElement extends ElementDescriptor>(
 	element: TElement,
-): QuaternionType<ValueOf<TElement>, SourceOf<TElement>> =>
-	createHypercomplexType('Quaternion', COMPONENTS, element, hamiltonProduct);
+): QuaternionType<ValueOf<TElement>, SourceOf<TElement>> => {
+	return createHypercomplexType('Quaternion', COMPONENTS, element, hamiltonProduct);
+};

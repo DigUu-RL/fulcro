@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { createWaitingQueue, type Waiting } from '@/task/queue.js';
+import { createWaitingQueue, type Waiting } from '@/src/task/queue.js';
 
 /**
  * What the waiting queue keeps, counted.
@@ -19,7 +19,13 @@ const TASKS = 50_000;
  *
  * @returns The entry.
  */
-const idleEntry = (): Waiting => ({ start: () => {} });
+const idleEntry = (): Waiting => {
+	return {
+		start: (): void => {
+			// The queue is what is measured; starting is the caller's business.
+		},
+	};
+};
 
 describe('what a queue that never empties keeps', () => {
 	it('should hold a bounded number of entries, not one per task ever started', () => {
@@ -44,11 +50,13 @@ describe('what a queue that never empties keeps', () => {
 		const queue = createWaitingQueue();
 		let starts = 0;
 
-		const counted = (): Waiting => ({
-			start: () => {
-				starts++;
-			},
-		});
+		const counted = (): Waiting => {
+			return {
+				start: (): void => {
+					starts++;
+				},
+			};
+		};
 
 		queue.push(counted());
 

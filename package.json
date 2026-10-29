@@ -8,10 +8,10 @@
 	],
 	"scripts": {
 		"build": "npm run build --workspace @fulcro/errors && npm run build --workspace @fulcro/transform-core && npm run build --workspaces",
-		"typecheck": "npm run typecheck --workspaces && tsc --noEmit -p tsconfig.tests.json",
+		"typecheck": "npm run typecheck --workspaces && tsc -p tsconfig.json",
 		"test": "npm run build && vitest run --configLoader native",
 		"test:watch": "npm run build && vitest --configLoader native",
-		"validate:claude": "node tools/claude/validate-skills.mjs && node tools/claude/validate-claude-config.mjs",
+		"validate:claude": "node tools/claude/validate-skills.mts && node tools/claude/validate-claude-config.mts",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
 		"lint:md": "npx --yes markdownlint-cli2",
@@ -23,17 +23,21 @@
 	"license": "ISC",
 	"devDependencies": {
 		"@changesets/cli": "^3.0.3",
+		"@eslint/js": "^10.0.1",
+		"@stylistic/eslint-plugin": "^5.10.0",
+		"@types/estree": "^1.0.9",
 		"@types/node": "^26.5.1",
-		"eslint-config-prettier": "^10.1.8",
-		"eslint-plugin-simple-import-sort": "^14.0.0",
+		"eslint": "^10.13.0",
+		"jiti": "^2.7.0",
 		"prettier": "^3.9.6",
-		"typescript": "^5.3.3",
+		"tsdown": "^0.23.1",
+		"typescript": "^5.9.3",
 		"typescript-eslint": "^8.70.0",
 		"typescript7": "npm:typescript@^7.0.2",
 		"vitest": "^5.0.0"
 	},
 	"engines": {
-		"node": ">=22"
+		"node": ">=22.18"
 	},
 	"repository": {
 		"type": "git",

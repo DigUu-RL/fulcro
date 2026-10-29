@@ -183,10 +183,7 @@ export interface NumericType<T, TSource> {
  * @template T Type of the values this descriptor produces.
  * @template TSource What `from` accepts.
  */
-export interface BoundedNumericType<T, TSource> extends NumericType<
-	T,
-	TSource
-> {
+export interface BoundedNumericType<T, TSource> extends NumericType<T, TSource> {
 	/** Smallest finite value of the type. */
 	readonly minimum: T;
 

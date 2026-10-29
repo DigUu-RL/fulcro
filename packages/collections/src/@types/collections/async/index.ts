@@ -1,4 +1,4 @@
-import {
+import type {
 	AsyncAccumulator,
 	AsyncAction,
 	AsyncOptionalSelector,
@@ -11,9 +11,9 @@ import {
 	TerminalOptions,
 	TypeNames,
 	TypeTest,
-} from '@/@types';
-import { Group } from '@/@types/collections/group';
-import { Sequence } from '@/@types/collections/sequence';
+} from '@/src/@types';
+import type { Group } from '@/src/@types/collections/group';
+import type { Sequence } from '@/src/@types/collections/sequence';
 
 /**
  * A lazily evaluated sequence whose elements are not all available yet.
@@ -69,9 +69,7 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * for each element.
 	 * @returns A deferred sequence with all the inner elements concatenated.
 	 */
-	selectMany<R>(
-		selector: AsyncSelector<T, Iterable<R> | AsyncIterable<R>>,
-	): AsyncSequence<R>;
+	selectMany<R>(selector: AsyncSelector<T, Iterable<R> | AsyncIterable<R>>): AsyncSequence<R>;
 
 	/**
 	 * Takes the leading elements of the sequence.
@@ -179,10 +177,7 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * @returns A deferred sequence with the projected elements.
 	 * @throws {Error} When `concurrency` is not a positive integer.
 	 */
-	selectAwait<R>(
-		selector: AsyncSelector<T, R>,
-		options: ConcurrencyOptions,
-	): AsyncSequence<R>;
+	selectAwait<R>(selector: AsyncSelector<T, R>, options: ConcurrencyOptions): AsyncSequence<R>;
 
 	/**
 	 * Filters the sequence, evaluating several conditions at a time.
@@ -195,10 +190,7 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * @returns A deferred sequence with the matching elements.
 	 * @throws {Error} When `concurrency` is not a positive integer.
 	 */
-	whereAwait(
-		predicate: AsyncPredicate<T>,
-		options: ConcurrencyOptions,
-	): AsyncSequence<T>;
+	whereAwait(predicate: AsyncPredicate<T>, options: ConcurrencyOptions): AsyncSequence<T>;
 
 	/**
 	 * Runs an action for every element, several at a time.
@@ -264,10 +256,7 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * @param options Cancellation for this consumption.
 	 * @returns A promise of whether no element failed.
 	 */
-	all(
-		predicate: AsyncPredicate<T>,
-		options?: TerminalOptions,
-	): Promise<boolean>;
+	all(predicate: AsyncPredicate<T>, options?: TerminalOptions): Promise<boolean>;
 
 	/**
 	 * Returns the first element of the sequence.
@@ -357,9 +346,7 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * @param selector Projection returning a value, or nothing.
 	 * @returns A deferred sequence with the values the projection produced.
 	 */
-	choose<R>(
-		selector: AsyncOptionalSelector<T, R>,
-	): AsyncSequence<NonNullable<R>>;
+	choose<R>(selector: AsyncOptionalSelector<T, R>): AsyncSequence<NonNullable<R>>;
 
 	/**
 	 * Projects and filters with several projections in flight at once.
@@ -386,40 +373,25 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * @param type Name of the type to keep.
 	 * @returns A deferred sequence narrowed to that type.
 	 */
-	ofType<K extends keyof TypeNames>(
-		type: K,
-	): AsyncSequence<Narrowed<T, TypeNames[K]>>;
+	ofType<K extends keyof TypeNames>(type: K): AsyncSequence<Narrowed<T, TypeNames[K]>>;
 
 	/**
-	 * Keeps only the elements built from a given class.
+	 * Keeps only the elements of a class, of a shape, or of a type written as a
+	 * type argument, narrowing the sequence to it.
 	 *
-	 * @template R Type produced by the constructor.
-	 * @param type Constructor the elements are tested against.
-	 * @returns A deferred sequence narrowed to that type.
-	 */
-	ofType<R>(type: Constructor<R>): AsyncSequence<Narrowed<T, R>>;
-
-	/**
-	 * Keeps only the elements passing a test over their shape.
-	 *
-	 * @template R Type a passing value is taken to be.
-	 * @param test Test over the shape of each element.
-	 * @returns A deferred sequence narrowed to that type.
-	 */
-	ofType<R>(test: TypeTest<R>): AsyncSequence<Narrowed<T, R>>;
-
-	/**
-	 * Keeps only the elements of the given type, written as a type.
-	 *
-	 * Needs the transformer of this package, which resolves the type argument
-	 * into a runtime test — writing an interface out as the checks its
-	 * properties imply.
+	 * The forms are those of `Sequence.ofType`: a constructor the elements are
+	 * tested against, a test over their shape, or nothing, with the type
+	 * argument resolved by the transformer of this package into a runtime test
+	 * — writing an interface out as the checks its properties imply.
 	 *
 	 * @template R Type to keep.
+	 * @param type Constructor the elements are tested against, or a test over
+	 * their shape; omitted when the type argument names the type.
 	 * @returns A deferred sequence narrowed to that type.
-	 * @throws {Error} When the call was not resolved at compile time.
+	 * @throws {Error} When the type was omitted and the call was not resolved at
+	 * compile time.
 	 */
-	ofType<R>(): AsyncSequence<Narrowed<T, R>>;
+	ofType<R>(type?: Constructor<R> | TypeTest<R>): AsyncSequence<Narrowed<T, R>>;
 
 	/**
 	 * Re-types the sequence, refusing any element that disagrees.
@@ -437,34 +409,19 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	cast<K extends keyof TypeNames>(type: K): AsyncSequence<TypeNames[K]>;
 
 	/**
-	 * Re-types the sequence to a class.
-	 *
-	 * @template R Type produced by the constructor.
-	 * @param type Constructor every element must be an instance of.
-	 * @returns A deferred sequence typed as that type.
-	 * @throws {TypeError} When an element is not an instance, as it is read.
-	 */
-	cast<R>(type: Constructor<R>): AsyncSequence<R>;
-
-	/**
-	 * Re-types the sequence, checking each element against a shape test.
+	 * Re-types the sequence to a class, to a shape, or to a type written as a
+	 * type argument, refusing any element that is not of it.
 	 *
 	 * @template R Type every element must be.
-	 * @param test Test over the shape of each element.
+	 * @param type Constructor every element must be an instance of, or a test
+	 * over the shape of each element; omitted when the type argument names the
+	 * type.
 	 * @returns A deferred sequence typed as that type.
-	 * @throws {TypeError} When an element fails the test, as it is read.
+	 * @throws {Error} When the type was omitted and the call was not resolved at
+	 * compile time.
+	 * @throws {TypeError} When an element is not of that type, as it is read.
 	 */
-	cast<R>(test: TypeTest<R>): AsyncSequence<R>;
-
-	/**
-	 * Re-types the sequence to the given type, written as a type.
-	 *
-	 * @template R Type every element must be.
-	 * @returns A deferred sequence typed as that type.
-	 * @throws {Error} When the call was not resolved at compile time.
-	 * @throws {TypeError} When an element fails the check, as it is read.
-	 */
-	cast<R>(): AsyncSequence<R>;
+	cast<R>(type?: Constructor<R> | TypeTest<R>): AsyncSequence<R>;
 
 	/**
 	 * Takes the elements with the largest keys, in descending order.
@@ -603,9 +560,7 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * @param keySelector Projection returning the key of each element.
 	 * @returns A deferred sequence of groups, in the order the runs arrived.
 	 */
-	groupAdjacent<K>(
-		keySelector: AsyncSelector<T, K>,
-	): AsyncSequence<Group<K, T>>;
+	groupAdjacent<K>(keySelector: AsyncSelector<T, K>): AsyncSequence<Group<K, T>>;
 
 	/**
 	 * Merges this sequence with another, pairwise.
@@ -745,10 +700,7 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * @param options Cancellation for this consumption.
 	 * @returns A promise of the total, or `0` when nothing arrived.
 	 */
-	sum(
-		selector?: AsyncSelector<T, number>,
-		options?: TerminalOptions,
-	): Promise<number>;
+	sum(selector?: AsyncSelector<T, number>, options?: TerminalOptions): Promise<number>;
 
 	/**
 	 * Averages the numeric values of the sequence.
@@ -758,10 +710,7 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * @returns A promise of the arithmetic mean.
 	 * @throws {Error} When the sequence is empty.
 	 */
-	average(
-		selector?: AsyncSelector<T, number>,
-		options?: TerminalOptions,
-	): Promise<number>;
+	average(selector?: AsyncSelector<T, number>, options?: TerminalOptions): Promise<number>;
 
 	/**
 	 * Finds the smallest numeric value of the sequence.
@@ -771,10 +720,7 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * @returns A promise of the smallest value.
 	 * @throws {Error} When the sequence is empty.
 	 */
-	min(
-		selector?: AsyncSelector<T, number>,
-		options?: TerminalOptions,
-	): Promise<number>;
+	min(selector?: AsyncSelector<T, number>, options?: TerminalOptions): Promise<number>;
 
 	/**
 	 * Finds the largest numeric value of the sequence.
@@ -784,10 +730,7 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * @returns A promise of the largest value.
 	 * @throws {Error} When the sequence is empty.
 	 */
-	max(
-		selector?: AsyncSelector<T, number>,
-		options?: TerminalOptions,
-	): Promise<number>;
+	max(selector?: AsyncSelector<T, number>, options?: TerminalOptions): Promise<number>;
 
 	/**
 	 * Finds the element with the smallest key.
@@ -798,10 +741,7 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * @returns A promise of the element whose key is smallest.
 	 * @throws {Error} When the sequence is empty.
 	 */
-	minBy<K>(
-		keySelector: AsyncSelector<T, K>,
-		options?: TerminalOptions,
-	): Promise<T>;
+	minBy<K>(keySelector: AsyncSelector<T, K>, options?: TerminalOptions): Promise<T>;
 
 	/**
 	 * Finds the element with the largest key.
@@ -812,10 +752,7 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * @returns A promise of the element whose key is largest.
 	 * @throws {Error} When the sequence is empty.
 	 */
-	maxBy<K>(
-		keySelector: AsyncSelector<T, K>,
-		options?: TerminalOptions,
-	): Promise<T>;
+	maxBy<K>(keySelector: AsyncSelector<T, K>, options?: TerminalOptions): Promise<T>;
 
 	/**
 	 * Determines whether the sequence contains a value.
@@ -886,10 +823,7 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * @param options Cancellation for this consumption.
 	 * @returns A promise of the counts per key.
 	 */
-	countBy<K>(
-		keySelector: AsyncSelector<T, K>,
-		options?: TerminalOptions,
-	): Promise<Map<K, number>>;
+	countBy<K>(keySelector: AsyncSelector<T, K>, options?: TerminalOptions): Promise<Map<K, number>>;
 
 	/**
 	 * Materializes the sequence into a map, one element per key.

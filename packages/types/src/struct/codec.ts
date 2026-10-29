@@ -1,13 +1,14 @@
-import { Decimal } from '@/decimal';
-import { formatDecimal } from '@/decimal/format';
-import { parseDecimal } from '@/decimal/parse';
-import { type DecimalParts, powerOfTen } from '@/decimal/parts';
-import { DoublePrecisionFloat } from '@/doublePrecisionFloat';
-import { HalfPrecisionFloat } from '@/halfPrecisionFloat';
-import type { IntegerType, IntegerWidth } from '@/integer';
-import { SignedInteger } from '@/signedInteger';
-import { SinglePrecisionFloat } from '@/singlePrecisionFloat';
-import { UnsignedInteger } from '@/unsignedInteger';
+import { Decimal } from '@/src/decimal';
+import { formatDecimal } from '@/src/decimal/format';
+import { parseDecimal } from '@/src/decimal/parse';
+import { type DecimalParts, powerOfTen } from '@/src/decimal/parts';
+import { DoublePrecisionFloat } from '@/src/doublePrecisionFloat';
+import { binaryExponentOf } from '@/src/float/binaryExponent';
+import { HalfPrecisionFloat } from '@/src/halfPrecisionFloat';
+import type { IntegerType, IntegerWidth } from '@/src/integer';
+import { SignedInteger } from '@/src/signedInteger';
+import { SinglePrecisionFloat } from '@/src/singlePrecisionFloat';
+import { UnsignedInteger } from '@/src/unsignedInteger';
 
 /**
  * How a field of a struct is laid out in bytes, and how it is compared.
@@ -66,27 +67,26 @@ const HALF_WIDTH = 64n;
  * @param descriptor Descriptor of the width.
  * @returns The codec.
  */
-const integer128Codec = (descriptor: IntegerType<unknown>): FieldCodec => ({
-	size: 16,
-	alignment: 16,
-	read: (view, offset) => {
-		const low: bigint = view.getBigUint64(offset, true);
-		const high: bigint = descriptor.signed
-			? view.getBigInt64(offset + 8, true)
-			: view.getBigUint64(offset + 8, true);
+const integer128Codec = (descriptor: IntegerType<unknown>): FieldCodec => {
+	return {
+		size: 16,
+		alignment: 16,
+		read: (view, offset): bigint => {
+			const low: bigint = view.getBigUint64(offset, true);
 
-		return (high << HALF_WIDTH) | low;
-	},
-	write: (view, offset, value) => {
-		view.setBigUint64(offset, BigInt.asUintN(64, value as bigint), true);
-		view.setBigUint64(
-			offset + 8,
-			BigInt.asUintN(64, (value as bigint) >> HALF_WIDTH),
-			true,
-		);
-	},
-	equals: (left, right) => descriptor.equals(left, right),
-});
+			const high: bigint = descriptor.signed
+				? view.getBigInt64(offset + 8, true)
+				: view.getBigUint64(offset + 8, true);
+
+			return (high << HALF_WIDTH) | low;
+		},
+		write: (view, offset, value): void => {
+			view.setBigUint64(offset, BigInt.asUintN(64, value as bigint), true);
+			view.setBigUint64(offset + 8, BigInt.asUintN(64, (value as bigint) >> HALF_WIDTH), true);
+		},
+		equals: (left, right) => descriptor.equals(left, right),
+	};
+};
 
 /**
  * The codec of a fixed-width integer, through the `DataView` accessor of its
@@ -101,58 +101,73 @@ const integerCodec = (descriptor: IntegerType<unknown>): FieldCodec => {
 	if (width === 128) return integer128Codec(descriptor);
 
 	const size: number = width / 8;
-	const equals = (left: unknown, right: unknown): boolean =>
-		descriptor.equals(left, right);
+	const equals = (left: unknown, right: unknown): boolean => descriptor.equals(left, right);
 
 	switch (width) {
 		case 8:
 			return {
 				size,
 				alignment: size,
-				read: (view, offset) =>
-					signed ? view.getInt8(offset) : view.getUint8(offset),
-				write: (view, offset, value) =>
-					signed
-						? view.setInt8(offset, value as number)
-						: view.setUint8(offset, value as number),
+				read: (view, offset) => (signed ? view.getInt8(offset) : view.getUint8(offset)),
+				write: (view, offset, value): void => {
+					if (signed) {
+						view.setInt8(offset, value as number);
+						return;
+					}
+
+					view.setUint8(offset, value as number);
+				},
 				equals,
 			};
 		case 16:
 			return {
 				size,
 				alignment: size,
-				read: (view, offset) =>
-					signed ? view.getInt16(offset, true) : view.getUint16(offset, true),
-				write: (view, offset, value) =>
-					signed
-						? view.setInt16(offset, value as number, true)
-						: view.setUint16(offset, value as number, true),
+				read: (view, offset): number => {
+					return signed ? view.getInt16(offset, true) : view.getUint16(offset, true);
+				},
+				write: (view, offset, value): void => {
+					if (signed) {
+						view.setInt16(offset, value as number, true);
+						return;
+					}
+
+					view.setUint16(offset, value as number, true);
+				},
 				equals,
 			};
 		case 32:
 			return {
 				size,
 				alignment: size,
-				read: (view, offset) =>
-					signed ? view.getInt32(offset, true) : view.getUint32(offset, true),
-				write: (view, offset, value) =>
-					signed
-						? view.setInt32(offset, value as number, true)
-						: view.setUint32(offset, value as number, true),
+				read: (view, offset): number => {
+					return signed ? view.getInt32(offset, true) : view.getUint32(offset, true);
+				},
+				write: (view, offset, value): void => {
+					if (signed) {
+						view.setInt32(offset, value as number, true);
+						return;
+					}
+
+					view.setUint32(offset, value as number, true);
+				},
 				equals,
 			};
 		default:
 			return {
 				size,
 				alignment: size,
-				read: (view, offset) =>
-					signed
-						? view.getBigInt64(offset, true)
-						: view.getBigUint64(offset, true),
-				write: (view, offset, value) =>
-					signed
-						? view.setBigInt64(offset, value as bigint, true)
-						: view.setBigUint64(offset, value as bigint, true),
+				read: (view, offset): bigint => {
+					return signed ? view.getBigInt64(offset, true) : view.getBigUint64(offset, true);
+				},
+				write: (view, offset, value): void => {
+					if (signed) {
+						view.setBigInt64(offset, value as bigint, true);
+						return;
+					}
+
+					view.setBigUint64(offset, value as bigint, true);
+				},
 				equals,
 			};
 	}
@@ -182,20 +197,14 @@ const encodeHalf = (value: number): number => {
 	const magnitude: number = Math.abs(value);
 
 	if (magnitude === Infinity) return sign | 0x7c00;
+
 	if (magnitude < 2 ** HALF_MINIMUM_NORMAL_EXPONENT) {
 		return sign | (magnitude / HALF_SUBNORMAL_SPACING);
 	}
 
-	// `Math.log2` is not exact next to a power of two, so the estimate is
-	// corrected against the power itself.
-	let exponent: number = Math.floor(Math.log2(magnitude));
+	const exponent: number = binaryExponentOf(magnitude);
 
-	if (2 ** exponent > magnitude) exponent--;
-	else if (2 ** (exponent + 1) <= magnitude) exponent++;
-
-	return (
-		sign | ((exponent + 15) << 10) | ((magnitude / 2 ** exponent - 1) * 1024)
-	);
+	return sign | ((exponent + 15) << 10) | ((magnitude / 2 ** exponent - 1) * 1024);
 };
 
 /**
@@ -222,14 +231,13 @@ const floatCodecs = new Map<object, FieldCodec>([
 		{
 			size: 2,
 			alignment: 2,
-			read: (view, offset) => decodeHalf(view.getUint16(offset, true)),
-			write: (view, offset, value) =>
-				view.setUint16(offset, encodeHalf(value as number), true),
-			equals: (left, right) =>
-				HalfPrecisionFloat.equals(
-					left as HalfPrecisionFloat,
-					right as HalfPrecisionFloat,
-				),
+			read: (view, offset): number => decodeHalf(view.getUint16(offset, true)),
+			write: (view, offset, value): void => {
+				view.setUint16(offset, encodeHalf(value as number), true);
+			},
+			equals: (left, right): boolean => {
+				return HalfPrecisionFloat.equals(left as HalfPrecisionFloat, right as HalfPrecisionFloat);
+			},
 		},
 	],
 	[
@@ -237,14 +245,16 @@ const floatCodecs = new Map<object, FieldCodec>([
 		{
 			size: 4,
 			alignment: 4,
-			read: (view, offset) => view.getFloat32(offset, true),
-			write: (view, offset, value) =>
-				view.setFloat32(offset, value as number, true),
-			equals: (left, right) =>
-				SinglePrecisionFloat.equals(
+			read: (view, offset): number => view.getFloat32(offset, true),
+			write: (view, offset, value): void => {
+				view.setFloat32(offset, value as number, true);
+			},
+			equals: (left, right): boolean => {
+				return SinglePrecisionFloat.equals(
 					left as SinglePrecisionFloat,
 					right as SinglePrecisionFloat,
-				),
+				);
+			},
 		},
 	],
 	[
@@ -252,14 +262,16 @@ const floatCodecs = new Map<object, FieldCodec>([
 		{
 			size: 8,
 			alignment: 8,
-			read: (view, offset) => view.getFloat64(offset, true),
-			write: (view, offset, value) =>
-				view.setFloat64(offset, value as number, true),
-			equals: (left, right) =>
-				DoublePrecisionFloat.equals(
+			read: (view, offset): number => view.getFloat64(offset, true),
+			write: (view, offset, value): void => {
+				view.setFloat64(offset, value as number, true);
+			},
+			equals: (left, right): boolean => {
+				return DoublePrecisionFloat.equals(
 					left as DoublePrecisionFloat,
 					right as DoublePrecisionFloat,
-				),
+				);
+			},
 		},
 	],
 ]);
@@ -296,6 +308,7 @@ const encodeDecimal = (parts: DecimalParts): bigint => {
 	const sign: bigint = parts.negative ? 1n << 127n : 0n;
 
 	if (parts.kind === 'nan') return 0x7c00_0000_0000_0000n << HALF_WIDTH;
+
 	if (parts.kind === 'infinity') {
 		return sign | (0x7800_0000_0000_0000n << HALF_WIDTH);
 	}
@@ -308,9 +321,7 @@ const encodeDecimal = (parts: DecimalParts): bigint => {
 	}
 
 	return (
-		sign |
-		(BigInt(exponent + DECIMAL_EXPONENT_BIAS) << DECIMAL_COEFFICIENT_BITS) |
-		coefficient
+		sign | (BigInt(exponent + DECIMAL_EXPONENT_BIAS) << DECIMAL_COEFFICIENT_BITS) | coefficient
 	);
 };
 
@@ -338,18 +349,16 @@ const decodeDecimal = (bits: bigint): DecimalParts => {
 	}
 
 	let coefficient: bigint =
-		((bits >> 125n) & 0x3n) === 0x3n
-			? 0n
-			: bits & ((1n << DECIMAL_COEFFICIENT_BITS) - 1n);
+		((bits >> 125n) & 0x3n) === 0x3n ? 0n : bits & ((1n << DECIMAL_COEFFICIENT_BITS) - 1n);
 
 	if (coefficient >= DECIMAL_COEFFICIENT_LIMIT) coefficient = 0n;
+
 	if (coefficient === 0n) {
 		return { kind: 'finite', negative, coefficient: 0n, exponent: 0 };
 	}
 
 	let exponent: number =
-		Number((bits >> DECIMAL_COEFFICIENT_BITS) & 0x3fffn) -
-		DECIMAL_EXPONENT_BIAS;
+		Number((bits >> DECIMAL_COEFFICIENT_BITS) & 0x3fffn) - DECIMAL_EXPONENT_BIAS;
 
 	while (coefficient % 10n === 0n) {
 		coefficient /= 10n;
@@ -371,8 +380,7 @@ const decimalCodec: FieldCodec = {
 	alignment: 16,
 	read: (view, offset) => {
 		const bits: bigint =
-			(view.getBigUint64(offset + 8, true) << HALF_WIDTH) |
-			view.getBigUint64(offset, true);
+			(view.getBigUint64(offset + 8, true) << HALF_WIDTH) | view.getBigUint64(offset, true);
 
 		return Decimal.from(formatDecimal(decodeDecimal(bits)));
 	},
@@ -395,24 +403,32 @@ const registeredCodecs = new WeakMap<object, FieldCodec>();
 const INTEGER_WIDTHS: readonly unknown[] = [8, 16, 32, 64, 128];
 
 /**
+ * Tells whether a value is one of the widths a fixed-width integer comes in.
+ *
+ * @param width Value to inspect.
+ * @returns `true` for a width `SignedInteger` and `UnsignedInteger` accept.
+ */
+const isIntegerWidth = (width: unknown): width is IntegerWidth => {
+	return INTEGER_WIDTHS.includes(width);
+};
+
+/**
  * Tells whether a value is the descriptor `SignedInteger` or `UnsignedInteger`
  * returns for its width — the same object, not one shaped like it.
  *
  * @param descriptor Value to inspect.
  * @returns `true` for an integer descriptor of this package.
  */
-const isIntegerDescriptor = (
-	descriptor: object,
-): descriptor is IntegerType<unknown> => {
+const isIntegerDescriptor = (descriptor: object): descriptor is IntegerType<unknown> => {
 	const { signed, width } = descriptor as Partial<IntegerType<unknown>>;
 
-	if (typeof signed !== 'boolean' || !INTEGER_WIDTHS.includes(width)) {
+	if (typeof signed !== 'boolean' || !isIntegerWidth(width)) {
 		return false;
 	}
 
 	const factory = signed ? SignedInteger : UnsignedInteger;
 
-	return factory(width as IntegerWidth) === descriptor;
+	return factory(width) === descriptor;
 };
 
 /**

@@ -2,9 +2,8 @@ import { spawnSync } from 'node:child_process';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { validateConfig } from '../../tools/claude/validate-claude-config.mjs';
-
-import { discardTrees, type Tree, tree } from './fixture.mjs';
+import { discardTrees, type Tree, tree } from '@/tests/claude/fixture.mts';
+import { validateConfig } from '@/tools/claude/validate-claude-config.mts';
 
 /**
  * The structural validation of the settings, the hooks and the rules.
@@ -22,10 +21,11 @@ afterEach(discardTrees);
  * @param level Which half of the report to read.
  * @returns The rule identifiers, in the order they were reported.
  */
-const rules = (root: string, level: 'error' | 'warning' = 'error'): string[] =>
-	validateConfig(root)
+const rules = (root: string, level: 'error' | 'warning' = 'error'): string[] => {
+	return validateConfig(root)
 		.filter((finding) => finding.level === level)
 		.map((finding) => finding.rule);
+};
 
 /**
  * A settings document wiring the named hooks to `PreToolUse`.
@@ -34,18 +34,20 @@ const rules = (root: string, level: 'error' | 'warning' = 'error'): string[] =>
  * @param deny The permission entries.
  * @returns The file contents.
  */
-const settings = (scripts: string[], deny: string[] = []): string =>
-	`${JSON.stringify(
+const settings = (scripts: string[], deny: string[] = []): string => {
+	return `${JSON.stringify(
 		{
 			permissions: { deny },
 			hooks: {
 				PreToolUse: [
 					{
 						matcher: 'Bash|PowerShell',
-						hooks: scripts.map((script) => ({
-							type: 'command',
-							command: `node ${script}`,
-						})),
+						hooks: scripts.map((script) => {
+							return {
+								type: 'command',
+								command: `node ${script}`,
+							};
+						}),
 					},
 				],
 			},
@@ -53,6 +55,7 @@ const settings = (scripts: string[], deny: string[] = []): string =>
 		null,
 		'\t',
 	)}\n`;
+};
 
 /**
  * A repository with a contract, a rules index and nothing else to say.
@@ -83,10 +86,8 @@ const hook = (
 	const { tested = true, guard = true } = options;
 
 	fixture.write(
-		`.claude/hooks/${name}.mjs`,
-		guard
-			? 'export const review = () => null;\n'
-			: 'export const runs = () => true;\n',
+		`.claude/hooks/${name}.mts`,
+		guard ? 'export const review = () => null;\n' : 'export const runs = () => true;\n',
 	);
 
 	if (!tested) return;
@@ -99,10 +100,11 @@ describe('the settings', () => {
 		const fixture = configured();
 
 		hook(fixture, 'protect-publish');
+
 		fixture.write(
 			'.claude/settings.json',
 			settings(
-				['.claude/hooks/protect-publish.mjs'],
+				['.claude/hooks/protect-publish.mts'],
 				['Bash(git push:*)', 'PowerShell(git push:*)'],
 			),
 		);
@@ -114,10 +116,7 @@ describe('the settings', () => {
 	it('reports a hook wired to a file that is not there', () => {
 		const fixture = configured();
 
-		fixture.write(
-			'.claude/settings.json',
-			settings(['.claude/hooks/protect-publish.mjs']),
-		);
+		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mts']));
 
 		expect(rules(fixture.root)).toEqual(['hook-missing']);
 	});
@@ -127,10 +126,7 @@ describe('the settings', () => {
 
 		hook(fixture, 'protect-publish');
 		hook(fixture, 'block-destructive');
-		fixture.write(
-			'.claude/settings.json',
-			settings(['.claude/hooks/protect-publish.mjs']),
-		);
+		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mts']));
 
 		expect(rules(fixture.root)).toEqual(['hook-unwired']);
 	});
@@ -139,10 +135,7 @@ describe('the settings', () => {
 		const fixture = configured();
 
 		hook(fixture, 'protect-publish', { tested: false });
-		fixture.write(
-			'.claude/settings.json',
-			settings(['.claude/hooks/protect-publish.mjs']),
-		);
+		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mts']));
 
 		expect(rules(fixture.root)).toEqual(['hook-untested']);
 	});
@@ -152,10 +145,7 @@ describe('the settings', () => {
 
 		hook(fixture, 'protect-publish');
 		hook(fixture, 'helpers', { guard: false, tested: false });
-		fixture.write(
-			'.claude/settings.json',
-			settings(['.claude/hooks/protect-publish.mjs']),
-		);
+		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mts']));
 
 		expect(rules(fixture.root, 'warning')).toEqual(['hook-unused']);
 	});
@@ -177,9 +167,10 @@ describe('the permission list beside the hooks', () => {
 		const fixture = configured();
 
 		hook(fixture, 'protect-publish');
+
 		fixture.write(
 			'.claude/settings.json',
-			settings(['.claude/hooks/protect-publish.mjs'], ['Write(dist/**)']),
+			settings(['.claude/hooks/protect-publish.mts'], ['Write(dist/**)']),
 		);
 
 		expect(rules(fixture.root)).toEqual(['permission-unmatched']);
@@ -189,9 +180,10 @@ describe('the permission list beside the hooks', () => {
 		const fixture = configured();
 
 		hook(fixture, 'protect-publish');
+
 		fixture.write(
 			'.claude/settings.json',
-			settings(['.claude/hooks/protect-publish.mjs'], ['git push']),
+			settings(['.claude/hooks/protect-publish.mts'], ['git push']),
 		);
 
 		expect(rules(fixture.root)).toEqual(['permission-shape']);
@@ -201,9 +193,10 @@ describe('the permission list beside the hooks', () => {
 		const fixture = configured();
 
 		hook(fixture, 'protect-publish');
+
 		fixture.write(
 			'.claude/settings.json',
-			settings(['.claude/hooks/protect-publish.mjs'], ['Bash(npm publish:*)']),
+			settings(['.claude/hooks/protect-publish.mts'], ['Bash(npm publish:*)']),
 		);
 
 		expect(rules(fixture.root, 'warning')).toEqual(['permission-asymmetric']);
@@ -215,14 +208,8 @@ describe('the rules', () => {
 		const fixture = configured();
 
 		hook(fixture, 'protect-publish');
-		fixture.write(
-			'.claude/settings.json',
-			settings(['.claude/hooks/protect-publish.mjs']),
-		);
-		fixture.write(
-			'.claude/rules/build-output.md',
-			'# Build output\n\n**Scope:** `packages/*`\n',
-		);
+		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mts']));
+		fixture.write('.claude/rules/build-output.md', '# Build output\n\n**Scope:** `packages/*`\n');
 
 		expect(rules(fixture.root)).toEqual(['rule-unlisted']);
 	});
@@ -231,18 +218,9 @@ describe('the rules', () => {
 		const fixture = configured();
 
 		hook(fixture, 'protect-publish');
-		fixture.write(
-			'.claude/settings.json',
-			settings(['.claude/hooks/protect-publish.mjs']),
-		);
-		fixture.write(
-			'.claude/rules/README.md',
-			'# Rules\n\n- `build-output.md`\n',
-		);
-		fixture.write(
-			'.claude/rules/build-output.md',
-			'# Build output\n\nSomewhere.\n',
-		);
+		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mts']));
+		fixture.write('.claude/rules/README.md', '# Rules\n\n- `build-output.md`\n');
+		fixture.write('.claude/rules/build-output.md', '# Build output\n\nSomewhere.\n');
 
 		expect(rules(fixture.root, 'warning')).toEqual(['rule-scope']);
 	});
@@ -251,10 +229,7 @@ describe('the rules', () => {
 		const fixture = tree();
 
 		hook(fixture, 'protect-publish');
-		fixture.write(
-			'.claude/settings.json',
-			settings(['.claude/hooks/protect-publish.mjs']),
-		);
+		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mts']));
 
 		expect(rules(fixture.root)).toContain('contract-missing');
 	});
@@ -265,14 +240,8 @@ describe('what the contract and the rules name', () => {
 		const fixture = configured();
 
 		hook(fixture, 'protect-publish');
-		fixture.write(
-			'.claude/settings.json',
-			settings(['.claude/hooks/protect-publish.mjs']),
-		);
-		fixture.write(
-			'.claude/CLAUDE.md',
-			'# Contract\n\nThe standard is `docs/testing.md`.\n',
-		);
+		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mts']));
+		fixture.write('.claude/CLAUDE.md', '# Contract\n\nThe standard is `docs/testing.md`.\n');
 
 		expect(rules(fixture.root)).toEqual(['reference-missing']);
 	});
@@ -281,15 +250,9 @@ describe('what the contract and the rules name', () => {
 		const fixture = configured();
 
 		hook(fixture, 'protect-publish');
-		fixture.write(
-			'.claude/settings.json',
-			settings(['.claude/hooks/protect-publish.mjs']),
-		);
-		fixture.write('.gitignore', '.roadmap/*\n');
-		fixture.write(
-			'.claude/CLAUDE.md',
-			'# Contract\n\nThe plan is `.roadmap/MASTER-ROADMAP.md`.\n',
-		);
+		fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mts']));
+		fixture.write('.gitignore', '.notes/*\n');
+		fixture.write('.claude/CLAUDE.md', '# Contract\n\nThe plan is `.notes/PLAN.md`.\n');
 
 		// Without a repository there are no ignore rules to read, and the
 		// reference is reported — which is the answer a checker gives when it
@@ -313,10 +276,8 @@ const ruled = (rules: string[] = []): Tree => {
 	const fixture = configured();
 
 	hook(fixture, 'protect-publish');
-	fixture.write(
-		'.claude/settings.json',
-		settings(['.claude/hooks/protect-publish.mjs']),
-	);
+	fixture.write('.claude/settings.json', settings(['.claude/hooks/protect-publish.mts']));
+
 	fixture.write(
 		'.claude/rules/README.md',
 		`# Rules\n\n${rules.map((file) => `- \`${file}\``).join('\n')}\n`,
@@ -343,13 +304,10 @@ describe('the frontmatter of a rule', () => {
 	it('accepts a scope whose fixture holds up', () => {
 		const fixture = ruled(['collections-performance.md']);
 
-		rule(
-			fixture,
-			'collections-performance.md',
-			'paths:\n  - packages/collections/src/**/*.ts',
-		);
+		rule(fixture, 'collections-performance.md', 'paths:\n  - packages/collections/src/**/*.ts');
 		fixture.write('packages/collections/src/index.ts', 'export {};\n');
 		fixture.write('packages/parallel/src/index.ts', 'export {};\n');
+
 		fixture.write(
 			'tools/claude/rule-fixtures/collections-performance.fixture.json',
 			JSON.stringify({
@@ -376,10 +334,7 @@ describe('the frontmatter of a rule', () => {
 
 		rule(fixture, 'concurrency.md', 'paths:\n  - packages/concurrency/**/*.ts');
 
-		expect(rules(fixture.root)).toEqual([
-			'rule-paths-missing',
-			'rule-fixture-missing',
-		]);
+		expect(rules(fixture.root)).toEqual(['rule-paths-missing', 'rule-fixture-missing']);
 	});
 
 	it('leaves a rule with no block alone, because it loads always', () => {
@@ -392,6 +347,7 @@ describe('the frontmatter of a rule', () => {
 
 	it('warns when two rules say the same thing word for word', () => {
 		const fixture = ruled(['general.md', 'git.md']);
+
 		const paragraph =
 			'A name that has to be decoded is a name the next reader guesses at, and the guess is wrong exactly where it matters.';
 
@@ -399,10 +355,8 @@ describe('the frontmatter of a rule', () => {
 			'.claude/rules/general.md',
 			`# General\n\n**Scope:** everywhere\n\n${paragraph}\n`,
 		);
-		fixture.write(
-			'.claude/rules/git.md',
-			`# Git\n\n**Scope:** everywhere\n\n${paragraph}\n`,
-		);
+
+		fixture.write('.claude/rules/git.md', `# Git\n\n**Scope:** everywhere\n\n${paragraph}\n`);
 
 		expect(rules(fixture.root, 'warning')).toEqual(['rule-duplicate']);
 	});
@@ -417,11 +371,7 @@ describe('the fixtures behind a path-scoped rule', () => {
 	const scoped = (): Tree => {
 		const fixture = ruled(['transformers.md']);
 
-		rule(
-			fixture,
-			'transformers.md',
-			'paths:\n  - packages/*/src/transformer/**/*.ts',
-		);
+		rule(fixture, 'transformers.md', 'paths:\n  - packages/*/src/transformer/**/*.ts');
 		fixture.write('packages/reflect/src/transformer/index.ts', 'export {};\n');
 		fixture.write('packages/reflect/src/index.ts', 'export {};\n');
 
@@ -502,6 +452,7 @@ describe('the fixtures behind a path-scoped rule', () => {
 		const fixture = ruled(['git.md']);
 
 		rule(fixture, 'git.md');
+
 		fixture.write(
 			'tools/claude/rule-fixtures/git.fixture.json',
 			JSON.stringify({ rule: 'git.md', loads: [] }),
@@ -513,15 +464,9 @@ describe('the fixtures behind a path-scoped rule', () => {
 	it('reports one that is not JSON', () => {
 		const fixture = scoped();
 
-		fixture.write(
-			'tools/claude/rule-fixtures/transformers.fixture.json',
-			'{ "rule": }\n',
-		);
+		fixture.write('tools/claude/rule-fixtures/transformers.fixture.json', '{ "rule": }\n');
 
-		expect(rules(fixture.root)).toEqual([
-			'fixture-unreadable',
-			'rule-fixture-missing',
-		]);
+		expect(rules(fixture.root)).toEqual(['fixture-unreadable', 'rule-fixture-missing']);
 	});
 });
 
@@ -609,10 +554,7 @@ describe('the subagents', () => {
 			].join('\n'),
 		);
 
-		expect(rules(fixture.root)).toEqual([
-			'agent-tools-writing',
-			'agent-tools-writing',
-		]);
+		expect(rules(fixture.root)).toEqual(['agent-tools-writing', 'agent-tools-writing']);
 	});
 
 	it('reports a name that is not the file name, and a missing description', () => {
@@ -656,12 +598,7 @@ describe('the subagents', () => {
 	it('reports a file its prompt names that is not there', () => {
 		const fixture = ruled();
 
-		agent(
-			fixture,
-			'architecture-reviewer',
-			reviewer,
-			'Read `.claude/rules/general.md` first.\n',
-		);
+		agent(fixture, 'architecture-reviewer', reviewer, 'Read `.claude/rules/general.md` first.\n');
 
 		expect(rules(fixture.root)).toEqual(['reference-missing']);
 	});

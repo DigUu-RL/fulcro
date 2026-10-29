@@ -22,15 +22,13 @@ import { IDENTIFIER_PATTERN } from '@fulcro/transform-core';
  * @param name Name of the member.
  * @returns The property name node.
  */
-const memberName = (
-	factory: typescript.NodeFactory,
-	name: string,
-): typescript.PropertyName =>
-	name === '__proto__'
+const memberName = (factory: typescript.NodeFactory, name: string): typescript.PropertyName => {
+	return name === '__proto__'
 		? factory.createComputedPropertyName(factory.createStringLiteral(name))
 		: IDENTIFIER_PATTERN.test(name)
 			? factory.createIdentifier(name)
 			: factory.createStringLiteral(name);
+};
 
 /**
  * `Object.freeze(…)` around an expression.
@@ -42,15 +40,13 @@ const memberName = (
 const freeze = (
 	factory: typescript.NodeFactory,
 	value: typescript.Expression,
-): typescript.Expression =>
-	factory.createCallExpression(
-		factory.createPropertyAccessExpression(
-			factory.createIdentifier('Object'),
-			'freeze',
-		),
+): typescript.Expression => {
+	return factory.createCallExpression(
+		factory.createPropertyAccessExpression(factory.createIdentifier('Object'), 'freeze'),
 		undefined,
 		[value],
 	);
+};
 
 /**
  * `Object.freeze({ … })` over some members, in order.
@@ -62,15 +58,16 @@ const freeze = (
 export const frozenObject = (
 	factory: typescript.NodeFactory,
 	members: readonly (readonly [string, typescript.Expression])[],
-): typescript.Expression =>
-	freeze(
+): typescript.Expression => {
+	return freeze(
 		factory,
 		factory.createObjectLiteralExpression(
-			members.map(([name, value]) =>
-				factory.createPropertyAssignment(memberName(factory, name), value),
-			),
+			members.map(([name, value]) => {
+				return factory.createPropertyAssignment(memberName(factory, name), value);
+			}),
 		),
 	);
+};
 
 /**
  * A number, written so that it reads back as exactly the same number.
@@ -82,37 +79,28 @@ export const frozenObject = (
  * @param value The number.
  * @returns The expression.
  */
-const numberLiteral = (
-	factory: typescript.NodeFactory,
-	value: number,
-): typescript.Expression => {
-	const division = (numerator: number): typescript.Expression =>
-		factory.createParenthesizedExpression(
+const numberLiteral = (factory: typescript.NodeFactory, value: number): typescript.Expression => {
+	const division = (numerator: number): typescript.Expression => {
+		return factory.createParenthesizedExpression(
 			factory.createBinaryExpression(
 				factory.createNumericLiteral(numerator),
 				typescript.SyntaxKind.SlashToken,
 				factory.createNumericLiteral(0),
 			),
 		);
+	};
 
 	if (Number.isNaN(value)) return division(0);
 	if (value === Infinity) return division(1);
+
 	if (value === -Infinity) {
-		return factory.createPrefixUnaryExpression(
-			typescript.SyntaxKind.MinusToken,
-			division(1),
-		);
+		return factory.createPrefixUnaryExpression(typescript.SyntaxKind.MinusToken, division(1));
 	}
 
-	const magnitude: typescript.Expression = factory.createNumericLiteral(
-		Math.abs(value),
-	);
+	const magnitude: typescript.Expression = factory.createNumericLiteral(Math.abs(value));
 
 	return value < 0 || Object.is(value, -0)
-		? factory.createPrefixUnaryExpression(
-				typescript.SyntaxKind.MinusToken,
-				magnitude,
-			)
+		? factory.createPrefixUnaryExpression(typescript.SyntaxKind.MinusToken, magnitude)
 		: magnitude;
 };
 
@@ -135,18 +123,17 @@ export const constantLiteral = (
 			return factory.createStringLiteral(value);
 		case 'boolean':
 			return value ? factory.createTrue() : factory.createFalse();
+
 		case 'bigint': {
 			const magnitude: typescript.Expression = factory.createBigIntLiteral(
-				`${value < 0n ? -value : value}n`,
+				`${String(value < 0n ? -value : value)}n`,
 			);
 
 			return value < 0n
-				? factory.createPrefixUnaryExpression(
-						typescript.SyntaxKind.MinusToken,
-						magnitude,
-					)
+				? factory.createPrefixUnaryExpression(typescript.SyntaxKind.MinusToken, magnitude)
 				: magnitude;
 		}
+
 		case 'undefined':
 			return factory.createVoidZero();
 	}
@@ -156,17 +143,12 @@ export const constantLiteral = (
 	if (Array.isArray(value)) {
 		return freeze(
 			factory,
-			factory.createArrayLiteralExpression(
-				value.map((item) => constantLiteral(factory, item)),
-			),
+			factory.createArrayLiteralExpression(value.map((item) => constantLiteral(factory, item))),
 		);
 	}
 
 	return frozenObject(
 		factory,
-		Object.entries(value as object).map(([key, item]) => [
-			key,
-			constantLiteral(factory, item),
-		]),
+		Object.entries(value as object).map(([key, item]) => [key, constantLiteral(factory, item)]),
 	);
 };

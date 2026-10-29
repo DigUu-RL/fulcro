@@ -1,0 +1,11 @@
+{
+	"extends": "./tsconfig.base.json",
+	"compilerOptions": {
+		"types": ["node"],
+		"allowJs": true,
+		// The tooling Node runs directly imports its siblings by their `.mts` file name, as Node requires.
+		"allowImportingTsExtensions": true,
+		"paths": { "@/*": ["./*"] }
+	},
+	"include": ["tests", "tools", ".claude/hooks", "eslint.config.ts", "vitest.config.mts"]
+}

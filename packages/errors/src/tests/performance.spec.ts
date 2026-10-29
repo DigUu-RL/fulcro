@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { catalog } from '@/catalog';
-import { createError } from '@/createError';
-import { isFulcroError } from '@/isFulcroError';
-import { prefixError } from '@/prefixError';
+import { catalog } from '@/src/catalog';
+import { createError } from '@/src/createError';
+import { isFulcroError } from '@/src/isFulcroError';
+import { prefixError } from '@/src/prefixError';
 
 /**
  * Performance suite.
@@ -25,9 +25,7 @@ const ERRORS = 1_000;
  * @returns Counts the calls made to all of them together.
  */
 const spyOnEveryTemplate = (): (() => number) => {
-	const spies = Object.values(catalog).map((definition) =>
-		vi.spyOn(definition, 'message'),
-	);
+	const spies = Object.values(catalog).map((definition) => vi.spyOn(definition, 'message'));
 
 	return () => spies.reduce((sum, spy) => sum + spy.mock.calls.length, 0);
 };
@@ -46,7 +44,7 @@ const countedDetails = (
 	const details = new Proxy(
 		{ operation: 'elementAt', index },
 		{
-			get: (target, field, receiver) => {
+			get: (target, field, receiver): unknown => {
 				reads++;
 
 				return Reflect.get(target, field, receiver);
@@ -93,9 +91,9 @@ describe('createError', () => {
 			created.push(createError('FULCRO1005', details).details);
 		}
 
-		expect(
-			created.filter((details, index) => details === passed[index]?.details),
-		).toHaveLength(ERRORS);
+		expect(created.filter((details, index) => details === passed[index]?.details)).toHaveLength(
+			ERRORS,
+		);
 	});
 
 	it('should read only the fields its template uses, once each', () => {
@@ -114,12 +112,13 @@ describe('prefixError', () => {
 			operation: 'Point.from',
 			field: 'y',
 		});
+
 		const templates = spyOnEveryTemplate();
 
 		let located = inner;
 
 		for (let level = 0; level < ERRORS; level++) {
-			located = prefixError(located, `Level${level}.from: field 'x'`);
+			located = prefixError(located, `Level${String(level)}.from: field 'x'`);
 		}
 
 		expect(templates()).toBe(0);

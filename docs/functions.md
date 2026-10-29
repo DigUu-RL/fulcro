@@ -14,7 +14,9 @@ npm install @fulcro/functions
 import {
 	failure,
 	none,
+	type Option,
 	optionOf,
+	type Result,
 	some,
 	success,
 	switchFor,
@@ -154,9 +156,7 @@ The outcome of an operation, as a value: either a **success** carrying the
 value it produced, or a **failure** carrying the error it failed with.
 
 ```ts
-const parsed: Result<number, string> = Number.isNaN(n)
-	? failure('not a number')
-	: success(n);
+const parsed: Result<number, string> = Number.isNaN(n) ? failure('not a number') : success(n);
 ```
 
 |           | `value` | `error`          |
@@ -289,8 +289,8 @@ const outcomes = await AsyncSequenceCollection.from(ids)
 	.selectAwait((id) => tryCatch(() => loadUser(id)), { concurrency: 8 })
 	.toArray();
 
-const [loaded, failed] = SequenceCollection.from(outcomes).partition(
-	(outcome) => outcome.isSuccess(),
+const [loaded, failed] = SequenceCollection.from(outcomes).partition((outcome) =>
+	outcome.isSuccess(),
 );
 ```
 

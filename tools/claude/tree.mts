@@ -10,11 +10,12 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import fs from 'node:fs';
+import fileSystem from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { frontmatterOf } from './frontmatter.mjs';
+import { frontmatterOf } from './frontmatter.mts';
+import { isRecord, readJsonObject } from './json.mts';
 
 /**
  * The repository root, found from this file rather than from the process.
@@ -32,10 +33,10 @@ export const repositoryRoot = path.resolve(
 /**
  * Whether a path exists, whatever it is.
  *
- * @param {string} target An absolute path.
- * @returns {boolean} Whether anything is there.
+ * @param target An absolute path.
+ * @returns Whether anything is there.
  */
-export const exists = (target) => fs.existsSync(target);
+export const exists = (target: string): boolean => fileSystem.existsSync(target);
 
 /**
  * A path as it is written in a report: relative to the root, forward slashes.
@@ -44,34 +45,35 @@ export const exists = (target) => fs.existsSync(target);
  * read by a human on either platform, and `\.claude\skills` in the output of a
  * Windows run would make both harder than they need to be.
  *
- * @param {string} root The repository root.
- * @param {string} target An absolute path inside it.
- * @returns {string} The path as a report spells it.
+ * @param root The repository root.
+ * @param target An absolute path inside it.
+ * @returns The path as a report spells it.
  */
-export const displayed = (root, target) =>
-	path.relative(root, target).split(path.sep).join('/');
+export const displayed = (root: string, target: string): string => {
+	return path.relative(root, target).split(path.sep).join('/');
+};
 
 /**
  * Every file below a directory, as paths relative to it.
  *
- * @param {string} directory An absolute path.
- * @param {string} [prefix] Used by the recursion; callers leave it out.
- * @returns {string[]} The files, with forward slashes, in no particular order.
+ * @param directory An absolute path.
+ * @param [prefix] Used by the recursion; callers leave it out.
+ * @returns The files, with forward slashes, in no particular order.
  */
-export const filesUnder = (directory, prefix = '') => {
+export const filesUnder = (directory: string, prefix: string = ''): string[] => {
 	if (!exists(directory)) return [];
 
-	/** @type {string[]} */
-	const found = [];
+	const found: string[] = [];
 
-	for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+	for (const entry of fileSystem.readdirSync(directory, { withFileTypes: true })) {
 		const relative = prefix === '' ? entry.name : `${prefix}/${entry.name}`;
 
 		if (entry.isDirectory()) {
 			found.push(...filesUnder(path.join(directory, entry.name), relative));
-		} else {
-			found.push(relative);
+			continue;
 		}
+
+		found.push(relative);
 	}
 
 	return found;
@@ -82,31 +84,29 @@ export const filesUnder = (directory, prefix = '') => {
  */
 const UNSEARCHED = new Set(['.git', 'node_modules', 'dist', 'coverage']);
 
-/** @type {Map<string, Set<string>>} */
-const basenames = new Map();
+const basenames = new Map<string, Set<string>>();
 
 /**
  * Every file name in the repository, without its directory.
  *
  * Prose names a file both ways — `tsconfig.build.json` in a sentence about
- * every package, `.claude/hooks/protect-publish.mjs` in a table — and only one
+ * every package, `.claude/hooks/protect-publish.mts` in a table — and only one
  * of the two can be resolved by joining paths. The other is answered by
  * knowing which names exist, which is this set. Walked once per root and kept,
  * because both validators ask.
  *
- * @param {string} [root] The repository root.
- * @returns {Set<string>} The file names.
+ * @param [root] The repository root.
+ * @returns The file names.
  */
-export const basenamesOf = (root = repositoryRoot) => {
+export const basenamesOf = (root: string = repositoryRoot): Set<string> => {
 	const remembered = basenames.get(root);
 
 	if (remembered !== undefined) return remembered;
 
-	/** @type {Set<string>} */
-	const found = new Set();
+	const found = new Set<string>();
 
-	const walk = (directory) => {
-		for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+	const walk = (directory: string): void => {
+		for (const entry of fileSystem.readdirSync(directory, { withFileTypes: true })) {
 			if (entry.isDirectory()) {
 				if (UNSEARCHED.has(entry.name)) continue;
 
@@ -127,9 +127,9 @@ export const basenamesOf = (root = repositoryRoot) => {
 /**
  * Which of these paths the repository deliberately keeps out of itself.
  *
- * A prompt may point at something that is not committed — `.roadmap/` is
- * ignored here, and the planning tree it holds is a local working copy rather
- * than part of the checkout. On the machine that wrote the sentence the file
+ * A prompt may point at something that is not committed — a gitignored
+ * directory of working notes, say, which is a local copy rather than part of
+ * the checkout. On the machine that wrote the sentence the file
  * is right there, and on a clean checkout it is not, so a validator reading
  * only the disk answers differently in the two places. That is exactly the
  * failure this repository already learnt once, in the `.gitignore` comment
@@ -142,11 +142,11 @@ export const basenamesOf = (root = repositoryRoot) => {
  * — nothing is ignored and every unresolved reference is reported, which is
  * the stricter of the two answers.
  *
- * @param {string} root The repository root.
- * @param {string[]} references The paths that did not resolve on disk.
- * @returns {Set<string>} The ones an ignore rule accounts for.
+ * @param root The repository root.
+ * @param references The paths that did not resolve on disk.
+ * @returns The ones an ignore rule accounts for.
  */
-export const ignoredIn = (root, references) => {
+export const ignoredIn = (root: string, references: string[]): Set<string> => {
 	if (references.length === 0) return new Set();
 
 	const asked = spawnSync('git', ['check-ignore', '--stdin'], {
@@ -162,7 +162,7 @@ export const ignoredIn = (root, references) => {
 	}
 
 	return new Set(
-		(asked.stdout ?? '')
+		asked.stdout
 			.split(/\r?\n/)
 			.map((line) => line.trim())
 			.filter((line) => line !== ''),
@@ -175,36 +175,34 @@ export const ignoredIn = (root, references) => {
  * `manifest` is `null` when the directory holds no `SKILL.md` at all, which is
  * the orphan the validator reports rather than a skill with a missing field.
  *
- * @typedef {{
- *   directory: string,
- *   path: string,
- *   manifest: string | null,
- *   frontmatter: ReturnType<typeof frontmatterOf> | null,
- *   lines: number,
- *   files: string[],
- * }} Skill
  */
+export interface Skill {
+	directory: string;
+	path: string;
+	manifest: string | null;
+	frontmatter: ReturnType<typeof frontmatterOf> | null;
+	lines: number;
+	files: string[];
+}
 
 /**
  * Reads every skill directory.
  *
- * @param {string} [root] The repository root.
- * @returns {Skill[]} The skills, ordered by directory name.
+ * @param [root] The repository root.
+ * @returns The skills, ordered by directory name.
  */
-export const skillsOf = (root = repositoryRoot) => {
+export const skillsOf = (root: string = repositoryRoot): Skill[] => {
 	const base = path.join(root, '.claude', 'skills');
 
 	if (!exists(base)) return [];
 
-	return fs
+	return fileSystem
 		.readdirSync(base, { withFileTypes: true })
 		.filter((entry) => entry.isDirectory())
 		.map((entry) => {
 			const directory = path.join(base, entry.name);
 			const manifestPath = path.join(directory, 'SKILL.md');
-			const manifest = exists(manifestPath)
-				? fs.readFileSync(manifestPath, 'utf8')
-				: null;
+			const manifest = exists(manifestPath) ? fileSystem.readFileSync(manifestPath, 'utf8') : null;
 
 			return {
 				directory: entry.name,
@@ -225,32 +223,32 @@ export const skillsOf = (root = repositoryRoot) => {
  * is loaded always, which is a decision rather than an omission, and the
  * validator reports on both.
  *
- * @typedef {{
- *   file: string,
- *   path: string,
- *   source: string,
- *   frontmatter: ReturnType<typeof frontmatterOf>,
- * }} Rule
  */
+export interface Rule {
+	file: string;
+	path: string;
+	source: string;
+	frontmatter: ReturnType<typeof frontmatterOf>;
+}
 
 /**
  * Reads every rule under `.claude/rules`, index excluded.
  *
- * @param {string} [root] The repository root.
- * @returns {Rule[]} The rules, ordered by file name.
+ * @param [root] The repository root.
+ * @returns The rules, ordered by file name.
  */
-export const rulesOf = (root = repositoryRoot) => {
+export const rulesOf = (root: string = repositoryRoot): Rule[] => {
 	const base = path.join(root, '.claude', 'rules');
 
 	if (!exists(base)) return [];
 
-	return fs
+	return fileSystem
 		.readdirSync(base)
 		.filter((file) => file.endsWith('.md') && file !== 'README.md')
 		.sort()
 		.map((file) => {
 			const full = path.join(base, file);
-			const source = fs.readFileSync(full, 'utf8');
+			const source = fileSystem.readFileSync(full, 'utf8');
 
 			return { file, path: full, source, frontmatter: frontmatterOf(source) };
 		});
@@ -259,42 +257,33 @@ export const rulesOf = (root = repositoryRoot) => {
 /**
  * One rule fixture, as read from `tools/claude/rule-fixtures`.
  *
- * @typedef {{
- *   file: string,
- *   path: string,
- *   document: Record<string, unknown> | null,
- *   problem: string | null,
- * }} RuleFixture
  */
+export interface RuleFixture {
+	file: string;
+	path: string;
+	document: Record<string, unknown> | null;
+	problem: string | null;
+}
 
 /**
  * Reads every rule fixture.
  *
- * @param {string} [root] The repository root.
- * @returns {RuleFixture[]} The fixtures, ordered by file name.
+ * @param [root] The repository root.
+ * @returns The fixtures, ordered by file name.
  */
-export const ruleFixturesOf = (root = repositoryRoot) => {
+export const ruleFixturesOf = (root: string = repositoryRoot): RuleFixture[] => {
 	const base = path.join(root, 'tools', 'claude', 'rule-fixtures');
 
 	if (!exists(base)) return [];
 
-	return fs
+	return fileSystem
 		.readdirSync(base)
 		.filter((file) => file.endsWith('.fixture.json'))
 		.sort()
 		.map((file) => {
 			const full = path.join(base, file);
 
-			try {
-				return {
-					file,
-					path: full,
-					document: JSON.parse(fs.readFileSync(full, 'utf8')),
-					problem: null,
-				};
-			} catch (failure) {
-				return { file, path: full, document: null, problem: `${failure}` };
-			}
+			return { file, path: full, ...readJsonObject(full) };
 		});
 };
 
@@ -305,114 +294,87 @@ export const ruleFixturesOf = (root = repositoryRoot) => {
  * validator, not to the reader. A file that is not JSON at all arrives here as
  * a `problem` and an empty document.
  *
- * @typedef {{
- *   file: string,
- *   path: string,
- *   document: Record<string, unknown> | null,
- *   problem: string | null,
- * }} Evals
  */
+export interface Evals {
+	file: string;
+	path: string;
+	document: Record<string, unknown> | null;
+	problem: string | null;
+}
 
 /**
  * Reads every eval suite.
  *
- * @param {string} [root] The repository root.
- * @returns {Evals[]} The suites, ordered by file name.
+ * @param [root] The repository root.
+ * @returns The suites, ordered by file name.
  */
-export const evalsOf = (root = repositoryRoot) => {
+export const evalsOf = (root: string = repositoryRoot): Evals[] => {
 	const base = path.join(root, 'tools', 'claude', 'skill-evals');
 
 	if (!exists(base)) return [];
 
-	return fs
+	return fileSystem
 		.readdirSync(base)
 		.filter((file) => file.endsWith('.eval.json'))
 		.sort()
 		.map((file) => {
 			const full = path.join(base, file);
 
-			try {
-				return {
-					file,
-					path: full,
-					document: JSON.parse(fs.readFileSync(full, 'utf8')),
-					problem: null,
-				};
-			} catch (failure) {
-				return {
-					file,
-					path: full,
-					document: null,
-					problem: `${failure}`,
-				};
-			}
+			return { file, path: full, ...readJsonObject(full) };
 		});
 };
 
 /**
  * Reads a settings file, if it is there.
  *
- * @param {string} root The repository root.
- * @param {string} name `settings.json` or `settings.local.json`.
- * @returns {{
- *   name: string,
- *   path: string,
- *   present: boolean,
- *   document: Record<string, unknown> | null,
- *   problem: string | null,
- * }} The settings.
+ * @param root The repository root.
+ * @param name `settings.json` or `settings.local.json`.
+ * @returns The settings.
  */
-export const settingsOf = (root, name) => {
+export const settingsOf = (
+	root: string,
+	name: string,
+): {
+	name: string;
+	path: string;
+	present: boolean;
+	document: Record<string, unknown> | null;
+	problem: string | null;
+} => {
 	const full = path.join(root, '.claude', name);
 
 	if (!exists(full)) {
 		return { name, path: full, present: false, document: null, problem: null };
 	}
 
-	try {
-		return {
-			name,
-			path: full,
-			present: true,
-			document: JSON.parse(fs.readFileSync(full, 'utf8')),
-			problem: null,
-		};
-	} catch (failure) {
-		return {
-			name,
-			path: full,
-			present: true,
-			document: null,
-			problem: `${failure}`,
-		};
-	}
+	return { name, path: full, present: true, ...readJsonObject(full) };
 };
 
 /**
  * The scripts declared by the root `package.json`.
  *
- * @param {string} [root] The repository root.
- * @returns {Set<string>} The script names.
+ * @param [root] The repository root.
+ * @returns The script names.
  */
-export const scriptsOf = (root = repositoryRoot) => {
+export const scriptsOf = (root: string = repositoryRoot): Set<string> => {
 	const manifest = path.join(root, 'package.json');
 
 	if (!exists(manifest)) return new Set();
 
-	const document = JSON.parse(fs.readFileSync(manifest, 'utf8'));
+	const scripts: unknown = readJsonObject(manifest).document?.scripts;
 
-	return new Set(Object.keys(document.scripts ?? {}));
+	return new Set(isRecord(scripts) ? Object.keys(scripts) : []);
 };
 
 /**
  * One subagent as it sits on disk.
  *
- * @typedef {{
- *   file: string,
- *   path: string,
- *   frontmatter: ReturnType<typeof frontmatterOf>,
- * }} Agent
  */
+export interface Agent {
+	file: string;
+	path: string;
+	frontmatter: ReturnType<typeof frontmatterOf>;
+}
 
 /**
  * Reads every subagent under `.claude/agents`.
@@ -420,15 +382,15 @@ export const scriptsOf = (root = repositoryRoot) => {
  * A tree without the directory answers with nothing rather than throwing: an
  * agent is optional, and the checks over the ones that exist run either way.
  *
- * @param {string} [root] The repository root.
- * @returns {Agent[]} The agents, ordered by file name.
+ * @param [root] The repository root.
+ * @returns The agents, ordered by file name.
  */
-export const agentDefinitionsOf = (root = repositoryRoot) => {
+export const agentDefinitionsOf = (root: string = repositoryRoot): Agent[] => {
 	const base = path.join(root, '.claude', 'agents');
 
 	if (!exists(base)) return [];
 
-	return fs
+	return fileSystem
 		.readdirSync(base)
 		.filter((file) => file.endsWith('.md'))
 		.sort()
@@ -438,7 +400,7 @@ export const agentDefinitionsOf = (root = repositoryRoot) => {
 			return {
 				file,
 				path: full,
-				frontmatter: frontmatterOf(fs.readFileSync(full, 'utf8')),
+				frontmatter: frontmatterOf(fileSystem.readFileSync(full, 'utf8')),
 			};
 		});
 };
@@ -446,10 +408,9 @@ export const agentDefinitionsOf = (root = repositoryRoot) => {
 /**
  * The subagents declared under `.claude/agents`.
  *
- * @param {string} [root] The repository root.
- * @returns {Set<string>} The agent names, without the `.md`.
+ * @param [root] The repository root.
+ * @returns The agent names, without the `.md`.
  */
-export const agentsOf = (root = repositoryRoot) =>
-	new Set(
-		agentDefinitionsOf(root).map((agent) => agent.file.replace(/\.md$/, '')),
-	);
+export const agentsOf = (root: string = repositoryRoot): Set<string> => {
+	return new Set(agentDefinitionsOf(root).map((agent) => agent.file.replace(/\.md$/, '')));
+};

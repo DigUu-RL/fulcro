@@ -1,15 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import {
-	DoublePrecisionFloat,
-	type Struct,
-	struct,
-	UnsignedInteger,
-} from '@fulcro/types';
+import { DoublePrecisionFloat, type Struct, struct, UnsignedInteger } from '@fulcro/types';
 
-import { allocate } from '@/allocate';
-import type { Allocation, Allocator } from '@/allocator';
-import type { Storage } from '@/storage';
+import { allocate } from '@/src/allocate';
+import type { Allocation, Allocator } from '@/src/allocator';
+import type { Storage } from '@/src/storage';
 
 /**
  * Performance suite for `allocate`.
@@ -26,6 +21,7 @@ const Sample = struct('Sample', {
 	value: DoublePrecisionFloat,
 	channel: UnsignedInteger(8),
 });
+
 type Sample = Struct<typeof Sample>;
 
 /** Enough values for a per-element cost to separate from a constant one. */
@@ -90,10 +86,6 @@ describe('allocate, counted', () => {
 		for (let index = 0; index < VOLUME; index++) samples.set(index, sample);
 		for (let index = 0; index < VOLUME; index++) samples.get(index);
 
-		expect([livenessChecks, reads, writes]).toEqual([
-			2 * VOLUME,
-			VOLUME,
-			VOLUME,
-		]);
+		expect([livenessChecks, reads, writes]).toEqual([2 * VOLUME, VOLUME, VOLUME]);
 	});
 });

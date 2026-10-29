@@ -3,11 +3,11 @@ import * as path from 'node:path';
 
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { DoublePrecisionFloat } from '@/doublePrecisionFloat';
-import { Matrix } from '@/matrix';
-import { SignedInteger } from '@/signedInteger';
-import { SinglePrecisionFloat } from '@/singlePrecisionFloat';
-import { type Vector, Vector as VectorOf } from '@/vector';
+import { DoublePrecisionFloat } from '@/src/doublePrecisionFloat';
+import { Matrix } from '@/src/matrix';
+import { SignedInteger } from '@/src/signedInteger';
+import { SinglePrecisionFloat } from '@/src/singlePrecisionFloat';
+import { type Vector, Vector as VectorOf } from '@/src/vector';
 
 /**
  * Behaviour suite for `Vector`.
@@ -27,14 +27,12 @@ import { type Vector, Vector as VectorOf } from '@/vector';
  * @param details The details the error is expected to carry.
  * @returns The same error, carrying that code and those details.
  */
-const coded = <T extends Error>(
-	error: T,
-	details: Readonly<Record<string, unknown>>,
-): T =>
-	Object.assign(error, {
+const coded = <T extends Error>(error: T, details: Readonly<Record<string, unknown>>): T => {
+	return Object.assign(error, {
 		code: error.message.slice(0, 'FULCRO0000'.length),
 		details,
 	});
+};
 
 const Column = VectorOf(DoublePrecisionFloat, 3, 1);
 const Row = VectorOf(DoublePrecisionFloat, 1, 3);
@@ -59,9 +57,7 @@ describe('Vector', () => {
 			const column = Column.from([1, 2, 3]);
 
 			expect(Matrix(DoublePrecisionFloat, 3, 1).is(column)).toBe(true);
-			expect(
-				Column.is(Matrix(DoublePrecisionFloat, 3, 1).from([[1], [2], [3]])),
-			).toBe(true);
+			expect(Column.is(Matrix(DoublePrecisionFloat, 3, 1).from([[1], [2], [3]]))).toBe(true);
 			expectTypeOf(column).toEqualTypeOf<Vector<DoublePrecisionFloat, 3, 1>>();
 			expectTypeOf(column).toEqualTypeOf<Matrix<DoublePrecisionFloat, 3, 1>>();
 		});
@@ -73,9 +69,7 @@ describe('Vector', () => {
 
 	describe('arithmetic', () => {
 		it('should take the dot product', () => {
-			expect(Column.dot(Column.from([1, 2, 3]), Column.from([4, 5, 6]))).toBe(
-				32,
-			);
+			expect(Column.dot(Column.from([1, 2, 3]), Column.from([4, 5, 6]))).toBe(32);
 		});
 
 		it('should take the dot product in the element type', () => {
@@ -96,9 +90,7 @@ describe('Vector', () => {
 			expect([...Column.add(value, value)]).toEqual([2, 4, 6]);
 			expect([...Column.subtract(value, value)]).toEqual([0, 0, 0]);
 			expect([...Column.negate(value)]).toEqual([-1, -2, -3]);
-			expect([...Column.scale(value, DoublePrecisionFloat.from(3))]).toEqual([
-				3, 6, 9,
-			]);
+			expect([...Column.scale(value, DoublePrecisionFloat.from(3))]).toEqual([3, 6, 9]);
 		});
 
 		it('should multiply a row by a column into a matrix of one element', () => {
@@ -109,10 +101,7 @@ describe('Vector', () => {
 		});
 
 		it('should multiply a column by a row into a matrix', () => {
-			const product = Column.multiply(
-				Column.from([1, 2, 3]),
-				Row.from([1, 2, 3]),
-			);
+			const product = Column.multiply(Column.from([1, 2, 3]), Row.from([1, 2, 3]));
 
 			expect(Matrix(DoublePrecisionFloat, 3, 3).is(product)).toBe(true);
 			expect([...product]).toEqual([1, 2, 3, 2, 4, 6, 3, 6, 9]);
@@ -183,9 +172,7 @@ describe('Vector', () => {
 		});
 
 		it('should refuse a dot product of different shapes, past the compiler', () => {
-			expect(() =>
-				Column.dot(Column.from([1, 2, 3]), Row.from([1, 2, 3]) as never),
-			).toThrow(
+			expect(() => Column.dot(Column.from([1, 2, 3]), Row.from([1, 2, 3]) as never)).toThrow(
 				coded(
 					new RangeError(
 						'FULCRO6036: Vector<DoublePrecisionFloat, 3, 1>.dot: expected a Vector<DoublePrecisionFloat, 3, 1>, received a Vector<DoublePrecisionFloat, 1, 3>.',
@@ -237,35 +224,32 @@ const compileRejected = (packageName: string): string => {
 	}
 };
 
-describe.each(COMPILERS)(
-	'Vector shapes at compile time, on %s',
-	(_label, name) => {
-		const report: string = compileRejected(name);
-		const lines: number[] = [
-			...new Set(
-				[...report.matchAll(/rejected\.fixture\.ts[:(](\d+)/g)].map((match) =>
-					Number(match[1]),
-				),
-			),
-		];
+describe.each(COMPILERS)('Vector shapes at compile time, on %s', (_label, name) => {
+	const report: string = compileRejected(name);
 
-		it('should refuse a shape with neither one row nor one column, quoting why', () => {
-			expect(lines).toContain(15);
-			expect(report).toContain(
-				'A vector has one row or one column; Vector<T, 2, 3> has neither. Declare it with Matrix.',
-			);
-		});
+	const lines: number[] = [
+		...new Set(
+			[...report.matchAll(/rejected\.fixture\.ts[:(](\d+)/g)].map((match) => Number(match[1])),
+		),
+	];
 
-		it('should refuse a dot product of vectors of different lengths', () => {
-			expect(lines).toContain(19);
-		});
+	it('should refuse a shape with neither one row nor one column, quoting why', () => {
+		expect(lines).toContain(15);
 
-		it('should refuse a dot product of a column and a row', () => {
-			expect(lines).toContain(22);
-		});
+		expect(report).toContain(
+			'A vector has one row or one column; Vector<T, 2, 3> has neither. Declare it with Matrix.',
+		);
+	});
 
-		it('should report nothing else', () => {
-			expect(lines).toEqual([15, 19, 22]);
-		});
-	},
-);
+	it('should refuse a dot product of vectors of different lengths', () => {
+		expect(lines).toContain(19);
+	});
+
+	it('should refuse a dot product of a column and a row', () => {
+		expect(lines).toContain(22);
+	});
+
+	it('should report nothing else', () => {
+		expect(lines).toEqual([15, 19, 22]);
+	});
+});

@@ -1,16 +1,17 @@
 import {
 	type ElementDescriptor,
 	type ElementSize,
+	type ElementType,
 	type RepeatedLayout,
 	type SourceOf,
 	type ValueOf,
-} from '@/element';
+} from '@/src/element';
 import {
 	createHypercomplexType,
 	type HypercomplexType,
 	type ProductRule,
-} from '@/hypercomplex';
-import type { Multiply } from '@/struct/arithmetic';
+} from '@/src/hypercomplex';
+import type { Multiply } from '@/src/struct/arithmetic';
 
 /**
  * A complex number whose two parts are of `T`.
@@ -55,10 +56,26 @@ export type ComplexNumberType<T, TSource = number> = HypercomplexType<
 const PARTS: readonly string[] = ['real', 'imaginary'];
 
 /** (a + bi)(c + di) = (ac − bd) + (ad + bc)i. */
-const complexProduct: ProductRule = (element, [a, b], [c, d]) => [
-	element.subtract(element.multiply(a, c), element.multiply(b, d)),
-	element.add(element.multiply(a, d), element.multiply(b, c)),
-];
+const complexProduct: ProductRule = <T>(
+	element: ElementType<T>,
+	left: readonly T[],
+	right: readonly T[],
+): T[] => {
+	// A complex number always has its two parts.
+	const [leftReal, leftImaginary] = left as readonly [T, T];
+	const [rightReal, rightImaginary] = right as readonly [T, T];
+
+	return [
+		element.subtract(
+			element.multiply(leftReal, rightReal),
+			element.multiply(leftImaginary, rightImaginary),
+		),
+		element.add(
+			element.multiply(leftReal, rightImaginary),
+			element.multiply(leftImaginary, rightReal),
+		),
+	];
+};
 
 /**
  * Declares a complex number type over a part type.
@@ -82,5 +99,6 @@ const complexProduct: ProductRule = (element, [a, b], [c, d]) => [
  */
 export const ComplexNumber = <TElement extends ElementDescriptor>(
 	element: TElement,
-): ComplexNumberType<ValueOf<TElement>, SourceOf<TElement>> =>
-	createHypercomplexType('ComplexNumber', PARTS, element, complexProduct);
+): ComplexNumberType<ValueOf<TElement>, SourceOf<TElement>> => {
+	return createHypercomplexType('ComplexNumber', PARTS, element, complexProduct);
+};

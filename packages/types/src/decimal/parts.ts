@@ -56,12 +56,14 @@ export const NOT_A_NUMBER: DecimalParts = {
  * @param negative Whether it is negative.
  * @returns The parts.
  */
-export const infinity = (negative: boolean): DecimalParts => ({
-	kind: 'infinity',
-	negative,
-	coefficient: 0n,
-	exponent: 0,
-});
+export const infinity = (negative: boolean): DecimalParts => {
+	return {
+		kind: 'infinity',
+		negative,
+		coefficient: 0n,
+		exponent: 0,
+	};
+};
 
 /**
  * A zero.
@@ -69,12 +71,14 @@ export const infinity = (negative: boolean): DecimalParts => ({
  * @param negative Whether it is `-0`.
  * @returns The parts.
  */
-export const zero = (negative: boolean): DecimalParts => ({
-	kind: 'finite',
-	negative,
-	coefficient: 0n,
-	exponent: 0,
-});
+export const zero = (negative: boolean): DecimalParts => {
+	return {
+		kind: 'finite',
+		negative,
+		coefficient: 0n,
+		exponent: 0,
+	};
+};
 
 /**
  * Tells whether finite parts are zero.
@@ -82,8 +86,9 @@ export const zero = (negative: boolean): DecimalParts => ({
  * @param parts Parts to inspect.
  * @returns `true` for `0` and `-0`.
  */
-export const isZero = (parts: DecimalParts): boolean =>
-	parts.kind === 'finite' && parts.coefficient === 0n;
+export const isZero = (parts: DecimalParts): boolean => {
+	return parts.kind === 'finite' && parts.coefficient === 0n;
+};
 
 /** Powers of ten already computed, since every operation reaches for them. */
 const POWERS_OF_TEN: bigint[] = [1n];
@@ -100,11 +105,19 @@ const POWERS_OF_TEN: bigint[] = [1n];
 export const powerOfTen = (exponent: number): bigint => {
 	if (exponent > 128) return 10n ** BigInt(exponent);
 
-	while (POWERS_OF_TEN.length <= exponent) {
-		POWERS_OF_TEN.push(POWERS_OF_TEN[POWERS_OF_TEN.length - 1] * 10n);
-	}
+	const cached: bigint | undefined = POWERS_OF_TEN[exponent];
 
-	return POWERS_OF_TEN[exponent];
+	if (cached !== undefined) return cached;
+
+	// The cache holds every power below its length, so it grows from there one
+	// multiplication at a time, and the last power pushed is the one asked for.
+	let power: bigint = 10n ** BigInt(POWERS_OF_TEN.length);
+
+	for (; POWERS_OF_TEN.length < exponent; power *= 10n) POWERS_OF_TEN.push(power);
+
+	POWERS_OF_TEN.push(power);
+
+	return power;
 };
 
 /**
@@ -122,5 +135,6 @@ export const digitCount = (value: bigint): number => value.toString().length;
  * @param parts Parts to inspect.
  * @returns The adjusted exponent.
  */
-export const adjustedExponent = (parts: DecimalParts): number =>
-	parts.exponent + digitCount(parts.coefficient) - 1;
+export const adjustedExponent = (parts: DecimalParts): number => {
+	return parts.exponent + digitCount(parts.coefficient) - 1;
+};

@@ -10,7 +10,7 @@ import {
 	isOwnedCall,
 } from '@fulcro/transform-core';
 
-import { type FlowRules, walkFlow } from '@/transformer/flow';
+import { type FlowRules, walkFlow } from '@/src/transformer/flow';
 
 /**
  * Refuses, when the code is compiled, what `move`, `borrow` and
@@ -84,13 +84,14 @@ interface Facts {
  * @param node The expression.
  * @returns What it wraps, all the way down.
  */
-const unwrap = (node: typescript.Expression): typescript.Expression =>
-	typescript.isParenthesizedExpression(node) ||
-	typescript.isAsExpression(node) ||
-	typescript.isSatisfiesExpression(node) ||
-	typescript.isNonNullExpression(node)
+const unwrap = (node: typescript.Expression): typescript.Expression => {
+	return typescript.isParenthesizedExpression(node) ||
+		typescript.isAsExpression(node) ||
+		typescript.isSatisfiesExpression(node) ||
+		typescript.isNonNullExpression(node)
 		? unwrap(node.expression)
 		: node;
+};
 
 /**
  * Builds the rules for one file.
@@ -119,9 +120,9 @@ const createRules = (
 			const named: string | null = typescript.isIdentifier(call.expression)
 				? call.expression.text
 				: null;
+
 			const found: Operation | undefined = OPERATIONS.find(
-				(operation) =>
-					operation === named && isOwnedCall(call, checker, TARGETS[operation]),
+				(operation) => operation === named && isOwnedCall(call, checker, TARGETS[operation]),
 			);
 
 			operations.set(call, found ?? null);
@@ -136,12 +137,11 @@ const createRules = (
 	 * @param identifier The identifier.
 	 * @returns Its symbol, if it has one.
 	 */
-	const symbolOf = (
-		identifier: typescript.Identifier,
-	): typescript.Symbol | undefined =>
-		typescript.isShorthandPropertyAssignment(identifier.parent)
+	const symbolOf = (identifier: typescript.Identifier): typescript.Symbol | undefined => {
+		return typescript.isShorthandPropertyAssignment(identifier.parent)
 			? checker.getShorthandAssignmentValueSymbol(identifier.parent)
 			: checker.getSymbolAtLocation(identifier);
+	};
 
 	/**
 	 * The variable a call's first argument names, if it names one.
@@ -153,6 +153,7 @@ const createRules = (
 		call: typescript.CallExpression,
 	): { name: string; symbol: typescript.Symbol } | null => {
 		const [first] = call.arguments;
+
 		const argument: typescript.Expression | undefined =
 			first === undefined ? undefined : unwrap(first);
 
@@ -165,9 +166,9 @@ const createRules = (
 		return symbol === undefined ? null : { name: argument.text, symbol };
 	};
 
-	const lineOf = (node: typescript.Node): number =>
-		sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line +
-		1;
+	const lineOf = (node: typescript.Node): number => {
+		return sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
+	};
 
 	/**
 	 * Reports once per place and error, though a loop walks it twice.
@@ -176,7 +177,7 @@ const createRules = (
 	 * @param message What.
 	 */
 	const report = (node: typescript.Node, message: string): void => {
-		const key = `${node.getStart(sourceFile)}:${message.slice(0, 10)}`;
+		const key = `${String(node.getStart(sourceFile))}:${message.slice(0, 10)}`;
 
 		if (reported.has(key)) return;
 
@@ -216,7 +217,7 @@ const createRules = (
 
 		const loan: Loan | undefined = facts.loans.get(symbol);
 
-		if (loan === undefined || loan.ended === null) return;
+		if (!loan?.ended) return;
 
 		report(
 			identifier,
@@ -280,8 +281,7 @@ const createRules = (
 		value: typescript.Expression | undefined,
 		facts: Facts,
 	): void => {
-		const symbol: typescript.Symbol | undefined =
-			checker.getSymbolAtLocation(name);
+		const symbol: typescript.Symbol | undefined = checker.getSymbolAtLocation(name);
 
 		if (symbol === undefined) return;
 
@@ -315,10 +315,7 @@ const createRules = (
 	 * @param created The function.
 	 * @param facts What is known where it is created.
 	 */
-	const capture = (
-		created: typescript.FunctionLikeDeclaration,
-		facts: Facts,
-	): void => {
+	const capture = (created: typescript.FunctionLikeDeclaration, facts: Facts): void => {
 		if (facts.moved.size === 0 && facts.loans.size === 0) return;
 
 		const visit = (node: typescript.Node): void => {
@@ -338,10 +335,12 @@ const createRules = (
 
 	return {
 		initial: (): Facts => ({ moved: new Map(), loans: new Map() }),
-		copy: (facts: Facts): Facts => ({
-			moved: new Map(facts.moved),
-			loans: new Map(facts.loans),
-		}),
+		copy: (facts: Facts): Facts => {
+			return {
+				moved: new Map(facts.moved),
+				loans: new Map(facts.loans),
+			};
+		},
 		join: (first: Facts, second: Facts): Facts => {
 			const loans = new Map<typescript.Symbol, Loan>(first.loans);
 
@@ -350,9 +349,7 @@ const createRules = (
 
 				loans.set(
 					symbol,
-					known === undefined || known.ended !== null
-						? (known ?? loan)
-						: { ...known, ended: loan.ended },
+					known?.ended !== null ? (known ?? loan) : { ...known, ended: loan.ended },
 				);
 			}
 
@@ -361,20 +358,22 @@ const createRules = (
 				loans,
 			};
 		},
-		same: (first: Facts, second: Facts): boolean =>
-			first.moved.size === second.moved.size &&
-			first.loans.size === second.loans.size &&
-			[...first.moved.keys()].every((symbol) => second.moved.has(symbol)) &&
-			[...first.loans].every(([symbol, loan]) => {
-				const other: Loan | undefined = second.loans.get(symbol);
+		same: (first: Facts, second: Facts): boolean => {
+			return (
+				first.moved.size === second.moved.size &&
+				first.loans.size === second.loans.size &&
+				[...first.moved.keys()].every((symbol) => second.moved.has(symbol)) &&
+				[...first.loans].every(([symbol, loan]) => {
+					const other: Loan | undefined = second.loans.get(symbol);
 
-				return (
-					other !== undefined &&
-					other.owner === loan.owner &&
-					other.kind === loan.kind &&
-					other.ended?.by === loan.ended?.by
-				);
-			}),
+					return (
+						other?.owner === loan.owner &&
+						other.kind === loan.kind &&
+						other.ended?.by === loan.ended?.by
+					);
+				})
+			);
+		},
 		read,
 		call,
 		bind,

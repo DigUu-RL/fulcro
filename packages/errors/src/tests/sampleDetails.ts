@@ -1,4 +1,4 @@
-import { DetailsShape } from '@/definition';
+import type { DetailsShape } from '@/src/definition';
 
 /**
  * Details any code's template accepts: `operation` set, and every other field
@@ -11,13 +11,15 @@ import { DetailsShape } from '@/definition';
  *
  * @returns Fresh details, so each error freezes its own.
  */
-export const sampleDetails = (): DetailsShape =>
-	new Proxy<DetailsShape>(
+export const sampleDetails = (): DetailsShape => {
+	return new Proxy<DetailsShape>(
 		{ operation: 'operation' },
 		{
-			get: (target, field) =>
-				typeof field === 'string' && !(field in target)
+			get: (target, field): unknown => {
+				return typeof field === 'string' && !(field in target)
 					? 'value'
-					: Reflect.get(target, field),
+					: Reflect.get(target, field);
+			},
 		},
 	);
+};

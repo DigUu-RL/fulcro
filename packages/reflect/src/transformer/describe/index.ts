@@ -80,8 +80,7 @@ export interface Path {
  * @param type Type being classified.
  * @returns `true` when the type is a leaf.
  */
-const isLeaf = (type: typescript.Type): boolean =>
-	(type.flags & LEAF_FLAGS) !== 0;
+const isLeaf = (type: typescript.Type): boolean => (type.flags & LEAF_FLAGS) !== 0;
 
 /**
  * Tells whether a type is a class this reports by name.
@@ -98,8 +97,7 @@ const isOpaqueClass = (type: typescript.Type): boolean => {
 	if (symbol === undefined) return false;
 
 	return (
-		(symbol.flags & typescript.SymbolFlags.Class) !== 0 ||
-		GLOBAL_CLASSES.has(symbol.getName())
+		(symbol.flags & typescript.SymbolFlags.Class) !== 0 || GLOBAL_CLASSES.has(symbol.getName())
 	);
 };
 
@@ -158,13 +156,13 @@ export const keysOfType = (type: typescript.Type): readonly string[] | null => {
  *
  * @param type Type being read.
  * @param checker Checker of the program being compiled.
- * @param at Node the lookups happen from.
+ * @param position Node the lookups happen from.
  * @returns The members, in declaration order.
  */
 export const membersOfType = (
 	type: typescript.Type,
 	checker: typescript.TypeChecker,
-	at: typescript.Node,
+	position: typescript.Node,
 ): readonly Member[] => {
 	if (isLeaf(type) || type.isUnion()) return [];
 
@@ -172,21 +170,19 @@ export const membersOfType = (
 		.getProperties()
 		.filter((property) => isReportable(property.getName()))
 		.map((property) => {
-			const declared: typescript.Type = checker.getTypeOfSymbolAtLocation(
-				property,
-				at,
-			);
+			const declared: typescript.Type = checker.getTypeOfSymbolAtLocation(property, position);
 
 			return {
 				name: property.getName(),
 				type: checker.typeToString(declared),
 				optional: (property.flags & typescript.SymbolFlags.Optional) !== 0,
-				readonly: (property.declarations ?? []).some(
-					(declaration) =>
+				readonly: (property.declarations ?? []).some((declaration) => {
+					return (
 						(typescript.getCombinedModifierFlags(declaration) &
 							typescript.ModifierFlags.Readonly) !==
-						0,
-				),
+						0
+					);
+				}),
 			};
 		});
 };
@@ -196,13 +192,13 @@ export const membersOfType = (
  *
  * @param type Type being walked.
  * @param checker Checker of the program being compiled.
- * @param at Node the lookups happen from.
+ * @param position Node the lookups happen from.
  * @returns The leaves, or `null` when the type has none to walk to.
  */
 export const pathsOfType = (
 	type: typescript.Type,
 	checker: typescript.TypeChecker,
-	at: typescript.Node,
+	position: typescript.Node,
 ): readonly Path[] | null => {
 	const found: Path[] = [];
 
@@ -225,6 +221,7 @@ export const pathsOfType = (
 				type: checker.typeToString(current),
 				optional: soFar,
 			});
+
 			return;
 		}
 
@@ -236,13 +233,12 @@ export const pathsOfType = (
 				type: checker.typeToString(single),
 				optional: soFar,
 			});
+
 			return;
 		}
 
 		if (checker.isArrayType(single)) {
-			const [element] = checker.getTypeArguments(
-				single as typescript.TypeReference,
-			);
+			const [element] = checker.getTypeArguments(single as typescript.TypeReference);
 
 			if (element === undefined) {
 				found.push({ path: prefix, type: 'unknown[]', optional: soFar });
@@ -261,6 +257,7 @@ export const pathsOfType = (
 				type: checker.typeToString(single),
 				optional: soFar,
 			});
+
 			return;
 		}
 
@@ -274,6 +271,7 @@ export const pathsOfType = (
 				type: checker.typeToString(single),
 				optional: soFar,
 			});
+
 			return;
 		}
 
@@ -281,10 +279,7 @@ export const pathsOfType = (
 		next.add(single);
 
 		for (const property of properties) {
-			const declared: typescript.Type = checker.getTypeOfSymbolAtLocation(
-				property,
-				at,
-			);
+			const declared: typescript.Type = checker.getTypeOfSymbolAtLocation(property, position);
 
 			const name: string = property.getName();
 
@@ -303,7 +298,7 @@ export const pathsOfType = (
 	// A single entry with an empty path means the root itself was a leaf, which
 	// is not a walk anyone asked for.
 	if (found.length === 0) return null;
-	if (found.length === 1 && found[0].path === '') return null;
+	if (found.length === 1 && found[0]?.path === '') return null;
 
 	return found;
 };

@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { type WorkerPool } from '@/@types/index.js';
-import { createPool } from '@/pool/index.js';
-
-import { createFakeWorkers, type FakeWorkers, NOWHERE } from './fake-worker.js';
+import { type WorkerPool } from '@/src/@types/index.js';
+import { createPool } from '@/src/pool/index.js';
+import { createFakeWorkers, type FakeWorkers, NOWHERE } from '@/src/tests/fake-worker';
 
 /**
  * What the pool costs, counted rather than timed.
@@ -20,10 +19,7 @@ import { createFakeWorkers, type FakeWorkers, NOWHERE } from './fake-worker.js';
  */
 
 /** Enough elements that the bound has to hold repeatedly, not once. */
-const ELEMENTS: readonly number[] = Array.from(
-	{ length: 60 },
-	(_, index) => index + 1,
-);
+const ELEMENTS: readonly number[] = Array.from({ length: 60 }, (_, index) => index + 1);
 
 /**
  * Creates a pool over workers that count what they are given.
@@ -32,15 +28,13 @@ const ELEMENTS: readonly number[] = Array.from(
  * @param workers How many to run.
  * @returns The pool.
  */
-const countedPool = (
-	fake: FakeWorkers,
-	workers: number,
-): WorkerPool<number, number> =>
-	createPool<number, number>(
+const countedPool = (fake: FakeWorkers, workers: number): WorkerPool<number, number> => {
+	return createPool<number, number>(
 		{ module: NOWHERE, export: 'echo', workers },
 		fake.spawn,
 		NOWHERE,
 	);
+};
 
 describe('what one run costs', () => {
 	it.each([1, 2, 4])(
@@ -125,17 +119,10 @@ describe('what a failure costs', () => {
 		await pool.map(ELEMENTS);
 		await pool.close();
 
-		const refused = await Promise.allSettled(
-			Array.from({ length: 10 }, () => pool.map(ELEMENTS)),
-		);
+		const refused = await Promise.allSettled(Array.from({ length: 10 }, () => pool.map(ELEMENTS)));
 
-		expect(refused.every((outcome) => outcome.status === 'rejected')).toBe(
-			true,
-		);
-		expect([fake.spawned(), fake.posted().length]).toEqual([
-			4,
-			ELEMENTS.length,
-		]);
+		expect(refused.every((outcome) => outcome.status === 'rejected')).toBe(true);
+		expect([fake.spawned(), fake.posted().length]).toEqual([4, ELEMENTS.length]);
 	});
 });
 

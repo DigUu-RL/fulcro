@@ -83,10 +83,10 @@
 			"id": "behaviour-that-is-a-decision",
 			"kind": "edge",
 			"prompt": "Vitest resolves a built file instead of the source and the import breaks. Diagnose it.",
-			"why": "It reads as a resolver bug, and the repository has already written down what it is: a rootDir/outDir pair, not a file to delete. A diagnosis that re-derives it without the reference teaches its reader to skim the rules.",
+			"why": "It reads as a resolver bug, and the repository has already written down what it is: a build configuration, not a file to delete. A diagnosis that re-derives it without the reference teaches its reader to skim the rules.",
 			"expect": {
 				"invokes": true,
-				"output": "The cause named as the tsconfig rootDir/outDir pair with .claude/rules/build-output.md cited, and the candidate fix pointing at the tsconfig.",
+				"output": "The cause named as the package's build configuration with .claude/rules/build-output.md cited, and the candidate fix pointing at that configuration.",
 				"refuses": "Deleting the emitted file, which would hide the bug the report exists to expose."
 			}
 		},

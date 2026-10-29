@@ -1,6 +1,6 @@
-import type { Allocation, AllocationDomain } from '@/allocator';
-import { requireRequest, requireSize } from '@/allocator/requireRequest';
-import { bump, type BumpRegion } from '@/bump';
+import type { Allocation, AllocationDomain } from '@/src/allocator';
+import { requireRequest, requireSize } from '@/src/allocator/requireRequest';
+import { bump, type BumpRegion } from '@/src/bump';
 
 /**
  * An allocator that hands memory out front to back and takes all of it back
@@ -15,7 +15,7 @@ export interface ArenaAllocator extends AllocationDomain {
 	 * the next ones. Every allocation made before it reports `isLive()` as
 	 * `false` from now on.
 	 */
-	reset(): void;
+	readonly reset: () => void;
 }
 
 /**
@@ -73,11 +73,16 @@ export const createArenaAllocator = (chunkSize: number): ArenaAllocator => {
 			while (bytes === undefined) {
 				current++;
 
-				if (current === chunks.length) {
-					chunks.push(new ArrayBuffer(Math.max(chunkSize, size)));
+				// The chunks have no holes, so a chunk missing at `current` is one
+				// past the last, and the arena grows by one.
+				let buffer: ArrayBuffer | undefined = chunks[current];
+
+				if (buffer === undefined) {
+					buffer = new ArrayBuffer(Math.max(chunkSize, size));
+					chunks.push(buffer);
 				}
 
-				region = { buffer: chunks[current] as ArrayBuffer, offset: 0 };
+				region = { buffer, offset: 0 };
 				bytes = bump(region, size, alignment);
 			}
 

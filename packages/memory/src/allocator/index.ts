@@ -28,7 +28,7 @@ export interface Allocation {
 	 *
 	 * @returns `false` once the allocator released them.
 	 */
-	isLive(): boolean;
+	readonly isLive: () => boolean;
 }
 
 /**
@@ -60,7 +60,7 @@ export interface Allocator {
 	 * @throws {RangeError} When the size or the alignment is invalid, or the
 	 * allocator has no room left for them.
 	 */
-	allocate(size: number, alignment: number): Allocation;
+	readonly allocate: (size: number, alignment: number) => Allocation;
 }
 
 /**

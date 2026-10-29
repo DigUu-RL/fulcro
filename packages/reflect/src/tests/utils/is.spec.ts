@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { is } from '@/functions/utils/is';
+import { is, type TypeTest } from '@/src/functions/utils/is';
 
 /**
  * Behaviour suite for `is`.
@@ -26,13 +26,15 @@ interface Order {
 }
 
 /** A value satisfying every clause, for the cases below to spoil. */
-const valid = (): Record<string, unknown> => ({
-	id: 1,
-	tags: ['a'],
-	customer: { email: 'a@b.c' },
-	status: 'pending',
-	placedAt: new Date(),
-});
+const valid = (): Record<string, unknown> => {
+	return {
+		id: 1,
+		tags: ['a'],
+		customer: { email: 'a@b.c' },
+		status: 'pending',
+		placedAt: new Date(),
+	};
+};
 
 describe('what it accepts', () => {
 	it('should accept a value that satisfies every clause', () => {
@@ -66,19 +68,25 @@ describe('what it accepts', () => {
 
 describe('what it refuses', () => {
 	it.each([
-		['a missing required property', () => ({ ...valid(), id: undefined })],
-		['a property of the wrong type', () => ({ ...valid(), id: '1' })],
-		['an optional property of the wrong type', () => ({ ...valid(), note: 7 })],
-		['an array that is not one', () => ({ ...valid(), tags: 'a' })],
-		['an array with a wrong element', () => ({ ...valid(), tags: ['a', 2] })],
-		['a nested object missing its field', () => ({ ...valid(), customer: {} })],
-		['a value outside the union', () => ({ ...valid(), status: 'shipped' })],
+		['a missing required property', (): { id: undefined } => ({ ...valid(), id: undefined })],
+		['a property of the wrong type', (): { id: string } => ({ ...valid(), id: '1' })],
+		['an optional property of the wrong type', (): { note: number } => ({ ...valid(), note: 7 })],
+		['an array that is not one', (): { tags: string } => ({ ...valid(), tags: 'a' })],
+		[
+			'an array with a wrong element',
+			(): { tags: (string | number)[] } => ({ ...valid(), tags: ['a', 2] }),
+		],
+		[
+			'a nested object missing its field',
+			(): { customer: Record<string, never> } => ({ ...valid(), customer: {} }),
+		],
+		['a value outside the union', (): { status: string } => ({ ...valid(), status: 'shipped' })],
 		[
 			'a class field that is not an instance',
-			() => ({ ...valid(), placedAt: '2020-01-01' }),
+			(): { placedAt: string } => ({ ...valid(), placedAt: '2020-01-01' }),
 		],
-		['null', () => null],
-		['a primitive', () => 'an order'],
+		['null', (): null => null],
+		['a primitive', (): string => 'an order'],
 	])('should reject %s', (_label, build) => {
 		expect(is<Order>(build())).toBe(false);
 	});
@@ -97,10 +105,13 @@ describe('the escape hatch', () => {
 		expect(
 			is<{ id: number }>(payload, {
 				name: 'Identified',
-				matches: (value) =>
-					value !== null &&
-					typeof value === 'object' &&
-					typeof (value as { id: unknown }).id === 'number',
+				matches: (value) => {
+					return (
+						value !== null &&
+						typeof value === 'object' &&
+						typeof (value as { id: unknown }).id === 'number'
+					);
+				},
 			}),
 		).toBe(true);
 	});
@@ -112,5 +123,12 @@ describe('the escape hatch', () => {
 		expect(() => (is as (value: unknown) => boolean)({})).toThrow(
 			/was not resolved at compile time/,
 		);
+	});
+});
+
+describe('what a type test declares', () => {
+	it('should not let a test for one type pass for a test of another', () => {
+		expectTypeOf<TypeTest<Order>>().not.toExtend<TypeTest<string>>();
+		expectTypeOf<TypeTest<Order>>().toExtend<TypeTest<Order>>();
 	});
 });

@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { walkFlow } from '@/transformer/flow';
-
-import { parse, recordingRules } from './recordingRules';
+import { parse, recordingRules } from '@/src/tests/transformer/recordingRules';
+import { walkFlow } from '@/src/transformer/flow';
 
 /**
  * Behaviour suite for `walkFlow`, the walk the ownership rules are carried
@@ -45,25 +44,15 @@ describe('walkFlow', () => {
 	});
 
 	it('should carry a fact to the code after it, and not before', () => {
-		expect(readsOfX('x; spend(x); x;')).toEqual([
-			'read x',
-			'read x',
-			'read x (spent)',
-		]);
+		expect(readsOfX('x; spend(x); x;')).toEqual(['read x', 'read x', 'read x (spent)']);
 	});
 
 	it('should join both branches of an if', () => {
-		expect(readsOfX('if (c) spend(x); x;')).toEqual([
-			'read x',
-			'read x (spent)',
-		]);
+		expect(readsOfX('if (c) spend(x); x;')).toEqual(['read x', 'read x (spent)']);
 	});
 
 	it('should keep each branch apart from the other', () => {
-		expect(readsOfX('if (c) { spend(x); } else { x; }')).toEqual([
-			'read x',
-			'read x',
-		]);
+		expect(readsOfX('if (c) { spend(x); } else { x; }')).toEqual(['read x', 'read x']);
 	});
 
 	it('should join the arms of a conditional, and the right side of && and ??', () => {
@@ -73,13 +62,8 @@ describe('walkFlow', () => {
 	});
 
 	it('should put nothing after return, throw, break or continue on a path', () => {
-		expect(readsOfX('function f() { spend(x); return; x; }')).toEqual([
-			'read x',
-		]);
-		expect(readsOfX('if (c) { spend(x); throw e; } x;')).toEqual([
-			'read x',
-			'read x',
-		]);
+		expect(readsOfX('function f() { spend(x); return; x; }')).toEqual(['read x']);
+		expect(readsOfX('if (c) { spend(x); throw e; } x;')).toEqual(['read x', 'read x']);
 	});
 
 	it('should carry the end of one iteration to the start of the next', () => {
@@ -92,12 +76,8 @@ describe('walkFlow', () => {
 	});
 
 	it('should leave a loop through its breaks and its condition', () => {
-		expect(readsOfX('while (c) { spend(x); break; } x;').at(-1)).toBe(
-			'read x (spent)',
-		);
-		expect(readsOfX('for (;;) { if (c) continue; spend(x); } x;').at(-1)).toBe(
-			'read x (spent)',
-		);
+		expect(readsOfX('while (c) { spend(x); break; } x;').at(-1)).toBe('read x (spent)');
+		expect(readsOfX('for (;;) { if (c) continue; spend(x); } x;').at(-1)).toBe('read x (spent)');
 	});
 
 	it('should give a for…of variable a new value on every iteration', () => {
@@ -117,12 +97,8 @@ describe('walkFlow', () => {
 	});
 
 	it('should fall through switch cases, and start a catch from both ends of its try', () => {
-		expect(readsOfX('switch (c) { case 0: spend(x); case 1: x; }').at(-1)).toBe(
-			'read x (spent)',
-		);
-		expect(readsOfX('try { spend(x); } catch { x; }').at(-1)).toBe(
-			'read x (spent)',
-		);
+		expect(readsOfX('switch (c) { case 0: spend(x); case 1: x; }').at(-1)).toBe('read x (spent)');
+		expect(readsOfX('try { spend(x); } catch { x; }').at(-1)).toBe('read x (spent)');
 	});
 
 	it('should walk a function created here on its own, from the initial facts', () => {
@@ -145,12 +121,6 @@ describe('walkFlow', () => {
 
 		walkFlow(parse('const a: T = o.x as U; let b; b = { y: a };'), rules);
 
-		expect(recording.events).toEqual([
-			'read o',
-			'bind a',
-			'bind b',
-			'read a',
-			'bind b',
-		]);
+		expect(recording.events).toEqual(['read o', 'bind a', 'bind b', 'read a', 'bind b']);
 	});
 });

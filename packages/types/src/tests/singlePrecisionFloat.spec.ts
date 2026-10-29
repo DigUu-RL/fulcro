@@ -1,6 +1,7 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { SinglePrecisionFloat } from '@/singlePrecisionFloat';
+import type { DoublePrecisionFloat } from '@/src/doublePrecisionFloat';
+import { SinglePrecisionFloat } from '@/src/singlePrecisionFloat';
 
 /**
  * Behaviour suite for `SinglePrecisionFloat`.
@@ -40,10 +41,7 @@ describe('SinglePrecisionFloat', () => {
 		for (let bits = 0; bits <= 0xffff_ffff; bits += 65_537) {
 			const value: number = decode(bits);
 
-			if (
-				!Number.isNaN(value) &&
-				!Object.is(SinglePrecisionFloat.from(value), value)
-			) {
+			if (!Number.isNaN(value) && !Object.is(SinglePrecisionFloat.from(value), value)) {
 				mismatches++;
 			}
 		}
@@ -52,27 +50,23 @@ describe('SinglePrecisionFloat', () => {
 	});
 
 	it('should overflow past the largest finite value, and keep the sign of an underflow', () => {
-		expect(SinglePrecisionFloat.from(3.4028234663852886e38)).toBe(
-			3.4028234663852886e38,
-		);
+		expect(SinglePrecisionFloat.from(3.4028234663852886e38)).toBe(3.4028234663852886e38);
 		expect(SinglePrecisionFloat.from(1e39)).toBe(Infinity);
 		expect(Object.is(SinglePrecisionFloat.from(-1e-50), -0)).toBe(true);
 	});
 
 	it('should round each operation back into the format', () => {
-		const a = SinglePrecisionFloat.from(0.1);
-		const b = SinglePrecisionFloat.from(0.2);
+		const left = SinglePrecisionFloat.from(0.1);
+		const right = SinglePrecisionFloat.from(0.2);
 
 		// Left in double precision the sum would be 0.30000000447034836.
-		expect(SinglePrecisionFloat.add(a, b)).toBe(0.30000001192092896);
-		expect(SinglePrecisionFloat.subtract(b, a)).toBe(Math.fround(b - a));
-		expect(SinglePrecisionFloat.multiply(a, b)).toBe(Math.fround(a * b));
-		expect(SinglePrecisionFloat.divide(a, b)).toBe(0.5);
+		expect(SinglePrecisionFloat.add(left, right)).toBe(0.30000001192092896);
+		expect(SinglePrecisionFloat.subtract(right, left)).toBe(Math.fround(right - left));
+		expect(SinglePrecisionFloat.multiply(left, right)).toBe(Math.fround(left * right));
+		expect(SinglePrecisionFloat.divide(left, right)).toBe(0.5);
+
 		expect(
-			SinglePrecisionFloat.remainder(
-				SinglePrecisionFloat.from(7.5),
-				SinglePrecisionFloat.from(2),
-			),
+			SinglePrecisionFloat.remainder(SinglePrecisionFloat.from(7.5), SinglePrecisionFloat.from(2)),
 		).toBe(1.5);
 	});
 
@@ -80,6 +74,7 @@ describe('SinglePrecisionFloat', () => {
 		expect(SinglePrecisionFloat.maximum).toBe(3.4028234663852886e38);
 		expect(SinglePrecisionFloat.minimum).toBe(-3.4028234663852886e38);
 		expect(SinglePrecisionFloat.is(SinglePrecisionFloat.maximum)).toBe(true);
+
 		expect(SinglePrecisionFloat.increment(SinglePrecisionFloat.maximum)).toBe(
 			SinglePrecisionFloat.maximum,
 		);
@@ -93,17 +88,12 @@ describe('SinglePrecisionFloat', () => {
 	});
 
 	it('should refuse what is not a number', () => {
-		expect(() => SinglePrecisionFloat.from('1' as unknown as number)).toThrow(
-			TypeError,
-		);
+		expect(() => SinglePrecisionFloat.from('1' as unknown as number)).toThrow(TypeError);
 	});
 
 	it('should be its own type, not a double precision one', () => {
-		expectTypeOf(
-			SinglePrecisionFloat.from(1),
-		).toEqualTypeOf<SinglePrecisionFloat>();
-		expectTypeOf<SinglePrecisionFloat>().not.toMatchTypeOf<
-			import('@/doublePrecisionFloat').DoublePrecisionFloat
-		>();
+		expectTypeOf(SinglePrecisionFloat.from(1)).toEqualTypeOf<SinglePrecisionFloat>();
+
+		expectTypeOf<SinglePrecisionFloat>().not.toExtend<DoublePrecisionFloat>();
 	});
 });

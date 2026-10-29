@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { HalfPrecisionFloat } from '@/halfPrecisionFloat';
+import { HalfPrecisionFloat } from '@/src/halfPrecisionFloat';
 
 /**
  * Performance suite for `HalfPrecisionFloat`.
@@ -24,15 +24,18 @@ const CONVERSIONS = 200_000;
  * @param convert Conversion under measurement.
  * @returns Milliseconds taken, never less than one.
  */
-const timed = (
-	inputs: readonly number[],
-	convert: (value: number) => number,
-): number => {
+const timed = (inputs: readonly number[], convert: (value: number) => number): number => {
 	let sink = 0;
 	const started: number = performance.now();
 
-	for (let index = 0; index < CONVERSIONS; index++) {
-		sink += convert(inputs[index % inputs.length]);
+	// Cycles through the inputs by iterating them rather than by index, so the
+	// timed loop carries no check that an element exists.
+	for (let done = 0; done < CONVERSIONS;) {
+		for (const input of inputs) {
+			if (done++ === CONVERSIONS) break;
+
+			sink += convert(input);
+		}
 	}
 
 	const elapsed: number = performance.now() - started;
@@ -56,21 +59,20 @@ describe('HalfPrecisionFloat', () => {
 			{ length: 1_000 },
 			(_, index) => (index + 1) * 2 ** -24,
 		);
-		const large: readonly number[] = Array.from(
-			{ length: 1_000 },
-			(_, index) => 60_000 + index,
-		);
 
-		const smallCost: number = timed(small, HalfPrecisionFloat.from);
-		const largeCost: number = timed(large, HalfPrecisionFloat.from);
+		const large: readonly number[] = Array.from({ length: 1_000 }, (_, index) => 60_000 + index);
+
+		const smallCost: number = timed(small, (value) => HalfPrecisionFloat.from(value));
+		const largeCost: number = timed(large, (value) => HalfPrecisionFloat.from(value));
 
 		expect(largeCost).toBeLessThan(smallCost * 5);
 		expect(smallCost).toBeLessThan(largeCost * 5);
 	});
 
 	it('should cost a small multiple of the platform rounding to single precision', () => {
-		const baseline: number = timed(INPUTS, Math.fround);
-		const rounded: number = timed(INPUTS, HalfPrecisionFloat.from);
+		// Both called through an arrow, so the two sides pay the same call.
+		const baseline: number = timed(INPUTS, (value) => Math.fround(value));
+		const rounded: number = timed(INPUTS, (value) => HalfPrecisionFloat.from(value));
 
 		expect(rounded).toBeLessThan(baseline * 50);
 	});

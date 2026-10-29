@@ -1,6 +1,6 @@
-import { requirePart } from '@/region/requirePart';
-import type { Source } from '@/source';
-import { resolveSource } from '@/source/resolveSource';
+import { requirePart } from '@/src/region/requirePart';
+import type { Source } from '@/src/source';
+import { resolveSource } from '@/src/source/resolveSource';
 
 /** A region of a source, checked: what a view is built from. */
 export interface Region<T> {

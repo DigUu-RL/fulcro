@@ -1,17 +1,14 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { BigInteger } from '@/bigInteger';
-import {
-	type ComplexNumber,
-	ComplexNumber as ComplexNumberOf,
-} from '@/complexNumber';
-import { Decimal } from '@/decimal';
-import { DoublePrecisionFloat } from '@/doublePrecisionFloat';
-import { Fraction } from '@/fraction';
-import type { Layout } from '@/layout';
-import { SignedInteger } from '@/signedInteger';
-import { SinglePrecisionFloat } from '@/singlePrecisionFloat';
-import { struct } from '@/struct';
+import type { BigInteger } from '@/src/bigInteger';
+import { type ComplexNumber, ComplexNumber as ComplexNumberOf } from '@/src/complexNumber';
+import { Decimal } from '@/src/decimal';
+import { DoublePrecisionFloat } from '@/src/doublePrecisionFloat';
+import { Fraction } from '@/src/fraction';
+import type { Layout } from '@/src/layout';
+import { SignedInteger } from '@/src/signedInteger';
+import { SinglePrecisionFloat } from '@/src/singlePrecisionFloat';
+import { struct } from '@/src/struct';
 
 /**
  * Behaviour suite for `ComplexNumber`.
@@ -29,17 +26,15 @@ import { struct } from '@/struct';
  * @param details The details the error is expected to carry.
  * @returns The same error, carrying that code and those details.
  */
-const coded = <T extends Error>(
-	error: T,
-	details: Readonly<Record<string, unknown>>,
-): T =>
-	Object.assign(error, {
+const coded = <T extends Error>(error: T, details: Readonly<Record<string, unknown>>): T => {
+	return Object.assign(error, {
 		code: error.message.slice(0, 'FULCRO0000'.length),
 		details,
 	});
+};
 
 const Complex = ComplexNumberOf(DoublePrecisionFloat);
-const i = Complex.from({ real: 0, imaginary: 1 });
+const item = Complex.from({ real: 0, imaginary: 1 });
 const value = Complex.from({ real: 3, imaginary: 4 });
 
 describe('ComplexNumber', () => {
@@ -75,44 +70,39 @@ describe('ComplexNumber', () => {
 			expect(Complex.is(value)).toBe(true);
 			expect(Complex.is({ real: 3, imaginary: 4 })).toBe(false);
 			expect(Complex.is(Object.freeze({ real: 3 }))).toBe(false);
+			expect(Complex.is(Object.freeze({ real: 3, imaginary: 4, other: 0 }))).toBe(false);
+
 			expect(
-				Complex.is(Object.freeze({ real: 3, imaginary: 4, other: 0 })),
-			).toBe(false);
-			expect(
-				ComplexNumberOf(SinglePrecisionFloat).is(
-					Complex.from({ real: 0.1, imaginary: 0 }),
-				),
+				ComplexNumberOf(SinglePrecisionFloat).is(Complex.from({ real: 0.1, imaginary: 0 })),
 			).toBe(false);
 		});
 	});
 
 	describe('arithmetic', () => {
 		it('should add, subtract and negate part by part', () => {
-			expect(Complex.add(value, i)).toEqual({ real: 3, imaginary: 5 });
-			expect(Complex.subtract(value, i)).toEqual({ real: 3, imaginary: 3 });
+			expect(Complex.add(value, item)).toEqual({ real: 3, imaginary: 5 });
+			expect(Complex.subtract(value, item)).toEqual({ real: 3, imaginary: 3 });
 			expect(Complex.negate(value)).toEqual({ real: -3, imaginary: -4 });
 		});
 
 		it('should square i into minus one', () => {
-			expect(Complex.multiply(i, i)).toEqual({ real: -1, imaginary: 0 });
+			expect(Complex.multiply(item, item)).toEqual({ real: -1, imaginary: 0 });
 		});
 
 		it('should multiply as (ac − bd) + (ad + bc)i', () => {
-			expect(
-				Complex.multiply(value, Complex.from({ real: 1, imaginary: 2 })),
-			).toEqual({ real: -5, imaginary: 10 });
+			expect(Complex.multiply(value, Complex.from({ real: 1, imaginary: 2 }))).toEqual({
+				real: -5,
+				imaginary: 10,
+			});
 		});
 
 		it('should divide by multiplying by the conjugate over the squared norm', () => {
-			expect(
-				Complex.divide(Complex.from({ real: -5, imaginary: 10 }), value),
-			).toEqual({ real: 1, imaginary: 2 });
-			expect(
-				Complex.divide(
-					Complex.from({ real: 1, imaginary: 1 }),
-					Complex.from(2),
-				),
-			).toEqual({
+			expect(Complex.divide(Complex.from({ real: -5, imaginary: 10 }), value)).toEqual({
+				real: 1,
+				imaginary: 2,
+			});
+
+			expect(Complex.divide(Complex.from({ real: 1, imaginary: 1 }), Complex.from(2))).toEqual({
 				real: 0.5,
 				imaginary: 0.5,
 			});
@@ -125,16 +115,18 @@ describe('ComplexNumber', () => {
 
 			expect(quotient.real).toBeNaN();
 			expect(quotient.imaginary).toBeNaN();
-			expect(() =>
-				ComplexNumberOf(SignedInteger(32)).divide(
+
+			expect(() => {
+				return ComplexNumberOf(SignedInteger(32)).divide(
 					ComplexNumberOf(SignedInteger(32)).from(1),
 					ComplexNumberOf(SignedInteger(32)).from(0),
-				),
-			).toThrow(RangeError);
+				);
+			}).toThrow(RangeError);
 		});
 
 		it('should conjugate and scale', () => {
 			expect(Complex.conjugate(value)).toEqual({ real: 3, imaginary: -4 });
+
 			expect(Complex.scale(value, DoublePrecisionFloat.from(2))).toEqual({
 				real: 6,
 				imaginary: 8,
@@ -144,6 +136,7 @@ describe('ComplexNumber', () => {
 		it('should be exact over fractions', () => {
 			const Ratio = Fraction(SignedInteger(32));
 			const Exact = ComplexNumberOf(Ratio);
+
 			const third = Exact.from({
 				real: { numerator: 1, denominator: 3 } as never,
 				imaginary: 0 as never,
@@ -156,21 +149,19 @@ describe('ComplexNumber', () => {
 		});
 
 		it('should compare part by part', () => {
-			expect(
-				Complex.equals(value, Complex.from({ real: 3, imaginary: 4 })),
-			).toBe(true);
-			expect(Complex.equals(value, i)).toBe(false);
+			expect(Complex.equals(value, Complex.from({ real: 3, imaginary: 4 }))).toBe(true);
+			expect(Complex.equals(value, item)).toBe(false);
 		});
 	});
 
 	describe('layout', () => {
 		it('should declare the real part then the imaginary one', () => {
-			expectTypeOf<
-				ComplexNumber<SinglePrecisionFloat>['~layout']
-			>().toEqualTypeOf<{ readonly size: 8; readonly alignment: 4 }>();
-			expectTypeOf<ComplexNumber<BigInteger>>().not.toMatchTypeOf<
-				Layout<number, number>
-			>();
+			expectTypeOf<ComplexNumber<SinglePrecisionFloat>['~layout']>().toEqualTypeOf<{
+				readonly size: 8;
+				readonly alignment: 4;
+			}>();
+
+			expectTypeOf<ComplexNumber<BigInteger>>().not.toExtend<Layout<number, number>>();
 		});
 
 		it('should be stored by a struct as its two parts', () => {
@@ -211,9 +202,8 @@ describe('ComplexNumber', () => {
 					},
 				),
 			);
-			expect(() =>
-				Complex.from({ real: 1, imaginary: 0, other: 2 } as never),
-			).toThrow(
+
+			expect(() => Complex.from({ real: 1, imaginary: 0, other: 2 } as never)).toThrow(
 				coded(
 					new TypeError(
 						"FULCRO6020: ComplexNumber<DoublePrecisionFloat>.from: 'other' is not a field; the fields are real, imaginary.",

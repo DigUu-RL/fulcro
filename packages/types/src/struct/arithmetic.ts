@@ -39,10 +39,7 @@ interface DigitValues {
  *
  * @template N Length, from 0 to 19.
  */
-type Units<
-	N extends number,
-	TAccumulated extends unknown[] = [],
-> = TAccumulated['length'] extends N
+type Units<N extends number, TAccumulated extends unknown[] = []> = TAccumulated['length'] extends N
 	? TAccumulated
 	: Units<N, [...TAccumulated, unknown]>;
 
@@ -57,11 +54,7 @@ type Ten = Units<10>;
  * @template TCarry Carry into this digit.
  * @returns `[digit, carry]` of the sum.
  */
-type AddDigits<
-	TLeft extends Digit,
-	TRight extends Digit,
-	TCarry extends 0 | 1,
-> = [
+type AddDigits<TLeft extends Digit, TRight extends Digit, TCarry extends 0 | 1> = [
 	...Units<DigitValues[TLeft]>,
 	...Units<DigitValues[TRight]>,
 	...Units<TCarry>,
@@ -72,13 +65,12 @@ type AddDigits<
 	: never;
 
 /** First character of a text, `'0'` once it is empty. */
-type Head<TText extends string> =
-	TText extends `${infer THead extends Digit}${string}` ? THead : '0';
+type Head<TText extends string> = TText extends `${infer THead extends Digit}${string}`
+	? THead
+	: '0';
 
 /** A text without its first character. */
-type Tail<TText extends string> = TText extends `${Digit}${infer TTail}`
-	? TTail
-	: '';
+type Tail<TText extends string> = TText extends `${Digit}${infer TTail}` ? TTail : '';
 
 /**
  * Adds two numbers written least significant digit first.
@@ -121,9 +113,7 @@ type Reverse<
 	: TReversed;
 
 /** The number a text of digits spells. */
-type ToNumber<TText extends string> = TText extends `${infer N extends number}`
-	? N
-	: never;
+type ToNumber<TText extends string> = TText extends `${infer N extends number}` ? N : never;
 
 /**
  * The sum of two number literals; `number` when either is not a literal.
@@ -131,8 +121,7 @@ type ToNumber<TText extends string> = TText extends `${infer N extends number}`
  * @template TLeft First operand, a non-negative integer.
  * @template TRight Second operand, a non-negative integer.
  */
-export type Add<TLeft extends number, TRight extends number> = number extends
-	TLeft | TRight
+export type Add<TLeft extends number, TRight extends number> = number extends TLeft | TRight
 	? number
 	: ToNumber<Reverse<AddReversed<Reverse<`${TLeft}`>, Reverse<`${TRight}`>>>>;
 
@@ -163,11 +152,7 @@ type MultiplyDigits<
 	TDigits extends string,
 	TProduct extends number = 0,
 > = TDigits extends `${infer THead extends Digit}${infer TTail}`
-	? MultiplyDigits<
-			TLeft,
-			TTail,
-			Add<TimesTen<TProduct>, MultiplyByDigit<TLeft, THead>>
-		>
+	? MultiplyDigits<TLeft, TTail, Add<TimesTen<TProduct>, MultiplyByDigit<TLeft, THead>>>
 	: TProduct;
 
 /**
@@ -180,10 +165,9 @@ type MultiplyDigits<
  * @template TLeft First operand, a non-negative integer.
  * @template TRight Second operand, a non-negative integer.
  */
-export type Multiply<
-	TLeft extends number,
-	TRight extends number,
-> = number extends TLeft | TRight ? number : MultiplyDigits<TLeft, `${TRight}`>;
+export type Multiply<TLeft extends number, TRight extends number> = number extends TLeft | TRight
+	? number
+	: MultiplyDigits<TLeft, `${TRight}`>;
 
 /**
  * A tuple as long as a number of up to four digits, built one digit at a time
@@ -233,10 +217,10 @@ interface RemainderDigits {
 }
 
 /** How many elements are left of a tuple once whole chunks are taken off it. */
-type Leftover<
-	TTuple extends unknown[],
-	TChunk extends unknown[],
-> = TTuple extends [...TChunk, ...infer TRest]
+type Leftover<TTuple extends unknown[], TChunk extends unknown[]> = TTuple extends [
+	...TChunk,
+	...infer TRest,
+]
 	? Leftover<TRest, TChunk>
 	: TTuple['length'];
 
@@ -246,10 +230,7 @@ type Leftover<
  * @template N A non-negative integer literal.
  * @template TAlignment 2, 4, 8 or 16.
  */
-type Remainder<
-	N extends number,
-	TAlignment extends keyof RemainderDigits,
-> = Leftover<
+type Remainder<N extends number, TAlignment extends keyof RemainderDigits> = Leftover<
 	TupleOf<Take<Reverse<`${N}`>, RemainderDigits[TAlignment]>>,
 	Units<TAlignment>
 >;
@@ -261,10 +242,7 @@ type Remainder<
  * @template N Size before padding.
  * @template TAlignment Alignment of the struct, a power of two up to 16.
  */
-export type RoundUp<
-	N extends number,
-	TAlignment extends number,
-> = number extends N | TAlignment
+export type RoundUp<N extends number, TAlignment extends number> = number extends N | TAlignment
 	? number
 	: TAlignment extends keyof RemainderDigits
 		? Remainder<N, TAlignment> extends infer TRemainder extends number
@@ -281,15 +259,14 @@ export type RoundUp<
  *
  * @template TAlignments Alignments of the fields, each a power of two up to 16.
  */
-export type LargestAlignment<TAlignments extends number> =
-	number extends TAlignments
-		? number
-		: 16 extends TAlignments
-			? 16
-			: 8 extends TAlignments
-				? 8
-				: 4 extends TAlignments
-					? 4
-					: 2 extends TAlignments
-						? 2
-						: 1;
+export type LargestAlignment<TAlignments extends number> = number extends TAlignments
+	? number
+	: 16 extends TAlignments
+		? 16
+		: 8 extends TAlignments
+			? 8
+			: 4 extends TAlignments
+				? 4
+				: 2 extends TAlignments
+					? 2
+					: 1;

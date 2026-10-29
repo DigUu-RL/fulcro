@@ -27,12 +27,11 @@ A finding when:
   it, and the question the report has to answer is what it replaced;
 - something is imported but not declared. It resolves today from the workspace
   root or from a transitive install and breaks the first time the tree changes.
-  `eslint` is exactly this shape here: `eslint.config.mjs` is in the tree and
-  `npx eslint .` is in the contract's command table, while the root declares
-  `eslint-config-prettier`, `eslint-plugin-simple-import-sort` and
-  `typescript-eslint` and never `eslint` itself — `npm explain eslint` shows it
-  arriving as their peer. Report it at `MEDIUM` and say which declaration is
-  missing, not which version to add;
+  `eslint` was this shape here until it was declared: `eslint.config.ts`
+  imports `eslint/config` and `npx eslint .` is in the contract's command
+  table, while the root declared only the plugins and `typescript-eslint`, and
+  `npm explain eslint` showed it arriving as their peer. Report the shape at
+  `MEDIUM` and say which declaration is missing, not which version to add;
 - a declared edge is imported nowhere. Dead weight in `devDependencies`, a
   published install in `dependencies`;
 - a range loosened to `*`, `latest` or a git URL. A published package cannot
@@ -48,10 +47,11 @@ peer range in check 10.
 **Reads.** The `peerDependencies` and `peerDependenciesMeta` of all five
 manifests, and `npm explain <name>` for the peer in question.
 
-Three packages declare `typescript` as `>=5.3.3 <7`, optional through
-`peerDependenciesMeta`: `@fulcro/collections`, `@fulcro/reflect` and
-`@fulcro/transform-core`. Optional because the runtime fallback works without a
-compiler — `tests/entrypoints.spec.mts` is what proves that — and only the
+Four packages declare `typescript` as `>=5.9 <7`, optional through
+`peerDependenciesMeta`: `@fulcro/collections`, `@fulcro/memory`,
+`@fulcro/reflect` and `@fulcro/transform-core`. Optional because the runtime
+fallback works without a compiler — `tests/entrypoints.spec.mts` is what proves
+that — and only the
 transformer entry points need one.
 
 A finding when:
@@ -175,7 +175,7 @@ dependencies. Severity follows the reach, not the registry's own label:
 | `devDependencies`, reachable during build or test | `MEDIUM`     |
 | `devDependencies`, reachable only in tooling      | `LOW`/`NOTE` |
 
-Two prohibitions, both from `.roadmap/features/F17-dependency-audit.md`:
+Two prohibitions, both from F17's specification:
 
 - **Never bump a dependency to quiet a warning.** This skill writes nothing, so
   the failure shape is subtler: reporting a bump as the fix when the advisory's
@@ -238,10 +238,9 @@ A finding when:
 **Reads.** The peer ranges of check 2, the root `devDependencies`, and
 `npm ls typescript --all`.
 
-The root holds two compiler lines on purpose: `typescript` at `^5.3.3`,
-resolving to 5.9.3, and `typescript7`, an alias for `typescript@^7.0.2`. The
-peer range is `>=5.3.3 <7`, so the second line is held for testing and is not
-yet promised to anyone.
+The root holds two compiler lines on purpose: `typescript` at `^5.9.3`, and
+`typescript7`, an alias for `typescript@^7.0.2`. The peer range is `>=5.9 <7`,
+so the second line is held for testing and is not yet promised to anyone.
 
 A finding when:
 

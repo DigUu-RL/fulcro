@@ -1,5 +1,5 @@
 import { createError } from '../createError';
-import { RangeCatalog } from '../definition';
+import type { RangeCatalog } from '../definition';
 
 /**
  * Fixture that must not compile.

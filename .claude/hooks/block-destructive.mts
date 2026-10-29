@@ -18,6 +18,7 @@
 
 import { pathToFileURL } from 'node:url';
 
+import type { Invocation } from './command-line.mts';
 import {
 	commandsOf,
 	deletionTargets,
@@ -25,22 +26,30 @@ import {
 	invocationOf,
 	isRepositoryWide,
 	runs,
-} from './command-line.mjs';
-import { exceptions, guard } from './hook.mjs';
+} from './command-line.mts';
+import { exceptions, guard } from './hook.mts';
 
 /**
  * How a refusal reads to the model that tripped it.
  *
- * @param {string} operation What was attempted.
- * @param {string} instead What to do about it.
- * @returns {string} The message handed back.
+ * @param operation What was attempted.
+ * @param instead What to do about it.
+ * @returns The message handed back.
  */
-const refusal = (operation, instead) =>
-	[
-		`Blocked by .claude/hooks/block-destructive.mjs: ${operation}.`,
+const refusal = (operation: string, instead: string): string => {
+	return [
+		`Blocked by .claude/hooks/block-destructive.mts: ${operation}.`,
 		instead,
 		'See .claude/rules/protected-operations.md. Do not look for another way to run it.',
 	].join(' ');
+};
+
+/** One operation this hook refuses, and how its refusal reads. */
+interface Rule {
+	readonly id: string;
+	readonly refuses: (invocation: Invocation | null) => boolean;
+	readonly reason: string;
+}
 
 /**
  * The operations this hook refuses.
@@ -48,11 +57,10 @@ const refusal = (operation, instead) =>
  * Each carries the identifier a human writes into `FULCRO_HOOKS_ALLOW` to
  * re-open it for one session.
  */
-const RULES = [
+const RULES: readonly Rule[] = [
 	{
 		id: 'reset-hard',
-		refuses: (invocation) =>
-			runs(invocation, ['git', 'reset']) && hasFlag(invocation, '--hard'),
+		refuses: (invocation) => runs(invocation, ['git', 'reset']) && hasFlag(invocation, '--hard'),
 		reason: refusal(
 			'`git reset --hard` discards uncommitted work with no way back',
 			'Name what should be undone and undo that: `git restore` a path, `git stash`, or a plain `git reset` that keeps the files.',
@@ -60,8 +68,9 @@ const RULES = [
 	},
 	{
 		id: 'clean',
-		refuses: (invocation) =>
-			runs(invocation, ['git', 'clean']) && hasFlag(invocation, '--force', 'f'),
+		refuses: (invocation): boolean => {
+			return runs(invocation, ['git', 'clean']) && hasFlag(invocation, '--force', 'f');
+		},
 		reason: refusal(
 			'`git clean --force` deletes untracked files, and some untracked files here are source',
 			'Delete the paths you mean by name, after `git clean -n` has said what would go.',
@@ -80,10 +89,10 @@ const RULES = [
 /**
  * Reviews one command line.
  *
- * @param {{ command?: unknown }} input The `tool_input` of the hook event.
- * @returns {string | null} The reason the call is refused, or `null`.
+ * @param input The `tool_input` of the hook event.
+ * @returns The reason the call is refused, or `null`.
  */
-export const review = (input) => {
+export const review = (input: { readonly command?: unknown }): string | null => {
 	if (typeof input.command !== 'string') return null;
 
 	const allowed = exceptions();
@@ -100,9 +109,6 @@ export const review = (input) => {
 // Run as a hook, imported by its tests. The comparison is on the resolved URL
 // rather than on the file name, so a test importing this module never spawns
 // the guard and never calls `process.exit`.
-if (
-	process.argv[1] !== undefined &&
-	import.meta.url === pathToFileURL(process.argv[1]).href
-) {
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
 	void guard(review);
 }

@@ -1,9 +1,9 @@
 import * as path from 'node:path';
 
-import * as ts from 'typescript';
+import * as typescript from 'typescript';
 import { beforeAll, describe, expect, it } from 'vitest';
 
-import transformer from '@/transformer';
+import transformer from '@/src/transformer';
 
 /**
  * Transformer suite.
@@ -35,16 +35,16 @@ let emitted = '';
  * @returns The emitted JavaScript.
  */
 const compileFixture = (): string => {
-	const program: ts.Program = ts.createProgram([FIXTURE_PATH], {
-		target: ts.ScriptTarget.ES2022,
-		module: ts.ModuleKind.ESNext,
+	const program: typescript.Program = typescript.createProgram([FIXTURE_PATH], {
+		target: typescript.ScriptTarget.ES2022,
+		module: typescript.ModuleKind.ESNext,
 		// `Bundler`, and the choice matters. An ESNext module defaults to the
 		// classic resolution, which finds nothing at all. `Node10` finds the main
 		// entry but not the `exports` subpaths, so `@fulcro/collections/async`
 		// resolved to nothing — and a type the checker cannot see is a call the
 		// transformer cannot claim, silently. The fixture compiled, the emitted
 		// code kept `.cast()` unresolved, and nothing said why.
-		moduleResolution: ts.ModuleResolutionKind.Bundler,
+		moduleResolution: typescript.ModuleResolutionKind.Bundler,
 		strict: true,
 		noEmitOnError: false,
 		skipLibCheck: true,
@@ -52,7 +52,7 @@ const compileFixture = (): string => {
 
 	let output = '';
 
-	const result: ts.EmitResult = program.emit(
+	const result: typescript.EmitResult = program.emit(
 		program.getSourceFile(FIXTURE_PATH),
 		(fileName, text) => {
 			if (fileName.endsWith('.js')) output = text;
@@ -64,13 +64,13 @@ const compileFixture = (): string => {
 		},
 	);
 
-	const errors: readonly ts.Diagnostic[] = result.diagnostics.filter(
-		(diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error,
+	const errors: readonly typescript.Diagnostic[] = result.diagnostics.filter(
+		(diagnostic) => diagnostic.category === typescript.DiagnosticCategory.Error,
 	);
 
 	if (errors.length > 0) {
 		throw new Error(
-			ts.formatDiagnostics(errors, {
+			typescript.formatDiagnostics(errors, {
 				getCanonicalFileName: (name) => name,
 				getCurrentDirectory: () => PROJECT_ROOT,
 				getNewLine: () => '\n',
@@ -146,9 +146,7 @@ describe('an interface, written out as checks', () => {
 	});
 
 	it('should allow an optional property to be absent', () => {
-		expect(lineFor('orders')).toContain(
-			'(v.note === undefined || typeof v.note === "string")',
-		);
+		expect(lineFor('orders')).toContain('(v.note === undefined || typeof v.note === "string")');
 	});
 
 	it('should check every element of an array, not just that it is one', () => {
@@ -162,9 +160,7 @@ describe('an interface, written out as checks', () => {
 	});
 
 	it('should compare a union of literals against each one', () => {
-		expect(lineFor('orders')).toContain(
-			'(v.status === "pending" || v.status === "paid")',
-		);
+		expect(lineFor('orders')).toContain('(v.status === "pending" || v.status === "paid")');
 	});
 
 	it('should use instanceof for a built-in class', () => {
@@ -246,8 +242,7 @@ describe('what it still refuses', () => {
 		// Exactly one unresolved call in the whole fixture. A second would mean a
 		// form was quietly skipped, which is the failure that looks like nothing
 		// at compile time.
-		const unresolved: number = (emitted.match(/\.(ofType|cast)\(\)/g) ?? [])
-			.length;
+		const unresolved: number = (emitted.match(/\.(ofType|cast)\(\)/g) ?? []).length;
 
 		expect(unresolved).toBe(1);
 	});
@@ -276,8 +271,6 @@ describe('chained calls', () => {
 	it('should rewrite both halves of a chain', () => {
 		// The rewriter visits the expression it is called on, so a rewritten call
 		// sitting inside another is not skipped.
-		expect(emitted).toMatch(
-			/\.ofType\(['"]string['"]\)\.cast\(['"]string['"]\)/,
-		);
+		expect(emitted).toMatch(/\.ofType\(['"]string['"]\)\.cast\(['"]string['"]\)/);
 	});
 });

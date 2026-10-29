@@ -1,6 +1,9 @@
 import { createError } from '@fulcro/errors';
 
-import { failure, type Result, success } from '@/result';
+import { failure, type Result, success } from '@/src/result';
+
+/** Any value but `null` and `undefined`: what a failure may hold as its error. */
+type NonNullish = string | number | bigint | boolean | symbol | object;
 
 /**
  * Something a thrown value can be stored as without defeating the discriminant.
@@ -13,7 +16,7 @@ import { failure, type Result, success } from '@/result';
  * @param error Value that was thrown.
  * @returns The value itself, or an `Error` standing in for a nullish throw.
  */
-const asStorableError = (error: unknown): NonNullable<unknown> => {
+const asStorableError = (error: unknown): NonNullish => {
 	if (error !== null && error !== undefined) return error;
 
 	return createError('FULCRO2001', { operation: 'tryCatch', thrown: error });
@@ -57,9 +60,7 @@ export const tryCatch = async <T, E = unknown>(
 	operation: Promise<T> | (() => T | PromiseLike<T>),
 ): Promise<Result<Awaited<T>, E>> => {
 	try {
-		const value: Awaited<T> = await (typeof operation === 'function'
-			? operation()
-			: operation);
+		const value: Awaited<T> = await (typeof operation === 'function' ? operation() : operation);
 
 		return success(value);
 	} catch (error) {

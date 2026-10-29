@@ -2,14 +2,13 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import { SinglePrecisionFloat, type Struct, struct } from '@fulcro/types';
 
-import { allocate } from '@/allocate';
-import { asView } from '@/asView';
-import { createFixedBufferStorage } from '@/fixedBufferStorage';
-import { createManagedAllocator } from '@/managedAllocator';
-import { createManagedStorage } from '@/managedStorage';
-import type { Storage } from '@/storage';
-
-import { coded } from './coded';
+import { allocate } from '@/src/allocate';
+import { asView } from '@/src/asView';
+import { createFixedBufferStorage } from '@/src/fixedBufferStorage';
+import { createManagedAllocator } from '@/src/managedAllocator';
+import { createManagedStorage } from '@/src/managedStorage';
+import type { Storage } from '@/src/storage';
+import { coded } from '@/src/tests/coded';
 
 /**
  * Behaviour suite for the `Storage<T>` contract.
@@ -23,29 +22,31 @@ const Point = struct('Point', {
 	x: SinglePrecisionFloat,
 	y: SinglePrecisionFloat,
 });
+
 type Point = Struct<typeof Point>;
 
 const origin: Point = Point.from({ x: 0, y: 0 });
 
 /** Each strategy, as a factory of a storage of points. */
 const STRATEGIES = [
-	['ManagedStorage', (length: number) => createManagedStorage(length, origin)],
+	['ManagedStorage', (length: number): Storage<Point> => createManagedStorage(length, origin)],
 	[
 		'FixedBufferStorage',
-		(length: number) => createFixedBufferStorage(Point, length),
+		(length: number): Storage<Point> => createFixedBufferStorage(Point, length),
 	],
 	// What `allocate` returns names its operations after the contract itself,
 	// since no storage strategy of its own stands behind it.
 	[
 		'Storage',
-		(length: number) => allocate(Point, length, createManagedAllocator()),
+		(length: number): Storage<Point> => allocate(Point, length, createManagedAllocator()),
 	],
 	// A view is accepted wherever a storage is; this one sits inside a larger
 	// buffer, so a position it got wrong would land on a neighbour.
 	[
 		'View',
-		(length: number): Storage<Point> =>
-			asView(createFixedBufferStorage(Point, length + 2), 1, length),
+		(length: number): Storage<Point> => {
+			return asView(createFixedBufferStorage(Point, length + 2), 1, length);
+		},
 	],
 ] as const;
 
@@ -112,11 +113,9 @@ describe.each(STRATEGIES)('%s, as a Storage<T>', (name, create) => {
 		[Number.NaN, 'NaN'],
 		[Number.POSITIVE_INFINITY, 'Infinity'],
 	])('should refuse to get index %s', (index, shown) => {
-		expect(() => create(3).get(index)).toThrowError(
+		expect(() => create(3).get(index)).toThrow(
 			coded(
-				new RangeError(
-					`FULCRO7002: ${name}.get: index ${shown} is outside a storage of length 3.`,
-				),
+				new RangeError(`FULCRO7002: ${name}.get: index ${shown} is outside a storage of length 3.`),
 				{ operation: `${name}.get`, index, length: 3 },
 			),
 		);
@@ -125,19 +124,21 @@ describe.each(STRATEGIES)('%s, as a Storage<T>', (name, create) => {
 	it('should refuse to set outside, and leave every value as it was', () => {
 		const points: Storage<Point> = create(2);
 
-		expect(() => points.set(2, Point.from({ x: 1, y: 1 }))).toThrowError(
-			coded(
-				new RangeError(
-					`FULCRO7002: ${name}.set: index 2 is outside a storage of length 2.`,
-				),
-				{ operation: `${name}.set`, index: 2, length: 2 },
-			),
+		expect(() => {
+			points.set(2, Point.from({ x: 1, y: 1 }));
+		}).toThrow(
+			coded(new RangeError(`FULCRO7002: ${name}.set: index 2 is outside a storage of length 2.`), {
+				operation: `${name}.set`,
+				index: 2,
+				length: 2,
+			}),
 		);
+
 		expect(sumOfX(points)).toBe(0);
 	});
 
 	it('should hold nothing at length 0', () => {
-		expect(() => create(0).get(0)).toThrowError(RangeError);
+		expect(() => create(0).get(0)).toThrow(RangeError);
 	});
 
 	it('should infer the type of the values it holds', () => {
@@ -148,36 +149,42 @@ describe.each(STRATEGIES)('%s, as a Storage<T>', (name, create) => {
 
 describe('Storage<T> lengths', () => {
 	it.each([
-		[
-			'createManagedStorage',
-			(length: number) => createManagedStorage(length, 0),
-		],
+		['createManagedStorage', (length: number): Storage<number> => createManagedStorage(length, 0)],
 		[
 			'createFixedBufferStorage',
-			(length: number) => createFixedBufferStorage(Point, length),
+			(length: number): Storage<Point> => createFixedBufferStorage(Point, length),
 		],
 		[
 			'allocate',
-			(length: number) => allocate(Point, length, createManagedAllocator()),
+			(length: number): Storage<Point> => allocate(Point, length, createManagedAllocator()),
 		],
-	] as const)(
-		'%s should refuse a length that is not a count',
-		(name, create) => {
-			for (const [length, shown] of [
-				[-1, '-1'],
-				[1.5, '1.5'],
-				[Number.NaN, 'NaN'],
-				[2 ** 53, String(2 ** 53)],
-			] as const) {
-				expect(() => create(length)).toThrowError(
-					coded(
-						new RangeError(
-							`FULCRO7001: ${name}: expected a length that is a non-negative safe integer, received ${shown}.`,
-						),
-						{ operation: name, received: length },
+	] as const)('%s should refuse a length that is not a count', (name, create) => {
+		for (const [length, shown] of [
+			[-1, '-1'],
+			[1.5, '1.5'],
+			[Number.NaN, 'NaN'],
+			[2 ** 53, String(2 ** 53)],
+		] as const) {
+			expect(() => create(length)).toThrow(
+				coded(
+					new RangeError(
+						`FULCRO7001: ${name}: expected a length that is a non-negative safe integer, received ${shown}.`,
 					),
-				);
-			}
-		},
-	);
+					{ operation: name, received: length },
+				),
+			);
+		}
+	});
+});
+
+describe('the members of a storage', () => {
+	it('should be declared as the functions they are, which work off their object', () => {
+		expectTypeOf<Storage<number>['get']>().toEqualTypeOf<(index: number) => number>();
+		expectTypeOf<Storage<number>['set']>().toEqualTypeOf<(index: number, value: number) => void>();
+	});
+
+	it('should not stand for a storage of anything, which could be handed a string', () => {
+		expectTypeOf<Storage<number>>().not.toExtend<Storage<unknown>>();
+		expectTypeOf<Storage<number>>().toExtend<Storage<number>>();
+	});
 });

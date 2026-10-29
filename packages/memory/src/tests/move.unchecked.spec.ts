@@ -1,15 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { asReadOnlyView } from '@/asReadOnlyView';
-import { borrow } from '@/borrow';
-import { borrowMutable } from '@/borrowMutable';
-import { createManagedStorage } from '@/managedStorage';
-import { move } from '@/move';
-import { own } from '@/own';
-import type { Owned } from '@/owned';
-import { pointerTo } from '@/pointerTo';
-
-import { coded } from './coded';
+import { asReadOnlyView } from '@/src/asReadOnlyView';
+import { borrow } from '@/src/borrow';
+import { borrowMutable } from '@/src/borrowMutable';
+import { createManagedStorage } from '@/src/managedStorage';
+import { move } from '@/src/move';
+import { own } from '@/src/own';
+import type { Owned } from '@/src/owned';
+import { pointerTo } from '@/src/pointerTo';
+import { coded } from '@/src/tests/coded';
 
 /**
  * Runtime refusals of `move`: the owner it spent, and every borrow of it.
@@ -20,22 +19,24 @@ import { coded } from './coded';
  */
 
 /** The error a spent owner throws, for an operation. */
-const spent = (operation: string): Error =>
-	coded(
-		new Error(
-			`FULCRO7023: ${operation}: the owner was moved; use the owner move returned.`,
-		),
-		{ operation },
+const spent = (operation: string): Error => {
+	return coded(
+		new Error(`FULCRO7023: ${operation}: the owner was moved; use the owner move returned.`),
+		{
+			operation,
+		},
 	);
+};
 
 /** The error an ended borrow throws, for an operation. */
-const ended = (operation: string): Error =>
-	coded(
+const ended = (operation: string): Error => {
+	return coded(
 		new Error(
 			`FULCRO7024: ${operation}: the borrow has ended — its owner was moved or disposed, or borrowed again in a way it cannot share; borrow again.`,
 		),
 		{ operation },
 	);
+};
 
 describe('move, unchecked', () => {
 	it('should refuse everything asked of the owner it spent', () => {
@@ -69,9 +70,7 @@ describe('move, unchecked', () => {
 
 		expect(() => reading.get(0)).toThrow(ended('ReadOnlyView.get'));
 		expect(() => subview.get(0)).toThrow(ended('ReadOnlyView.get'));
-		expect(() => viewed.get(0)).toThrow(
-			expect.objectContaining({ code: 'FULCRO7024' }),
-		);
+		expect(() => viewed.get(0)).toThrow(expect.objectContaining({ code: 'FULCRO7024' }));
 	});
 
 	it('should end a borrow for writing, its read-only view and a pointer into it', () => {
@@ -82,10 +81,14 @@ describe('move, unchecked', () => {
 
 		move(first);
 
-		expect(() => writing.set(0, 1)).toThrow(ended('View.set'));
+		expect(() => {
+			writing.set(0, 1);
+		}).toThrow(ended('View.set'));
+
 		expect(() => reading.get(0)).toThrow(ended('ReadOnlyView.get'));
-		expect(() => pointer.set(1)).toThrow(
-			expect.objectContaining({ code: 'FULCRO7024' }),
-		);
+
+		expect(() => {
+			pointer.set(1);
+		}).toThrow(expect.objectContaining({ code: 'FULCRO7024' }));
 	});
 });

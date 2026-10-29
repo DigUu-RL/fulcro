@@ -1,4 +1,6 @@
-import type { Storage } from '@/storage';
+import { assert } from 'vitest';
+
+import type { Storage } from '@/src/storage';
 
 /** How often a counted source was read and written. */
 export interface SourceCounts {
@@ -27,7 +29,11 @@ export const countedStorage = (
 			get: (index: number): number => {
 				counts.reads++;
 
-				return values[index] as number;
+				const value: number | undefined = values[index];
+
+				assert.isDefined(value);
+
+				return value;
 			},
 			set: (index: number, value: number): void => {
 				counts.writes++;
@@ -44,24 +50,21 @@ export const countedStorage = (
  * @param length How many values.
  * @returns The array, behind a counting proxy, and the counts it updates.
  */
-export const countedArray = (
-	length: number,
-): { array: number[]; counts: SourceCounts } => {
+export const countedArray = (length: number): { array: number[]; counts: SourceCounts } => {
 	const counts: SourceCounts = { reads: 0, writes: 0 };
-	const isElement = (key: string | symbol): boolean =>
-		typeof key === 'string' && /^\d+$/.test(key);
+	const isElement = (key: string | symbol): boolean => typeof key === 'string' && /^\d+$/.test(key);
 
 	return {
 		counts,
 		array: new Proxy(
 			Array.from({ length }, (_, index) => index),
 			{
-				get: (target, key, receiver) => {
+				get: (target, key, receiver): unknown => {
 					if (isElement(key)) counts.reads++;
 
 					return Reflect.get(target, key, receiver);
 				},
-				set: (target, key, value, receiver) => {
+				set: (target, key, value, receiver): boolean => {
 					if (isElement(key)) counts.writes++;
 
 					return Reflect.set(target, key, value, receiver);

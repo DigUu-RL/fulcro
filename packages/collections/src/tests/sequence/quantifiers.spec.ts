@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { SequenceCollection } from '@/collections/sequence';
+import { SequenceCollection } from '@/src/collections/sequence';
 
 /**
  * Counts how many elements a sequence actually reads.
@@ -12,9 +12,7 @@ import { SequenceCollection } from '@/collections/sequence';
  * @param values Elements to yield.
  * @returns The iterable and a reader of how far it has been pulled.
  */
-const counted = <T>(
-	values: readonly T[],
-): { source: Iterable<T>; read: () => number } => {
+const counted = <T>(values: readonly T[]): { source: Iterable<T>; read: () => number } => {
 	let read = 0;
 
 	return {
@@ -32,15 +30,11 @@ const counted = <T>(
 
 describe('all', () => {
 	it('should hold when every element satisfies the condition', () => {
-		expect(
-			SequenceCollection.from([2, 4, 6]).all((value) => value % 2 === 0),
-		).toBe(true);
+		expect(SequenceCollection.from([2, 4, 6]).all((value) => value % 2 === 0)).toBe(true);
 	});
 
 	it('should fail on the first counterexample', () => {
-		expect(
-			SequenceCollection.from([2, 3, 4]).all((value) => value % 2 === 0),
-		).toBe(false);
+		expect(SequenceCollection.from([2, 3, 4]).all((value) => value % 2 === 0)).toBe(false);
 	});
 
 	it('should stop at the element that failed', () => {
@@ -94,21 +88,17 @@ describe('single', () => {
 	});
 
 	it('should return the only element matching a condition', () => {
-		expect(
-			SequenceCollection.from([1, 2, 3]).single((value) => value === 2),
-		).toBe(2);
+		expect(SequenceCollection.from([1, 2, 3]).single((value) => value === 2)).toBe(2);
 	});
 
 	it('should throw when nothing matches', () => {
-		expect(() => SequenceCollection.from([1, 2]).single((v) => v > 5)).toThrow(
+		expect(() => SequenceCollection.from([1, 2]).single((value) => value > 5)).toThrow(
 			/no element/i,
 		);
 	});
 
 	it('should throw when more than one matches', () => {
-		expect(() => SequenceCollection.from([1, 2, 3]).single()).toThrow(
-			/more than one/i,
-		);
+		expect(() => SequenceCollection.from([1, 2, 3]).single()).toThrow(/more than one/i);
 	});
 
 	it('should stop on the second match rather than draining the source', () => {
@@ -126,23 +116,17 @@ describe('single', () => {
 
 describe('singleOrNull', () => {
 	it('should return null when nothing matches', () => {
-		expect(
-			SequenceCollection.from([1, 2]).singleOrNull((v) => v > 5),
-		).toBeNull();
+		expect(SequenceCollection.from([1, 2]).singleOrNull((value) => value > 5)).toBeNull();
 	});
 
 	it('should still throw when more than one matches', () => {
 		// An ambiguous answer is a defect in the query, not an absence to
 		// tolerate, so this differs from `firstOrNull` on purpose.
-		expect(() => SequenceCollection.from([1, 2]).singleOrNull()).toThrow(
-			/more than one/i,
-		);
+		expect(() => SequenceCollection.from([1, 2]).singleOrNull()).toThrow(/more than one/i);
 	});
 
 	it('should return the only match', () => {
-		expect(
-			SequenceCollection.from([1, 2, 3]).singleOrNull((v) => v === 3),
-		).toBe(3);
+		expect(SequenceCollection.from([1, 2, 3]).singleOrNull((value) => value === 3)).toBe(3);
 	});
 });
 
@@ -166,9 +150,7 @@ describe('elementAt', () => {
 	it.each([-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
 		'should reject %s as a position',
 		(index) => {
-			expect(() => SequenceCollection.from([1, 2]).elementAt(index)).toThrow(
-				/range/i,
-			);
+			expect(() => SequenceCollection.from([1, 2]).elementAt(index)).toThrow(/range/i);
 		},
 	);
 });
@@ -185,21 +167,15 @@ describe('elementAtOrNull', () => {
 
 describe('defaultIfEmpty', () => {
 	it('should yield the fallback for an empty sequence', () => {
-		expect(
-			SequenceCollection.empty<number>().defaultIfEmpty(0).toArray(),
-		).toEqual([0]);
+		expect(SequenceCollection.empty<number>().defaultIfEmpty(0).toArray()).toEqual([0]);
 	});
 
 	it('should leave a non-empty sequence alone', () => {
-		expect(SequenceCollection.from([1, 2]).defaultIfEmpty(0).toArray()).toEqual(
-			[1, 2],
-		);
+		expect(SequenceCollection.from([1, 2]).defaultIfEmpty(0).toArray()).toEqual([1, 2]);
 	});
 
 	it('should count a known-empty source as one element', () => {
-		expect(SequenceCollection.empty<number>().defaultIfEmpty(0).count()).toBe(
-			1,
-		);
+		expect(SequenceCollection.empty<number>().defaultIfEmpty(0).count()).toBe(1);
 	});
 
 	it('should stay deferred', () => {
@@ -214,24 +190,16 @@ describe('defaultIfEmpty', () => {
 
 describe('sequenceEqual', () => {
 	it('should hold for equal sequences', () => {
-		expect(SequenceCollection.from([1, 2, 3]).sequenceEqual([1, 2, 3])).toBe(
-			true,
-		);
+		expect(SequenceCollection.from([1, 2, 3]).sequenceEqual([1, 2, 3])).toBe(true);
 	});
 
 	it('should fail on differing order', () => {
-		expect(SequenceCollection.from([1, 2, 3]).sequenceEqual([1, 3, 2])).toBe(
-			false,
-		);
+		expect(SequenceCollection.from([1, 2, 3]).sequenceEqual([1, 3, 2])).toBe(false);
 	});
 
 	it('should fail on differing length', () => {
-		expect(SequenceCollection.from([1, 2]).sequenceEqual([1, 2, 3])).toBe(
-			false,
-		);
-		expect(SequenceCollection.from([1, 2, 3]).sequenceEqual([1, 2])).toBe(
-			false,
-		);
+		expect(SequenceCollection.from([1, 2]).sequenceEqual([1, 2, 3])).toBe(false);
+		expect(SequenceCollection.from([1, 2, 3]).sequenceEqual([1, 2])).toBe(false);
 	});
 
 	it('should hold for two empty sequences', () => {

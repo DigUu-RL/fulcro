@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { keysOf } from '@/functions/utils/keysOf';
+import { keysOf } from '@/src/functions/utils/keysOf';
 
 /**
  * Behaviour suite for `keysOf`.
@@ -48,8 +48,6 @@ describe('keysOf', () => {
 	});
 
 	it('should refuse a call nothing resolved', () => {
-		expect(() => (keysOf as () => readonly string[])()).toThrow(
-			/was not resolved at compile time/,
-		);
+		expect(() => (keysOf as () => readonly string[])()).toThrow(/was not resolved at compile time/);
 	});
 });

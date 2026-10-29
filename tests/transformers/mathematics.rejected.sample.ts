@@ -8,6 +8,4 @@ import { Matrix, SinglePrecisionFloat } from '@fulcro/types';
  * refused at compile time rather than left to run later.
  */
 
-export const identity = constantOf(() => [
-	...Matrix(SinglePrecisionFloat, 2, 2).identity(),
-]);
+export const identity = constantOf(() => [...Matrix(SinglePrecisionFloat, 2, 2).identity()]);

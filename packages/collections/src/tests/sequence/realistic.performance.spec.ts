@@ -1,6 +1,6 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { assert, beforeAll, describe, expect, it } from 'vitest';
 
-import { SequenceCollection } from '@/collections/sequence';
+import { SequenceCollection } from '@/src/collections/sequence';
 
 /**
  * Performance suite over a realistic dataset.
@@ -60,31 +60,50 @@ const REGIONS = ['north', 'south', 'east', 'west'] as const;
 /** Statuses the dataset is spread across. */
 const STATUSES = ['pending', 'paid', 'shipped', 'cancelled'] as const;
 
+type Region = (typeof REGIONS)[number];
+type Status = (typeof STATUSES)[number];
+
 let orders: readonly Order[] = [];
 let customers: readonly Customer[] = [];
 
 beforeAll(() => {
 	// Built once. A dataset rebuilt per test would make every budget below a
 	// measurement of the builder rather than of the operator.
-	orders = Array.from({ length: ORDERS }, (_, index) => ({
-		id: index,
-		customerId: index % CUSTOMERS,
-		region: REGIONS[index % REGIONS.length],
-		status: STATUSES[index % STATUSES.length],
-		total: (index % 997) + (index % 13) / 10,
-		placedAt: new Date(2020, 0, 1 + (index % 1_000)),
-		items: Array.from({ length: ITEMS_PER_ORDER }, (__, line) => ({
-			sku: `SKU-${(index + line) % 5_000}`,
-			quantity: (line % 4) + 1,
-			unitPrice: ((index + line) % 200) + 0.99,
-		})),
-	}));
+	orders = Array.from({ length: ORDERS }, (_, index) => {
+		const region: Region | undefined = REGIONS[index % REGIONS.length];
+		const status: Status | undefined = STATUSES[index % STATUSES.length];
 
-	customers = Array.from({ length: CUSTOMERS }, (_, index) => ({
-		id: index,
-		name: `customer-${index}`,
-		region: REGIONS[index % REGIONS.length],
-	}));
+		assert.isDefined(region);
+		assert.isDefined(status);
+
+		return {
+			id: index,
+			customerId: index % CUSTOMERS,
+			region,
+			status,
+			total: (index % 997) + (index % 13) / 10,
+			placedAt: new Date(2020, 0, 1 + (index % 1_000)),
+			items: Array.from({ length: ITEMS_PER_ORDER }, (_slot, line) => {
+				return {
+					sku: `SKU-${String((index + line) % 5_000)}`,
+					quantity: (line % 4) + 1,
+					unitPrice: ((index + line) % 200) + 0.99,
+				};
+			}),
+		};
+	});
+
+	customers = Array.from({ length: CUSTOMERS }, (_, index) => {
+		const region: Region | undefined = REGIONS[index % REGIONS.length];
+
+		assert.isDefined(region);
+
+		return {
+			id: index,
+			name: `customer-${String(index)}`,
+			region,
+		};
+	});
 }, 60_000);
 
 /** How many times the instrumented key projections ran. */
@@ -101,12 +120,12 @@ let keyReads = 0;
  * @param projection Projection being instrumented.
  * @returns The instrumented projection.
  */
-const countedKey =
-	<R>(projection: (order: Order) => R) =>
-	(order: Order): R => {
+const countedKey = <R>(projection: (order: Order) => R) => {
+	return (order: Order): R => {
 		keyReads++;
 		return projection(order);
 	};
+};
 
 describe('sorting records by their fields', () => {
 	it('should read each sorting key once per element, not per comparison', () => {
@@ -160,21 +179,17 @@ describe('grouping and indexing records', () => {
 	it('should tally by key without collecting the records', () => {
 		keyReads = 0;
 
-		const byStatus = SequenceCollection.from(orders).countBy(
-			countedKey((order) => order.status),
-		);
+		const byStatus = SequenceCollection.from(orders).countBy(countedKey((order) => order.status));
 
 		expect(keyReads).toBe(ORDERS);
 		expect(byStatus.size).toBe(STATUSES.length);
-		expect([...byStatus.values()].reduce((a, b) => a + b, 0)).toBe(ORDERS);
+		expect([...byStatus.values()].reduce((left, right) => left + right, 0)).toBe(ORDERS);
 	});
 
 	it('should build a lookup over a hundred thousand records within budget', () => {
 		const started: number = performance.now();
 
-		const byCustomer = SequenceCollection.from(orders).toLookup(
-			(order) => order.customerId,
-		);
+		const byCustomer = SequenceCollection.from(orders).toLookup((order) => order.customerId);
 
 		expect(byCustomer.size).toBe(CUSTOMERS);
 		expect(performance.now() - started).toBeLessThan(2_000);
@@ -221,7 +236,7 @@ describe('joining two large collections', () => {
 				customers,
 				(order) => order.customerId,
 				(customer) => customer.id,
-				(order, customer) => `${customer.name}:${order.id}`,
+				(order, customer) => `${customer.name}:${String(order.id)}`,
 			)
 			.count();
 
@@ -237,15 +252,17 @@ describe('joining two large collections', () => {
 				orders,
 				(customer) => customer.id,
 				(order) => order.customerId,
-				(customer, theirOrders) => ({
-					customer: customer.name,
-					count: theirOrders.count(),
-				}),
+				(customer, theirOrders) => {
+					return {
+						customer: customer.name,
+						count: theirOrders.count(),
+					};
+				},
 			)
 			.toArray();
 
 		expect(grouped).toHaveLength(CUSTOMERS);
-		expect(grouped[0].count).toBe(ORDERS / CUSTOMERS);
+		expect(grouped[0]?.count).toBe(ORDERS / CUSTOMERS);
 		expect(performance.now() - started).toBeLessThan(3_000);
 	});
 });
@@ -332,9 +349,7 @@ describe('statistics over a field of a hundred thousand records', () => {
 	it('should find the extreme record rather than the extreme value', () => {
 		keyReads = 0;
 
-		const dearest = SequenceCollection.from(orders).maxBy(
-			countedKey((order) => order.total),
-		);
+		const dearest = SequenceCollection.from(orders).maxBy(countedKey((order) => order.total));
 
 		expect(dearest.id).toBeGreaterThanOrEqual(0);
 		expect(keyReads).toBe(ORDERS);
@@ -350,10 +365,7 @@ describe('memoize on an expensive projection', () => {
 				projections++;
 				return {
 					id: order.id,
-					value: order.items.reduce(
-						(total, item) => total + item.quantity * item.unitPrice,
-						0,
-					),
+					value: order.items.reduce((total, item) => total + item.quantity * item.unitPrice, 0),
 				};
 			})
 			.memoize();
