@@ -17,11 +17,11 @@ import { createWorkerPool } from '@fulcro/parallel';
 
 Provavelmente não, e vale resolver isso antes de continuar lendo.
 
-| O seu trabalho                                 | Use                                                        |
-| ---------------------------------------------- | ---------------------------------------------------------- |
-| Esperando uma rede, um disco, um banco         | [`selectAwait`](../concurrency.md) — concorrência limitada |
-| Vários trabalhos que esperam, como uma unidade | [Tasks estruturadas](./tasks.md)                           |
-| Gastando CPU: parsing, hashing, redimensionar  | Este                                                       |
+| O seu trabalho                                 | Use                                                       |
+| ---------------------------------------------- | --------------------------------------------------------- |
+| Esperando uma rede, um disco, um banco         | [`selectAwait`](./concurrency.md) — concorrência limitada |
+| Vários trabalhos que esperam, como uma unidade | [Tasks estruturadas](./tasks.md)                          |
+| Gastando CPU: parsing, hashing, redimensionar  | Este                                                      |
 
 Threads **não fazem nada** por um trabalho que espera — nunca houve tempo ocioso
 para preencher, e você acrescentou o custo de copiar dados entre realms a algo

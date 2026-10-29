@@ -1,5 +1,7 @@
 # Async sequences
 
+🇧🇷 Português (Brasil): [Leia esta documentação em português](./pt-BR/async-sequences.md)
+
 Querying data that arrives over time — pages of an API, lines of a file, rows
 from a cursor — with the same operators you already know from
 [`Sequence`](./sequences.md).
@@ -301,8 +303,8 @@ TypeError: FULCRO1015: cast('Order') found a string at index 2.
 a `typeof` name, a class, a test you write, or — with the package's transformer
 wired up — the type itself, interfaces included. The full account of what is
 covered and what is refused is in
-[sequences.md](./sequences.md#validating-by-type-oftypet-and-castt); it behaves
-identically here.
+[sequences.md](./sequences.md#oftype-and-cast--the-same-question-two-answers); it
+behaves identically here.
 
 ## `topBy` on a stream
 

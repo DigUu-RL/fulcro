@@ -172,3 +172,4 @@ bundler — refuses the same uses when the code is compiled. It rewrites nothing
 
 **Full guide:** [docs/memory.md](../../docs/memory.md) — choosing a strategy,
 what each one costs, and the failure modes worth knowing before you meet them.
+🇧🇷 [Leia em português](../../docs/pt-BR/memory.md).

@@ -1,5 +1,7 @@
 # Bounded concurrency
 
+🇧🇷 Português (Brasil): [Leia esta documentação em português](./pt-BR/concurrency.md)
+
 Running several elements at once instead of one at a time — for work that spends
 its time waiting.
 
@@ -33,7 +35,7 @@ the **waiting**. While one request is in the air, the others can be too.
 anything CPU-bound — gets no faster, because there was never any idle time to
 fill. That needs real parallelism, which is a different tool.
 
-## The three operators
+## The operators
 
 ```ts
 // Project several at a time.
@@ -41,6 +43,12 @@ fill. That needs real parallelism, which is a different tool.
 
 // Filter with a condition that has to ask something.
 .whereAwait(async (id) => hasPermission(id), { concurrency: 8 })
+
+// Project and filter at once, dropping what came back empty.
+.chooseAwait((id) => findAccount(id), { concurrency: 8 })
+
+// Rank by a key that has to be fetched.
+.topByAwait((id) => fetchScore(id), 10, { concurrency: 8 })
 
 // Do something for its effects, with no result collected.
 await rows.forEachAwait((row) => database.insert(row), { concurrency: 4 });
@@ -234,11 +242,15 @@ for await (const result of results) render(result);
 
 ## Reference
 
-| Operator                         | Returns            | Options                            |
-| -------------------------------- | ------------------ | ---------------------------------- |
-| `selectAwait(selector, options)` | `AsyncSequence<R>` | `concurrency`, `ordered`           |
-| `whereAwait(predicate, options)` | `AsyncSequence<T>` | `concurrency`, `ordered`           |
-| `forEachAwait(action, options)`  | `Promise<void>`    | `concurrency`, `ordered`, `signal` |
+| Operator                                  | Returns                         | Options                            |
+| ----------------------------------------- | ------------------------------- | ---------------------------------- |
+| `selectAwait(selector, options)`          | `AsyncSequence<R>`              | `concurrency`, `ordered`           |
+| `whereAwait(predicate, options)`          | `AsyncSequence<T>`              | `concurrency`, `ordered`           |
+| `chooseAwait(selector, options)`          | `AsyncSequence<NonNullable<R>>` | `concurrency`, `ordered`           |
+| `topByAwait(keySelector, count, options)` | `AsyncSequence<T>`              | `concurrency`                      |
+| `forEachAwait(action, options)`           | `Promise<void>`                 | `concurrency`, `ordered`, `signal` |
 
 `forEachAwait` hands the action the position of the element **in the source**,
-not the order the actions happened to finish in.
+not the order the actions happened to finish in. The result of `topByAwait` is
+ranked, so it comes back in key order, ties broken by arrival, whatever
+`ordered` says.

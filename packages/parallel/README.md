@@ -231,3 +231,5 @@ script portably, and it does not exist in CommonJS.
 **Full guides:** [docs/parallelism.md](../../docs/parallelism.md) and
 [docs/tasks.md](../../docs/tasks.md) — scenarios, worked examples and the
 failure modes worth knowing before you meet them.
+🇧🇷 Leia em português: [paralelismo](../../docs/pt-BR/parallelism.md) e
+[tasks estruturadas](../../docs/pt-BR/tasks.md).

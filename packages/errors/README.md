@@ -31,6 +31,7 @@ try {
 
 What every code means, the fields of its details, and what to write instead:
 [Error codes](https://github.com/DigUu-RL/fulcro/blob/main/docs/errors.md).
+🇧🇷 [Leia em português](../../docs/pt-BR/errors.md).
 
 ## API
 

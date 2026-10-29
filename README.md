@@ -64,6 +64,7 @@ thing is worse than no check at all.
 Full guides live in [`docs/`](./docs) — install commands, worked examples and
 the scenarios each feature exists for. [`docs/README.md`](./docs/README.md) is
 the index, and opens with a table matching a problem to the tool for it.
+🇧🇷 [Leia a documentação em português](./docs/pt-BR/README.md).
 
 ## Working on it
 

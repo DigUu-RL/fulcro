@@ -15,11 +15,11 @@ import { createCancellationSource, createTaskScope } from '@fulcro/parallel';
 
 ## É esta a ferramenta que você quer?
 
-| O seu trabalho                                            | Use                                                        |
-| --------------------------------------------------------- | ---------------------------------------------------------- |
-| Uma sequência de elementos, cada um esperando por algo    | [`selectAwait`](../concurrency.md) — concorrência limitada |
-| Vários trabalhos diferentes que esperam, como uma unidade | Este                                                       |
-| Gastando CPU: parsing, hashing, redimensionar             | [Um pool de workers](./parallelism.md)                     |
+| O seu trabalho                                            | Use                                                       |
+| --------------------------------------------------------- | --------------------------------------------------------- |
+| Uma sequência de elementos, cada um esperando por algo    | [`selectAwait`](./concurrency.md) — concorrência limitada |
+| Vários trabalhos diferentes que esperam, como uma unidade | Este                                                      |
+| Gastando CPU: parsing, hashing, redimensionar             | [Um pool de workers](./parallelism.md)                    |
 
 Uma task roda na thread que a criou. A espera se sobrepõe — dez requisições em
 andamento levam mais ou menos o tempo da mais lenta —, mas o cálculo não: cem

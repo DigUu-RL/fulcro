@@ -211,3 +211,4 @@ tells them apart.
 
 **Full guide:** [docs/functions.md](../../docs/functions.md) — scenarios, worked
 examples and the failure modes worth knowing before you meet them.
+🇧🇷 [Leia em português](../../docs/pt-BR/functions.md).
