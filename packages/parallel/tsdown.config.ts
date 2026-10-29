@@ -7,6 +7,10 @@ const buildConfiguration: UserConfig = defineConfig({
 	outDir: 'dist',
 	format: 'esm',
 	platform: 'neutral',
+	// Neutral, because the pool serves browsers as well as Node, and a neutral build resolves no built-in module. The
+	// Node backend and the worker entry still import `node:worker_threads`, which the runtime provides: named here, it
+	// stays an import as written instead of being reported as one the build could not find.
+	deps: { neverBundle: [/^node:/] },
 	tsconfig: 'tsconfig.build.json',
 	// Per-module output keeps the declaration files where the transformers look for the utilities they recognise:
 	// a call is claimed by the path of the module that declares it.
