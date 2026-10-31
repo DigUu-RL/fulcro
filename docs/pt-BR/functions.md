@@ -1,10 +1,10 @@
-# Fluxo de controle como valores: `switchFor`, `tryCatch`, `Result` e `Option`
+# Fluxo de controle: `switchFor`, `tryCatch`, `Result`, `Option` e `equals`
 
 🇺🇸 English: [Read this documentation in English](../functions.md)
 
-Funções que transformam instruções em expressões, e dois tipos que transformam
-falha e ausência em valores. Sem dependências, sem envolvimento do compilador,
-nada a configurar.
+Funções que transformam instruções em expressões, dois tipos que transformam
+falha e ausência em valores, e uma comparação de dois valores pelo que eles
+guardam. Sem dependências, sem envolvimento do compilador, nada a configurar.
 
 ```sh
 npm install @fulcro/functions
@@ -12,6 +12,9 @@ npm install @fulcro/functions
 
 ```ts
 import {
+	createEquals,
+	type EqualityRule,
+	equals,
 	failure,
 	none,
 	type Option,
@@ -346,6 +349,155 @@ mesmos dados que `none()`. Só a variante distingue os dois, então `isSome()` e
 `isNone()` são a verificação — `value` não é. `some` guarda o que receber; ler
 `null` como ausente é trabalho do `optionOf`.
 
+## `equals`
+
+Diz se dois valores guardam a mesma coisa — dois objetos com as mesmas chaves e
+valores iguais, dois arrays com elementos iguais —, onde `===` só diz se são o
+mesmo objeto.
+
+```ts
+equals({ id: 1, tags: ['a'] }, { id: 1, tags: ['a'] }); // true
+equals([1, 2, 3], [1, 3, 2]); // false
+```
+
+`right` recebe o tipo de `left`, então dois valores que nunca poderiam ser
+iguais não compilam: `equals(1, 'one')` é recusado.
+
+### O que é comparado pelo conteúdo, e o que pela identidade
+
+Um valor é sempre igual a si mesmo. Dois valores distintos são comparados pelo
+que guardam quando são de um tipo definido pelo conteúdo, e são diferentes caso
+contrário:
+
+| Valores                                                                       | Iguais quando                                                                    |
+| ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Primitivos                                                                    | São o mesmo valor; `NaN` é igual a `NaN`, `0` é igual a `-0`                     |
+| Objetos de protótipos diferentes                                              | Nunca                                                                            |
+| Objetos comuns, com ou sem protótipo                                          | Têm as mesmas chaves próprias enumeráveis, em qualquer ordem, com valores iguais |
+| Arrays                                                                        | Têm o mesmo tamanho e elementos iguais; um buraco é lido como `undefined`        |
+| `Result` e `Option`                                                           | São a mesma variante, com campos iguais                                          |
+| `Date`                                                                        | Guardam o mesmo instante                                                         |
+| `Map`                                                                         | Guardam as mesmas chaves, com valores iguais                                     |
+| `Set`                                                                         | Guardam os mesmos elementos                                                      |
+| `ArrayBuffer`, `DataView`                                                     | Seus bytes são iguais                                                            |
+| Typed arrays                                                                  | São do mesmo tipo, com elementos iguais                                          |
+| Todo o resto: uma instância de classe, um `Error`, um `RegExp`, uma `Promise` | Nunca — é definido por qual objeto é                                             |
+
+Primitivos são comparados como um `Set` os encontra, então `equals` sempre diz
+que um valor é igual a si mesmo — `NaN` incluído. É uma pergunta diferente da
+que o `NumericType.equals` de `@fulcro/types` responde, em que `NaN` não é igual
+a nada: aquela é aritmética, e esta é o que uma chave, um cache ou uma lista sem
+repetidos precisam.
+
+`some(null)` e `none()` guardam exatamente os mesmos dados, e não são iguais: a
+variante é comparada antes dos campos. Um `failure` com um `Error` só é igual a
+outro quando os dois guardam o mesmo erro, já que um erro é uma instância de
+classe.
+
+**Uma instância de classe só é igual a si mesma.** Uma classe pode guardar seu
+estado onde nenhuma comparação consegue ler — `Decimal` guarda os dígitos em
+campos privados —, então comparar as chaves próprias não encontraria nenhuma e
+diria que quaisquer duas instâncias são iguais. Para comparar uma pelo que ela
+guarda, dê a ela uma regra; veja abaixo.
+
+**Uma chave de `Map` e um elemento de `Set` são encontrados pela identidade**,
+como o map e o set os encontram, nunca pelo conteúdo. É isso que mantém linear
+a comparação de dois maps: casar cada chave com todas as outras custaria uma
+comparação por par.
+
+Duas estruturas que se referem a si mesmas — um anel, uma árvore cujo nó guarda
+o pai — são iguais quando nada mais nelas difere, e são comparadas dando uma
+volta só.
+
+### Valores de `@fulcro/types`
+
+Uma struct, uma matriz, uma fração, um número complexo: cada um é um tipo de
+valor, e `equals` o lê como o objeto ou array comum que ele é. Isso está certo para
+muitos e não para todos — uma matriz de duas linhas e três colunas guarda os
+mesmos seis elementos que uma de três linhas e duas, e a forma dela não é uma de
+suas chaves. O descritor conhece o tipo; passe-o ao
+[`createEquals`](#suas-próprias-regras-createequals) como regra:
+
+```ts
+const sameShape = createEquals([Wide, Tall]); // Matrix(DoublePrecisionFloat, 2, 3) e (…, 3, 2)
+
+equals(wide, tall); // true: os mesmos seis números
+sameShape(wide, tall); // false: cada uma é reconhecida pelo próprio descritor
+```
+
+Uma struct passada como regra nunca é igual a um objeto comum que só tem os
+mesmos campos, e cada campo dela é comparado como o próprio tipo compara.
+
+### Suas próprias regras: `createEquals`
+
+`createEquals` cria uma variante de `equals` que compara alguns tipos de valor
+por regras suas. Uma regra reconhece seus valores com `is` e compara dois deles
+com `equals`:
+
+```ts
+const byId: EqualityRule<User> = {
+	is: (value): value is User => value instanceof User,
+	equals: (left, right) => left.id === right.id,
+};
+
+const sameUsers = createEquals([byId]);
+
+sameUsers([alice], [aliceRenamed]); // true: os arrays como `equals` compara, os usuários pelo id
+```
+
+O descritor de cada tipo de `@fulcro/types` já é uma regra, já que cada um tem
+`is` e `equals`. `Decimal` compara pelos seus valores, então a regra dele é
+escrita por extenso:
+
+```ts
+const byValue: EqualityRule<Decimal> = {
+	is: Decimal.is,
+	equals: (left, right) => left.equals(right),
+};
+```
+
+Dois valores são comparados nesta ordem:
+
+1. Um valor é sempre igual a si mesmo, diga o que disser uma regra.
+2. A primeira regra que reconhece qualquer um dos dois decide: com o `equals`
+   dela quando reconhece os dois, e como diferentes quando reconhece só um. As
+   regras depois dela não são consultadas.
+3. Caso contrário, como `equals` os compara.
+
+Assim, uma regra também pode assumir um tipo que `equals` já compara — datas
+pelo dia, strings sem diferenciar maiúsculas.
+
+Uma regra cujos valores guardam outros compara esses com o terceiro argumento, a
+variante a que ela pertence. Ele acompanha o que já está sendo comparado, então
+uma estrutura que se refere a si mesma continua sendo comparada dando uma volta
+só:
+
+```ts
+const byLabel: EqualityRule<Tree> = {
+	is: (value): value is Tree => value instanceof Tree,
+	equals: (left, right, nested) => {
+		return left.label === right.label && nested(left.children, right.children);
+	},
+};
+```
+
+As regras e seus membros são lidos uma vez, quando a variante é criada: mudar a
+lista depois não muda nada. Uma regra pode ser uma instância de classe; seus
+membros são chamados sobre ela. Uma regra que lança faz a comparação lançar.
+
+`createEquals` recusa o que não é um array de regras
+([`FULCRO2002`](./errors/FULCRO2xxx.md#fulcro2002)), e uma regra cujo `is` ou
+`equals` não é uma função ([`FULCRO2003`](./errors/FULCRO2xxx.md#fulcro2003)).
+
+### Quanto custa uma comparação
+
+Cada valor é lido uma vez de cada lado, e a comparação para na primeira
+diferença: dois arrays de cem mil elementos que diferem no décimo primeiro são
+lidos até o décimo primeiro elemento. Nada de um valor comparado consigo mesmo é
+lido. Um map ou um set é comparado com uma busca por entrada. Uma regra é
+consultada sobre um par no máximo uma vez por valor, e as regras depois da que o
+reconheceu não são consultadas.
+
 ## Quanto custa um valor
 
 Um `Result` ou um `Option` é um único objeto congelado, que carrega seus dados e
@@ -372,6 +524,9 @@ devolve sempre o mesmo objeto, então a ausência não aloca nada.
 | `optionOf(value)`                     | `none()` para `null` ou `undefined`, `some(value)` caso contrário. |
 | `option.handle({ some, none })`       | Executa o ramo da variante. Os dois são obrigatórios.              |
 | `option.isSome()`, `isNone()`         | Estreitam o option.                                                |
+| `equals(left, right)`                 | Compara pelo conteúdo; qualquer outro objeto pela identidade.      |
+| `createEquals(rules)`                 | Uma variante de `equals` que consulta as regras antes.             |
 
 Tipos: `SwitchCase`, `ExhaustiveCases`, `Result`, `Success`, `Failure`,
-`ResultCases`, `Option`, `Some`, `None`, `OptionCases`.
+`ResultCases`, `Option`, `Some`, `None`, `OptionCases`, `Equals`,
+`EqualityRule`.

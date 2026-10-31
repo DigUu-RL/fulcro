@@ -1,7 +1,7 @@
 {
 	"name": "@fulcro/functions",
 	"version": "3.0.0",
-	"description": "Runtime helpers turning control flow into values: an exhaustive switchFor, a throwing-free tryCatch, and Result and Option handled exhaustively.",
+	"description": "Runtime helpers turning control flow into values: an exhaustive switchFor, a throwing-free tryCatch, Result and Option handled exhaustively, and equals, a comparison by contents with rules of your own.",
 	"type": "module",
 	"keywords": [
 		"switch",
@@ -10,6 +10,8 @@
 		"result",
 		"option",
 		"try-catch",
+		"equality",
+		"deep-equal",
 		"typescript"
 	],
 	"license": "ISC",

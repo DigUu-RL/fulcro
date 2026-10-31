@@ -1,4 +1,24 @@
 /**
+ * Every prototype {@link variantPrototype} built.
+ *
+ * `createEquals` compares an object of any class by identity, since a class
+ * may keep its state where no comparison can read it. A variant keeps all of
+ * its data in its own fields, so it is compared by them instead — and this is
+ * how it is told from any other object with a prototype of its own.
+ */
+const VARIANT_PROTOTYPES = new WeakSet<object>();
+
+/**
+ * Tells whether a prototype is the one a variant of this package shares.
+ *
+ * @param prototype Prototype to inspect.
+ * @returns `true` for the prototype of `Success`, `Failure`, `Some` or `None`.
+ */
+export const isVariantPrototype = (prototype: object): boolean => {
+	return VARIANT_PROTOTYPES.has(prototype);
+};
+
+/**
  * Builds the prototype one variant of a value type shares — `Success`,
  * `Failure`, `Some` or `None` — with its methods on it.
  *
@@ -12,6 +32,8 @@
  */
 export const variantPrototype = <TMethods extends object>(methods: TMethods): TMethods => {
 	const prototype: object = {};
+
+	VARIANT_PROTOTYPES.add(prototype);
 
 	for (const key of Reflect.ownKeys(methods)) {
 		Object.defineProperty(prototype, key, {

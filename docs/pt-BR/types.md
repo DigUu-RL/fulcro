@@ -429,7 +429,10 @@ com qualquer struct, como o `NumericType` é para os tipos numéricos.
 Por isso um valor de struct é congelado, e dois deles são comparados pelos
 campos — `Vector3.equals(a, b)` — nunca por `===`, que continua comparando os
 dois objetos. Cada campo compara como o próprio tipo compara: um campo `NaN`
-torna um valor diferente de si mesmo.
+torna um valor diferente de si mesmo. Uma struct guardada dentro de outros
+dados — um array de pontos, um map de partículas — é comparada do mesmo jeito
+passando o descritor dela ao
+[`createEquals`](./functions.md#suas-próprias-regras-createequals) como regra.
 
 ### Métodos
 
