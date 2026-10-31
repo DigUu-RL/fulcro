@@ -102,10 +102,10 @@ const { get } = createManagedStorage(3, 0);
 
 ## Escolhendo uma estratégia
 
-| Você precisa guardar                                        | Use                        |
-| ----------------------------------------------------------- | -------------------------- |
-| Qualquer valor: objetos, strings, funções, `null`           | `createManagedStorage`     |
-| Muitos valores de uma struct, como bytes e não como objetos | `createFixedBufferStorage` |
+| Você precisa guardar                                          | Use                        |
+| ------------------------------------------------------------- | -------------------------- |
+| Qualquer valor: objetos, strings, funções, `null`             | `createManagedStorage`     |
+| Muitos valores de uma struct ou de um tipo numérico, em bytes | `createFixedBufferStorage` |
 
 ## `createManagedStorage`
 
@@ -145,7 +145,8 @@ seu próprio.
 ## `createFixedBufferStorage`
 
 Um buffer de tamanho fixo, cada valor guardado como seus bytes, um após o
-outro. O tipo do elemento é uma [struct](./types.md) de `@fulcro/types`:
+outro. O tipo do elemento é uma [struct](./types.md) de `@fulcro/types`, ou um
+dos seus tipos numéricos — veja abaixo:
 
 ```ts
 import { SinglePrecisionFloat, type Struct, struct } from '@fulcro/types';
@@ -180,15 +181,25 @@ dos seus, e lança um `TypeError` com código
 byte quando não é. O compilador já recusa um objeto comum onde se espera um
 `Point`; isto é para o valor que chega de código sem tipos.
 
-**Só structs, por enquanto.** Um tipo numérico sozinho — `SinglePrecisionFloat`,
-`SignedInteger(32)` — não traz uma codificação em bytes própria, e é recusado
-com [`FULCRO7003`](./errors/FULCRO7xxx.md#fulcro7003). Envolva-o numa struct de
-um campo:
+**Um tipo numérico é guardado sozinho.** Todo tipo numérico de layout fixo —
+os inteiros de largura fixa, `HalfPrecisionFloat`, `SinglePrecisionFloat`,
+`DoublePrecisionFloat` e `Decimal` — se lê e se escreve em bytes, então não
+precisa de uma struct em volta:
 
 ```ts
-const Sample = struct('Sample', { value: SinglePrecisionFloat });
-const samples = createFixedBufferStorage(Sample, 44_100);
+const samples: Storage<SinglePrecisionFloat> = createFixedBufferStorage(
+	SinglePrecisionFloat,
+	44_100,
+);
+
+samples.set(0, SinglePrecisionFloat.from(0.5));
 ```
+
+Os valores ficam um após o outro, quatro bytes cada aqui, na mesma codificação
+que um campo de struct desse tipo usa. `get` devolve o próprio valor — um
+número, ou um bigint a partir de 64 bits —, e não um objeto em volta dele.
+`BigInteger` e `Fraction` não têm layout fixo e são recusados com
+[`FULCRO7003`](./errors/FULCRO7xxx.md#fulcro7003).
 
 Os métodos de uma struct voltam com cada valor lido, e structs se aninham,
 campos `Decimal` inclusive — tudo o que uma struct pode guardar, um buffer fixo
@@ -568,7 +579,7 @@ cobre só parte do seu buffer. Passe o próprio buffer.
 ### `nativePointerTo(memory, address, element)`
 
 Aponta para um endereço em bytes de uma memória, para um valor do tipo do
-elemento — um struct, como em `allocate`:
+elemento — um struct ou um tipo numérico, como em `allocate`:
 
 ```ts
 const latest: NativePointer<Reading> = nativePointerTo(memory, moduleExports.latest(), Reading);

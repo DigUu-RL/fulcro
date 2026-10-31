@@ -1,7 +1,10 @@
 import { assert, describe, expect, expectTypeOf, it } from 'vitest';
 
 import {
+	Decimal,
 	DoublePrecisionFloat,
+	HalfPrecisionFloat,
+	SignedInteger,
 	SinglePrecisionFloat,
 	type Struct,
 	struct,
@@ -303,6 +306,70 @@ describe('allocate', () => {
 				},
 			),
 		);
+	});
+
+	it('should store a numeric type alone, end to end, little-endian, with its own alignment', () => {
+		const { allocator, requests } = createLedgerAllocator();
+		const Int32 = SignedInteger(32);
+		const numbers: Storage<SignedInteger<32>> = allocate(Int32, 4, allocator);
+
+		numbers.set(1, Int32.from(-2));
+		numbers.set(3, Int32.maximum);
+
+		expect(requests).toEqual([[16, 4]]);
+
+		expect([numbers.get(0), numbers.get(1), numbers.get(2), numbers.get(3)]).toEqual([
+			0, -2, 0, 2_147_483_647,
+		]);
+	});
+
+	it.each([
+		['SignedInteger<8>', SignedInteger(8), -128],
+		['UnsignedInteger<64>', UnsignedInteger(64), 2n ** 64n - 1n],
+		['SignedInteger<128>', SignedInteger(128), -(2n ** 127n)],
+		['HalfPrecisionFloat', HalfPrecisionFloat, -65_504],
+		['SinglePrecisionFloat', SinglePrecisionFloat, 0.1],
+		['DoublePrecisionFloat', DoublePrecisionFloat, Number.MIN_VALUE],
+	] as const)('should hold %s and give back the value it was handed', (_name, type, source) => {
+		const { allocator, requests } = createLedgerAllocator();
+		const element = type as unknown as typeof Particle;
+		const value = (type.from as (value: number | bigint) => unknown)(source);
+		const values = allocate(element, 3, allocator) as unknown as Storage<unknown>;
+
+		values.set(2, value);
+
+		expect(requests).toEqual([[3 * type.layout.size, type.layout.alignment]]);
+		expect(values.get(2)).toBe(value);
+	});
+
+	it('should hold a Decimal as decimal128', () => {
+		const amounts: Storage<Decimal> = allocate(Decimal, 2, createArenaAllocator(64));
+
+		amounts.set(1, Decimal.from('-19.99'));
+
+		expect(amounts.get(1).toString()).toBe('-19.99');
+		expect(amounts.get(0).isZero()).toBe(true);
+	});
+
+	it('should refuse a number outside the numeric type, naming it', () => {
+		const numbers = allocate(SignedInteger(8), 1, createManagedAllocator());
+
+		expect(() => {
+			numbers.set(0, 128 as SignedInteger<8>);
+		}).toThrow(
+			coded(
+				new TypeError('FULCRO7004: Storage.set: the value is not a value of SignedInteger<8>.'),
+				{ operation: 'Storage.set', element: 'SignedInteger<8>' },
+			),
+		);
+	});
+
+	it('should infer the numeric type it stores', () => {
+		expectTypeOf(allocate(SignedInteger(32), 1, createManagedAllocator())).toEqualTypeOf<
+			Storage<SignedInteger<32>>
+		>();
+
+		expectTypeOf(allocate(Decimal, 1, createManagedAllocator())).toEqualTypeOf<Storage<Decimal>>();
 	});
 
 	it('should infer the struct it stores', () => {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { SinglePrecisionFloat } from '@/src/singlePrecisionFloat';
+import { countingView } from '@/src/tests/countingView';
 
 /**
  * Performance suite for `SinglePrecisionFloat`.
@@ -43,5 +44,18 @@ describe('SinglePrecisionFloat', () => {
 		});
 
 		expect(described).toBeLessThan(baseline * 25);
+	});
+
+	it('should touch the bytes once per value read or written', () => {
+		const { view, accesses } = countingView(4 * OPERATIONS);
+		const value = SinglePrecisionFloat.from(0.1);
+
+		for (let index = 0; index < OPERATIONS; index++) {
+			SinglePrecisionFloat.write(view, index * 4, value);
+		}
+
+		for (let index = 0; index < OPERATIONS; index++) SinglePrecisionFloat.read(view, index * 4);
+
+		expect(accesses()).toBe(2 * OPERATIONS);
 	});
 });

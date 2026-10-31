@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DoublePrecisionFloat } from '@/src/doublePrecisionFloat';
+import { countingView } from '@/src/tests/countingView';
 
 /**
  * Performance suite for `DoublePrecisionFloat`.
@@ -48,5 +49,18 @@ describe('DoublePrecisionFloat', () => {
 		});
 
 		expect(described).toBeLessThan(baseline * 25);
+	});
+
+	it('should touch the bytes once per value read or written', () => {
+		const { view, accesses } = countingView(8 * OPERATIONS);
+		const value = DoublePrecisionFloat.from(0.1);
+
+		for (let index = 0; index < OPERATIONS; index++) {
+			DoublePrecisionFloat.write(view, index * 8, value);
+		}
+
+		for (let index = 0; index < OPERATIONS; index++) DoublePrecisionFloat.read(view, index * 8);
+
+		expect(accesses()).toBe(2 * OPERATIONS);
 	});
 });

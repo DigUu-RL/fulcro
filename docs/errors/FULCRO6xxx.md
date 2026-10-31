@@ -274,7 +274,8 @@ Details:
 { operation: string; received: string }
 ```
 
-`read()` or `write()` of a struct was given something other than a `DataView`.
+`read()` or `write()` of a struct or a numeric type was given something other
+than a `DataView`.
 Wrap the buffer: `new DataView(buffer)`.
 
 ## FULCRO6018
@@ -289,9 +290,9 @@ Details:
 { operation: string; size: number; offset: number; available: number }
 ```
 
-`read()` or `write()` of a struct was given an offset that is negative, not a
-whole number, or too close to the end for the struct's `layout.size` bytes. The
-view is left untouched.
+`read()` or `write()` of a struct or a numeric type was given an offset that is
+negative, not a whole number, or too close to the end for the type's
+`layout.size` bytes. The view is left untouched.
 
 ## FULCRO6019
 

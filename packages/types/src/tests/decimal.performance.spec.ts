@@ -1,6 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Decimal } from '@/src/decimal';
+import { countingView } from '@/src/tests/countingView';
 
 /**
  * Performance suite for `Decimal`.
@@ -198,5 +199,39 @@ describe('Decimal parsing', () => {
 		const long: number = timed(100_000);
 
 		expect(long).toBeLessThan(short * 4);
+	});
+});
+
+describe('bytes', () => {
+	/** Values read and written in the counted loops. */
+	const VALUES = 10_000;
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it('should touch the bytes twice per value read or written, one 64-bit half each', () => {
+		const { view, accesses } = countingView(16 * VALUES);
+		const value: Decimal = decimal('-123456789012345678901234567890.1234');
+
+		for (let index = 0; index < VALUES; index++) Decimal.write(view, index * 16, value);
+		for (let index = 0; index < VALUES; index++) Decimal.read(view, index * 16);
+
+		expect(accesses()).toBe(4 * VALUES);
+	});
+
+	it('should store a value through its parts, never through its text', () => {
+		const view = new DataView(new ArrayBuffer(16));
+		const value: Decimal = decimal('19.99');
+		const toString = vi.spyOn(Decimal.prototype, 'toString');
+		const from = vi.spyOn(Decimal, 'from');
+
+		for (let index = 0; index < VALUES; index++) {
+			Decimal.write(view, 0, value);
+			Decimal.read(view, 0);
+		}
+
+		expect(toString).not.toHaveBeenCalled();
+		expect(from).not.toHaveBeenCalled();
 	});
 });

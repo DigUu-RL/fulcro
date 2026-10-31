@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import type { IntegerType } from '@/src/integer';
+import { countingView } from '@/src/tests/countingView';
 import { UnsignedInteger } from '@/src/unsignedInteger';
 
 /**
@@ -78,4 +80,44 @@ describe('the descriptor', () => {
 
 		expect(conversions).toBe(0);
 	});
+});
+
+describe('bytes', () => {
+	it.each([
+		[8, 1],
+		[16, 1],
+		[32, 1],
+		[64, 1],
+		[128, 2],
+	] as const)(
+		'should touch the bytes of UnsignedInteger<%i> %i time(s) per value read or written',
+		(width, accessesPerValue) => {
+			const type = UnsignedInteger(width) as IntegerType<number | bigint>;
+			const size: number = width / 8;
+			const value = type.maximum;
+			const { view, accesses } = countingView(size * OPERATIONS);
+
+			for (let index = 0; index < OPERATIONS; index++) type.write(view, index * size, value);
+			for (let index = 0; index < OPERATIONS; index++) type.read(view, index * size);
+
+			expect(accesses()).toBe(2 * accessesPerValue * OPERATIONS);
+		},
+	);
+
+	it.each([8, 16, 32] as const)(
+		'should store UnsignedInteger<%i> without converting to a bigint',
+		(width) => {
+			const type = UnsignedInteger(width);
+			const view = new DataView(new ArrayBuffer((width / 8) * OPERATIONS));
+
+			conversions = 0;
+
+			for (let index = 0; index < OPERATIONS; index++) {
+				type.write(view, index * type.layout.size, type.maximum);
+				type.read(view, index * type.layout.size);
+			}
+
+			expect(conversions).toBe(0);
+		},
+	);
 });

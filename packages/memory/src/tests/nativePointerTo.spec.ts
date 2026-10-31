@@ -1,7 +1,9 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import {
+	Decimal,
 	DoublePrecisionFloat,
+	SignedInteger,
 	SinglePrecisionFloat,
 	type Struct,
 	struct,
@@ -187,6 +189,36 @@ describe('nativePointerTo a memory', () => {
 
 		expect(new DataView(buffer).getFloat64(8, true)).toBe(2);
 		expect(sample.get().value).toBe(2);
+	});
+
+	it('should point at a numeric type alone, and at one field of a struct by its own type', () => {
+		const { memory, buffer } = patternedMemoryOf(32);
+
+		const count: NativePointer<UnsignedInteger<32>> = nativePointerTo(
+			memory,
+			4,
+			UnsignedInteger(32),
+		);
+
+		count.set(UnsignedInteger(32).from(0x01020304));
+
+		expect(bytesOf(buffer, 4, 8)).toEqual([4, 3, 2, 1]);
+		expect(touchedIn(buffer, 0, 32)).toEqual([4, 5, 6, 7]);
+
+		const particle = nativePointerTo(memory, 16, Particle);
+		const velocityY: NativePointer<SinglePrecisionFloat> = particle.at(12, SinglePrecisionFloat);
+
+		velocityY.set(SinglePrecisionFloat.from(6.5));
+
+		expect(new DataView(buffer).getFloat32(28, true)).toBe(6.5);
+		expect(count.get()).toBe(0x01020304);
+	});
+
+	it('should refuse an address a numeric type may not start at', () => {
+		const { memory } = memoryOf(64);
+
+		expect(() => nativePointerTo(memory, 2, SignedInteger(32))).toThrow(RangeError);
+		expect(() => nativePointerTo(memory, 8, Decimal)).toThrow(RangeError);
 	});
 
 	it('should move in bytes, keeping its type, and leave the pointer it came from', () => {

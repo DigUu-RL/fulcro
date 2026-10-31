@@ -60,16 +60,15 @@ Details:
 
 `createFixedBufferStorage` or `allocate` was given something it cannot store
 values of. It needs a type that knows its size in bytes and reads and writes
-itself at an offset, which is what a [struct](../types.md) is.
+itself at an offset, which is what a [struct](../types.md) is, and what every
+numeric type with a fixed layout is — `SignedInteger(32)`,
+`SinglePrecisionFloat`, `Decimal`.
 
-A numeric type on its own — `SinglePrecisionFloat`, `SignedInteger(32)` — is
-refused here: it checks values but carries no byte encoding of its own. Wrap it
-in a struct of one field:
+`BigInteger` and `Fraction` are refused here: their values have no fixed size.
+Store a fixed-width integer instead, or a struct of the parts you need:
 
 ```ts
-const Sample = struct('Sample', { value: SinglePrecisionFloat });
-
-createFixedBufferStorage(Sample, 1_000);
+createFixedBufferStorage(SignedInteger(64), 1_000);
 ```
 
 ## FULCRO7004

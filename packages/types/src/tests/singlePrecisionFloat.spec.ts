@@ -2,6 +2,7 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import type { DoublePrecisionFloat } from '@/src/doublePrecisionFloat';
 import { SinglePrecisionFloat } from '@/src/singlePrecisionFloat';
+import { struct } from '@/src/struct';
 
 /**
  * Behaviour suite for `SinglePrecisionFloat`.
@@ -95,5 +96,69 @@ describe('SinglePrecisionFloat', () => {
 		expectTypeOf(SinglePrecisionFloat.from(1)).toEqualTypeOf<SinglePrecisionFloat>();
 
 		expectTypeOf<SinglePrecisionFloat>().not.toExtend<DoublePrecisionFloat>();
+	});
+
+	describe('bytes', () => {
+		it('should take four bytes, aligned on four, frozen', () => {
+			expect(SinglePrecisionFloat.layout).toEqual({ size: 4, alignment: 4 });
+			expect(Object.isFrozen(SinglePrecisionFloat.layout)).toBe(true);
+		});
+
+		it.each([
+			0,
+			-0,
+			1,
+			-0.1,
+			SinglePrecisionFloat.maximum,
+			SinglePrecisionFloat.minimum,
+			// The smallest subnormal, 2^-149.
+			2 ** -149,
+			Infinity,
+			-Infinity,
+		])('should read back %s exactly, between neighbours it leaves alone', (source) => {
+			const value = SinglePrecisionFloat.from(source);
+			const bytes = new Uint8Array(12).fill(0xaa);
+			const view = new DataView(bytes.buffer);
+
+			SinglePrecisionFloat.write(view, 4, value);
+
+			expect(Object.is(SinglePrecisionFloat.read(view, 4), value)).toBe(true);
+
+			expect([...bytes.subarray(0, 4), ...bytes.subarray(8)]).toEqual(
+				new Array<number>(8).fill(0xaa),
+			);
+		});
+
+		it('should read back NaN', () => {
+			const view = new DataView(new ArrayBuffer(4));
+
+			SinglePrecisionFloat.write(view, 0, SinglePrecisionFloat.from(NaN));
+
+			expect(SinglePrecisionFloat.read(view, 0)).toBeNaN();
+		});
+
+		it('should write binary32, little-endian, as a struct field of the same type does', () => {
+			const Holder = struct('Holder', { value: SinglePrecisionFloat });
+			const alone = new Uint8Array(4);
+			const inside = new Uint8Array(4);
+			const value = SinglePrecisionFloat.from(1);
+
+			SinglePrecisionFloat.write(new DataView(alone.buffer), 0, value);
+			Holder.write(new DataView(inside.buffer), 0, Holder.from({ value }));
+
+			expect([...alone]).toEqual([0x00, 0x00, 0x80, 0x3f]);
+			expect([...alone]).toEqual([...inside]);
+		});
+
+		it('should declare the layout of its type, and read values of its type', () => {
+			expectTypeOf(SinglePrecisionFloat.layout).toEqualTypeOf<{
+				readonly size: 4;
+				readonly alignment: 4;
+			}>();
+
+			expectTypeOf(SinglePrecisionFloat)
+				.toHaveProperty('read')
+				.returns.toEqualTypeOf<SinglePrecisionFloat>();
+		});
 	});
 });

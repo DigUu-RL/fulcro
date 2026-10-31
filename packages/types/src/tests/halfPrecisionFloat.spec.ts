@@ -2,6 +2,7 @@ import { assert, describe, expect, expectTypeOf, it } from 'vitest';
 
 import { HalfPrecisionFloat } from '@/src/halfPrecisionFloat';
 import type { SinglePrecisionFloat } from '@/src/singlePrecisionFloat';
+import { struct } from '@/src/struct';
 
 /**
  * Behaviour suite for `HalfPrecisionFloat`.
@@ -189,5 +190,71 @@ describe('HalfPrecisionFloat', () => {
 		expectTypeOf<HalfPrecisionFloat>().toExtend<number>();
 
 		expectTypeOf<HalfPrecisionFloat>().not.toExtend<SinglePrecisionFloat>();
+	});
+
+	describe('bytes', () => {
+		it('should take two bytes, aligned on two, frozen', () => {
+			expect(HalfPrecisionFloat.layout).toEqual({ size: 2, alignment: 2 });
+			expect(Object.isFrozen(HalfPrecisionFloat.layout)).toBe(true);
+		});
+
+		it('should read every bit pattern as a value of the type, and write it back as the same bits', () => {
+			const source = new DataView(new ArrayBuffer(2));
+			const target = new DataView(new ArrayBuffer(2));
+			let mismatches = 0;
+
+			for (let bits = 0; bits <= 0xffff; bits++) {
+				source.setUint16(0, bits, true);
+
+				const value = HalfPrecisionFloat.read(source, 0);
+
+				HalfPrecisionFloat.write(target, 0, value);
+
+				if (!HalfPrecisionFloat.is(value)) mismatches++;
+				if (!Number.isNaN(value) && target.getUint16(0, true) !== bits) mismatches++;
+			}
+
+			expect(mismatches).toBe(0);
+		});
+
+		it.each([
+			[0, 0x0000],
+			[-0, 0x8000],
+			[1, 0x3c00],
+			[65_504, 0x7bff],
+			[-65_504, 0xfbff],
+			[2 ** -24, 0x0001],
+			[Infinity, 0x7c00],
+			[NaN, 0x7e00],
+		])('should write %s as binary16 %i, little-endian', (source, bits) => {
+			const bytes = new Uint8Array(2);
+
+			HalfPrecisionFloat.write(new DataView(bytes.buffer), 0, HalfPrecisionFloat.from(source));
+
+			expect([...bytes]).toEqual([bits & 0xff, bits >> 8]);
+		});
+
+		it('should store a value as a struct field of the same type does', () => {
+			const Holder = struct('Holder', { value: HalfPrecisionFloat });
+			const alone = new Uint8Array(2);
+			const inside = new Uint8Array(2);
+			const value = HalfPrecisionFloat.from(-0.1);
+
+			HalfPrecisionFloat.write(new DataView(alone.buffer), 0, value);
+			Holder.write(new DataView(inside.buffer), 0, Holder.from({ value }));
+
+			expect([...alone]).toEqual([...inside]);
+		});
+
+		it('should declare the layout of its type, and read values of its type', () => {
+			expectTypeOf(HalfPrecisionFloat.layout).toEqualTypeOf<{
+				readonly size: 2;
+				readonly alignment: 2;
+			}>();
+
+			expectTypeOf(HalfPrecisionFloat)
+				.toHaveProperty('read')
+				.returns.toEqualTypeOf<HalfPrecisionFloat>();
+		});
 	});
 });
