@@ -15,28 +15,28 @@ Paths are relative to the repository root, and `src` means
 `packages/<name>/src`. "Non-spec" excludes `*.spec.ts`, `*.spec.mts` and
 everything under `src/tests/`.
 
-| #   | Changed path                                                            | Surface        | Owes                                                                     |
-| --- | ----------------------------------------------------------------------- | -------------- | ------------------------------------------------------------------------ |
-| P1  | `src/**/*.ts`, non-spec                                                 | runtime        | `/test-gap <path>`, `/docs-sync <package>`                               |
-| P2  | `src/**/*.spec.ts`, `src/tests/**`                                      | tests          | `/test-gap <path>`                                                       |
-| P3  | `src/**/*.performance.spec.ts`                                          | performance    | `/perf-regression <path>`                                                |
-| P4  | `src/index.ts`, any barrel `index.ts`, `src/@types/**`                  | public surface | `/api-audit <package>`                                                   |
-| P5  | `packages/*/package.json`: `exports`, `files`, `types`, `main`          | public surface | `/api-audit <package>`                                                   |
-| P6  | `packages/*/package.json`: any `*dependencies` field                    | dependencies   | `/dependency-audit <package>`                                            |
-| P7  | root `package.json` dependency fields, `package-lock.json`              | dependencies   | `/dependency-audit`                                                      |
-| P8  | `src/transformer/**`, `src/unplugin/**`                                 | transformer    | `/transformer-audit <collections or reflect>`, `transformer-reviewer`    |
-| P9  | `packages/transform-core/src/**`                                        | transformer    | `/transformer-audit` (both), `transformer-reviewer`                      |
-| P10 | `tests/transformers/**`                                                 | transformer    | `/transformer-audit`                                                     |
-| P11 | `packages/collections/src/**`, non-spec                                 | performance    | `/perf-regression <path>`                                                |
-| P12 | `packages/parallel/src/**`, non-spec                                    | concurrency    | `/concurrency-audit <path>`, `/perf-regression <path>`                   |
-| P13 | `packages/collections/src/**/async/**`, `async.ts`, `**/concurrency/**` | concurrency    | `/concurrency-audit <path>`                                              |
-| P14 | `docs/**`, `packages/*/README*`                                         | documentation  | `/docs-sync <page>`                                                      |
-| P15 | `.changeset/**`                                                         | release        | `/docs-sync` (it reads the changesets against the diff)                  |
-| P16 | a `packages/<name>/` directory absent at the base                       | new package    | everything in this table for that package, `architecture-reviewer`       |
-| P17 | `tsconfig*.json`, `vitest.config.mts`, `eslint.config.*`                | configuration  | nothing beyond `/verify`, which escalates to its full pass               |
-| P18 | `.claude/**`, `tools/claude/**`, `tests/claude/**`, `tests/hooks/**`    | control plane  | nothing beyond `/verify`, which runs `validate:claude` and both projects |
-| P19 | `.github/workflows/**`                                                  | CI             | nothing runnable locally; a `NOTE` naming the workflow                   |
-| P20 | `tests/*.spec.mts`                                                      | entry points   | `/api-audit` for each package the suite imports                          |
+| #   | Changed path                                                            | Surface        | Owes                                                                          |
+| --- | ----------------------------------------------------------------------- | -------------- | ----------------------------------------------------------------------------- |
+| P1  | `src/**/*.ts`, non-spec                                                 | runtime        | `/test-gap <path>`, `/docs-sync <package>`                                    |
+| P2  | `src/**/*.spec.ts`, `src/tests/**`                                      | tests          | `/test-gap <path>`                                                            |
+| P3  | `src/**/*.performance.spec.ts`                                          | performance    | `/perf-regression <path>`                                                     |
+| P4  | `src/index.ts`, any barrel `index.ts`, `src/@types/**`                  | public surface | `/api-audit <package>`                                                        |
+| P5  | `packages/*/package.json`: `exports`, `files`, `types`, `main`          | public surface | `/api-audit <package>`                                                        |
+| P6  | `packages/*/package.json`: any `*dependencies` field                    | dependencies   | `/dependency-audit <package>`                                                 |
+| P7  | root `package.json` dependency fields, `package-lock.json`              | dependencies   | `/dependency-audit`                                                           |
+| P8  | `src/transformer/**`, `src/unplugin/**`                                 | transformer    | `/transformer-audit <collections, reflect or memory>`, `transformer-reviewer` |
+| P9  | `packages/transform-core/src/**`                                        | transformer    | `/transformer-audit full`, `transformer-reviewer`                             |
+| P10 | `tests/transformers/**`                                                 | transformer    | `/transformer-audit`                                                          |
+| P11 | `packages/collections/src/**`, non-spec                                 | performance    | `/perf-regression <path>`                                                     |
+| P12 | `packages/parallel/src/**`, non-spec                                    | concurrency    | `/concurrency-audit <path>`, `/perf-regression <path>`                        |
+| P13 | `packages/collections/src/**/async/**`, `async.ts`, `**/concurrency/**` | concurrency    | `/concurrency-audit <path>`                                                   |
+| P14 | `docs/**`, `packages/*/README*`                                         | documentation  | `/docs-sync <page>`                                                           |
+| P15 | `.changeset/**`                                                         | release        | `/docs-sync` (it reads the changesets against the diff)                       |
+| P16 | a `packages/<name>/` directory absent at the base                       | new package    | everything in this table for that package, `architecture-reviewer`            |
+| P17 | `tsconfig*.json`, `vitest.config.mts`, `eslint.config.*`                | configuration  | nothing beyond `/verify`, which escalates to its full pass                    |
+| P18 | `.claude/**`, `tools/claude/**`, `tests/claude/**`, `tests/hooks/**`    | control plane  | nothing beyond `/verify`, which runs `validate:claude` and both projects      |
+| P19 | `.github/workflows/**`                                                  | CI             | nothing runnable locally; a `NOTE` naming the workflow                        |
+| P20 | `tests/*.spec.mts`                                                      | entry points   | `/api-audit` for each package the suite imports                               |
 
 A changed path that matches no row is unclassified. It owes every
 conditional audit whose surface it could plausibly touch, and the report

@@ -7,7 +7,7 @@
 			"prompt": "I changed buildStructuralTest in @fulcro/transform-core — is anything still resolving?",
 			"expect": {
 				"invokes": true,
-				"output": "npm run build first, then the structural forms — is, as, ofType, cast — compiled with the transformers applied and the emitted JavaScript quoted, the matrix filled with a verdict per call form, and both transformers audited because both are built on the changed machinery.",
+				"output": "npm run build first, then the structural forms — is, as, ofType, cast — compiled with the transformers applied and the emitted JavaScript quoted, the matrix filled with a verdict per call form, the transformers of collections and reflect audited in every dimension and all three in coexistence, because all three are built on the changed machinery.",
 				"refuses": "Describing what a rewriter should emit from reading its source, without an emit performed this run."
 			}
 		},
@@ -109,6 +109,17 @@
 				"invokes": true,
 				"output": "Status BLOCKED, the build output verbatim, and a stop.",
 				"refuses": "Auditing the transformer sources as a substitute for an emit, or reporting forms it did not compile."
+			}
+		},
+		{
+			"id": "the-transformer-that-only-refuses",
+			"kind": "edge",
+			"prompt": "/transformer-audit memory",
+			"why": "Memory's transformer rewrites nothing, so the dimensions that read an emit have nothing to read in it. What can still break is how it walks the tree the other two rewrote, which is the coexistence dimension.",
+			"expect": {
+				"invokes": true,
+				"output": "The coexistence dimension alone, after npm run build: the coexistence sample compiled with all three plugins and the emit quoted to show memory's calls left as written and the calls inside them rewritten, the rejected sample refused with its FULCRO code, file and line, and the rewriting dimensions listed as not applicable with that reason.",
+				"refuses": "Filling recognition, rewrite or decline rows for memory, which emits nothing for them to describe."
 			}
 		}
 	]

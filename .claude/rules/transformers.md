@@ -41,7 +41,7 @@ package's own transformer is a second thing to fix when the compiler API moves,
 and the two drift in exactly the cases nobody tested.
 
 If the shared machinery does not do what a package needs, extend it there. That
-is what it is for, and the other transformer gets the fix as well.
+is what it is for, and the other transformers get the fix as well.
 
 ## Claim only your own calls
 
@@ -68,6 +68,6 @@ call and what to write instead. Silence there ships a wrong value.
 
 A fixture compiled from a source file next door proves the easy half. What
 breaks in the field is the package boundary: the import specifier, the entry
-point, the resolution. `tests/transformers` runs the two plugins over one tree
+point, the resolution. `tests/transformers` runs the three plugins over one tree
 for that reason, and `tests/entrypoints.spec.mts` checks the built surface with
 no transformer applied at all.

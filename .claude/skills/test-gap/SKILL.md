@@ -221,7 +221,7 @@ exit, maximum asserted — not by how long the run took.
 `.claude/CLAUDE.md` requires fixtures or tests beside a transformer change, and
 notes that the matcher compares path segments — which is why the platform half
 is a scenario and not a detail. `tests/transformers/coexistence.spec.mts` is
-where the two plugins walking one tree together is asserted.
+where the three plugins walking one tree together is asserted.
 
 **Entry points** — a change to an `exports` map, or a new public symbol
 

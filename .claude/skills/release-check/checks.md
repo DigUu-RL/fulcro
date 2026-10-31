@@ -95,7 +95,7 @@ command.
 ## 7. Entry points and packages
 
 **Reads.** The `entrypoints` project of `vitest.config.mts`, run against built
-output with neither transformer applied.
+output with no transformer applied.
 
 **A failure** is a suite failure, and it is the one that most directly predicts
 a consumer's experience: every path of every `exports` map is imported by name
@@ -257,7 +257,8 @@ fails to resolve is a consumer whose editor shows `any`, and
 
 **Checked by reading, not by running.** `./package.json` is exported by every
 package and is always in the tarball; the `./transformer` and `./unplugin` entry
-points of `@fulcro/collections` and `@fulcro/reflect` are public surface per
+points of `@fulcro/collections`, `@fulcro/memory` and `@fulcro/reflect`, and
+the `./unplugin` of `@fulcro/transform-core`, are public surface per
 `.claude/rules/api-design.md` and are checked like any other path.
 
 **Not a failure.** `@fulcro/collections` carrying no `sideEffects` field. It is
