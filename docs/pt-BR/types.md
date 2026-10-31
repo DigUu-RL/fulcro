@@ -60,8 +60,9 @@ const total: SignedInteger<32> = Int32.add(Int32.from(1), Int32.from(2));
 
 Os descritores têm tipos próprios, para código que funciona com qualquer tipo
 numérico: o descritor de um inteiro é um `IntegerType<T>`, o de um float um
-`BoundedNumericType<T, number>`, e o do `BigInteger` um `NumericType<T, TSource>`
-— sendo `TSource` o que o `from` aceita. `IntegerWidth` é a união das
+`FloatType<T>` — um `BoundedNumericType<T, number>` que também é guardado em
+bytes —, e o do `BigInteger` um `NumericType<T, TSource>`, sendo `TSource` o que
+o `from` aceita. `IntegerWidth` é a união das
 larguras, `8 | 16 | 32 | 64 | 128`.
 
 ```ts
@@ -416,6 +417,22 @@ Um offset em que o valor não cabe é recusado antes de qualquer byte ser tocado
 com [`FULCRO6018`](./errors/FULCRO6xxx.md#fulcro6018). O `write` não confere o
 valor de novo: o compilador já recusa um `number` comum onde se espera um
 `SignedInteger<32>`, e uma storage o confere com `is` antes de escrever.
+
+Os descritores são tipados por contratos que o pacote exporta: `IntegerType<T>`
+para os inteiros, `FloatType<T>` para os três floats, e `FixedLayoutType<T>` —
+só `layout`, `read` e `write`, que todo tipo da tabela tem — para o código que
+guarda qualquer um deles:
+
+```ts
+import type { FixedLayoutType } from '@fulcro/types';
+
+const zeroed = <T>(type: FixedLayoutType<T>, count: number): DataView => {
+	return new DataView(new ArrayBuffer(type.layout.size * count));
+};
+
+zeroed(SignedInteger(32), 8); // 32 bytes
+zeroed(Decimal, 2); // 32 bytes
+```
 
 ## Structs
 

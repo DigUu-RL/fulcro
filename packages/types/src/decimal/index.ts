@@ -175,7 +175,7 @@ export class Decimal {
 	 * Sixteen bytes aligned on sixteen, those of decimal128: the numbers
 	 * `sizeOf<Decimal>()` and `alignOf<Decimal>()` report.
 	 */
-	static readonly layout: FixedLayoutMembers<Decimal>['layout'] = Decimal.#bytes.layout;
+	static readonly layout: { readonly size: 16; readonly alignment: 16 } = Decimal.#bytes.layout;
 
 	/**
 	 * Reads a value from bytes, as decimal128 in its binary integer encoding,
@@ -196,7 +196,7 @@ export class Decimal {
 	 * @throws {RangeError} When sixteen bytes do not fit in the view at that
 	 * offset.
 	 */
-	static read: FixedLayoutMembers<Decimal>['read'] = Decimal.#bytes.read;
+	static readonly read: (view: DataView, offset: number) => Decimal = Decimal.#bytes.read;
 
 	/**
 	 * Writes a value into bytes, as decimal128 in its binary integer encoding,
@@ -209,7 +209,8 @@ export class Decimal {
 	 * @throws {RangeError} When sixteen bytes do not fit in the view at that
 	 * offset; the bytes are then left as they were.
 	 */
-	static write: FixedLayoutMembers<Decimal>['write'] = Decimal.#bytes.write;
+	static readonly write: (view: DataView, offset: number, value: Decimal) => void =
+		Decimal.#bytes.write;
 
 	static {
 		registerCodec(Decimal, {

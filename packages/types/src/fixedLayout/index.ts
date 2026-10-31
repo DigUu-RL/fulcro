@@ -7,11 +7,20 @@ import type { Layout } from '@/src/layout';
  * the layout its type declares, and how one value is read from bytes and
  * written into them.
  *
- * Internal. Every numeric type of this package with a fixed layout has these
- * three members, with the meaning `StructType` gives them, so that one of its
+ * Every numeric type of this package with a fixed layout has these three
+ * members, with the meaning `StructType` gives them, so that one of its
  * descriptors goes wherever an element stored as bytes is accepted —
  * `allocate`, `createFixedBufferStorage` and `nativePointerTo` of
- * `@fulcro/memory` take it as they take a struct.
+ * `@fulcro/memory` take it as they take a struct. It is what to accept when a
+ * function stores a numeric type of any width or format:
+ *
+ * ```ts
+ * const zeroed = <T>(type: FixedLayoutType<T>, count: number): DataView => {
+ * 	return new DataView(new ArrayBuffer(type.layout.size * count));
+ * };
+ *
+ * zeroed(SignedInteger(32), 8); // 32 bytes
+ * ```
  *
  * @template T Type of the values.
  */
