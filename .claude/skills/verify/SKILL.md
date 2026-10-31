@@ -32,8 +32,8 @@ a transformer wired into it, and that is what this skill runs.
 ## Invocation
 
 The model may invoke it. It changes nothing, so an unwanted run costs time
-rather than work — but it costs real time: a full pass is a build, four package
-projects and four root projects. The description is narrow on purpose.
+rather than work — but it costs real time: a full pass is a build, nine package
+projects and five root projects. The description is narrow on purpose.
 
 Do not invoke it after every edit. The signal is a change that is finished: a
 commit about to be made, a pull request about to be opened, a question about
@@ -108,7 +108,7 @@ path that matches more than one row takes every check those rows name.
 | `packages/*/src/**/*.ts` (not a spec)      | runtime        | build, typecheck, that package's project, eslint, changeset   |
 | `packages/*/src/**/*.spec.ts`              | tests          | typecheck, that package's project                             |
 | `packages/*/src/**/*.performance.spec.ts`  | performance    | that package's project, performance files first               |
-| `packages/*/transformer/**`, `unplugin/**` | transformer    | build, `transformers` project, both affected package projects |
+| `packages/*/src/{transformer,unplugin}/**` | transformer    | build, `transformers` project, both affected package projects |
 | `packages/*/package.json`, `exports`       | public surface | build, `entrypoints` project, changeset                       |
 | `tests/*.spec.mts`                         | entry points   | build, `entrypoints` project                                  |
 | `tests/transformers/**`                    | transformer    | `transformers` project                                        |
@@ -168,10 +168,11 @@ diff land on the same set of checks.
   skipped because the last one was recent — a stale `dist/` reads as a broken
   import, and `.claude/rules/build-output.md` is where that failure is written
   down.
-- **A suite runs as its own project.** `vitest.config.mts` defines eight of
-  them; a path belongs to exactly one, and running the wrong one proves
-  nothing. A package project applies both transformers, the `entrypoints`
-  project deliberately applies neither.
+- **A suite runs as its own project.** `vitest.config.mts` defines fourteen
+  of them; a path belongs to exactly one, and running the wrong one proves
+  nothing. A package project applies all three transformers, `memory-unchecked`
+  every one but memory's, and the `entrypoints` project deliberately applies
+  none.
 - **Escalate to the full pass** when the change touches a tsconfig, the Vitest
   config, the root manifest, the lockfile, or more than three packages — and
   whenever the mapping in §1 leaves a changed path unclassified. An unclassified
@@ -338,7 +339,7 @@ the two separately so a build failure is reported as a build failure.
 - `.claude/rules/protected-operations.md` — what no skill performs.
 - `docs/testing.md` — the testing standard: behaviour and performance, counted
   rather than timed.
-- `vitest.config.mts` — the eight projects, and why each one exists.
+- `vitest.config.mts` — the fourteen projects, and why each one exists.
 - `.github/workflows/ci.yml` — the same checks as CI runs them.
 - `.github/workflows/release-readiness.yml` — the changeset gate on a pull
   request.

@@ -1,0 +1,125 @@
+{
+	"skill": "skill-audit",
+	"cases": [
+		{
+			"id": "are-the-skills-still-accurate",
+			"kind": "positive",
+			"prompt": "Are the skills and agents still accurate about the repository?",
+			"expect": {
+				"invokes": true,
+				"output": "The whole tree in scope with no argument, `npm run validate:claude` run first and quoted under Mechanical, a ledger of the facts read this run, all eight checks with check 3 reporting every passage that counts the transformers as two or names only `@fulcro/collections` and `@fulcro/reflect` as the set — each keyed by check, file and subject with no line in the key — and the candidates set aside listed under Excluded with their reasons.",
+				"refuses": "Editing any file to correct a finding, and repeating a finding the validator already printed as one of its own."
+			}
+		},
+		{
+			"id": "a-transformer-arrived",
+			"kind": "positive",
+			"prompt": "@fulcro/memory ships its own transformer now. What in .claude still counts two?",
+			"expect": {
+				"invokes": true,
+				"output": "A ledger row naming the packages that export `./transformer`, read from their manifests, and check 3 run over the whole tree with both of its patterns, each match read in its section and either reported against that row or excluded as a deliberately narrowed set — a skill presenting collections and reflect as everything it audits reported as a BLOCKER.",
+				"refuses": "Taking the count of three from the prompt or from memory instead of from the `exports` maps."
+			}
+		},
+		{
+			"id": "audit-one-skill",
+			"kind": "positive",
+			"prompt": "Audit /verify against the tree.",
+			"expect": {
+				"invokes": true,
+				"output": "Scope narrowed to `.claude/skills/verify/SKILL.md` and `tools/claude/skill-evals/verify.eval.json`, the nine sections of the output contract with Coverage holding one row for `verify`, and the checks that do not apply to that scope listed under Audited as not run with the reason.",
+				"refuses": "Widening the scope to the whole tree because the named skill turned out clean."
+			}
+		},
+		{
+			"id": "run-it-again-after-the-fix",
+			"kind": "positive",
+			"prompt": "I fixed the transformer counts. Run the skill audit again.",
+			"expect": {
+				"invokes": true,
+				"output": "The same nine sections, plus Delta: the keys of the previous run's report that are now resolved and any key new in this one — the fixed passages absent from Findings because their keys are, not because their line numbers changed.",
+				"refuses": "Inventing a Delta when no previous report is in the conversation."
+			}
+		},
+		{
+			"id": "review-my-new-skill",
+			"kind": "negative",
+			"prompt": "Review my new skill's diff before I commit it.",
+			"expect": {
+				"invokes": false,
+				"output": "The skill-authoring skill, working its checklist against the one diff. This audit reads the whole tree against the repository and is not the review a new skill gets before it ships."
+			}
+		},
+		{
+			"id": "fix-the-counts",
+			"kind": "negative",
+			"prompt": "Update every skill that still says two transformers.",
+			"expect": {
+				"invokes": false,
+				"output": "An ordinary edit turn over the passages named. This audit never edits; it is what is run afterwards to show the keys are gone."
+			}
+		},
+		{
+			"id": "does-the-validator-pass",
+			"kind": "negative",
+			"prompt": "Does npm run validate:claude pass?",
+			"expect": {
+				"invokes": false,
+				"output": "The command, run, and its result quoted. A single command is not a procedure, and the validator's half is what this audit carries, not what it is."
+			}
+		},
+		{
+			"id": "the-library-docs",
+			"kind": "negative",
+			"prompt": "Does docs/sequences.md still describe the code?",
+			"expect": {
+				"invokes": false,
+				"output": "The docs-sync skill, which audits the pages under `docs/` against the built packages. This audit reads `.claude/`, not the library documentation."
+			}
+		},
+		{
+			"id": "a-narrowed-set-is-not-drift",
+			"kind": "edge",
+			"prompt": "Run the skill audit. One rule says the two transformers that rewrite calls are collections and reflect — flag that too.",
+			"why": "Memory's transformer refuses and rewrites nothing, so a sentence counting the rewriting transformers as two is exact. The pattern of check 3 matches it, and the reading of its section is what keeps it out of Findings.",
+			"expect": {
+				"invokes": true,
+				"output": "The passage listed under Excluded with the reason — the set is narrowed by the sentence itself to transformers that rewrite, and memory's rewrites nothing — while the passages in the same tree that count every applied plugin as two are reported.",
+				"refuses": "Reporting a deliberately narrowed set as a count finding because the user asked for it to be flagged."
+			}
+		},
+		{
+			"id": "the-rule-is-right",
+			"kind": "edge",
+			"prompt": "Audit the rules. I think the one about top-level await is out of date — a transformer uses one now.",
+			"why": "The contract forbids a top-level await because a `require` of an ES module cannot load one. A transformer using one is a defect in the code, and a rule edited to agree with it would turn the violation into the contract.",
+			"expect": {
+				"invokes": true,
+				"output": "The rule and the offending line both quoted under Code rather than Findings, the reason the invariant holds named from `.claude/CLAUDE.md`, and the case handed to fulcro-review — the rule itself not reported as stale.",
+				"refuses": "Recommending that the rule be relaxed to match the code."
+			}
+		},
+		{
+			"id": "nothing-has-drifted",
+			"kind": "edge",
+			"prompt": "Audit the architecture reviewer agent.",
+			"why": "A clean run is the one most easily faked. Showing the ledger and the excluded candidates is what makes CLEAN checkable rather than a claim.",
+			"expect": {
+				"invokes": true,
+				"output": "Status: CLEAN when nothing survives, with the scope, the validator's result, the ledger of facts the agent was read against, the candidates excluded and why, and an end — no offer to audit something else.",
+				"refuses": "Reporting CLEAN with an empty ledger."
+			}
+		},
+		{
+			"id": "unknown-name",
+			"kind": "edge",
+			"prompt": "Run the skill audit on release-notes.",
+			"why": "No skill, agent or rule has that name, and widening the scope to the whole tree on a guess would audit something nobody asked for.",
+			"expect": {
+				"invokes": true,
+				"output": "One line saying no skill, agent or rule under `.claude/` is named `release-notes`, and an end.",
+				"refuses": "Auditing the whole tree in its place."
+			}
+		}
+	]
+}
