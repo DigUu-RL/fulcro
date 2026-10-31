@@ -11,7 +11,8 @@ npm install @fulcro/functions
 ```
 
 The types need TypeScript 5.4 or later, which `typescript` is an optional peer
-for; from JavaScript, nothing else is needed.
+for: on an older one, npm refuses the install with `ERESOLVE`. A project without
+TypeScript needs nothing else.
 
 ```ts
 import {
