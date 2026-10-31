@@ -1,6 +1,6 @@
 {
 	"name": "@fulcro/functions",
-	"version": "3.0.0",
+	"version": "3.1.0",
 	"description": "Runtime helpers turning control flow into values: an exhaustive switchFor, a throwing-free tryCatch, Result and Option handled exhaustively, and equals, a comparison by contents with rules of your own.",
 	"type": "module",
 	"keywords": [
@@ -32,7 +32,7 @@
 	],
 	"sideEffects": false,
 	"dependencies": {
-		"@fulcro/errors": "^3.0.0"
+		"@fulcro/errors": "^3.1.0"
 	},
 	"engines": {
 		"node": ">=22.12"
