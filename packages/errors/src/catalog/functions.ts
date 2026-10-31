@@ -14,4 +14,26 @@ export const functionsCatalog = {
 		},
 		cause: ({ thrown }: { operation: string; thrown: null | undefined }) => thrown,
 	},
+	FULCRO2002: {
+		kind: TypeError,
+		message: ({ operation, received }: { operation: string; received: string }) => {
+			return `${operation}: expected an array of rules, received ${received}.`;
+		},
+	},
+	FULCRO2003: {
+		kind: TypeError,
+		message: ({
+			operation,
+			index,
+			member,
+			received,
+		}: {
+			operation: string;
+			index: number;
+			member: string;
+			received: string;
+		}) => {
+			return `${operation}: rule ${String(index)} needs '${member}' to be a function, received ${received}.`;
+		},
+	},
 } as const satisfies RangeCatalog<'2'>;

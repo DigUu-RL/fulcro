@@ -5,6 +5,8 @@
  * Listed one by one rather than re-exported wholesale, so that adding an export
  * to a module below is never enough on its own to put it in front of consumers.
  */
+export { createEquals, type EqualityRule, type Equals } from '@/src/createEquals';
+export { equals } from '@/src/equals';
 export {
 	type None,
 	none,

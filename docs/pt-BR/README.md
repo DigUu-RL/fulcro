@@ -41,7 +41,7 @@ uma coleção.
 | [Tasks estruturadas](./tasks.md)                 | Tasks que começam e terminam juntas, com cancelamento, para trabalho que espera                                                  | `@fulcro/parallel`          |
 | [Paralelismo com workers](./parallelism.md)      | Trabalho limitado por CPU espalhado por threads, no browser e no Node                                                            | `@fulcro/parallel`          |
 | [Reflexão](./reflect.md)                         | `nameOf`, `typeOf`, `defaultOf`, `is`, `as`, `constantOf` e o transformer                                                        | `@fulcro/reflect`           |
-| [Fluxo de controle como valores](./functions.md) | `switchFor`, `tryCatch`, `Result` e `Option`                                                                                     | `@fulcro/functions`         |
+| [Fluxo de controle como valores](./functions.md) | `switchFor`, `tryCatch`, `Result`, `Option` e `equals`                                                                           | `@fulcro/functions`         |
 | [Tipos numéricos](./types.md)                    | Inteiros de largura fixa, floats, `BigInteger`, `Decimal`, structs, matrizes, vetores, frações, números complexos, quatérnios    | `@fulcro/types`             |
 | [Memória](./memory.md)                           | `Storage<T>` sobre memória gerenciada ou bytes, o `Allocator` de onde vêm os bytes, views e ponteiros para dentro deles, e posse | `@fulcro/memory`            |
 | [Códigos de erro](./errors.md)                   | O que cada código `FULCRO` quer dizer, e o que escrever no lugar                                                                 | todos os pacotes            |
@@ -66,6 +66,7 @@ uma coleção.
 | Um `switch` que precisa quebrar quando um enum cresce         | [`switchFor`](./functions.md)                         |
 | Uma falha que você prefere ter como valor                     | [`tryCatch`](./functions.md)                          |
 | Um valor que pode faltar, tratado de forma exaustiva          | [`Option`](./functions.md#option)                     |
+| Dois valores para comparar pelo que guardam                   | [`equals`](./functions.md#equals)                     |
 | Dinheiro, ou qualquer número decimal por natureza             | [`Decimal`](./types.md)                               |
 | Um inteiro que precisa ficar em 8, 16 ou 32 bits              | [`SignedInteger`](./types.md)                         |
 | Um produto de matrizes cujas formas precisam bater            | [`Matrix`](./types.md#matemática)                     |

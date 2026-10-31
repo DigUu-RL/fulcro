@@ -4,6 +4,10 @@ import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// Types only, erased before the suite runs: each package is still loaded by the
+// `import()` of the test that needs it, against its built output.
+import type { EqualityRule } from '@fulcro/functions';
+import type { Decimal as DecimalValue } from '@fulcro/types';
 import typescript from 'typescript';
 import { assert, beforeAll, describe, expect, it } from 'vitest';
 
@@ -842,6 +846,8 @@ describe('@fulcro/functions', () => {
 			'some',
 			'none',
 			'optionOf',
+			'equals',
+			'createEquals',
 		] as const) {
 			expect(typeof entry[name]).toBe('function');
 		}
@@ -894,6 +900,72 @@ describe('@fulcro/functions', () => {
 		});
 
 		expect((failed.error as Error).message).toBe('boom');
+	});
+
+	it('should compare by contents through the published entry point', async () => {
+		const { equals, none, some } = await import('@fulcro/functions');
+
+		expect(equals({ id: 1, tags: ['a'] }, { id: 1, tags: ['a'] })).toBe(true);
+		expect(equals<unknown>(some(null), none())).toBe(false);
+	});
+
+	it('should keep what equals is built from unexported', async () => {
+		const entry = await import('@fulcro/functions');
+
+		for (const internal of [
+			'compareStructures',
+			'sameValueZero',
+			'isVariantPrototype',
+			'variantPrototype',
+		]) {
+			expect(entry).not.toHaveProperty(internal);
+		}
+	});
+
+	it('should take the descriptors of @fulcro/types as rules, with no dependency between them', async () => {
+		const { createEquals, equals } = await import('@fulcro/functions');
+
+		const { Decimal, DoublePrecisionFloat, Matrix, SinglePrecisionFloat, struct } =
+			await import('@fulcro/types');
+
+		const Point = struct('Point', { x: SinglePrecisionFloat, y: SinglePrecisionFloat });
+		const samePoint = createEquals([Point]);
+
+		expect(samePoint([Point.from({ x: 1, y: 2 })], [Point.from({ x: 1, y: 2 })])).toBe(true);
+		// A plain object with the same fields is not a point.
+		expect(samePoint<unknown>(Point.from({ x: 1, y: 2 }), { x: 1, y: 2 })).toBe(false);
+
+		const Wide = Matrix(DoublePrecisionFloat, 2, 3);
+		const Tall = Matrix(DoublePrecisionFloat, 3, 2);
+
+		const wide: readonly number[] = Wide.from([
+			[1, 2, 3],
+			[4, 5, 6],
+		]);
+
+		const tall: readonly number[] = Tall.from([
+			[1, 2],
+			[3, 4],
+			[5, 6],
+		]);
+
+		// The shape is not enumerable, so on their own the six elements look
+		// alike; the descriptors tell the two shapes apart.
+		expect(equals(wide, tall)).toBe(true);
+		expect(createEquals([Wide, Tall])(wide, tall)).toBe(false);
+
+		// A decimal keeps its digits in private fields, so it is an identity
+		// type until a rule says how its values compare.
+		expect(equals(Decimal.from('1.5'), Decimal.from('1.5'))).toBe(false);
+
+		const byValue: EqualityRule<DecimalValue> = {
+			is: Decimal.is,
+			equals: (left, right) => left.equals(right),
+		};
+
+		const sameDecimal = createEquals([byValue]);
+
+		expect(sameDecimal({ price: Decimal.from('1.5') }, { price: Decimal.from('1.50') })).toBe(true);
 	});
 });
 

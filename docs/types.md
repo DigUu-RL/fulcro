@@ -424,7 +424,9 @@ any struct, the way `NumericType` is for the numeric types.
 So a struct value is frozen, and two of them are compared by their fields —
 `Vector3.equals(a, b)` — never by `===`, which still compares the two objects.
 Each field compares as its own type does: a `NaN` field makes a value unequal
-to itself.
+to itself. A struct held inside other data — an array of points, a map of
+particles — is compared the same way by handing its descriptor to
+[`createEquals`](./functions.md#your-own-rules-createequals) as a rule.
 
 ### Methods
 
