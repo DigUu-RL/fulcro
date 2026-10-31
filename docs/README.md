@@ -40,7 +40,7 @@ collection.
 | [Structured tasks](./tasks.md)               | Tasks that start and end together, with cancellation, for work that waits                                                   | `@fulcro/parallel`          |
 | [Parallelism with workers](./parallelism.md) | CPU-bound work across threads, on browser and Node                                                                          | `@fulcro/parallel`          |
 | [Reflection](./reflect.md)                   | `nameOf`, `typeOf`, `defaultOf`, `is`, `as`, `constantOf`, and the transformer                                              | `@fulcro/reflect`           |
-| [Control flow as values](./functions.md)     | `switchFor`, `tryCatch`, `Result` and `Option`                                                                              | `@fulcro/functions`         |
+| [Control flow as values](./functions.md)     | `switchFor`, `tryCatch`, `Result`, `Option` and `equals`                                                                    | `@fulcro/functions`         |
 | [Numeric types](./types.md)                  | Fixed-width integers, floats, `BigInteger`, `Decimal`, structs, matrices, vectors, fractions, complex numbers, quaternions  | `@fulcro/types`             |
 | [Memory](./memory.md)                        | `Storage<T>` over managed memory or bytes, the `Allocator` the bytes come from, views and pointers into them, and ownership | `@fulcro/memory`            |
 | [Error codes](./errors.md)                   | What each `FULCRO` code means, and what to write instead                                                                    | every package               |
@@ -65,6 +65,7 @@ collection.
 | A `switch` that must break when an enum grows      | [`switchFor`](./functions.md)                         |
 | A failure you would rather have as a value         | [`tryCatch`](./functions.md)                          |
 | A value that may be missing, handled exhaustively  | [`Option`](./functions.md#option)                     |
+| Two values to compare by what they hold            | [`equals`](./functions.md#equals)                     |
 | Money, or any number that is decimal by nature     | [`Decimal`](./types.md)                               |
 | An integer that must stay within 8, 16 or 32 bits  | [`SignedInteger`](./types.md)                         |
 | A matrix product whose shapes must match           | [`Matrix`](./types.md#mathematics)                    |

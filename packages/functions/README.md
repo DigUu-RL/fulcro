@@ -1,11 +1,22 @@
 # @fulcro/functions
 
-Runtime helpers that turn control flow into values, and two types that turn
-failure and absence into values. No dependencies, no compiler involvement,
-nothing to configure.
+Runtime helpers that turn control flow into values, two types that turn failure
+and absence into values, and a comparison of two values by what they hold. No
+dependencies, no compiler involvement, nothing to configure. The types need
+TypeScript 5.4 or later.
 
 ```ts
-import { failure, none, optionOf, some, success, switchFor, tryCatch } from '@fulcro/functions';
+import {
+	createEquals,
+	equals,
+	failure,
+	none,
+	optionOf,
+	some,
+	success,
+	switchFor,
+	tryCatch,
+} from '@fulcro/functions';
 ```
 
 ## `switchFor`
@@ -206,6 +217,32 @@ const greeting = user.handle({
 given, and `none()` is always the same frozen object. Narrow with `isSome()` or
 `isNone()`: `some(null)` and `none()` hold the same data, and only the variant
 tells them apart.
+
+## `equals`
+
+Tells whether two values hold the same thing, where `===` only tells whether
+they are the same object.
+
+```ts
+equals({ id: 1, tags: ['a'] }, { id: 1, tags: ['a'] }); // true
+equals(some(null), none()); // false: same data, different variants
+```
+
+Plain objects, arrays, `Result` and `Option`, dates, maps, sets and buffers are
+compared by what they hold; an instance of a class equals only itself, since it
+may keep its state where nothing can read it. `createEquals` makes a variant
+that compares some kinds of value by rules of your own — and the descriptor of
+every type of `@fulcro/types` already is one:
+
+```ts
+const byId: EqualityRule<User> = {
+	is: (value): value is User => value instanceof User,
+	equals: (left, right) => left.id === right.id,
+};
+
+const sameUsers = createEquals([byId]);
+const samePoints = createEquals([Point]); // a struct, compared field by field
+```
 
 ---
 

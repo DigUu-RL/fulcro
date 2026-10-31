@@ -1,5 +1,22 @@
 # @fulcro/functions
 
+## 3.1.1
+
+### Patch Changes
+
+- c4a43fb: Declare TypeScript 5.4 as the floor of the types, as an optional peer. `equals` types its second value with `NoInfer`, which older compilers lack, so a project on one would fail with TS2304 from inside the package for importing anything from it; the peer turns that into a warning at install that names the cause. JavaScript projects are unaffected.
+
+## 3.1.0
+
+### Minor Changes
+
+- efb0c3b: Add `equals`, which compares two values by what they hold, and `createEquals`, which makes a variant of it that compares some kinds of value by rules of your own — the descriptor of every type of `@fulcro/types` among them. `@fulcro/errors` registers the two codes `createEquals` refuses its rules with, `FULCRO2002` and `FULCRO2003`.
+
+### Patch Changes
+
+- Updated dependencies [efb0c3b]
+  - @fulcro/errors@3.1.0
+
 ## 3.0.0
 
 ### Major Changes

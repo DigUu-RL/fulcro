@@ -1,17 +1,23 @@
-# Control flow as values: `switchFor`, `tryCatch`, `Result` and `Option`
+# Control flow as values: `switchFor`, `tryCatch`, `Result`, `Option` and `equals`
 
 🇧🇷 Português (Brasil): [Leia esta documentação em português](./pt-BR/functions.md)
 
-Helpers that turn statements into expressions, and two types that turn failure
-and absence into values. No dependencies, no compiler involvement, nothing to
-configure.
+Helpers that turn statements into expressions, two types that turn failure and
+absence into values, and a comparison of two values by what they hold. No
+dependencies, no compiler involvement, nothing to configure.
 
 ```sh
 npm install @fulcro/functions
 ```
 
+The types need TypeScript 5.4 or later, which `typescript` is an optional peer
+for; from JavaScript, nothing else is needed.
+
 ```ts
 import {
+	createEquals,
+	type EqualityRule,
+	equals,
 	failure,
 	none,
 	type Option,
@@ -346,6 +352,153 @@ the same data as `none()`. Only the variant tells them apart, so `isSome()` and
 `isNone()` are the check — `value` is not. `some` keeps whatever it is given;
 reading `null` as absent is `optionOf`'s job.
 
+## `equals`
+
+Tells whether two values hold the same thing — two objects with the same keys
+and equal values, two arrays with equal elements — where `===` only tells
+whether they are the same object.
+
+```ts
+equals({ id: 1, tags: ['a'] }, { id: 1, tags: ['a'] }); // true
+equals([1, 2, 3], [1, 3, 2]); // false
+```
+
+`right` takes its type from `left`, so two values that could never be equal do
+not compile: `equals(1, 'one')` is refused.
+
+### What is compared by contents, and what by identity
+
+A value always equals itself. Two distinct values are compared by what they
+hold when they are of a kind defined by its contents, and are unequal
+otherwise:
+
+| Values                                                                     | Equal when                                                              |
+| -------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Primitives                                                                 | They are the same value; `NaN` equals `NaN`, `0` equals `-0`            |
+| Objects of different prototypes                                            | Never                                                                   |
+| Plain objects, with or without a prototype                                 | They have the same own enumerable keys, in any order, with equal values |
+| Arrays                                                                     | They are as long, with equal elements; a hole reads as `undefined`      |
+| `Result` and `Option`                                                      | They are the same variant, with equal fields                            |
+| `Date`                                                                     | They hold the same time                                                 |
+| `Map`                                                                      | They hold the same keys, with equal values                              |
+| `Set`                                                                      | They hold the same elements                                             |
+| `ArrayBuffer`, `DataView`                                                  | Their bytes are equal                                                   |
+| Typed arrays                                                               | They are of one kind, with equal elements                               |
+| Anything else: an instance of a class, an `Error`, a `RegExp`, a `Promise` | Never — it is defined by which object it is                             |
+
+Primitives compare as a `Set` finds them, so `equals` always says a value equals
+itself — `NaN` included. That is a different question from the one
+`NumericType.equals` of `@fulcro/types` answers, where `NaN` equals nothing:
+that one is arithmetic, and this one is what a key, a cache or a list without
+duplicates needs.
+
+`some(null)` and `none()` hold exactly the same data, and are not equal: the
+variant is compared before the fields. A `failure` holding an `Error` equals
+another only when both hold the same error, since an error is an instance of a
+class.
+
+**An instance of a class equals only itself.** A class may keep its state where
+no comparison can read it — `Decimal` keeps its digits in private fields — so
+comparing its own keys would find none and call any two instances equal. To
+compare one by what it holds, give it a rule; see below.
+
+**A key of a `Map` and an element of a `Set` are found by identity**, as the map
+and the set find them, never by contents. That is what keeps comparing two maps
+linear: matching every key against every other would cost a comparison per
+pair.
+
+Two structures that refer to themselves — a ring, a tree whose node holds its
+parent — are equal when nothing else in them differs, and are compared once
+round.
+
+### Values of `@fulcro/types`
+
+A struct, a matrix, a fraction, a complex number: each is a value type, and
+`equals` reads it as the plain object or array it is. That is right for many of
+them and not for all — a matrix of two rows and three columns holds the same
+six elements as one of three rows and two, and its shape is not one of its
+keys. The descriptor knows the type; hand it to [`createEquals`](#your-own-rules-createequals)
+as a rule:
+
+```ts
+const sameShape = createEquals([Wide, Tall]); // Matrix(DoublePrecisionFloat, 2, 3) and (…, 3, 2)
+
+equals(wide, tall); // true: the same six numbers
+sameShape(wide, tall); // false: each is recognised by its own descriptor
+```
+
+A struct passed as a rule is never equal to a plain object that merely has its
+fields, and each of its fields compares as its own type does.
+
+### Your own rules: `createEquals`
+
+`createEquals` makes a variant of `equals` that compares some kinds of value by
+rules of your own. A rule recognises its values with `is` and compares two of
+them with `equals`:
+
+```ts
+const byId: EqualityRule<User> = {
+	is: (value): value is User => value instanceof User,
+	equals: (left, right) => left.id === right.id,
+};
+
+const sameUsers = createEquals([byId]);
+
+sameUsers([alice], [aliceRenamed]); // true: the arrays as `equals` compares them, the users by id
+```
+
+The descriptor of every type of `@fulcro/types` already is a rule, since each
+has `is` and `equals`. `Decimal` compares through its values, so its rule is
+written out:
+
+```ts
+const byValue: EqualityRule<Decimal> = {
+	is: Decimal.is,
+	equals: (left, right) => left.equals(right),
+};
+```
+
+Two values are compared in this order:
+
+1. A value always equals itself, whatever a rule would say.
+2. The first rule that recognises either value decides: with its `equals` when
+   it recognises both, and as unequal when it recognises only one. The rules
+   after it are not asked.
+3. Otherwise, as `equals` compares them.
+
+So a rule can also take over a kind `equals` already compares — dates by the
+day, strings without regard to case.
+
+A rule whose values hold others compares them with the third argument, the
+variant it belongs to. It keeps track of what is already being compared, so a
+structure that refers to itself is still compared once round:
+
+```ts
+const byLabel: EqualityRule<Tree> = {
+	is: (value): value is Tree => value instanceof Tree,
+	equals: (left, right, nested) => {
+		return left.label === right.label && nested(left.children, right.children);
+	},
+};
+```
+
+The rules and their members are read once, when the variant is made: changing
+the list afterwards changes nothing. A rule may be an instance of a class; its
+members are called on it. A rule that throws makes the comparison throw.
+
+`createEquals` refuses what is not an array of rules
+([`FULCRO2002`](./errors/FULCRO2xxx.md#fulcro2002)), and a rule whose `is` or
+`equals` is not a function ([`FULCRO2003`](./errors/FULCRO2xxx.md#fulcro2003)).
+
+### What a comparison costs
+
+Each value is read once on each side, and the comparison stops at the first
+difference: two arrays of a hundred thousand elements that differ at the
+eleventh are read eleven elements deep. Nothing of a value compared with itself
+is read at all. A map or a set is compared with one lookup per entry. A rule is
+asked about a pair at most once per value, and the rules after the one that
+recognised it are not asked.
+
 ## What a value costs
 
 A `Result` or an `Option` is one frozen object carrying its data and nothing
@@ -372,6 +525,9 @@ object, so absence allocates nothing at all.
 | `optionOf(value)`                     | `none()` for `null` or `undefined`, `some(value)` otherwise.   |
 | `option.handle({ some, none })`       | Runs the branch of the variant. Both are required.             |
 | `option.isSome()`, `isNone()`         | Narrow the option.                                             |
+| `equals(left, right)`                 | Compares by contents; any other object by identity.            |
+| `createEquals(rules)`                 | A variant of `equals` that asks the rules first.               |
 
 Types: `SwitchCase`, `ExhaustiveCases`, `Result`, `Success`, `Failure`,
-`ResultCases`, `Option`, `Some`, `None`, `OptionCases`.
+`ResultCases`, `Option`, `Some`, `None`, `OptionCases`, `Equals`,
+`EqualityRule`.
