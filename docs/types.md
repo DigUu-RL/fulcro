@@ -382,9 +382,37 @@ alignOf<Decimal>(); // 16
 | `DoublePrecisionFloat`          | 8               |
 | `Decimal`                       | 16              |
 
-The layout lives in the type and never in a value: a type-only import is
-enough for `sizeOf`, and nothing of this package is loaded to answer it. See
-[Reflection](./reflect.md#sizeoft-and-alignoft) for how the two meet.
+The layout lives in the type, never in a value: a type-only import is enough
+for `sizeOf`, and nothing of this package is loaded to answer it. See
+[Reflection](./reflect.md#sizeoft-and-alignoft) for how the two meet. The
+descriptor carries the same numbers at runtime too, as `layout`, for the code
+that stores values as bytes.
+
+### Stored as bytes
+
+The descriptor of every type in that table reads and writes a value as bytes,
+in a `DataView`, little-endian whatever the platform:
+
+```ts
+const Int32 = SignedInteger(32);
+const view = new DataView(new ArrayBuffer(Int32.layout.size * 2));
+
+Int32.write(view, Int32.layout.size, Int32.from(-2));
+Int32.read(view, Int32.layout.size); // -2
+```
+
+The encoding is the one a struct field of the same type uses — two's
+complement for the integers, IEEE 754 binary16, binary32 and binary64 for the
+floats, decimal128 in its binary integer encoding for `Decimal` — so a value
+written alone and the same value inside a struct are the same bytes. That is
+what lets [`@fulcro/memory`](./memory.md) store a numeric type with no struct
+around it.
+
+An offset the value does not fit at is refused before a byte is touched, with
+[`FULCRO6018`](./errors/FULCRO6xxx.md#fulcro6018). `write` does not check the
+value again: the compiler already refuses a plain `number` where a
+`SignedInteger<32>` is expected, and a storage checks it with `is` before it
+writes.
 
 ## Structs
 

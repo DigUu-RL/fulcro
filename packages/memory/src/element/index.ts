@@ -66,7 +66,11 @@ export interface AlignedElement<T> extends FixedLayoutElement<T> {
  * @returns The missing part, or `undefined` when nothing is missing.
  */
 const missingPart = (element: unknown): string | undefined => {
-	if (typeof element !== 'object' || element === null) return 'everything';
+	// A class carries the members as well as an object does: `Decimal` of
+	// `@fulcro/types` is one, with `layout`, `read`, `write` and `is` static.
+	if ((typeof element !== 'object' && typeof element !== 'function') || element === null) {
+		return 'everything';
+	}
 
 	const candidate = element as Partial<Record<string, unknown>>;
 	const layout = candidate.layout as { size?: unknown } | null | undefined;

@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { DoublePrecisionFloat, type Struct, struct, UnsignedInteger } from '@fulcro/types';
+import {
+	DoublePrecisionFloat,
+	SignedInteger,
+	type Struct,
+	struct,
+	UnsignedInteger,
+} from '@fulcro/types';
 
 import { allocate } from '@/src/allocate';
 import type { Allocation, Allocator } from '@/src/allocator';
@@ -87,5 +93,43 @@ describe('allocate, counted', () => {
 		for (let index = 0; index < VOLUME; index++) samples.get(index);
 
 		expect([livenessChecks, reads, writes]).toEqual([2 * VOLUME, VOLUME, VOLUME]);
+	});
+
+	it('should store a numeric type with one read, one write and one check of it per access', () => {
+		const Int32 = SignedInteger(32);
+		let checks = 0;
+
+		const countedInt32 = {
+			name: Int32.name,
+			layout: Int32.layout,
+			read: (view: DataView, offset: number): SignedInteger<32> => {
+				reads++;
+
+				return Int32.read(view, offset);
+			},
+			write: (view: DataView, offset: number, value: SignedInteger<32>): void => {
+				writes++;
+				Int32.write(view, offset, value);
+			},
+			is: (value: unknown): value is SignedInteger<32> => {
+				checks++;
+
+				return Int32.is(value);
+			},
+		};
+
+		const numbers: Storage<SignedInteger<32>> = allocate(countedInt32, VOLUME, allocator);
+		const value: SignedInteger<32> = Int32.from(-1);
+
+		for (let index = 0; index < VOLUME; index++) numbers.set(index, value);
+		for (let index = 0; index < VOLUME; index++) numbers.get(index);
+
+		expect([requests, livenessChecks, reads, writes, checks]).toEqual([
+			1,
+			2 * VOLUME,
+			VOLUME,
+			VOLUME,
+			VOLUME,
+		]);
 	});
 });

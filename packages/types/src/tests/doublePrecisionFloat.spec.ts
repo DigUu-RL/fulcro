@@ -1,6 +1,7 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import { DoublePrecisionFloat } from '@/src/doublePrecisionFloat';
+import { struct } from '@/src/struct';
 
 /**
  * Behaviour suite for `DoublePrecisionFloat`.
@@ -62,5 +63,61 @@ describe('DoublePrecisionFloat', () => {
 		expectTypeOf(DoublePrecisionFloat.from(1)).toEqualTypeOf<DoublePrecisionFloat>();
 		expectTypeOf<DoublePrecisionFloat>().toExtend<number>();
 		expectTypeOf<number>().not.toExtend<DoublePrecisionFloat>();
+	});
+
+	describe('bytes', () => {
+		it('should take eight bytes, aligned on eight, frozen', () => {
+			expect(DoublePrecisionFloat.layout).toEqual({ size: 8, alignment: 8 });
+			expect(Object.isFrozen(DoublePrecisionFloat.layout)).toBe(true);
+		});
+
+		it.each([0, -0, 0.1, -1e300, Number.MAX_VALUE, Number.MIN_VALUE, Infinity, -Infinity])(
+			'should read back %s exactly, between neighbours it leaves alone',
+			(source) => {
+				const value = DoublePrecisionFloat.from(source);
+				const bytes = new Uint8Array(24).fill(0xaa);
+				const view = new DataView(bytes.buffer);
+
+				DoublePrecisionFloat.write(view, 8, value);
+
+				expect(Object.is(DoublePrecisionFloat.read(view, 8), value)).toBe(true);
+
+				expect([...bytes.subarray(0, 8), ...bytes.subarray(16)]).toEqual(
+					new Array<number>(16).fill(0xaa),
+				);
+			},
+		);
+
+		it('should read back NaN', () => {
+			const view = new DataView(new ArrayBuffer(8));
+
+			DoublePrecisionFloat.write(view, 0, DoublePrecisionFloat.from(NaN));
+
+			expect(DoublePrecisionFloat.read(view, 0)).toBeNaN();
+		});
+
+		it('should write binary64, little-endian, as a struct field of the same type does', () => {
+			const Holder = struct('Holder', { value: DoublePrecisionFloat });
+			const alone = new Uint8Array(8);
+			const inside = new Uint8Array(8);
+			const value = DoublePrecisionFloat.from(1);
+
+			DoublePrecisionFloat.write(new DataView(alone.buffer), 0, value);
+			Holder.write(new DataView(inside.buffer), 0, Holder.from({ value }));
+
+			expect([...alone]).toEqual([0, 0, 0, 0, 0, 0, 0xf0, 0x3f]);
+			expect([...alone]).toEqual([...inside]);
+		});
+
+		it('should declare the layout of its type, and read values of its type', () => {
+			expectTypeOf(DoublePrecisionFloat.layout).toEqualTypeOf<{
+				readonly size: 8;
+				readonly alignment: 8;
+			}>();
+
+			expectTypeOf(DoublePrecisionFloat)
+				.toHaveProperty('read')
+				.returns.toEqualTypeOf<DoublePrecisionFloat>();
+		});
 	});
 });

@@ -1,7 +1,6 @@
 import type { Branded } from '@/src/brand';
-import { createFloatType } from '@/src/float';
+import { createFloatType, type FloatType } from '@/src/float';
 import type { Layout } from '@/src/layout';
-import type { BoundedNumericType } from '@/src/numericType';
 
 /**
  * An IEEE 754 binary64 value: 53 bits of precision, 11 of exponent.
@@ -18,6 +17,19 @@ export type DoublePrecisionFloat = Branded<number, 'DoublePrecisionFloat'> & Lay
  * ```ts
  * DoublePrecisionFloat.from(0.1); // 0.1
  * ```
+ *
+ * Stored as eight bytes, aligned on eight, little-endian.
  */
-export const DoublePrecisionFloat: BoundedNumericType<DoublePrecisionFloat, number> =
-	createFloatType('DoublePrecisionFloat', Number.MAX_VALUE, (value) => value);
+export const DoublePrecisionFloat: FloatType<DoublePrecisionFloat> = createFloatType(
+	'DoublePrecisionFloat',
+	Number.MAX_VALUE,
+	(value) => value,
+	{
+		size: 8,
+		alignment: 8,
+		read: (view, offset) => view.getFloat64(offset, true),
+		write: (view, offset, value) => {
+			view.setFloat64(offset, value, true);
+		},
+	},
+);

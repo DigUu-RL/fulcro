@@ -2,6 +2,7 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import type { IntegerType } from '@/src/integer';
 import { SignedInteger } from '@/src/signedInteger';
+import { struct } from '@/src/struct';
 
 /**
  * Behaviour suite for `SignedInteger`.
@@ -255,5 +256,84 @@ describe('SignedInteger', () => {
 	it('should keep the widths apart at the type level', () => {
 		expectTypeOf<SignedInteger<8>>().not.toExtend<SignedInteger<32>>();
 		expectTypeOf<number>().not.toExtend<SignedInteger<32>>();
+	});
+
+	describe('bytes', () => {
+		describe.each(RANGES)('at $width bits', ({ width, minimum, maximum }) => {
+			const type = SignedInteger(width) as IntegerType<number | bigint>;
+			const size: number = width / 8;
+
+			it('should take width / 8 bytes, aligned on as many, frozen', () => {
+				expect(type.layout).toEqual({ size, alignment: size });
+				expect(Object.isFrozen(type.layout)).toBe(true);
+			});
+
+			it.each([
+				['the minimum', minimum],
+				['the maximum', maximum],
+				['zero', 0n],
+				['minus one', -1n],
+			])('should read back %s, between neighbours it leaves alone', (_label, value) => {
+				const bytes = new Uint8Array(size * 3).fill(0xaa);
+				const view = new DataView(bytes.buffer);
+
+				type.write(view, size, carried(width, value));
+
+				expect(type.read(view, size)).toBe(carried(width, value));
+
+				expect([...bytes.subarray(0, size), ...bytes.subarray(size * 2)]).toEqual(
+					new Array<number>(size * 2).fill(0xaa),
+				);
+			});
+
+			it('should store a value as a struct field of the same type does', () => {
+				const Holder = struct('Holder', { value: SignedInteger(width) });
+				const alone = new Uint8Array(size);
+				const inside = new Uint8Array(size);
+				const value = carried(width, minimum + 1n);
+
+				type.write(new DataView(alone.buffer), 0, value);
+				Holder.write(new DataView(inside.buffer), 0, Holder.from({ value }));
+
+				expect([...alone]).toEqual([...inside]);
+			});
+		});
+
+		it("should write little-endian, in two's complement", () => {
+			const view = new DataView(new ArrayBuffer(16));
+			const bytes = new Uint8Array(view.buffer);
+
+			SignedInteger(16).write(view, 0, SignedInteger(16).from(-2));
+
+			expect([...bytes.subarray(0, 2)]).toEqual([0xfe, 0xff]);
+
+			SignedInteger(128).write(view, 0, SignedInteger(128).minimum);
+
+			expect([...bytes]).toEqual([...new Array<number>(15).fill(0), 0x80]);
+
+			SignedInteger(128).write(view, 0, SignedInteger(128).from(-1));
+
+			expect([...bytes]).toEqual(new Array<number>(16).fill(0xff));
+		});
+
+		it('should declare the layout of its type, and read values of its type', () => {
+			expectTypeOf(SignedInteger(32).layout).toEqualTypeOf<{
+				readonly size: 4;
+				readonly alignment: 4;
+			}>();
+
+			expectTypeOf(SignedInteger(128).layout.size).toEqualTypeOf<
+				SignedInteger<128>['~layout']['size']
+			>();
+
+			expectTypeOf(SignedInteger(64))
+				.toHaveProperty('read')
+				.returns.toEqualTypeOf<SignedInteger<64>>();
+
+			expectTypeOf(SignedInteger(8))
+				.toHaveProperty('write')
+				.parameter(2)
+				.toEqualTypeOf<SignedInteger<8>>();
+		});
 	});
 });

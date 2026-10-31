@@ -1,6 +1,8 @@
 import { createError } from '@fulcro/errors';
 
+import { type ByteCodec, createFixedLayout, type FixedLayoutType } from '@/src/fixedLayout';
 import type { BoundedNumericType } from '@/src/numericType';
+import { registerCodec } from '@/src/struct/codec';
 
 /**
  * Machinery shared by the three binary floating point types.
@@ -17,21 +19,36 @@ import type { BoundedNumericType } from '@/src/numericType';
  */
 
 /**
+ * Descriptor of a float format: its arithmetic, and how its values are stored
+ * as bytes.
+ *
+ * @template T Type of the values this descriptor produces.
+ */
+export type FloatType<T> = BoundedNumericType<T, number> & FixedLayoutType<T>;
+
+/**
  * Builds the descriptor of a float format.
+ *
+ * The codec a struct field of the format is stored by is registered under the
+ * same descriptor, so the format has one encoding, whether the value is stored
+ * alone or inside a struct.
  *
  * @param name Name of the type, as it reads in an error message.
  * @param maximum Largest finite value of the format. The smallest is its
  * negation, since a float's range is symmetric about zero.
  * @param round Rounding of a double to the nearest value of the format, ties to
  * even.
+ * @param codec How a value of the format is stored as bytes.
  * @returns The descriptor.
  */
 export const createFloatType = <T>(
 	name: string,
 	maximum: number,
 	round: (value: number) => number,
-): BoundedNumericType<T, number> => {
-	return {
+	codec: ByteCodec<number>,
+): FloatType<T> => {
+	const descriptor: FloatType<T> = {
+		...createFixedLayout(name, codec as ByteCodec<T>),
 		name,
 		minimum: -maximum as T,
 		maximum: maximum as T,
@@ -82,4 +99,11 @@ export const createFloatType = <T>(
 		greaterThan: (left: T, right: T): boolean => left > right,
 		greaterThanOrEqual: (left: T, right: T): boolean => left >= right,
 	};
+
+	registerCodec(descriptor, {
+		...(codec as ByteCodec<unknown>),
+		equals: (left, right) => descriptor.equals(left as T, right as T),
+	});
+
+	return descriptor;
 };

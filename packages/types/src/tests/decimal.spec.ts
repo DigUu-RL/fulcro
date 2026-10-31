@@ -2,6 +2,7 @@ import { assert, describe, expect, expectTypeOf, it } from 'vitest';
 
 import { Decimal } from '@/src/decimal';
 import type { RoundingMode } from '@/src/roundingMode';
+import { struct } from '@/src/struct';
 
 /**
  * Behaviour suite for `Decimal`.
@@ -945,6 +946,82 @@ describe('Decimal', () => {
 			expectTypeOf(decimalFrom('1').compare(decimalFrom('2'))).toEqualTypeOf<
 				-1 | 0 | 1 | undefined
 			>();
+		});
+	});
+
+	describe('bytes', () => {
+		it('should take sixteen bytes, aligned on sixteen, frozen', () => {
+			expect(Decimal.layout).toEqual({ size: 16, alignment: 16 });
+			expect(Object.isFrozen(Decimal.layout)).toBe(true);
+		});
+
+		it.each([
+			'0.1',
+			'-0',
+			'1e6144',
+			'1e-6176',
+			'9.999999999999999999999999999999999e6144',
+			'-123456789012345678901234567890.1234',
+			'Infinity',
+			'-Infinity',
+			'NaN',
+		])('should read back %s, between neighbours it leaves alone', (text) => {
+			const bytes = new Uint8Array(48).fill(0xaa);
+			const view = new DataView(bytes.buffer);
+
+			Decimal.write(view, 16, decimalFrom(text));
+
+			const read: Decimal = Decimal.read(view, 16);
+
+			expect(read.toString()).toBe(decimalFrom(text).toString());
+			expect(read.isNegative()).toBe(decimalFrom(text).isNegative());
+
+			expect([...bytes.subarray(0, 16), ...bytes.subarray(32)]).toEqual(
+				new Array<number>(32).fill(0xaa),
+			);
+		});
+
+		it('should write decimal128 in its binary integer encoding, little-endian', () => {
+			const view = new DataView(new ArrayBuffer(16));
+
+			Decimal.write(view, 0, decimalFrom(1));
+
+			expect(view.getBigUint64(8, true)).toBe(0x3040_0000_0000_0000n);
+			expect(view.getBigUint64(0, true)).toBe(1n);
+		});
+
+		it('should read a coefficient past thirty-four digits as zero, keeping its sign', () => {
+			const view = new DataView(new ArrayBuffer(16));
+
+			// Sign set, biased exponent 6176, coefficient 10^34: one digit too many.
+			view.setBigUint64(8, 0xb041_ed09_bead_87c0n, true);
+			view.setBigUint64(0, 0x378d_8e64_0000_0000n, true);
+
+			const read: Decimal = Decimal.read(view, 0);
+
+			expect(read.isZero()).toBe(true);
+			expect(read.isNegative()).toBe(true);
+		});
+
+		it('should store a value as a struct field of the same type does', () => {
+			const Holder = struct('Holder', { value: Decimal });
+			const alone = new Uint8Array(16);
+			const inside = new Uint8Array(16);
+			const value: Decimal = decimalFrom('-19.99');
+
+			Decimal.write(new DataView(alone.buffer), 0, value);
+			Holder.write(new DataView(inside.buffer), 0, Holder.from({ value }));
+
+			expect([...alone]).toEqual([...inside]);
+		});
+
+		it('should declare the layout of its type, and read values of its type', () => {
+			expectTypeOf(Decimal.layout).toEqualTypeOf<{
+				readonly size: 16;
+				readonly alignment: 16;
+			}>();
+
+			expectTypeOf(Decimal.read).returns.toEqualTypeOf<Decimal>();
 		});
 	});
 });

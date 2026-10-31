@@ -1,8 +1,11 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import {
+	BigInteger,
 	Decimal,
 	DoublePrecisionFloat,
+	Fraction,
+	SignedInteger,
 	SinglePrecisionFloat,
 	type Struct,
 	struct,
@@ -157,10 +160,55 @@ describe('createFixedBufferStorage', () => {
 		);
 	});
 
-	it('should refuse a numeric type, which carries no byte encoding of its own', () => {
+	it('should hold a numeric type alone, end to end, and give back the value it was handed', () => {
+		const weights: Storage<SinglePrecisionFloat> = createFixedBufferStorage(
+			SinglePrecisionFloat,
+			3,
+		);
+
+		const counts = createFixedBufferStorage(UnsignedInteger(64), 2);
+
+		weights.set(1, SinglePrecisionFloat.from(0.1));
+		counts.set(1, UnsignedInteger(64).maximum);
+
+		expect([weights.get(0), weights.get(1), weights.get(2)]).toEqual([
+			0,
+			SinglePrecisionFloat.from(0.1),
+			0,
+		]);
+
+		expect(counts.get(1)).toBe(2n ** 64n - 1n);
+	});
+
+	it.each([
+		['BigInteger', BigInteger],
+		['Fraction<SignedInteger<32>>', Fraction(SignedInteger(32))],
+	])('should refuse %s, whose values have no fixed size', (_name, type) => {
+		expect(() => createFixedBufferStorage(type as unknown as typeof Point, 1)).toThrow(
+			coded(
+				new TypeError(
+					'FULCRO7003: createFixedBufferStorage: expected an element type with a name, layout.size, read, write and is; layout.size is missing.',
+				),
+				{ operation: 'createFixedBufferStorage', missing: 'layout.size' },
+			),
+		);
+	});
+
+	it('should refuse a number outside the numeric type, writing nothing', () => {
+		const weights = createFixedBufferStorage(SinglePrecisionFloat, 1);
+
 		expect(() => {
-			return createFixedBufferStorage(SinglePrecisionFloat as unknown as typeof Point, 1);
-		}).toThrow(TypeError);
+			weights.set(0, 0.1 as SinglePrecisionFloat);
+		}).toThrow(
+			coded(
+				new TypeError(
+					'FULCRO7004: FixedBufferStorage.set: the value is not a value of SinglePrecisionFloat.',
+				),
+				{ operation: 'FixedBufferStorage.set', element: 'SinglePrecisionFloat' },
+			),
+		);
+
+		expect(weights.get(0)).toBe(0);
 	});
 
 	it('should infer the struct it stores', () => {
@@ -173,8 +221,10 @@ describe('createFixedBufferStorage', () => {
 
 		expectTypeOf<{ x: number; y: number }>().not.toExtend<Point>();
 
-		expectTypeOf<typeof SinglePrecisionFloat>().not.toExtend<
-			Parameters<typeof createFixedBufferStorage>[0]
+		expectTypeOf(createFixedBufferStorage(SinglePrecisionFloat, 1)).toEqualTypeOf<
+			Storage<SinglePrecisionFloat>
 		>();
+
+		expectTypeOf(createFixedBufferStorage(Decimal, 1)).toEqualTypeOf<Storage<Decimal>>();
 	});
 });

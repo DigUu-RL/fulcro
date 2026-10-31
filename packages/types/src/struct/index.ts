@@ -1,5 +1,6 @@
 import { createError, prefixError } from '@fulcro/errors';
 
+import { requireRoom } from '@/src/fixedLayout';
 import type { Layout } from '@/src/layout';
 import type { Add, LargestAlignment, RoundUp } from '@/src/struct/arithmetic';
 import { codecOf, type FieldCodec, registerCodec } from '@/src/struct/codec';
@@ -532,32 +533,6 @@ export const struct = <TFields extends StructFields, TMethods extends StructMeth
 		),
 	});
 
-	/**
-	 * Refuses a view and an offset the struct does not fit in, before a byte is
-	 * touched — so a failed write leaves the view as it was.
-	 *
-	 * @param operation Operation being performed.
-	 * @param view View handed in.
-	 * @param offset Offset handed in.
-	 */
-	const requireRoom = (operation: string, view: DataView, offset: number): void => {
-		if (!(view instanceof DataView)) {
-			throw createError('FULCRO6017', {
-				operation: `${name}.${operation}`,
-				received: describeKind(view),
-			});
-		}
-
-		if (!Number.isInteger(offset) || offset < 0 || offset + size > view.byteLength) {
-			throw createError('FULCRO6018', {
-				operation: `${name}.${operation}`,
-				size,
-				offset,
-				available: view.byteLength,
-			});
-		}
-	};
-
 	const readFields = (view: DataView, offset: number): unknown => {
 		const value: Record<string, unknown> = blank();
 
@@ -650,13 +625,13 @@ export const struct = <TFields extends StructFields, TMethods extends StructMeth
 		equals,
 
 		read: (view, offset) => {
-			requireRoom('read', view, offset);
+			requireRoom(`${name}.read`, size, view, offset);
 
 			return readFields(view, offset) as Value;
 		},
 
 		write: (view, offset, value) => {
-			requireRoom('write', view, offset);
+			requireRoom(`${name}.write`, size, view, offset);
 			writeFields(view, offset, value);
 		},
 	};

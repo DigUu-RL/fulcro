@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { HalfPrecisionFloat } from '@/src/halfPrecisionFloat';
+import { countingView } from '@/src/tests/countingView';
 
 /**
  * Performance suite for `HalfPrecisionFloat`.
@@ -75,5 +76,18 @@ describe('HalfPrecisionFloat', () => {
 		const rounded: number = timed(INPUTS, (value) => HalfPrecisionFloat.from(value));
 
 		expect(rounded).toBeLessThan(baseline * 50);
+	});
+
+	it('should touch the bytes once per value read or written', () => {
+		const { view, accesses } = countingView(2 * CONVERSIONS);
+		const value = HalfPrecisionFloat.from(0.1);
+
+		for (let index = 0; index < CONVERSIONS; index++) {
+			HalfPrecisionFloat.write(view, index * 2, value);
+		}
+
+		for (let index = 0; index < CONVERSIONS; index++) HalfPrecisionFloat.read(view, index * 2);
+
+		expect(accesses()).toBe(2 * CONVERSIONS);
 	});
 });
