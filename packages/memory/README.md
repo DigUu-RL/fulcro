@@ -50,10 +50,10 @@ const total = (prices: Storage<number>): number => {
 };
 ```
 
-| Strategy                   | Holds                                                  |
-| -------------------------- | ------------------------------------------------------ |
-| `createManagedStorage`     | Any value, as it is, in an ordinary array              |
-| `createFixedBufferStorage` | Values of a struct, as bytes, end to end in one buffer |
+| Strategy                   | Holds                                                                       |
+| -------------------------- | --------------------------------------------------------------------------- |
+| `createManagedStorage`     | Any value, as it is, in an ordinary array                                   |
+| `createFixedBufferStorage` | Values of a struct or of a numeric type, as bytes, end to end in one buffer |
 
 ```ts
 const scores = createManagedStorage(3, 0);

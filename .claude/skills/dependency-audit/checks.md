@@ -54,6 +54,11 @@ fallback works without a compiler — `tests/entrypoints.spec.mts` is what prove
 that — and only the
 transformer entry points need one.
 
+`@fulcro/functions` declares a fifth, `>=5.4`, optional too and for a different
+reason: it ships no transformer, but its declarations use `NoInfer`, which
+arrived in TypeScript 5.4. It has no upper bound because nothing in it reaches
+the compiler's API.
+
 A finding when:
 
 - **a peer range narrows.** Every consumer resolving outside the new range
@@ -62,7 +67,7 @@ A finding when:
 - **a peer range widens** without evidence that the new edge compiles. Widening
   is additive only in appearance; it is a promise to support a compiler nobody
   ran;
-- **the three ranges disagree.** A consumer installing `@fulcro/collections`
+- **the four transformer ranges disagree.** A consumer installing `@fulcro/collections`
   gets `@fulcro/transform-core` too, and two different `typescript` demands in
   one tree resolve to a warning the consumer has to adjudicate;
 - **an optional peer is relied on unconditionally.** `optional: true` means the
@@ -73,17 +78,19 @@ A finding when:
 **Reads.** The `dependencies` of each manifest, the `workspaces` field of the
 root, and `npm ls --depth=1`.
 
-`@fulcro/collections` and `@fulcro/reflect` each depend on
-`@fulcro/transform-core` at `^0.9.0`. `@fulcro/functions` and `@fulcro/parallel`
-depend on nothing.
+`@fulcro/collections`, `@fulcro/memory` and `@fulcro/reflect` each depend on
+`@fulcro/transform-core` at `^2.0.0`. Every package but `@fulcro/errors`
+depends on `@fulcro/errors`, and `@fulcro/parallel` also on
+`@fulcro/functions`; `@fulcro/errors` depends on nothing.
 
 A finding when:
 
-- **the range cannot admit the version that will publish.** `^0.9.0` does not
-  admit `0.10.0` under semver's zero-major rule. A `transform-core` minor
-  therefore has to move the dependents' ranges in the same change, and
-  Changesets is what does it — `npm run changeset`, never an edited `version`
-  field. `.claude/rules/release.md`;
+- **the range cannot admit the version that will publish.** `^2.0.0` admits
+  every `2.x` and no `3.0.0`, so a `transform-core` major has to move the
+  dependents' ranges in the same change — and so would any minor of a package
+  still below `1.0.0`, where semver's zero-major rule makes `^0.9.0` refuse
+  `0.10.0`. Changesets is what moves them — `npm run changeset`, never an
+  edited `version` field. `.claude/rules/release.md`;
 - **a new edge appears between two packages.** `@fulcro/collections` depending
   on `@fulcro/reflect` would be a `BLOCKER`: the contract says neither
   transformer knows the other exists, and each claims only the calls it can
@@ -262,9 +269,9 @@ A finding when:
 `packages/*/src/transformer/**`, `packages/*/src/unplugin/**`, and `unplugin`'s
 declared range.
 
-`@fulcro/transform-core` is the shared machinery behind both transformers. It
-depends on `unplugin` at `^3.3.0` — the one non-workspace runtime dependency in
-the tree — and on `typescript` as an optional peer.
+`@fulcro/transform-core` is the shared machinery behind the three transformers.
+It depends on `unplugin` at `^3.3.0` — the one non-workspace runtime dependency
+in the tree — and on `typescript` as an optional peer.
 
 A finding when:
 

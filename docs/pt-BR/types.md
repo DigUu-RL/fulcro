@@ -60,8 +60,9 @@ const total: SignedInteger<32> = Int32.add(Int32.from(1), Int32.from(2));
 
 Os descritores têm tipos próprios, para código que funciona com qualquer tipo
 numérico: o descritor de um inteiro é um `IntegerType<T>`, o de um float um
-`BoundedNumericType<T, number>`, e o do `BigInteger` um `NumericType<T, TSource>`
-— sendo `TSource` o que o `from` aceita. `IntegerWidth` é a união das
+`FloatType<T>` — um `BoundedNumericType<T, number>` que também é guardado em
+bytes —, e o do `BigInteger` um `NumericType<T, TSource>`, sendo `TSource` o que
+o `from` aceita. `IntegerWidth` é a união das
 larguras, `8 | 16 | 32 | 64 | 128`.
 
 ```ts
@@ -386,10 +387,52 @@ alignOf<Decimal>(); // 16
 | `DoublePrecisionFloat`              | 8                    |
 | `Decimal`                           | 16                   |
 
-O layout mora no tipo e nunca num valor: um import só de tipo basta para o
+O layout mora no tipo, nunca num valor: um import só de tipo basta para o
 `sizeOf`, e nada deste pacote é carregado para respondê-lo. Veja
 [Reflexão](./reflect.md#sizeoft-e-alignoft) para como os dois se
-encontram.
+encontram. O descritor também traz os mesmos números em runtime, como `layout`,
+para o código que guarda valores em bytes.
+
+### Guardado em bytes
+
+O descritor de cada tipo dessa tabela lê e escreve um valor em bytes, num
+`DataView`, em little-endian qualquer que seja a plataforma:
+
+```ts
+const Int32 = SignedInteger(32);
+const view = new DataView(new ArrayBuffer(Int32.layout.size * 2));
+
+Int32.write(view, Int32.layout.size, Int32.from(-2));
+Int32.read(view, Int32.layout.size); // -2
+```
+
+A codificação é a mesma que um campo de struct desse tipo usa — complemento de
+dois para os inteiros, IEEE 754 binary16, binary32 e binary64 para os floats,
+decimal128 na codificação de inteiro binário para o `Decimal` —, então um valor
+escrito sozinho e o mesmo valor dentro de uma struct são os mesmos bytes. É isso
+que permite ao [`@fulcro/memory`](./memory.md) guardar um tipo numérico sem uma
+struct em volta.
+
+Um offset em que o valor não cabe é recusado antes de qualquer byte ser tocado,
+com [`FULCRO6018`](./errors/FULCRO6xxx.md#fulcro6018). O `write` não confere o
+valor de novo: o compilador já recusa um `number` comum onde se espera um
+`SignedInteger<32>`, e uma storage o confere com `is` antes de escrever.
+
+Os descritores são tipados por contratos que o pacote exporta: `IntegerType<T>`
+para os inteiros, `FloatType<T>` para os três floats, e `FixedLayoutType<T>` —
+só `layout`, `read` e `write`, que todo tipo da tabela tem — para o código que
+guarda qualquer um deles:
+
+```ts
+import type { FixedLayoutType } from '@fulcro/types';
+
+const zeroed = <T>(type: FixedLayoutType<T>, count: number): DataView => {
+	return new DataView(new ArrayBuffer(type.layout.size * count));
+};
+
+zeroed(SignedInteger(32), 8); // 32 bytes
+zeroed(Decimal, 2); // 32 bytes
+```
 
 ## Structs
 

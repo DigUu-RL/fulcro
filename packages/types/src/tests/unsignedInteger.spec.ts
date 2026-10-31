@@ -2,6 +2,7 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import type { IntegerType } from '@/src/integer';
 import type { SignedInteger } from '@/src/signedInteger';
+import { struct } from '@/src/struct';
 import { UnsignedInteger } from '@/src/unsignedInteger';
 
 /**
@@ -147,5 +148,75 @@ describe('UnsignedInteger', () => {
 		expectTypeOf<UnsignedInteger<16>>().not.toExtend<SignedInteger<16>>();
 
 		expectTypeOf(UnsignedInteger(64).from(1)).toExtend<bigint>();
+	});
+
+	describe('bytes', () => {
+		describe.each(RANGES)('at $width bits', ({ width, maximum }) => {
+			const type = UnsignedInteger(width) as IntegerType<number | bigint>;
+			const size: number = width / 8;
+
+			it('should take width / 8 bytes, aligned on as many, frozen', () => {
+				expect(type.layout).toEqual({ size, alignment: size });
+				expect(Object.isFrozen(type.layout)).toBe(true);
+			});
+
+			it.each([
+				['zero', 0n],
+				['one', 1n],
+				['the maximum', maximum],
+				['the top bit alone', (maximum + 1n) / 2n],
+			])('should read back %s, between neighbours it leaves alone', (_label, value) => {
+				const bytes = new Uint8Array(size * 3).fill(0xaa);
+				const view = new DataView(bytes.buffer);
+
+				type.write(view, size, carried(width, value));
+
+				expect(type.read(view, size)).toBe(carried(width, value));
+
+				expect([...bytes.subarray(0, size), ...bytes.subarray(size * 2)]).toEqual(
+					new Array<number>(size * 2).fill(0xaa),
+				);
+			});
+
+			it('should store a value as a struct field of the same type does', () => {
+				const Holder = struct('Holder', { value: UnsignedInteger(width) });
+				const alone = new Uint8Array(size);
+				const inside = new Uint8Array(size);
+				const value = carried(width, maximum - 1n);
+
+				type.write(new DataView(alone.buffer), 0, value);
+				Holder.write(new DataView(inside.buffer), 0, Holder.from({ value }));
+
+				expect([...alone]).toEqual([...inside]);
+			});
+		});
+
+		it('should write little-endian', () => {
+			const view = new DataView(new ArrayBuffer(16));
+			const bytes = new Uint8Array(view.buffer);
+
+			UnsignedInteger(32).write(view, 0, UnsignedInteger(32).from(0x01020304));
+
+			expect([...bytes.subarray(0, 4)]).toEqual([4, 3, 2, 1]);
+
+			UnsignedInteger(128).write(view, 0, UnsignedInteger(128).from(2n ** 64n));
+
+			expect([...bytes]).toEqual([
+				...new Array<number>(8).fill(0),
+				1,
+				...new Array<number>(7).fill(0),
+			]);
+		});
+
+		it('should declare the layout of its type, and read values of its type', () => {
+			expectTypeOf(UnsignedInteger(16).layout).toEqualTypeOf<{
+				readonly size: 2;
+				readonly alignment: 2;
+			}>();
+
+			expectTypeOf(UnsignedInteger(128))
+				.toHaveProperty('read')
+				.returns.toEqualTypeOf<UnsignedInteger<128>>();
+		});
 	});
 });

@@ -9,6 +9,7 @@ import {
 	remainderParts,
 	roundParts,
 } from '@/src/decimal/arithmetic';
+import { decodeDecimal, encodeDecimal } from '@/src/decimal/decimal128';
 import {
 	formatDecimal,
 	formatExponential,
@@ -27,7 +28,10 @@ import {
 	PRECISION,
 	zero,
 } from '@/src/decimal/parts';
+import { type ByteCodec, createFixedLayout, type FixedLayoutMembers } from '@/src/fixedLayout';
+import { readHalves, writeHalves } from '@/src/fixedLayout/halves';
 import { requireRoundingMode, type RoundingMode } from '@/src/roundingMode';
+import { registerCodec } from '@/src/struct/codec';
 
 /** Rounding applied wherever a mode is optional. */
 const DEFAULT_MODE: RoundingMode = 'halfEven';
@@ -147,6 +151,73 @@ export class Decimal {
 	 * @returns `true` for an instance of this class.
 	 */
 	static is = (value: unknown): value is Decimal => value instanceof Decimal;
+
+	/**
+	 * How a value is stored as decimal128, through its parts — which only the
+	 * class can reach, so the codec is written inside it.
+	 */
+	static readonly #codec: ByteCodec<Decimal> = {
+		size: 16,
+		alignment: 16,
+		read: (view, offset) => new Decimal(decodeDecimal(readHalves(view, offset))),
+		write: (view, offset, value) => {
+			writeHalves(view, offset, encodeDecimal(value.#parts));
+		},
+	};
+
+	/** The members {@link Decimal.layout}, `read` and `write` are taken from. */
+	static readonly #bytes: FixedLayoutMembers<Decimal> = createFixedLayout(
+		'Decimal',
+		Decimal.#codec,
+	);
+
+	/**
+	 * Sixteen bytes aligned on sixteen, those of decimal128: the numbers
+	 * `sizeOf<Decimal>()` and `alignOf<Decimal>()` report.
+	 */
+	static readonly layout: { readonly size: 16; readonly alignment: 16 } = Decimal.#bytes.layout;
+
+	/**
+	 * Reads a value from bytes, as decimal128 in its binary integer encoding,
+	 * little-endian. A non-canonical coefficient reads as zero, as IEEE 754
+	 * says it does.
+	 *
+	 * ```ts
+	 * const view = new DataView(new ArrayBuffer(Decimal.layout.size));
+	 *
+	 * Decimal.write(view, 0, Decimal.from('19.99'));
+	 * Decimal.read(view, 0).toString(); // '19.99'
+	 * ```
+	 *
+	 * @param view Bytes to read from.
+	 * @param offset Where the value starts.
+	 * @returns The value.
+	 * @throws {TypeError} When `view` is not a `DataView`.
+	 * @throws {RangeError} When sixteen bytes do not fit in the view at that
+	 * offset.
+	 */
+	static readonly read: (view: DataView, offset: number) => Decimal = Decimal.#bytes.read;
+
+	/**
+	 * Writes a value into bytes, as decimal128 in its binary integer encoding,
+	 * little-endian.
+	 *
+	 * @param view Bytes to write into.
+	 * @param offset Where the value starts.
+	 * @param value Value to write.
+	 * @throws {TypeError} When `view` is not a `DataView`.
+	 * @throws {RangeError} When sixteen bytes do not fit in the view at that
+	 * offset; the bytes are then left as they were.
+	 */
+	static readonly write: (view: DataView, offset: number, value: Decimal) => void =
+		Decimal.#bytes.write;
+
+	static {
+		registerCodec(Decimal, {
+			...(Decimal.#codec as ByteCodec<unknown>),
+			equals: (left, right) => (left as Decimal).equals(right as Decimal),
+		});
+	}
 
 	/**
 	 * Adds a value.

@@ -84,20 +84,21 @@ see.
 
 These are the ones a fixture compiled from a file next door never reaches.
 
-| Condition                 | What has to hold                                                                                                                                                                                 |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Import by package name    | `import { nameOf } from '@fulcro/reflect'` resolves through `node_modules` into the built declarations, and the call is still claimed                                                            |
-| Subpath import            | A call reached through `@fulcro/collections/async` is claimed the same way                                                                                                                       |
-| Workspace link            | The same, resolved through the workspace rather than a copy                                                                                                                                      |
-| `paths` alias             | The same, resolved through a tsconfig alias                                                                                                                                                      |
-| Re-export                 | A call reached through a consumer's own barrel is still traced back to the package                                                                                                               |
-| A consumer's own `nameOf` | Left untouched. Matching on the name alone is the defect                                                                                                                                         |
-| Method receiver           | `.cast(...)` is claimed through the symbol of the receiver, never the method name                                                                                                                |
-| `Node10` resolution       | Finds a package's main entry but not its `exports` subpaths, which is why the coexistence suite sets `Bundler` — a type the checker cannot see is a call neither transformer can claim, silently |
-| Both plugins, one tree    | Every call resolved, including one nested inside another; nothing left as written                                                                                                                |
-| Plugin order              | Reversed, the result is the same. Neither depends on running first                                                                                                                               |
-| Windows separator         | `utilityModuleSegment` joins with `path.join`, so the matcher sees `\` here and `/` elsewhere. No comparison against a hard-coded `/`-joined string                                              |
-| No tsconfig               | The root-level entry point suite applies no plugin at all, on purpose: it asserts what a consumer gets before wiring one up                                                                      |
+| Condition                 | What has to hold                                                                                                                                                                            |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Import by package name    | `import { nameOf } from '@fulcro/reflect'` resolves through `node_modules` into the built declarations, and the call is still claimed                                                       |
+| Subpath import            | A call reached through `@fulcro/collections/async` is claimed the same way                                                                                                                  |
+| Workspace link            | The same, resolved through the workspace rather than a copy                                                                                                                                 |
+| `paths` alias             | The same, resolved through a tsconfig alias                                                                                                                                                 |
+| Re-export                 | A call reached through a consumer's own barrel is still traced back to the package                                                                                                          |
+| A consumer's own `nameOf` | Left untouched. Matching on the name alone is the defect                                                                                                                                    |
+| Method receiver           | `.cast(...)` is claimed through the symbol of the receiver, never the method name                                                                                                           |
+| `Node10` resolution       | Finds a package's main entry but not its `exports` subpaths, which is why the coexistence suite sets `Bundler` — a type the checker cannot see is a call no transformer can claim, silently |
+| Three plugins, one tree   | Every call the two rewriters own resolved, including one nested inside another or inside a memory borrow; memory's calls left as written; nothing else left as written                      |
+| Memory's refusal          | A use after `move` among calls the others rewrite is still refused, with its code, file and line                                                                                            |
+| Plugin order              | Changed, the result is the same. None depends on running first                                                                                                                              |
+| Windows separator         | `utilityModuleSegment` joins with `path.join`, so the matcher sees `\` here and `/` elsewhere. No comparison against a hard-coded `/`-joined string                                         |
+| No tsconfig               | The root-level entry point suite applies no plugin at all, on purpose: it asserts what a consumer gets before wiring one up                                                                 |
 
 ## Where each is already covered
 
@@ -108,7 +109,7 @@ only when nothing asserts it.
 | ---------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | `packages/reflect/src/tests/transformer/transformer.spec.ts`     | `nameOf`, `typeOf`, `defaultOf` and the type shapes, across the package boundary |
 | `packages/collections/src/tests/transformer/transformer.spec.ts` | `ofType` and `cast`                                                              |
-| `tests/transformers/coexistence.spec.mts`                        | Both plugins on one tree, nesting, nothing unresolved                            |
+| `tests/transformers/coexistence.spec.mts`                        | The three plugins on one tree, nesting, memory's refusal, nothing unresolved     |
 | `tests/entrypoints.spec.mts`                                     | The runtime fallback with no transformer applied                                 |
 
 A form present in a `REWRITERS` list and absent from all four is the matrix row

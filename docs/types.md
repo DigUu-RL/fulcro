@@ -60,8 +60,9 @@ const total: SignedInteger<32> = Int32.add(Int32.from(1), Int32.from(2));
 
 The descriptors have types of their own, for code that works over any numeric
 type: an integer's descriptor is an `IntegerType<T>`, a float's a
-`BoundedNumericType<T, number>`, and `BigInteger`'s a `NumericType<T, TSource>`
-— `TSource` being what its `from` accepts. `IntegerWidth` is the union of
+`FloatType<T>` — a `BoundedNumericType<T, number>` that is also stored as bytes
+— and `BigInteger`'s a `NumericType<T, TSource>`, `TSource` being what its
+`from` accepts. `IntegerWidth` is the union of
 widths, `8 | 16 | 32 | 64 | 128`.
 
 ```ts
@@ -382,9 +383,53 @@ alignOf<Decimal>(); // 16
 | `DoublePrecisionFloat`          | 8               |
 | `Decimal`                       | 16              |
 
-The layout lives in the type and never in a value: a type-only import is
-enough for `sizeOf`, and nothing of this package is loaded to answer it. See
-[Reflection](./reflect.md#sizeoft-and-alignoft) for how the two meet.
+The layout lives in the type, never in a value: a type-only import is enough
+for `sizeOf`, and nothing of this package is loaded to answer it. See
+[Reflection](./reflect.md#sizeoft-and-alignoft) for how the two meet. The
+descriptor carries the same numbers at runtime too, as `layout`, for the code
+that stores values as bytes.
+
+### Stored as bytes
+
+The descriptor of every type in that table reads and writes a value as bytes,
+in a `DataView`, little-endian whatever the platform:
+
+```ts
+const Int32 = SignedInteger(32);
+const view = new DataView(new ArrayBuffer(Int32.layout.size * 2));
+
+Int32.write(view, Int32.layout.size, Int32.from(-2));
+Int32.read(view, Int32.layout.size); // -2
+```
+
+The encoding is the one a struct field of the same type uses — two's
+complement for the integers, IEEE 754 binary16, binary32 and binary64 for the
+floats, decimal128 in its binary integer encoding for `Decimal` — so a value
+written alone and the same value inside a struct are the same bytes. That is
+what lets [`@fulcro/memory`](./memory.md) store a numeric type with no struct
+around it.
+
+An offset the value does not fit at is refused before a byte is touched, with
+[`FULCRO6018`](./errors/FULCRO6xxx.md#fulcro6018). `write` does not check the
+value again: the compiler already refuses a plain `number` where a
+`SignedInteger<32>` is expected, and a storage checks it with `is` before it
+writes.
+
+The descriptors are typed by contracts the package exports: `IntegerType<T>`
+for the integers, `FloatType<T>` for the three floats, and `FixedLayoutType<T>`
+— `layout`, `read` and `write` alone, which every type in the table has — for
+code that stores any of them:
+
+```ts
+import type { FixedLayoutType } from '@fulcro/types';
+
+const zeroed = <T>(type: FixedLayoutType<T>, count: number): DataView => {
+	return new DataView(new ArrayBuffer(type.layout.size * count));
+};
+
+zeroed(SignedInteger(32), 8); // 32 bytes
+zeroed(Decimal, 2); // 32 bytes
+```
 
 ## Structs
 

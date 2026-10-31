@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import type { IntegerType } from '@/src/integer';
 import { SignedInteger } from '@/src/signedInteger';
+import { countingView } from '@/src/tests/countingView';
 
 /**
  * Performance suite for `SignedInteger`.
@@ -136,4 +138,45 @@ describe('the descriptor', () => {
 		// would show here as two conversions per call.
 		expect(conversions).toBe(0);
 	});
+});
+
+describe('bytes', () => {
+	it.each([
+		[8, 1],
+		[16, 1],
+		[32, 1],
+		[64, 1],
+		[128, 2],
+	] as const)(
+		'should touch the bytes of SignedInteger<%i> %i time(s) per value read or written',
+		(width, accessesPerValue) => {
+			const type = SignedInteger(width) as IntegerType<number | bigint>;
+			const size: number = width / 8;
+			const value = type.from(-1);
+			const { view, accesses } = countingView(size * OPERATIONS);
+
+			for (let index = 0; index < OPERATIONS; index++) type.write(view, index * size, value);
+			for (let index = 0; index < OPERATIONS; index++) type.read(view, index * size);
+
+			expect(accesses()).toBe(2 * accessesPerValue * OPERATIONS);
+		},
+	);
+
+	it.each([8, 16, 32] as const)(
+		'should store SignedInteger<%i> without converting to a bigint',
+		(width) => {
+			const type = SignedInteger(width);
+			const view = new DataView(new ArrayBuffer((width / 8) * OPERATIONS));
+			const value = type.from(-1);
+
+			conversions = 0;
+
+			for (let index = 0; index < OPERATIONS; index++) {
+				type.write(view, index * type.layout.size, value);
+				type.read(view, index * type.layout.size);
+			}
+
+			expect(conversions).toBe(0);
+		},
+	);
 });

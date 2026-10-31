@@ -1,9 +1,9 @@
 ---
 name: transformer-audit
-description: Audits the compile-time/runtime boundary of `@fulcro/collections` and `@fulcro/reflect` — which calls each transformer still recognises across the package boundary, what it emits, where it declines to the runtime fallback, where it must fail loudly instead, how it behaves on both path separators, and whether the two plugins still coexist on one tree — and reports a fixture matrix with the emitted output as evidence. Use when a `transformer/` or `unplugin/` directory changed, when a call is resolving at runtime that should have been rewritten, or when a runtime signature moved and the transformer half has not been checked.
+description: Audits the compile-time/runtime boundary of `@fulcro/collections` and `@fulcro/reflect` — which calls each transformer still recognises across the package boundary, what it emits, where it declines to the runtime fallback, where it must fail loudly instead, how it behaves on both path separators — and whether the three plugins, `@fulcro/memory`'s included, still coexist on one tree, and reports a fixture matrix with the emitted output as evidence. Use when a `transformer/` or `unplugin/` directory changed, when a call is resolving at runtime that should have been rewritten, or when a runtime signature moved and the transformer half has not been checked.
 allowed-tools: Read, Grep, Glob, Bash(npm run build), Bash(npm run typecheck), Bash(npx vitest run:*), Bash(git diff:*), Bash(git status:*), Bash(git log:*), Bash(git show:*)
 context: fork
-argument-hint: '[collections | reflect | a call name | a path | nothing for the transformers this branch touched]'
+argument-hint: '[collections | reflect | memory | a call name | a path | full | nothing for the transformers this branch touched]'
 ---
 
 # transformer-audit
@@ -32,6 +32,16 @@ placeholder validator or a narrowed type so that a case produces something is
 the one move this skill may not make — it converts a known gap into a wrong
 answer nobody is looking for.
 
+**Three transformers, two that rewrite.** `@fulcro/memory` ships the third, and
+it rewrites nothing: it refuses a use after `move` and a conflicting borrow,
+which its runtime also refuses. The dimensions below that read an emit —
+recognition, the rewrite, the decline to a fallback — have nothing to read in
+it, so they cover the transformers of `@fulcro/collections` and
+`@fulcro/reflect`. What memory's does to the other two, and what they do to it,
+is the coexistence dimension, and that one covers all three. Its own refusals
+are asserted by its package suites, and the code that produces them is
+`transformer-reviewer`'s to read.
+
 ## Invocation
 
 The model may invoke it. It changes nothing, but it builds every workspace and
@@ -45,6 +55,8 @@ The signal is a concrete change surface:
   `packages/collections/src/unplugin/index.mts`,
   `packages/reflect/src/unplugin/index.mts`, or anywhere in
   `packages/transform-core/src/`;
+- a file under `packages/memory/src/transformer/` or
+  `packages/memory/src/unplugin/`, for the coexistence dimension;
 - a runtime signature, overload or entry point of a transformer-backed utility
   that moved — `.claude/rules/transformers.md` calls the two halves one
   feature, and a runtime change is a transformer change that has not been made
@@ -96,12 +108,13 @@ It does not apply when:
 | none          | The transformers this branch touched, and their runtime halves               |
 | `collections` | `@fulcro/collections` — `ofType`, `cast`, and its narrowing                  |
 | `reflect`     | `@fulcro/reflect` — `nameOf`, `typeOf`, `defaultOf`, `is`, `as` and the rest |
+| `memory`      | `@fulcro/memory` — the coexistence dimension only, its refusals included     |
 | a call name   | That call form alone, across every dimension below                           |
 | a path        | The package that owns the path                                               |
-| `full`        | Both transformers, every dimension, whether or not anything changed          |
+| `full`        | Collections and reflect in every dimension, and all three in coexistence     |
 
 A bare invocation is the cheap case. `full` is for a release or for a change to
-`@fulcro/transform-core`, which both transformers are built on and where a
+`@fulcro/transform-core`, which all three transformers are built on and where a
 regression reaches everything at once.
 
 ## Before starting
@@ -141,7 +154,7 @@ output is observed before it is reported —
 | 8   | `packages/collections/src/tests/transformer/transformer.spec.ts` | The forms collections already asserts                             |
 | 9   | `packages/reflect/src/tests/transformer/transformer.spec.ts`     | The forms reflect already asserts                                 |
 | 10  | the `*.sample.ts` fixture beside each of those suites            | What is actually compiled, and what is not                        |
-| 11  | `tests/transformers/coexistence.spec.mts` and its sample         | The two plugins over one tree                                     |
+| 11  | `tests/transformers/coexistence.spec.mts` and its samples        | The three plugins over one tree                                   |
 | 12  | `tests/entrypoints.spec.mts`                                     | The runtime fallback, with no transformer applied                 |
 | 13  | `packages/*/src/unplugin/index.mts`                              | What a bundler is handed, and under which conditions              |
 | 14  | `vitest.config.mts`                                              | Which projects apply which plugin, and that the cache is off      |
@@ -231,14 +244,18 @@ rows in scope and report the rest as not audited rather than as passing.
    observed, and read the comparison logic for the other rather than claiming
    it. `.claude/rules/release.md` is why CI runs both.
 
-**Coexistence** — two plugins, one tree.
+**Coexistence** — three plugins, one tree.
 
-1. Do both still resolve every call in `tests/transformers/coexistence.sample.ts`,
-   including a rewritten call nested inside another rewritten call?
-2. Does the result hold with the plugin order reversed? Neither should depend on
+1. Do the two that rewrite still resolve every call in
+   `tests/transformers/coexistence.sample.ts`, including a rewritten call nested
+   inside another rewritten call, and one nested inside a memory borrow?
+2. Does memory's still leave its own calls as written, refuse nothing in that
+   sample, and still refuse a use after `move` among calls the others rewrite —
+   `tests/transformers/coexistence.rejected.sample.ts`?
+3. Does the result hold with the plugin order changed? None should depend on
    running first, and the suite's own comment says the order it uses is
    arbitrary.
-3. Is anything left unresolved? A call left as written is what silent
+4. Is anything left unresolved? A call left as written is what silent
    interference looks like.
 
 **Cache** — the one that invalidates the rest.
@@ -423,15 +440,17 @@ npm run build
 npm run typecheck
 npx vitest run --project reflect --configLoader native
 npx vitest run --project collections --configLoader native
+npx vitest run --project memory --configLoader native
 npx vitest run --project transformers --configLoader native
 npx vitest run --project entrypoints --configLoader native
 git diff --stat main...HEAD -- packages
 ```
 
 The project names are the ones `vitest.config.mts` declares: `collections`,
-`functions`, `parallel`, `reflect`, `entrypoints`, `transformers`, `hooks` and
-`claude`. There is no `transform-core` project — its machinery is audited
-through the two transformers built on it.
+`errors`, `functions`, `memory`, `memory-unchecked`, `parallel`, `reflect`,
+`transform-core`, `types`, `entrypoints`, `transformers`, `eslint`, `hooks` and
+`claude`. The `transform-core` project runs that package's own suites; what its
+machinery does inside a transformer is audited through the three built on it.
 
 ## References
 
@@ -446,7 +465,7 @@ through the two transformers built on it.
   about the other.
 - `.claude/rules/protected-operations.md` — what no skill performs.
 - `matrix.md` — the call forms and type shapes, with the emit expected for each.
-- `tests/transformers/coexistence.spec.mts` — the two plugins over one tree.
+- `tests/transformers/coexistence.spec.mts` — the three plugins over one tree.
 - `tests/entrypoints.spec.mts` — the runtime fallback, with no transformer
   applied.
 - `.claude/skills/api-audit/SKILL.md` — the published surface, including the

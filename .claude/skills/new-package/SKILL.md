@@ -176,7 +176,7 @@ If the answer is to create nothing, stop. The plan stands as the record.
 
 In this order, running the narrow check after each step:
 
-1. **The package** — the six files under "The package itself". Then
+1. **The package** — the seven files under "The package itself". Then
    `npm install`, and `npm ls @fulcro/<name>` shows it linked.
 2. **The workspace** — `vitest.config.mts`, `tests/entrypoints.spec.mts`, the
    root `build` script if the plan said so. Then `npm run build` and

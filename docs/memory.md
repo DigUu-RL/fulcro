@@ -102,10 +102,10 @@ const { get } = createManagedStorage(3, 0);
 
 ## Choosing a strategy
 
-| You need to hold                                         | Use                        |
-| -------------------------------------------------------- | -------------------------- |
-| Any value: objects, strings, functions, `null`           | `createManagedStorage`     |
-| Many values of a struct, as bytes rather than as objects | `createFixedBufferStorage` |
+| You need to hold                                       | Use                        |
+| ------------------------------------------------------ | -------------------------- |
+| Any value: objects, strings, functions, `null`         | `createManagedStorage`     |
+| Many values of a struct or of a numeric type, as bytes | `createFixedBufferStorage` |
 
 ## `createManagedStorage`
 
@@ -145,7 +145,8 @@ Start from `null` and `set` each position instead, when each one needs its own.
 ## `createFixedBufferStorage`
 
 One buffer of fixed size, every value stored as its bytes, end to end. The
-element type is a [struct](./types.md) from `@fulcro/types`:
+element type is a [struct](./types.md) from `@fulcro/types`, or one of its
+numeric types — see below:
 
 ```ts
 import { SinglePrecisionFloat, type Struct, struct } from '@fulcro/types';
@@ -180,15 +181,25 @@ value is one of its own, and throws a `TypeError` with code
 it is not. The compiler already refuses a plain object where a `Point` is
 expected; this is for the value that arrives from code without types.
 
-**Only structs, for now.** A numeric type on its own — `SinglePrecisionFloat`,
-`SignedInteger(32)` — carries no byte encoding of its own, and is refused with
-[`FULCRO7003`](./errors/FULCRO7xxx.md#fulcro7003). Wrap it in a struct of one
-field:
+**A numeric type is stored on its own.** Every numeric type with a fixed
+layout — the fixed-width integers, `HalfPrecisionFloat`, `SinglePrecisionFloat`,
+`DoublePrecisionFloat` and `Decimal` — reads and writes itself as bytes, so it
+needs no struct around it:
 
 ```ts
-const Sample = struct('Sample', { value: SinglePrecisionFloat });
-const samples = createFixedBufferStorage(Sample, 44_100);
+const samples: Storage<SinglePrecisionFloat> = createFixedBufferStorage(
+	SinglePrecisionFloat,
+	44_100,
+);
+
+samples.set(0, SinglePrecisionFloat.from(0.5));
 ```
+
+The values sit end to end, four bytes each here, in the same encoding a struct
+field of that type uses. `get` gives back the value itself — a number, or a
+bigint from 64 bits — not an object around it. `BigInteger` and `Fraction` have
+no fixed layout and are refused with
+[`FULCRO7003`](./errors/FULCRO7xxx.md#fulcro7003).
 
 A struct's methods come back with every value read, and structs nest, `Decimal`
 fields included — anything a struct can hold, a fixed buffer can store.
@@ -563,7 +574,7 @@ covers only part of its buffer. Pass the buffer itself.
 ### `nativePointerTo(memory, address, element)`
 
 Points at a byte address of a memory, at a value of the element type — a
-struct, as for `allocate`:
+struct or a numeric type, as for `allocate`:
 
 ```ts
 const latest: NativePointer<Reading> = nativePointerTo(memory, moduleExports.latest(), Reading);

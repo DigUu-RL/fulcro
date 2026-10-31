@@ -9,16 +9,16 @@ invariants in `.claude/rules/`.
 A private npm workspace root. Nothing publishes from the root; the packages
 under `packages/` do.
 
-| Package                  | What it is                                                                     | Runtime deps                            |
-| ------------------------ | ------------------------------------------------------------------------------ | --------------------------------------- |
-| `@fulcro/errors`         | Every error of every package: its code, message and class                      | none                                    |
-| `@fulcro/collections`    | Lazily evaluated sequences, plus `cast<T>()` runtime validation                | `errors`, `transform-core`              |
-| `@fulcro/reflect`        | `nameOf`, `typeOf`, `defaultOf`, `sizeOf`, transformer included                | `errors`, `transform-core`              |
-| `@fulcro/functions`      | `switchFor`, `tryCatch` — control flow as values                               | `errors`                                |
-| `@fulcro/transform-core` | Shared machinery behind the transformers                                       | `errors`, `unplugin`, peer `typescript` |
-| `@fulcro/parallel`       | Worker pool for CPU-bound work, browser and Node                               | `errors`                                |
-| `@fulcro/types`          | Numeric types with a range and layout, and structs                             | `errors`                                |
-| `@fulcro/memory`         | Where a value's bytes live and who may reach them: storage, allocation, access | `errors`, `transform-core`              |
+| Package                  | What it is                                                                     | Runtime deps                                  |
+| ------------------------ | ------------------------------------------------------------------------------ | --------------------------------------------- |
+| `@fulcro/errors`         | Every error of every package: its code, message and class                      | none                                          |
+| `@fulcro/collections`    | Lazily evaluated sequences, plus `cast<T>()` runtime validation                | `errors`, `transform-core`, peer `typescript` |
+| `@fulcro/reflect`        | `nameOf`, `typeOf`, `defaultOf`, `sizeOf`, transformer included                | `errors`, `transform-core`, peer `typescript` |
+| `@fulcro/functions`      | `switchFor`, `tryCatch` — control flow as values                               | `errors`, peer `typescript`                   |
+| `@fulcro/transform-core` | Shared machinery behind the transformers                                       | `errors`, `unplugin`, peer `typescript`       |
+| `@fulcro/parallel`       | Worker pool for CPU-bound work, browser and Node                               | `errors`, `functions`                         |
+| `@fulcro/types`          | Numeric types with a range and layout, and structs                             | `errors`                                      |
+| `@fulcro/memory`         | Where a value's bytes live and who may reach them: storage, allocation, access | `errors`, `transform-core`, peer `typescript` |
 
 `@fulcro/collections`, `@fulcro/reflect` and `@fulcro/memory` each ship their
 own compile time transformer behind a separate entry point (`./transformer`,

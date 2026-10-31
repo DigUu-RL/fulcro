@@ -1,6 +1,9 @@
 import { createError } from '@fulcro/errors';
 
+import { type ByteCodec, createFixedLayout, type FixedLayoutType } from '@/src/fixedLayout';
+import { integerCodec } from '@/src/integer/codec';
 import type { BoundedNumericType } from '@/src/numericType';
+import { registerCodec } from '@/src/struct/codec';
 
 /**
  * Machinery shared by `SignedInteger` and `UnsignedInteger`.
@@ -53,9 +56,20 @@ export type IntegerRepresentation<N extends IntegerWidth> = N extends 64 | 128 ?
  * naming the operation, the value and the range. `wrap` is the one exception,
  * and the explicit way to ask for modular arithmetic.
  *
+ * Every width has a fixed layout, so the descriptor also stores its values as
+ * bytes — `width / 8` of them, aligned on as many, little-endian:
+ *
+ * ```ts
+ * const Int32 = SignedInteger(32);
+ * const view = new DataView(new ArrayBuffer(Int32.layout.size));
+ *
+ * Int32.write(view, 0, Int32.from(-2));
+ * Int32.read(view, 0); // -2
+ * ```
+ *
  * @template T Type of the values this descriptor produces.
  */
-export interface IntegerType<T> extends BoundedNumericType<T, number | bigint> {
+export interface IntegerType<T> extends BoundedNumericType<T, number | bigint>, FixedLayoutType<T> {
 	/** Width of the type, in bits. */
 	readonly width: IntegerWidth;
 
@@ -166,6 +180,14 @@ export interface IntegerType<T> extends BoundedNumericType<T, number | bigint> {
 }
 
 /**
+ * What the `number` and the `bigint` implementations each build: everything
+ * but the layout, which does not depend on which of the two carries the value.
+ *
+ * @template T Type of the values this descriptor produces.
+ */
+type IntegerArithmetic<T> = Omit<IntegerType<T>, keyof FixedLayoutType<T>>;
+
+/**
  * Formats a range for an error message.
  *
  * @param minimum Smallest value.
@@ -259,6 +281,10 @@ const rejectCount = (name: string, operation: string, width: number, count: unkn
  * `bigint` throughout. Mixing the two would make every 32-bit addition pay for
  * a conversion it never needed, which the performance suite counts.
  *
+ * The layout is the same for both and is added last, with the codec a struct
+ * field of this width is stored by registered under the same descriptor — one
+ * encoding, whether the value is stored alone or inside a struct.
+ *
  * @param signed Whether the range includes negative values.
  * @param width Width, in bits.
  * @param name Name of the type, as it reads in an error message.
@@ -285,9 +311,20 @@ export const createIntegerType = <T>(
 	const minimum: bigint = signed ? -(1n << BigInt(width - 1)) : 0n;
 	const maximum: bigint = signed ? (1n << BigInt(width - 1)) - 1n : (1n << BigInt(width)) - 1n;
 
-	return width >= 64
-		? createBigIntegerType<T>(signed, width, name, minimum, maximum)
-		: createNumberIntegerType<T>(signed, width, name, minimum, maximum);
+	const arithmetic: IntegerArithmetic<T> =
+		width >= 64
+			? createBigIntegerType<T>(signed, width, name, minimum, maximum)
+			: createNumberIntegerType<T>(signed, width, name, minimum, maximum);
+
+	const codec = integerCodec(signed, width) as ByteCodec<T>;
+	const descriptor: IntegerType<T> = { ...arithmetic, ...createFixedLayout(name, codec) };
+
+	registerCodec(descriptor, {
+		...codec,
+		equals: (left, right) => descriptor.equals(left as T, right as T),
+	});
+
+	return descriptor;
 };
 
 /**
@@ -298,7 +335,7 @@ export const createIntegerType = <T>(
  * @param name Name of the type.
  * @param minimum Smallest value.
  * @param maximum Largest value.
- * @returns The descriptor.
+ * @returns The descriptor, without its layout.
  */
 const createNumberIntegerType = <T>(
 	signed: boolean,
@@ -306,7 +343,7 @@ const createNumberIntegerType = <T>(
 	name: string,
 	minimum: bigint,
 	maximum: bigint,
-): IntegerType<T> => {
+): IntegerArithmetic<T> => {
 	const low: number = Number(minimum);
 	const high: number = Number(maximum);
 	const range: string = describeRange(minimum, maximum);
@@ -522,7 +559,7 @@ const createNumberIntegerType = <T>(
  * @param name Name of the type.
  * @param minimum Smallest value.
  * @param maximum Largest value.
- * @returns The descriptor.
+ * @returns The descriptor, without its layout.
  */
 const createBigIntegerType = <T>(
 	signed: boolean,
@@ -530,7 +567,7 @@ const createBigIntegerType = <T>(
 	name: string,
 	minimum: bigint,
 	maximum: bigint,
-): IntegerType<T> => {
+): IntegerArithmetic<T> => {
 	const range: string = describeRange(minimum, maximum);
 
 	/**
