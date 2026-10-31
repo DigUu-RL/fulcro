@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -232,6 +232,36 @@ describe('the declarations, as a Node project without the DOM compiles them', ()
 				.filter((file) => /[\\/]packages[\\/]parallel[\\/]dist[\\/]/.test(file.fileName)),
 		).not.toEqual([]);
 	}, 120_000);
+
+	it('should declare TypeScript 5.4 as a floor wherever a declaration names NoInfer', () => {
+		// `NoInfer` arrived in 5.4, and this suite compiles on one newer compiler
+		// only, so it never sees what an older one makes of it: TS2304 from inside
+		// the package, for importing anything at all. `@fulcro/functions` shipped
+		// it with no floor declared once. A peer at least that high turns the same
+		// failure into a warning at install, naming the cause.
+		const unmet: string[] = PACKAGE_NAMES.flatMap((name) => {
+			const { manifest, root } = manifestOf(name);
+			const declarations: string = path.join(root, 'dist');
+
+			const names: boolean = readdirSync(declarations, { recursive: true })
+				.map(String)
+				.filter((file) => file.endsWith('.d.ts'))
+				.some((file) => /\bNoInfer</.test(readFileSync(path.join(declarations, file), 'utf8')));
+
+			const floor: RegExpExecArray | null = />=\s*(\d+)\.(\d+)/.exec(
+				manifest.peerDependencies?.typescript ?? '',
+			);
+
+			const admitsOlder: boolean =
+				floor === null || Number(floor[1]) < 5 || (Number(floor[1]) === 5 && Number(floor[2]) < 4);
+
+			return names && admitsOlder
+				? [`${name}: typescript peer ${manifest.peerDependencies?.typescript ?? 'missing'}`]
+				: [];
+		});
+
+		expect(unmet).toEqual([]);
+	});
 });
 
 describe('the repository as someone else clones it', () => {

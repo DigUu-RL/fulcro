@@ -2,7 +2,8 @@
 
 Runtime helpers that turn control flow into values, two types that turn failure
 and absence into values, and a comparison of two values by what they hold. No
-dependencies, no compiler involvement, nothing to configure.
+dependencies, no compiler involvement, nothing to configure. The types need
+TypeScript 5.4 or later.
 
 ```ts
 import {

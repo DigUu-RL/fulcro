@@ -10,6 +10,9 @@ dependencies, no compiler involvement, nothing to configure.
 npm install @fulcro/functions
 ```
 
+The types need TypeScript 5.4 or later, which `typescript` is an optional peer
+for; from JavaScript, nothing else is needed.
+
 ```ts
 import {
 	createEquals,

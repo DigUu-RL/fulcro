@@ -10,6 +10,9 @@ guardam. Sem dependências, sem envolvimento do compilador, nada a configurar.
 npm install @fulcro/functions
 ```
 
+Os tipos precisam do TypeScript 5.4 ou mais recente, de que `typescript` é um
+peer opcional; em JavaScript, não é preciso mais nada.
+
 ```ts
 import {
 	createEquals,
