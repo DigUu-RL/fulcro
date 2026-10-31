@@ -60,8 +60,9 @@ const total: SignedInteger<32> = Int32.add(Int32.from(1), Int32.from(2));
 
 The descriptors have types of their own, for code that works over any numeric
 type: an integer's descriptor is an `IntegerType<T>`, a float's a
-`BoundedNumericType<T, number>`, and `BigInteger`'s a `NumericType<T, TSource>`
-— `TSource` being what its `from` accepts. `IntegerWidth` is the union of
+`FloatType<T>` — a `BoundedNumericType<T, number>` that is also stored as bytes
+— and `BigInteger`'s a `NumericType<T, TSource>`, `TSource` being what its
+`from` accepts. `IntegerWidth` is the union of
 widths, `8 | 16 | 32 | 64 | 128`.
 
 ```ts
@@ -413,6 +414,22 @@ An offset the value does not fit at is refused before a byte is touched, with
 value again: the compiler already refuses a plain `number` where a
 `SignedInteger<32>` is expected, and a storage checks it with `is` before it
 writes.
+
+The descriptors are typed by contracts the package exports: `IntegerType<T>`
+for the integers, `FloatType<T>` for the three floats, and `FixedLayoutType<T>`
+— `layout`, `read` and `write` alone, which every type in the table has — for
+code that stores any of them:
+
+```ts
+import type { FixedLayoutType } from '@fulcro/types';
+
+const zeroed = <T>(type: FixedLayoutType<T>, count: number): DataView => {
+	return new DataView(new ArrayBuffer(type.layout.size * count));
+};
+
+zeroed(SignedInteger(32), 8); // 32 bytes
+zeroed(Decimal, 2); // 32 bytes
+```
 
 ## Structs
 

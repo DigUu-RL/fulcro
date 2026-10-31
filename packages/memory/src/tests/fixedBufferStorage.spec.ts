@@ -132,6 +132,15 @@ describe('createFixedBufferStorage', () => {
 
 	it.each([
 		['everything', null],
+		['everything', 'Point'],
+		// A class is read for its members, as `Decimal` is: one without a layout
+		// lacks that, not everything.
+		[
+			'layout.size',
+			class Plain {
+				readonly value = 0;
+			},
+		],
 		['name', { layout: { size: 4 } }],
 		['layout.size', { name: 'T' }],
 		['layout.size', { name: 'T', layout: { size: 0 } }],

@@ -15,6 +15,8 @@ export type { ComplexNumberType } from '@/src/complexNumber';
 export { ComplexNumber } from '@/src/complexNumber';
 export { Decimal } from '@/src/decimal';
 export { DoublePrecisionFloat } from '@/src/doublePrecisionFloat';
+export type { FixedLayoutType } from '@/src/fixedLayout';
+export type { FloatType } from '@/src/float';
 export type { FractionType } from '@/src/fraction';
 export { Fraction } from '@/src/fraction';
 export { HalfPrecisionFloat } from '@/src/halfPrecisionFloat';

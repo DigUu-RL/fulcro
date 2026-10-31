@@ -1,6 +1,7 @@
 import { execSync } from 'node:child_process';
-import { readdirSync, readFileSync } from 'node:fs';
+import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { tmpdir } from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -262,6 +263,78 @@ describe('the declarations, as a Node project without the DOM compiles them', ()
 
 		expect(unmet).toEqual([]);
 	});
+});
+
+describe('the declarations a consumer emits', () => {
+	it('should let a project with declarations on re-export every descriptor under its inferred type', () => {
+		// `@fulcro/types` 2.1.0 was built declaring the float descriptors with a
+		// type its barrel did not export, and `export const Half =
+		// HalfPrecisionFloat` stopped compiling for every consumer that emits
+		// declarations: TS2742, no portable way to name the type. The suite above
+		// compiles with `noEmit`, and inside this workspace the compiler can always
+		// name a file by its path under `packages/`, so neither could see it. A
+		// consumer has the packages copied under its own `node_modules` and no
+		// other path to them, which is what is built here.
+		const consumer: string = mkdtempSync(path.join(tmpdir(), 'fulcro-consumer-'));
+
+		try {
+			for (const name of PACKAGE_NAMES) {
+				const { root } = manifestOf(name);
+				const target: string = path.join(consumer, 'node_modules', ...name.split('/'));
+
+				cpSync(path.join(root, 'package.json'), path.join(target, 'package.json'));
+				cpSync(path.join(root, 'dist'), path.join(target, 'dist'), { recursive: true });
+			}
+
+			// An ES module, as every consumer of packages that ship only ES modules
+			// is. A CommonJS file names the same types through `import()`, which
+			// reaches them anywhere and hides the failure.
+			writeFileSync(path.join(consumer, 'package.json'), JSON.stringify({ type: 'module' }));
+
+			const sample: string = path.join(consumer, 'index.ts');
+
+			cpSync(path.join(WORKSPACE_ROOT, 'tests', 'declarationEmit.sample.ts'), sample);
+
+			const program: typescript.Program = typescript.createProgram([sample], {
+				target: typescript.ScriptTarget.ES2022,
+				module: typescript.ModuleKind.NodeNext,
+				moduleResolution: typescript.ModuleResolutionKind.NodeNext,
+				lib: ['lib.es2024.d.ts'],
+				types: [],
+				strict: true,
+				declaration: true,
+				emitDeclarationOnly: true,
+				// The library declarations are the other suite's subject; this one is
+				// what naming their types costs the consumer's own.
+				skipLibCheck: true,
+			});
+
+			const emitted = program.emit(undefined, () => undefined);
+
+			const found: string[] = [
+				...typescript.getPreEmitDiagnostics(program),
+				...emitted.diagnostics,
+			].flatMap((diagnostic) => {
+				return diagnostic.file?.fileName === program.getSourceFile(sample)?.fileName
+					? [
+							`TS${String(diagnostic.code)} ${typescript.flattenDiagnosticMessageText(diagnostic.messageText, ' ')}`,
+						]
+					: [];
+			});
+
+			expect(found).toEqual([]);
+
+			// A guard on the guard: a sample resolving the workspace rather than the
+			// copies would pass whatever the declarations said.
+			expect(
+				program.getSourceFiles().some((file) => {
+					return file.fileName.includes('/node_modules/@fulcro/types/dist/');
+				}),
+			).toBe(true);
+		} finally {
+			rmSync(consumer, { recursive: true, force: true });
+		}
+	}, 120_000);
 });
 
 describe('the repository as someone else clones it', () => {
@@ -545,6 +618,62 @@ describe('@fulcro/types', () => {
 			'Vector',
 			'struct',
 		]);
+	});
+
+	it('should store every numeric type with a fixed layout as bytes, through the published entry point', async () => {
+		const {
+			Decimal,
+			DoublePrecisionFloat,
+			HalfPrecisionFloat,
+			SignedInteger,
+			SinglePrecisionFloat,
+			UnsignedInteger,
+		} = await import('@fulcro/types');
+
+		const view = new DataView(new ArrayBuffer(16));
+		const bytes = new Uint8Array(view.buffer);
+
+		expect(
+			[
+				SignedInteger(8),
+				UnsignedInteger(128),
+				HalfPrecisionFloat,
+				SinglePrecisionFloat,
+				DoublePrecisionFloat,
+				Decimal,
+			].map((type) => [type.layout.size, type.layout.alignment]),
+		).toEqual([
+			[1, 1],
+			[16, 16],
+			[2, 2],
+			[4, 4],
+			[8, 8],
+			[16, 16],
+		]);
+
+		SignedInteger(32).write(view, 0, SignedInteger(32).from(-2));
+
+		expect([...bytes.subarray(0, 4)]).toEqual([0xfe, 0xff, 0xff, 0xff]);
+		expect(SignedInteger(32).read(view, 0)).toBe(-2);
+
+		UnsignedInteger(128).write(view, 0, UnsignedInteger(128).maximum);
+
+		expect(UnsignedInteger(128).read(view, 0)).toBe(2n ** 128n - 1n);
+
+		HalfPrecisionFloat.write(view, 0, HalfPrecisionFloat.from(1));
+
+		expect([...bytes.subarray(0, 2)]).toEqual([0x00, 0x3c]);
+
+		Decimal.write(view, 0, Decimal.from('19.99'));
+
+		expect(Decimal.read(view, 0).toString()).toBe('19.99');
+
+		expect(() => SinglePrecisionFloat.read(view, 14)).toThrow(
+			expect.objectContaining({
+				code: 'FULCRO6018',
+				details: { operation: 'SinglePrecisionFloat.read', size: 4, offset: 14, available: 16 },
+			}),
+		);
 	});
 
 	it('should compute with the mathematics types through the published entry point', async () => {
@@ -1161,6 +1290,47 @@ describe('@fulcro/memory', () => {
 			expect.objectContaining({
 				code: 'FULCRO7009',
 				details: { operation: 'Storage.get' },
+			}),
+		);
+	});
+
+	it('should store a numeric type from the published types package, with no struct around it', async () => {
+		const {
+			allocate,
+			createArenaAllocator,
+			createFixedBufferStorage,
+			createLinearMemory,
+			nativePointerTo,
+		} = await import('@fulcro/memory');
+
+		const { BigInteger, Decimal, SignedInteger, SinglePrecisionFloat } =
+			await import('@fulcro/types');
+
+		const samples = createFixedBufferStorage(SinglePrecisionFloat, 3);
+
+		samples.set(1, SinglePrecisionFloat.from(0.5));
+
+		expect([samples.get(0), samples.get(1), samples.get(2)]).toEqual([0, 0.5, 0]);
+
+		// `Decimal` is a class, its members static: the published element check
+		// has to read it for them rather than refuse it for not being an object.
+		const amounts = allocate(Decimal, 2, createArenaAllocator(64));
+
+		amounts.set(0, Decimal.from('-19.99'));
+
+		expect(amounts.get(0).toString()).toBe('-19.99');
+
+		const buffer = new ArrayBuffer(8);
+		const count = nativePointerTo(createLinearMemory(buffer), 4, SignedInteger(32));
+
+		count.set(SignedInteger(32).from(0x01020304));
+
+		expect([...new Uint8Array(buffer)]).toEqual([0, 0, 0, 0, 4, 3, 2, 1]);
+
+		expect(() => createFixedBufferStorage(BigInteger as never, 1)).toThrow(
+			expect.objectContaining({
+				code: 'FULCRO7003',
+				details: { operation: 'createFixedBufferStorage', missing: 'layout.size' },
 			}),
 		);
 	});
