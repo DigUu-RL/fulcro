@@ -136,8 +136,9 @@ output is observed before it is reported — `.claude/skills/skill-authoring/SKI
 
 The barrels, spelled as this repository has them: `.` is `dist/index.js`,
 `@fulcro/collections` adds `./async`, `@fulcro/parallel` adds `./worker`, and
-`@fulcro/collections`, `@fulcro/reflect` and `@fulcro/transform-core` carry
-`./transformer` and `./unplugin`. Those two are public surface like any other —
+`@fulcro/collections`, `@fulcro/reflect` and `@fulcro/memory` carry
+`./transformer` and `./unplugin`, and `@fulcro/transform-core` carries
+`./unplugin` alone. Those are public surface like any other —
 `api-design.md` says a helper exposed there is a helper the package now
 supports.
 
