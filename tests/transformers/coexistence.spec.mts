@@ -16,8 +16,9 @@ import { beforeAll, describe, expect, it } from 'vitest';
  * be left as written, and only a runtime refusal much later would say so.
  *
  * So this compiles one fixture with all three applied and asserts that
- * **every** call came out resolved, and that the one plugin that only refuses
- * still refuses.
+ * **every** call came out resolved, that memory's plugin still refuses, and
+ * that the one declaration it rewrites — a whole statement rather than a call —
+ * still has the calls inside it rewritten by the other two.
  */
 
 /** Resolves the built packages the way a consumer's compiler would. */
@@ -145,6 +146,28 @@ describe('the plugins on one file', () => {
 		expect(block).toContain('borrow(move(orders))');
 		expect(block).toMatch(/is\(first, \{ name: "Order"/);
 		expect(block).toMatch(/\.ofType\(\{ name: "Order"/);
+	});
+
+	it("should move @fulcro/memory's storage into a frame, and rewrite the others' calls in the same block", () => {
+		const start: number = emitted.indexOf('export const scoped');
+		const block: string = emitted.slice(start);
+
+		expect(start).toBeGreaterThan(-1);
+
+		// Emitted for ES2022, where `using` is lowered: the frame is entered as a
+		// disposable resource of the block, and the allocation is made from it.
+		const frame: string | undefined =
+			/(frame_\d+) = __addDisposableResource\(env_\d+, managed\.enter\(\), false\)/.exec(
+				block,
+			)?.[1];
+
+		expect(frame).toBeDefined();
+
+		// The length argument kept by the statement rewrite was still rewritten by
+		// reflect, which ran first: `nameOf<Order>()` is replaced by the name.
+		expect(block).toMatch(new RegExp(`allocate\\(Integer, "Order"\\.length, ${String(frame)}\\)`));
+		expect(block).toMatch(/\.ofType\(\{ name: "Order"/);
+		expect(block).toMatch(/is\(payload, \{ name: "Order"/);
 	});
 
 	it('should still refuse a use after move among calls the others rewrite', () => {
