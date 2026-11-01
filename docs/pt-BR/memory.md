@@ -205,6 +205,37 @@ Os métodos de uma struct voltam com cada valor lido, e structs se aninham,
 campos `Decimal` inclusive — tudo o que uma struct pode guardar, um buffer fixo
 pode armazenar.
 
+### Guardado num typed array
+
+Um tipo numérico nomeia a codificação dos seus bytes no layout —
+`SinglePrecisionFloat.layout.encoding` é `'Float32'` —, e quando a linguagem
+tem um typed array com esse nome, a storage guarda os valores num deles, sobre
+os mesmos bytes. A escolha é feita uma vez, quando a storage é criada; daí em
+diante `get` e `set` indexam o typed array e não chamam nem o `read` e o
+`write` do tipo nem um acessor de `DataView`.
+
+Nada mais muda. As mesmas verificações rodam, na mesma ordem, e recusam com os
+mesmos erros; os bytes são os mesmos, em little-endian. Uma storage que o
+`allocate` criou sobre um buffer que você enxerga deixa esse buffer exatamente
+como deixaria sem o typed array.
+
+Os inteiros de até 64 bits, `SinglePrecisionFloat` e `DoublePrecisionFloat`
+são guardados assim. Estes são lidos e escritos pelo tipo, como uma struct:
+
+- `HalfPrecisionFloat`: o Node 22 não tem `Float16Array`, e onde há um ele
+  escreve um `NaN` num padrão de bits próprio;
+- os inteiros de 128 bits e o `Decimal`, para os quais nenhum typed array é tão
+  largo;
+- bytes que não começam num múltiplo do tamanho, vindos de um alocador que
+  ignorou o alinhamento pedido;
+- todo tipo de mais de um byte numa plataforma que não é little-endian.
+
+Um tipo de elemento escrito fora deste pacote também pode nomear uma
+codificação, como `layout: { size: 4, alignment: 4, encoding: 'Int32' }`.
+Nomeá-la é prometer que o `read` e o `write` dele produzem exatamente os bytes
+do elemento desse typed array, em little-endian; uma codificação sem typed
+array por trás não é um erro, só é lida do outro jeito.
+
 ## Alocadores
 
 `createFixedBufferStorage` cria o seu próprio buffer. Quando você quer escolher

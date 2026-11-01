@@ -169,13 +169,19 @@ export class Decimal {
 	static readonly #bytes: FixedLayoutMembers<Decimal> = createFixedLayout(
 		'Decimal',
 		Decimal.#codec,
+		'Decimal128',
 	);
 
 	/**
 	 * Sixteen bytes aligned on sixteen, those of decimal128: the numbers
-	 * `sizeOf<Decimal>()` and `alignOf<Decimal>()` report.
+	 * `sizeOf<Decimal>()` and `alignOf<Decimal>()` report, and the encoding
+	 * named after the format.
 	 */
-	static readonly layout: { readonly size: 16; readonly alignment: 16 } = Decimal.#bytes.layout;
+	static readonly layout: {
+		readonly size: 16;
+		readonly alignment: 16;
+		readonly encoding: 'Decimal128';
+	} = Decimal.#bytes.layout as typeof Decimal.layout;
 
 	/**
 	 * Reads a value from bytes, as decimal128 in its binary integer encoding,

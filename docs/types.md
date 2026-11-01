@@ -409,6 +409,21 @@ written alone and the same value inside a struct are the same bytes. That is
 what lets [`@fulcro/memory`](./memory.md) store a numeric type with no struct
 around it.
 
+The layout also names that encoding at runtime, as `layout.encoding`, in the
+words the language uses for its typed arrays:
+
+```ts
+SignedInteger(32).layout; // { size: 4, alignment: 4, encoding: 'Int32' }
+```
+
+`'Int8'`, `'Uint8'`, `'Int16'`, `'Uint16'`, `'Int32'` and `'Uint32'` for the
+integers up to 32 bits, `'BigInt64'` and `'BigUint64'` at 64, and `'Int128'`
+and `'Uint128'` on the same pattern at 128; `'Float16'`, `'Float32'` and
+`'Float64'` for the floats; `'Decimal128'` for `Decimal`. A struct's layout has
+none — its bytes are its fields'. `@fulcro/memory` reads it to hold many values
+in the typed array of the same name: see
+[Held in a typed array](./memory.md#held-in-a-typed-array).
+
 An offset the value does not fit at is refused before a byte is touched, with
 [`FULCRO6018`](./errors/FULCRO6xxx.md#fulcro6018). `write` does not check the
 value again: the compiler already refuses a plain `number` where a

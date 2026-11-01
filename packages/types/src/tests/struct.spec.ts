@@ -190,6 +190,15 @@ describe('struct', () => {
 			});
 		});
 
+		// A storage holds an element naming an encoding in a typed array, which
+		// would build no struct value; a struct's bytes are its fields'.
+		it('should name no encoding, even around a single numeric field', () => {
+			const Wrapped = struct('Wrapped', { value: SignedInteger(32) });
+
+			expect(Object.keys(Wrapped.layout)).toEqual(['size', 'alignment', 'fields']);
+			expect(Object.keys(Mixed.layout)).toEqual(['size', 'alignment', 'fields']);
+		});
+
 		it('should freeze the layout', () => {
 			expect(Object.isFrozen(Mixed.layout)).toBe(true);
 			expect(Object.isFrozen(Mixed.layout.fields)).toBe(true);

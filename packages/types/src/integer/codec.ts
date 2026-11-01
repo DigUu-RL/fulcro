@@ -1,6 +1,23 @@
-import type { ByteCodec } from '@/src/fixedLayout';
+import type { ByteCodec, Encoding } from '@/src/fixedLayout';
 import { readHalves, writeHalves } from '@/src/fixedLayout/halves';
 import type { IntegerWidth } from '@/src/integer';
+
+/**
+ * The name of the encoding {@link integerCodec} stores an integer of one
+ * signedness and width in.
+ *
+ * @param signed Whether the range includes negative values.
+ * @param width Width, in bits.
+ * @returns The encoding: `'Int32'`, `'BigUint64'`, `'Int128'`.
+ */
+export const integerEncoding = (signed: boolean, width: IntegerWidth): Encoding => {
+	const sign: string = signed ? 'Int' : 'Uint';
+
+	// The language spells its 64-bit accessors with a `Big` in front.
+	if (width === 64) return `Big${sign}64` as Encoding;
+
+	return `${sign}${String(width)}` as Encoding;
+};
 
 /**
  * How an integer of one signedness and width is stored: through the

@@ -95,7 +95,10 @@ describe('allocate, counted', () => {
 		expect([livenessChecks, reads, writes]).toEqual([2 * VOLUME, VOLUME, VOLUME]);
 	});
 
-	it('should store a numeric type with one read, one write and one check of it per access', () => {
+	// The numeric type keeps its encoding, so the storage holds it in a typed
+	// array and never asks it to read or write; `typedArrayOf.performance.spec.ts`
+	// counts the same type without it.
+	it('should store a numeric type with no read or write of it, and one check of it per set', () => {
 		const Int32 = SignedInteger(32);
 		let checks = 0;
 
@@ -127,8 +130,8 @@ describe('allocate, counted', () => {
 		expect([requests, livenessChecks, reads, writes, checks]).toEqual([
 			1,
 			2 * VOLUME,
-			VOLUME,
-			VOLUME,
+			0,
+			0,
 			VOLUME,
 		]);
 	});

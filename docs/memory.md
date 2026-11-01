@@ -204,6 +204,37 @@ no fixed layout and are refused with
 A struct's methods come back with every value read, and structs nest, `Decimal`
 fields included — anything a struct can hold, a fixed buffer can store.
 
+### Held in a typed array
+
+A numeric type names the encoding of its bytes in its layout —
+`SinglePrecisionFloat.layout.encoding` is `'Float32'` — and when the language
+has a typed array of that name, the storage holds the values in one, over the
+same bytes. The choice is made once, when the storage is made; from then on
+`get` and `set` index the typed array, and call neither the type's `read` and
+`write` nor a `DataView` accessor.
+
+Nothing else changes. The same checks run, in the same order, and refuse with
+the same errors; the bytes are the same, little-endian. A storage `allocate`
+made over a buffer you can see, then, leaves that buffer exactly as it would
+have without the typed array.
+
+The integers up to 64 bits, `SinglePrecisionFloat` and `DoublePrecisionFloat`
+are held this way. These are read and written through the type, as a struct
+is:
+
+- `HalfPrecisionFloat`: Node 22 has no `Float16Array`, and where there is one
+  it writes a `NaN` in a bit pattern of its own;
+- the 128-bit integers and `Decimal`, for which no typed array is that wide;
+- bytes that do not start on a multiple of the size, from an allocator that
+  ignored the alignment it was asked for;
+- every type wider than one byte on a platform that is not little-endian.
+
+An element type written outside this package can name an encoding too, as
+`layout: { size: 4, alignment: 4, encoding: 'Int32' }`. Naming one is a
+promise that its `read` and `write` produce exactly the bytes of that typed
+array's element, little-endian; an encoding with no typed array behind it is
+not an error, only read the other way.
+
 ## Allocators
 
 `createFixedBufferStorage` makes its own buffer. When you want to choose where

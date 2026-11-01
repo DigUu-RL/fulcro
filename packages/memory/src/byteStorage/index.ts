@@ -1,6 +1,7 @@
 import { createError } from '@fulcro/errors';
 
 import type { Allocation } from '@/src/allocator';
+import { type TypedElements, typedArrayOf } from '@/src/byteStorage/typedArrayOf';
 import type { FixedLayoutElement } from '@/src/element';
 import type { Storage } from '@/src/storage';
 import { requireIndex } from '@/src/storage/requireIndex';
@@ -21,6 +22,12 @@ interface OperationNames {
  * memory was released refuses instead of reading the values that replaced its
  * own.
  *
+ * When the element's encoding has a typed array, the values are read and
+ * written through one over the same bytes, and neither `element.read` nor
+ * `element.write` nor a `DataView` accessor is called. Everything else an
+ * access does — the checks, the errors, the bytes it leaves — is the same, so
+ * which way a storage went is not observable but in what it costs.
+ *
  * @param element Type of the values, already checked.
  * @param length How many values it holds, already checked.
  * @param view Bytes to hold them in, at least `length × element.layout.size`.
@@ -36,6 +43,40 @@ export const createByteStorage = <T>(
 	allocation?: Allocation,
 ): Storage<T> => {
 	const { size } = element.layout;
+	const elements: TypedElements | undefined = typedArrayOf(element.layout, length, view);
+
+	// A typed array over a buffer that shrank or was detached reaches no
+	// element and reads `undefined` where a `DataView` throws, so once it
+	// reaches fewer than `length` the access goes through the element, and
+	// throws exactly what it would have thrown without the typed array.
+
+	/**
+	 * Reads the value at an index, already checked.
+	 *
+	 * @param index Position of the value.
+	 * @returns The value.
+	 */
+	const read = (index: number): T => {
+		if (elements?.length === length) return elements[index] as T;
+
+		return element.read(view, index * size);
+	};
+
+	/**
+	 * Writes a value at an index, both already checked.
+	 *
+	 * @param index Position of the value.
+	 * @param value Value to write.
+	 */
+	const write = (index: number, value: T): void => {
+		if (elements?.length === length) {
+			elements[index] = value;
+
+			return;
+		}
+
+		element.write(view, index * size, value);
+	};
 
 	/**
 	 * Refuses an access once the allocation's memory was released.
@@ -55,7 +96,7 @@ export const createByteStorage = <T>(
 			requireLive(names.get);
 			requireIndex(names.get, index, length);
 
-			return element.read(view, index * size);
+			return read(index);
 		},
 
 		set: (index: number, value: T): void => {
@@ -69,7 +110,7 @@ export const createByteStorage = <T>(
 				});
 			}
 
-			element.write(view, index * size, value);
+			write(index, value);
 		},
 	});
 };

@@ -32,4 +32,5 @@ export const DoublePrecisionFloat: FloatType<DoublePrecisionFloat> = createFloat
 			view.setFloat64(offset, value, true);
 		},
 	},
+	'Float64',
 );
