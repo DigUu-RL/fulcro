@@ -1,6 +1,15 @@
 import { SequenceCollection } from '@fulcro/collections';
-import { borrow, borrowMutable, createManagedStorage, move, own } from '@fulcro/memory';
+import {
+	allocate,
+	borrow,
+	borrowMutable,
+	createManagedAllocator,
+	createManagedStorage,
+	move,
+	own,
+} from '@fulcro/memory';
 import { as, defaultOf, is, nameOf, typeOf } from '@fulcro/reflect';
+import { SignedInteger } from '@fulcro/types';
 
 /**
  * Fixture compiled by the coexistence suite.
@@ -62,4 +71,20 @@ export const owned = (): boolean => {
 	return (
 		is<Order>(first) && SequenceCollection.from([first]).ofType<Order>().toArray().length === 1
 	);
+};
+
+const Integer = SignedInteger(32);
+const managed = createManagedAllocator();
+
+/**
+ * Rewritten by `@fulcro/memory` as a statement — a storage that cannot outlive
+ * its block moves into a frame — in a block whose calls the other two rewrite,
+ * one of them inside the very declaration it moves.
+ */
+export const scoped = (): number => {
+	const counts = allocate(Integer, nameOf<Order>().length, managed);
+
+	counts.set(0, Integer.from(SequenceCollection.from(rows).ofType<Order>().toArray().length));
+
+	return is<Order>(payload) ? counts.get(0) : counts.length;
 };

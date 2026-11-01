@@ -1,6 +1,6 @@
 {
 	"name": "@fulcro/reflect",
-	"version": "2.0.0",
+	"version": "2.1.0",
 	"description": "Type aware nameOf, typeOf and defaultOf, with the compile time transformer that resolves them in the box.",
 	"type": "module",
 	"keywords": [
@@ -57,7 +57,7 @@
 	},
 	"dependencies": {
 		"@fulcro/errors": "^3.0.0",
-		"@fulcro/transform-core": "^2.0.0"
+		"@fulcro/transform-core": "^2.1.0"
 	},
 	"peerDependencies": {
 		"typescript": ">=5.9 <7"

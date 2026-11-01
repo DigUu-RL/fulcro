@@ -5,7 +5,11 @@ import {
 	type FileTransformer,
 	type TransformCoreOptions,
 } from '@/src/program/index.js';
-import { type CallRewriter, type FileAnalyzer } from '@/src/shared/index.js';
+import {
+	type CallRewriter,
+	type FileAnalyzer,
+	type StatementRewriter,
+} from '@/src/shared/index.js';
 
 /**
  * Bundler adapters for the Fulcro transformers.
@@ -70,14 +74,19 @@ export interface TransformerUnplugin {
  * in its logs and timings.
  * @param analyzers Analyzers of the package publishing the plugin; none when
  * omitted.
+ * @param statementRewriters Statement rewriters of the package publishing the
+ * plugin; none when omitted.
  * @returns Every adapter `unplugin` can produce.
  */
 export const createTransformerUnplugin = (
 	rewriters: readonly CallRewriter[],
 	name: string,
 	analyzers: readonly FileAnalyzer[] = [],
+	statementRewriters: readonly StatementRewriter[] = [],
 ): TransformerUnplugin => {
-	return createAdapters((options) => createFileTransformer(rewriters, options, analyzers), name);
+	return createAdapters((options) => {
+		return createFileTransformer(rewriters, options, analyzers, statementRewriters);
+	}, name);
 };
 
 /**

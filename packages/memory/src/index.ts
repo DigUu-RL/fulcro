@@ -26,7 +26,7 @@ export { borrowMutable } from '@/src/borrowMutable';
 export { createFixedBufferAllocator, type FixedBufferAllocator } from '@/src/fixedBufferAllocator';
 export { createFixedBufferStorage } from '@/src/fixedBufferStorage';
 export { createLinearMemory, type LinearMemory } from '@/src/linearMemory';
-export { createManagedAllocator } from '@/src/managedAllocator';
+export { createManagedAllocator, type ManagedAllocator } from '@/src/managedAllocator';
 export { createManagedStorage } from '@/src/managedStorage';
 export type { MemoryReference } from '@/src/memoryReference';
 export { move } from '@/src/move';

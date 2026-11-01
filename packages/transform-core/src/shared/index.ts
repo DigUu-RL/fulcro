@@ -141,6 +141,40 @@ export interface CallRewriter extends CallTarget {
 	) => typescript.Node | null;
 }
 
+/**
+ * Rewrites a statement of a block into the statements that replace it.
+ *
+ * For a rewrite no single call can make: opening a scope around an allocation
+ * takes a declaration placed before the one holding the call, in the same
+ * block, which an expression cannot introduce. The composition root offers
+ * every statement of every block, once, before walking into it.
+ */
+export interface StatementRewriter {
+	/**
+	 * Names of the functions whose calls the rewriter looks for.
+	 *
+	 * A file mentioning none of them is never type checked on its behalf — the
+	 * same cheap pre-filter rewriters get from their `functionName`.
+	 */
+	readonly functionNames: readonly string[];
+
+	/**
+	 * Rewrites one statement.
+	 *
+	 * @param statement Statement of a block, as the transformation has it so
+	 * far: another package's transformer may already have rewritten it, and its
+	 * original node, through `getOriginalNode`, is the one the checker knows.
+	 * @param context Compilation in progress.
+	 * @returns The statements replacing it, which the whole transformer then
+	 * walks — so that what they keep of the original still gets every other
+	 * rewrite; or `null` to leave it as it is.
+	 */
+	readonly rewrite: (
+		statement: typescript.Statement,
+		context: RewriteContext,
+	) => readonly typescript.Statement[] | null;
+}
+
 /** Property names that can be emitted unquoted in an object literal. */
 export const IDENTIFIER_PATTERN = /^[A-Za-z_$][\w$]*$/;
 

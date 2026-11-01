@@ -23,10 +23,14 @@ under `packages/` do.
 `@fulcro/collections`, `@fulcro/reflect` and `@fulcro/memory` each ship their
 own compile time transformer behind a separate entry point (`./transformer`,
 `./unplugin`). None knows the others exist; each claims only what it can trace
-back to its own package. Memory's rewrites nothing — it refuses a use after
+back to its own package. Memory's rewrites no call — it refuses a use after
 `move` and a borrow used after a conflicting one, which its runtime also
-refuses. `@fulcro/types` ships none: every operation on its types is a typed
-method, and nothing has to be configured to use it.
+refuses — and rewrites one declaration: a storage allocated from a managed
+allocator that cannot outlive its block is allocated from a frame of that
+allocator instead (`using frame = managed.enter()`). Without it the storage
+stays where it was written, which is the safe answer. `@fulcro/types` ships
+none: every operation on its types is a typed method, and nothing has to be
+configured to use it.
 
 `@fulcro/memory` holds where a value's bytes live; the values and their layout
 stay in `@fulcro/types`. It never imports `@fulcro/reflect`: it reads a layout

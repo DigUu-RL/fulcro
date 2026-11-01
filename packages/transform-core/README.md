@@ -44,6 +44,7 @@ Everything with nothing to do with any particular utility:
 | `isOwnedCall`               | Follows a call back to the declaration that owns it, rather than by name — and, given a `packageName`, to the package that declares it |
 | `createTransformer`         | Walks a source file once and hands each call to the rewriter that claims it                                                            |
 | `FileAnalyzer`              | Checks a whole file as written, once, before any rewriter — for a rule no single call decides                                          |
+| `StatementRewriter`         | Replaces a statement of a block with statements of its own — for a rewrite no expression can make, such as opening a scope             |
 | `createFileTransformer`     | Builds and keeps a program, for the bundlers that have no checker                                                                      |
 | `createTransformerUnplugin` | The adapter surface Vite, Rollup, Webpack, Rspack, esbuild and Farm expect, from `./unplugin`                                          |
 | `buildStructuralTest`       | Writes out the shape test for a type the compiler can prove completely, or declines — what `ofType<T>()` and `as<T>()` receive         |

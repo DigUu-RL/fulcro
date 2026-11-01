@@ -222,7 +222,8 @@ side.
 ### What is not a finding
 
 - **A deliberately narrowed set.** "The transformers that rewrite a call" names
-  two, and is true: memory's refuses and rewrites nothing. A narrowed set is a
+  two, and is true: memory's refuses, and rewrites no call — only a
+  declaration. A narrowed set is a
   finding only where nothing in the sentence or its section narrows it.
 - **Narration.** A sentence about how something came to be, true of the past it
   describes.

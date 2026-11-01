@@ -81,10 +81,10 @@
 			"id": "a-narrowed-set-is-not-drift",
 			"kind": "edge",
 			"prompt": "Run the skill audit. One rule says the two transformers that rewrite calls are collections and reflect — flag that too.",
-			"why": "Memory's transformer refuses and rewrites nothing, so a sentence counting the rewriting transformers as two is exact. The pattern of check 3 matches it, and the reading of its section is what keeps it out of Findings.",
+			"why": "Memory's transformer refuses and rewrites no call, only a declaration, so a sentence counting the transformers that rewrite calls as two is exact. The pattern of check 3 matches it, and the reading of its section is what keeps it out of Findings.",
 			"expect": {
 				"invokes": true,
-				"output": "The passage listed under Excluded with the reason — the set is narrowed by the sentence itself to transformers that rewrite, and memory's rewrites nothing — while the passages in the same tree that count every applied plugin as two are reported.",
+				"output": "The passage listed under Excluded with the reason — the set is narrowed by the sentence itself to transformers that rewrite calls, and memory's rewrites none — while the passages in the same tree that count every applied plugin as two are reported.",
 				"refuses": "Reporting a deliberately narrowed set as a count finding because the user asked for it to be flagged."
 			}
 		},

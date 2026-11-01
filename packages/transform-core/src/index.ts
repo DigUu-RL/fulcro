@@ -33,6 +33,7 @@ export {
 	isOwnedCall,
 	isTupleType,
 	type RewriteContext,
+	type StatementRewriter,
 	utilityModuleSegment,
 } from '@/src/shared';
 export { buildStructuralTest, type StructuralOptions, type TypeTest } from '@/src/structural';

@@ -1294,6 +1294,45 @@ describe('@fulcro/memory', () => {
 		);
 	});
 
+	it('should lend memory from a frame of a managed allocator, and reuse it once the frame is left', async () => {
+		const { allocate, createManagedAllocator } = await import('@fulcro/memory');
+		const { SignedInteger } = await import('@fulcro/types');
+
+		const Integer = SignedInteger(32);
+		const managed = createManagedAllocator();
+		const frame = managed.enter();
+		const counts = allocate(Integer, 2, frame);
+
+		counts.set(1, Integer.from(7));
+
+		expect(counts.get(1)).toBe(7);
+
+		frame[Symbol.dispose]();
+
+		expect(() => counts.get(1)).toThrow(
+			expect.objectContaining({
+				code: 'FULCRO7009',
+				details: { operation: 'Storage.get' },
+			}),
+		);
+
+		expect(() => frame.allocate(8, 4)).toThrow(
+			expect.objectContaining({
+				code: 'FULCRO7012',
+				details: { operation: 'ManagedAllocator.enter().allocate', depth: 1 },
+			}),
+		);
+
+		// Leaving the first frame made the memory every later frame reuses.
+		const borrowed = (): ArrayBufferLike => {
+			using next = managed.enter();
+
+			return next.allocate(8, 4).bytes.buffer;
+		};
+
+		expect(borrowed()).toBe(borrowed());
+	});
+
 	it('should store a numeric type from the published types package, with no struct around it', async () => {
 		const {
 			allocate,

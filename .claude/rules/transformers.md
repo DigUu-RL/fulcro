@@ -17,9 +17,14 @@ compile-time transformer behind its own entry point, and none knows the others
 exist. What they share is the machinery in `@fulcro/transform-core` and a
 failure mode: a transformer that stops recognising a call does not throw, it
 declines, and the runtime fallback answers instead. The build stays green and
-the answer is worse. Memory's rewrites nothing and only refuses, through a
+the answer is worse. Memory's rewrites no call: it refuses, through a
 `FileAnalyzer` — so for it the failure reads as a use after `move` that
-compiles, refused only later by the runtime.
+compiles, refused only later by the runtime — and rewrites one declaration,
+through a `StatementRewriter`, moving a storage that cannot outlive its block
+into a frame. There the failure is silent in both directions: a rewrite that
+stops applying costs a buffer per call, and one that applies where the storage
+escapes hands out bytes a frame will reuse. Its decline must therefore always
+be towards leaving the storage where it was written.
 
 ## They change together, in one commit
 

@@ -263,12 +263,13 @@ Detalhes:
 { operation: string; depth: number }
 ```
 
-Um quadro da pilha foi usado para alocar depois de deixado. A sua memória
-voltou para a pilha quando ele foi deixado, então não há nada para ele
-entregar.
+Um quadro — de uma pilha, ou de um alocador gerenciado — foi usado para alocar
+depois de deixado. A sua memória voltou para o seu alocador quando ele foi
+deixado, então não há nada para ele entregar.
 
-Chame `stack.enter()` de novo para um quadro novo. Chega-se aqui guardando um
-quadro além do fim do seu escopo `using` — devolvendo-o, ou armazenando-o.
+Chame `enter()` de novo para um quadro novo. Chega-se aqui guardando um quadro
+além do fim do seu escopo `using` — devolvendo-o, ou armazenando-o. Os quadros
+que o transformer de memória abre nunca são guardados, então nunca chegam aqui.
 
 ## FULCRO7013
 
