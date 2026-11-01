@@ -1,5 +1,6 @@
 import { assert, describe, expect, expectTypeOf, it } from 'vitest';
 
+import type { Encoding } from '@/src/fixedLayout';
 import { HalfPrecisionFloat } from '@/src/halfPrecisionFloat';
 import type { SinglePrecisionFloat } from '@/src/singlePrecisionFloat';
 import { struct } from '@/src/struct';
@@ -193,8 +194,8 @@ describe('HalfPrecisionFloat', () => {
 	});
 
 	describe('bytes', () => {
-		it('should take two bytes, aligned on two, frozen', () => {
-			expect(HalfPrecisionFloat.layout).toEqual({ size: 2, alignment: 2 });
+		it('should take two bytes, aligned on two, encoded as a Float16, frozen', () => {
+			expect(HalfPrecisionFloat.layout).toEqual({ size: 2, alignment: 2, encoding: 'Float16' });
 			expect(Object.isFrozen(HalfPrecisionFloat.layout)).toBe(true);
 		});
 
@@ -250,6 +251,7 @@ describe('HalfPrecisionFloat', () => {
 			expectTypeOf(HalfPrecisionFloat.layout).toEqualTypeOf<{
 				readonly size: 2;
 				readonly alignment: 2;
+				readonly encoding: Encoding;
 			}>();
 
 			expectTypeOf(HalfPrecisionFloat)

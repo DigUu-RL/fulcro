@@ -1,7 +1,7 @@
 import { createError } from '@fulcro/errors';
 
 import { type ByteCodec, createFixedLayout, type FixedLayoutType } from '@/src/fixedLayout';
-import { integerCodec } from '@/src/integer/codec';
+import { integerCodec, integerEncoding } from '@/src/integer/codec';
 import type { BoundedNumericType } from '@/src/numericType';
 import { registerCodec } from '@/src/struct/codec';
 
@@ -317,7 +317,11 @@ export const createIntegerType = <T>(
 			: createNumberIntegerType<T>(signed, width, name, minimum, maximum);
 
 	const codec = integerCodec(signed, width) as ByteCodec<T>;
-	const descriptor: IntegerType<T> = { ...arithmetic, ...createFixedLayout(name, codec) };
+
+	const descriptor: IntegerType<T> = {
+		...arithmetic,
+		...createFixedLayout(name, codec, integerEncoding(signed, width)),
+	};
 
 	registerCodec(descriptor, {
 		...codec,

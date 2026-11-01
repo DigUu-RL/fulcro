@@ -80,4 +80,5 @@ export const HalfPrecisionFloat: FloatType<HalfPrecisionFloat> = createFloatType
 	65504,
 	roundToHalfPrecision,
 	binary16Codec,
+	'Float16',
 );

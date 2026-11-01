@@ -950,8 +950,8 @@ describe('Decimal', () => {
 	});
 
 	describe('bytes', () => {
-		it('should take sixteen bytes, aligned on sixteen, frozen', () => {
-			expect(Decimal.layout).toEqual({ size: 16, alignment: 16 });
+		it('should take sixteen bytes, aligned on sixteen, encoded as decimal128, frozen', () => {
+			expect(Decimal.layout).toEqual({ size: 16, alignment: 16, encoding: 'Decimal128' });
 			expect(Object.isFrozen(Decimal.layout)).toBe(true);
 		});
 
@@ -1019,6 +1019,7 @@ describe('Decimal', () => {
 			expectTypeOf(Decimal.layout).toEqualTypeOf<{
 				readonly size: 16;
 				readonly alignment: 16;
+				readonly encoding: 'Decimal128';
 			}>();
 
 			expectTypeOf(Decimal.read).returns.toEqualTypeOf<Decimal>();

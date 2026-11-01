@@ -43,7 +43,7 @@ const countingCodec = (): { codec: ByteCodec<number>; calls: () => number } => {
 describe('createFixedLayout', () => {
 	it('should call the codec once and touch the bytes once per value', () => {
 		const { codec, calls } = countingCodec();
-		const Word = createFixedLayout('Word', codec);
+		const Word = createFixedLayout('Word', codec, 'Uint32');
 		const { view, accesses } = countingView(4 * VOLUME);
 
 		for (let index = 0; index < VOLUME; index++) Word.write(view, index * 4, index);
@@ -55,7 +55,7 @@ describe('createFixedLayout', () => {
 
 	it('should neither call the codec nor touch the bytes for a value it refuses', () => {
 		const { codec, calls } = countingCodec();
-		const Word = createFixedLayout('Word', codec);
+		const Word = createFixedLayout('Word', codec, 'Uint32');
 		const { view, accesses } = countingView(4);
 
 		expect(() => {
