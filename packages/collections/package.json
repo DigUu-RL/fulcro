@@ -1,6 +1,6 @@
 {
 	"name": "@fulcro/collections",
-	"version": "2.0.0",
+	"version": "2.1.0",
 	"description": "Lazily evaluated sequences with a composable query operator set.",
 	"type": "module",
 	"keywords": [
@@ -61,7 +61,7 @@
 	},
 	"dependencies": {
 		"@fulcro/errors": "^3.0.0",
-		"@fulcro/transform-core": "^2.0.0"
+		"@fulcro/transform-core": "^2.1.0"
 	},
 	"peerDependencies": {
 		"typescript": ">=5.9 <7"

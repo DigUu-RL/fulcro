@@ -1,6 +1,6 @@
 {
 	"name": "@fulcro/transform-core",
-	"version": "2.0.0",
+	"version": "2.1.0",
 	"description": "Shared machinery behind the Fulcro compile time transformers. Installed for you; not meant to be depended on directly.",
 	"type": "module",
 	"keywords": [
