@@ -1,6 +1,7 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import type { DoublePrecisionFloat } from '@/src/doublePrecisionFloat';
+import type { Encoding } from '@/src/fixedLayout';
 import { SinglePrecisionFloat } from '@/src/singlePrecisionFloat';
 import { struct } from '@/src/struct';
 
@@ -99,8 +100,8 @@ describe('SinglePrecisionFloat', () => {
 	});
 
 	describe('bytes', () => {
-		it('should take four bytes, aligned on four, frozen', () => {
-			expect(SinglePrecisionFloat.layout).toEqual({ size: 4, alignment: 4 });
+		it('should take four bytes, aligned on four, encoded as a Float32, frozen', () => {
+			expect(SinglePrecisionFloat.layout).toEqual({ size: 4, alignment: 4, encoding: 'Float32' });
 			expect(Object.isFrozen(SinglePrecisionFloat.layout)).toBe(true);
 		});
 
@@ -154,6 +155,7 @@ describe('SinglePrecisionFloat', () => {
 			expectTypeOf(SinglePrecisionFloat.layout).toEqualTypeOf<{
 				readonly size: 4;
 				readonly alignment: 4;
+				readonly encoding: Encoding;
 			}>();
 
 			expectTypeOf(SinglePrecisionFloat)

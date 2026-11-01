@@ -1,6 +1,6 @@
 {
 	"name": "@fulcro/memory",
-	"version": "1.1.0",
+	"version": "1.2.0",
 	"description": "Where a value's bytes live and who may reach them: storage, allocation and access to memory regions.",
 	"type": "module",
 	"keywords": [
@@ -40,7 +40,7 @@
 		"@fulcro/transform-core": "^2.0.0"
 	},
 	"devDependencies": {
-		"@fulcro/types": "^2.1.0"
+		"@fulcro/types": "^2.3.0"
 	},
 	"peerDependencies": {
 		"typescript": ">=5.9 <7"

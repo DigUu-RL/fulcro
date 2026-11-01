@@ -28,7 +28,9 @@ export interface FixedLayoutType<T> {
 	/**
 	 * How much room one value takes and where it may start: the numbers the
 	 * type's `'~layout'` declares, and that `sizeOf<T>()` and `alignOf<T>()`
-	 * report.
+	 * report. Its `encoding` names how the bytes of one value are encoded, so
+	 * that `@fulcro/memory` can hold many of them in the typed array of the
+	 * same name instead of reading each one through `read`.
 	 */
 	readonly layout: LayoutOf<T>;
 
@@ -81,13 +83,38 @@ export interface FixedLayoutMembers<T> {
 
 /**
  * The layout a type declares, as a value with literal numbers; plain numbers
- * when the type declares none.
+ * when the type declares none. The encoding is never a literal: the type of a
+ * value does not say which one it is stored in.
  *
  * @template T Type of the values.
  */
 type LayoutOf<T> = [T] extends [Layout<infer TSize, infer TAlignment>]
-	? { readonly size: TSize; readonly alignment: TAlignment }
-	: { readonly size: number; readonly alignment: number };
+	? { readonly size: TSize; readonly alignment: TAlignment; readonly encoding: Encoding }
+	: { readonly size: number; readonly alignment: number; readonly encoding: Encoding };
+
+/**
+ * How the bytes of one value are encoded, little-endian, named as the language
+ * names its typed arrays and `DataView` accessors; the 128-bit formats, which
+ * it has none for, are named on the same pattern.
+ *
+ * Internal, and named nowhere public: the glossary agrees `layout.encoding`
+ * and its values, not a type for them.
+ */
+export type Encoding =
+	| 'Int8'
+	| 'Uint8'
+	| 'Int16'
+	| 'Uint16'
+	| 'Int32'
+	| 'Uint32'
+	| 'BigInt64'
+	| 'BigUint64'
+	| 'Int128'
+	| 'Uint128'
+	| 'Float16'
+	| 'Float32'
+	| 'Float64'
+	| 'Decimal128';
 
 /**
  * How the values of a type are stored, before anything is checked: what a
@@ -166,13 +193,18 @@ export const requireRoom = (
  *
  * @param name Name of the type, as it reads in an error message.
  * @param codec How its values are stored.
+ * @param encoding How the codec encodes one value.
  * @returns The members, to be spread into the type's descriptor.
  */
-export const createFixedLayout = <T>(name: string, codec: ByteCodec<T>): FixedLayoutMembers<T> => {
+export const createFixedLayout = <T>(
+	name: string,
+	codec: ByteCodec<T>,
+	encoding: Encoding,
+): FixedLayoutMembers<T> => {
 	const { size, alignment } = codec;
 
 	return {
-		layout: Object.freeze({ size, alignment }) as LayoutOf<T>,
+		layout: Object.freeze({ size, alignment, encoding }) as LayoutOf<T>,
 
 		read: (view, offset): T => {
 			requireRoom(`${name}.read`, size, view, offset);

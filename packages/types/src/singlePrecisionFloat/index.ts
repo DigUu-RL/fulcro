@@ -34,4 +34,5 @@ export const SinglePrecisionFloat: FloatType<SinglePrecisionFloat> = createFloat
 			view.setFloat32(offset, value, true);
 		},
 	},
+	'Float32',
 );

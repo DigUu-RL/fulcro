@@ -14,8 +14,18 @@ export interface FixedLayoutElement<T> {
 	/** Name of the type, as it reads in an error message. */
 	readonly name: string;
 
-	/** How many bytes one value occupies, padding to the next one included. */
-	readonly layout: { readonly size: number };
+	/**
+	 * How many bytes one value occupies, padding to the next one included, and,
+	 * when the bytes of one value are those of a typed array's element, its
+	 * name: `'Int32'` for `Int32Array`, `'Float64'` for `Float64Array`.
+	 *
+	 * The `encoding` is a promise that `read` and `write` produce exactly the
+	 * little-endian bytes of that element, and lets a storage hold the values in
+	 * the typed array instead of asking for each one. An encoding with no typed
+	 * array behind it is not an error: it is read through `read` and `write`, as
+	 * when there is none.
+	 */
+	readonly layout: { readonly size: number; readonly encoding?: string };
 
 	/**
 	 * Reads a value from bytes.
@@ -55,8 +65,15 @@ export interface FixedLayoutElement<T> {
  * @template T Type of the values.
  */
 export interface AlignedElement<T> extends FixedLayoutElement<T> {
-	/** Size of one value, and the alignment its first byte needs. */
-	readonly layout: { readonly size: number; readonly alignment: number };
+	/**
+	 * Size of one value, the alignment its first byte needs, and the encoding
+	 * {@link FixedLayoutElement} describes.
+	 */
+	readonly layout: {
+		readonly size: number;
+		readonly alignment: number;
+		readonly encoding?: string;
+	};
 }
 
 /**

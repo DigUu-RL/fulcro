@@ -1,5 +1,6 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
+import type { Encoding } from '@/src/fixedLayout';
 import type { IntegerType } from '@/src/integer';
 import { SignedInteger } from '@/src/signedInteger';
 import { struct } from '@/src/struct';
@@ -263,8 +264,11 @@ describe('SignedInteger', () => {
 			const type = SignedInteger(width) as IntegerType<number | bigint>;
 			const size: number = width / 8;
 
-			it('should take width / 8 bytes, aligned on as many, frozen', () => {
-				expect(type.layout).toEqual({ size, alignment: size });
+			it('should take width / 8 bytes, aligned on as many, in the encoding of its width, frozen', () => {
+				// The language spells its 64-bit accessors with a `Big` in front.
+				const encoding: string = width === 64 ? 'BigInt64' : `Int${String(width)}`;
+
+				expect(type.layout).toEqual({ size, alignment: size, encoding });
 				expect(Object.isFrozen(type.layout)).toBe(true);
 			});
 
@@ -320,6 +324,7 @@ describe('SignedInteger', () => {
 			expectTypeOf(SignedInteger(32).layout).toEqualTypeOf<{
 				readonly size: 4;
 				readonly alignment: 4;
+				readonly encoding: Encoding;
 			}>();
 
 			expectTypeOf(SignedInteger(128).layout.size).toEqualTypeOf<

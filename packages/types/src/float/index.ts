@@ -1,6 +1,11 @@
 import { createError } from '@fulcro/errors';
 
-import { type ByteCodec, createFixedLayout, type FixedLayoutType } from '@/src/fixedLayout';
+import {
+	type ByteCodec,
+	createFixedLayout,
+	type Encoding,
+	type FixedLayoutType,
+} from '@/src/fixedLayout';
 import type { BoundedNumericType } from '@/src/numericType';
 import { registerCodec } from '@/src/struct/codec';
 
@@ -39,6 +44,7 @@ export type FloatType<T> = BoundedNumericType<T, number> & FixedLayoutType<T>;
  * @param round Rounding of a double to the nearest value of the format, ties to
  * even.
  * @param codec How a value of the format is stored as bytes.
+ * @param encoding How the codec encodes one value.
  * @returns The descriptor.
  */
 export const createFloatType = <T>(
@@ -46,9 +52,10 @@ export const createFloatType = <T>(
 	maximum: number,
 	round: (value: number) => number,
 	codec: ByteCodec<number>,
+	encoding: Encoding,
 ): FloatType<T> => {
 	const descriptor: FloatType<T> = {
-		...createFixedLayout(name, codec as ByteCodec<T>),
+		...createFixedLayout(name, codec as ByteCodec<T>, encoding),
 		name,
 		minimum: -maximum as T,
 		maximum: maximum as T,

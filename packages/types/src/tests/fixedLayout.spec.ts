@@ -37,11 +37,11 @@ const word: ByteCodec<number> = {
 	},
 };
 
-const Word = createFixedLayout('Word', word);
+const Word = createFixedLayout('Word', word, 'Uint32');
 
 describe('createFixedLayout', () => {
-	it('should carry the size and the alignment of the codec, frozen', () => {
-		expect(Word.layout).toEqual({ size: 4, alignment: 4 });
+	it('should carry the size and the alignment of the codec, and the encoding, frozen', () => {
+		expect(Word.layout).toEqual({ size: 4, alignment: 4, encoding: 'Uint32' });
 		expect(Object.isFrozen(Word.layout)).toBe(true);
 	});
 
