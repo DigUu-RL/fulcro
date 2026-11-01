@@ -260,11 +260,13 @@ Details:
 { operation: string; depth: number }
 ```
 
-A stack frame was allocated from after it was left. Its memory went back to
-the stack when it was left, so there is nothing for it to hand out.
+A frame — of a stack, or of a managed allocator — was allocated from after it
+was left. Its memory went back to its allocator when it was left, so there is
+nothing for it to hand out.
 
-Call `stack.enter()` again for a new frame. This is reached by keeping a
-frame past the end of its `using` scope — returning it, or storing it.
+Call `enter()` again for a new frame. This is reached by keeping a frame past
+the end of its `using` scope — returning it, or storing it. The frames the
+memory transformer opens are never kept, so they never reach it.
 
 ## FULCRO7013
 

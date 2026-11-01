@@ -307,6 +307,32 @@ const createParticles = (count: number, allocator: Allocator): Storage<Particle>
 e nunca libera nenhum: o garbage collector recupera uma alocação quando nada
 mais a segura. Passe-o quando nada na situação pede outra coisa.
 
+Ele também empresta memória pela duração de um escopo. `managed.enter()` abre
+um quadro; alocar a partir do quadro reserva memória que dura até o quadro ser
+deixado, e os quadros seguintes reaproveitam esses bytes em vez de pedir de novo
+ao engine:
+
+```ts
+const managed = createManagedAllocator();
+
+const step = (): void => {
+	using frame = managed.enter();
+	const particles = allocate(Particle, 10_000, frame);
+	// …
+}; // as partículas são liberadas aqui; o próximo step reaproveita os bytes
+```
+
+Diferente dos de uma pilha, esses quadros nunca recusam. A memória
+reaproveitada é criada quando o quadro mais externo é deixado, no tamanho do
+máximo que os quadros seguraram ao mesmo tempo; até ela existir, e para uma
+requisição para a qual ela não tem espaço, um quadro entrega um buffer próprio,
+como o alocador faria. Os quadros podem ser deixados em qualquer ordem: um
+deixado antes guarda os seus bytes até que todo quadro aberto depois dele seja
+deixado também. Um quadro já deixado recusa alocar, com
+[`FULCRO7012`](./errors/FULCRO7xxx.md#fulcro7012). O transformer de memória abre
+esses quadros por você — veja
+[Alocado num quadro na compilação](#alocado-num-quadro-na-compilação).
+
 **Arena.** `createArenaAllocator(chunkSize)` reserva memória `chunkSize` bytes
 por vez e a entrega da frente para trás. `reset()` libera tudo de uma vez e
 guarda os pedaços, então a passada seguinte não pede memória nenhuma ao engine.
@@ -358,22 +384,76 @@ Descartar uma alocação cujo bloco já voltou não faz nada, mesmo depois de o
 bloco ter sido entregue a outro; `deallocate` sobre ela continua lançando
 [`FULCRO7009`](./errors/FULCRO7xxx.md#fulcro7009).
 
-Cada factory devolve o seu alocador com um tipo próprio — `ArenaAllocator`,
-`StackAllocator`, `FixedBufferAllocator`, `PoolAllocator` —, que é `Allocator`
-mais os métodos que devolvem memória. `createManagedAllocator` devolve um
-`Allocator` simples, já que não tem nada a devolver. Use o tipo específico onde
-você chama esses métodos, e `Allocator` em todo o resto.
+Cada factory devolve o seu alocador com um tipo próprio — `ManagedAllocator`,
+`ArenaAllocator`, `StackAllocator`, `FixedBufferAllocator`, `PoolAllocator` —,
+que é `Allocator` mais os métodos que devolvem memória. Use o tipo específico
+onde você chama esses métodos, e `Allocator` em todo o resto.
 
 ### Domínios de alocação
 
 Um `AllocationDomain` é um alocador que também é `Disposable`: sair do seu
 escopo `using` libera toda a sua região de uma vez. Uma arena é um, um alocador
-de buffer fixo é um, e cada quadro de uma pilha também. Sair custa o mesmo seja
-o que for que se alocou — nada é liberado uma alocação por vez.
+de buffer fixo é um, e cada quadro de uma pilha ou de um alocador gerenciado
+também. Sair custa o mesmo seja o que for que se alocou — nada é liberado uma
+alocação por vez.
 
 `using` e `await using` são do próprio TypeScript, e pedem TypeScript 5.2 ou
 posterior com `esnext.disposable` em `lib` (ou `@types/node`, que declara o
 mesmo) — é de lá que vêm os tipos `Disposable` e `AsyncDisposable`.
+
+### Alocado num quadro na compilação
+
+Com o transformer de memória configurado (veja
+[Recusado na compilação](#recusado-na-compilação)), você não precisa abrir o
+quadro por conta própria. Um storage alocado de um alocador gerenciado que nada
+alcança depois que o seu bloco termina é levado para um quadro desse alocador:
+
+```ts
+const managed = createManagedAllocator();
+
+const step = (): number => {
+	const particles = allocate(Particle, 1_000, managed);
+
+	particles.set(0, start);
+
+	return particles.get(0).x;
+};
+```
+
+compila como se estivesse escrito
+
+```ts
+const step = (): number => {
+	using frame = managed.enter();
+	const particles = allocate(Particle, 1_000, frame);
+
+	particles.set(0, start);
+
+	return particles.get(0).x;
+};
+```
+
+O que o programa calcula não muda; muda quantas vezes ele pede memória ao
+engine. Um laço que alocava um buffer por volta passa a fazer dois no total: o
+da primeira volta, e a memória que todas as voltas seguintes reaproveitam.
+
+O transformer só faz isso quando consegue provar, e deixa o storage onde foi
+escrito nos outros casos. Ele leva uma declaração quando:
+
+- ela é `const storage = allocate(element, length, allocator)`;
+- `allocator` é um `const` que guarda `createManagedAllocator()`, neste módulo
+  ou importado de outro;
+- a declaração está num bloco de uma função que não é `async` nem generator —
+  nunca no topo de um módulo, que nunca termina, nem onde uma suspensão poderia
+  deixar o quadro aberto enquanto outro código abre quadros próprios;
+- o storage só é usado como `storage.get(…)`, `storage.set(…)` ou
+  `storage.length`, nesse bloco e fora de qualquer função criada nele.
+
+Todo o resto conta como escapar: devolver o storage, passá-lo a uma função —
+`move`, `borrow` e `asView` inclusive —, capturá-lo numa closure, guardá-lo num
+objeto ou array, dar-lhe outro nome, ou tirar `storage.get` dele. Um storage que
+escapa fica no alocador, vivo enquanto for alcançável. Sem o transformer, todo
+storage fica.
 
 ### Memória liberada é recusada, não lida
 
@@ -814,7 +894,10 @@ FULCRO7028: borrow: the borrow 'reading' is used after borrowMutable(scores) at 
 FULCRO7029: borrow: the borrow 'reading' is used after its owner 'scores' was moved at line 9.
 ```
 
-Ele é opcional e não reescreve nada. Configure-o pelo `ts-patch`:
+Ele é opcional e não reescreve nenhuma chamada: a única coisa que reescreve é
+uma declaração que ele prova não sobreviver ao seu bloco — veja
+[Alocado num quadro na compilação](#alocado-num-quadro-na-compilação).
+Configure-o pelo `ts-patch`:
 
 ```json
 { "plugins": [{ "transform": "@fulcro/memory/transformer" }] }
@@ -898,7 +981,7 @@ visível no tipo que você tem nas mãos.
 | [`FULCRO7009`](./errors/FULCRO7xxx.md#fulcro7009) | Memória usada depois que o seu alocador a liberou               |
 | [`FULCRO7010`](./errors/FULCRO7xxx.md#fulcro7010) | Uma requisição que os blocos de um pool não comportam           |
 | [`FULCRO7011`](./errors/FULCRO7xxx.md#fulcro7011) | Uma alocação devolvida a um pool que não a fez                  |
-| [`FULCRO7012`](./errors/FULCRO7xxx.md#fulcro7012) | Um quadro da pilha usado para alocar depois de deixado          |
+| [`FULCRO7012`](./errors/FULCRO7xxx.md#fulcro7012) | Um quadro usado para alocar depois de deixado                   |
 | [`FULCRO7013`](./errors/FULCRO7xxx.md#fulcro7013) | Algo que não é um `ArrayBuffer` para um buffer fixo             |
 | [`FULCRO7014`](./errors/FULCRO7xxx.md#fulcro7014) | Uma região que não cabe na sua origem                           |
 | [`FULCRO7015`](./errors/FULCRO7xxx.md#fulcro7015) | Uma posição que um array deixou de alcançar depois de observado |

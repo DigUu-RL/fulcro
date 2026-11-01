@@ -5,7 +5,7 @@ import typescript from 'typescript';
 
 import { createError } from '@fulcro/errors';
 
-import type { CallRewriter, FileAnalyzer } from '@/src/shared';
+import type { CallRewriter, FileAnalyzer, StatementRewriter } from '@/src/shared';
 import type { TransformerOptions } from '@/src/transformer';
 import { createTransformer } from '@/src/transformer';
 
@@ -35,15 +35,18 @@ const HANDLED_EXTENSIONS = ['.ts', '.mts', '.cts'];
  *
  * @param rewriters Rewriters the core was built with.
  * @param analyzers Analyzers the core was built with.
+ * @param statementRewriters Statement rewriters the core was built with.
  * @returns A pattern matching any of their function names as a whole word.
  */
 const buildUtilityPattern = (
 	rewriters: readonly CallRewriter[],
 	analyzers: readonly FileAnalyzer[],
+	statementRewriters: readonly StatementRewriter[],
 ): RegExp => {
 	const names: string = [
 		...rewriters.map((rewriter) => rewriter.functionName),
 		...analyzers.flatMap((analyzer) => analyzer.functionNames),
+		...statementRewriters.flatMap((rewriter) => rewriter.functionNames),
 	].join('|');
 
 	return new RegExp(`\\b(${names})\\b`);
@@ -300,16 +303,19 @@ const fileNameOf = (id: string): string => {
  * @param options Options of the core.
  * @param analyzers Analyzers of the package this core is serving; none when
  * omitted.
+ * @param statementRewriters Statement rewriters of the package this core is
+ * serving; none when omitted.
  * @returns A transformer usable by any bundler adapter.
  */
 export const createFileTransformer = (
 	rewriters: readonly CallRewriter[],
 	options: TransformCoreOptions = {},
 	analyzers: readonly FileAnalyzer[] = [],
+	statementRewriters: readonly StatementRewriter[] = [],
 ): FileTransformer => {
 	const root: string = options.root ?? process.cwd();
-	const utilityPattern: RegExp = buildUtilityPattern(rewriters, analyzers);
-	const transformer = createTransformer(rewriters, analyzers);
+	const utilityPattern: RegExp = buildUtilityPattern(rewriters, analyzers, statementRewriters);
+	const transformer = createTransformer(rewriters, analyzers, statementRewriters);
 
 	let host: ProgramHost | undefined;
 	let service: typescript.LanguageService | undefined;

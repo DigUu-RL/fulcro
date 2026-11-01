@@ -2,7 +2,13 @@ import typescript from 'typescript';
 
 import { createError } from '@fulcro/errors';
 
-import type { AnalysisContext, CallRewriter, FileAnalyzer, RewriteContext } from '@/src/shared';
+import type {
+	AnalysisContext,
+	CallRewriter,
+	FileAnalyzer,
+	RewriteContext,
+	StatementRewriter,
+} from '@/src/shared';
 import { isOwnedCall } from '@/src/shared';
 
 /**
@@ -112,12 +118,16 @@ const describeDiagnostic = (diagnostic: typescript.Diagnostic): string => {
  *
  * @param analyzers Analyzers run over each file before it is walked, as
  * written; none when omitted. They report the way a refusing rewriter does.
+ * @param statementRewriters Rewriters offered every statement of every block,
+ * in order, before the walk goes into it; the first to answer replaces it.
+ * None when omitted.
  * @returns The factory a package exports as the default of its transformer
  * entry point.
  */
 export const createTransformer = (
 	rewriters: readonly CallRewriter[],
 	analyzers: readonly FileAnalyzer[] = [],
+	statementRewriters: readonly StatementRewriter[] = [],
 ): TransformerFactory => {
 	return (
 		program: typescript.Program,
@@ -147,7 +157,47 @@ export const createTransformer = (
 					if (rewritten !== null) return rewritten;
 				}
 
+				// Without statement rewriters a block is walked like any node, so a
+				// package that brings none pays nothing for the ones that do.
+				if (statementRewriters.length > 0 && typescript.isBlock(node)) {
+					return visitBlock(node);
+				}
+
 				return typescript.visitEachChild(node, visit, context);
+			};
+
+			const rewriteStatement = (
+				statement: typescript.Statement,
+			): readonly typescript.Statement[] | null => {
+				for (const rewriter of statementRewriters) {
+					const replacement = rewriter.rewrite(statement, rewriteContext);
+
+					if (replacement !== null) return replacement;
+				}
+
+				return null;
+			};
+
+			/**
+			 * Offers each statement of a block to the statement rewriters, then
+			 * walks whatever stands in its place.
+			 *
+			 * @param block The block.
+			 * @returns The block, the same node when nothing in it changed — which
+			 * is how a file nothing was done to is told apart and left unprinted.
+			 */
+			const visitBlock = (block: typescript.Block): typescript.Block => {
+				const replaced: typescript.Statement[][] = block.statements.map((statement) => {
+					return (rewriteStatement(statement) ?? [statement]).map((each) => {
+						return visit(each) as typescript.Statement;
+					});
+				});
+
+				const changed: boolean = replaced.some((statements, index) => {
+					return statements.length !== 1 || statements[0] !== block.statements[index];
+				});
+
+				return changed ? context.factory.updateBlock(block, replaced.flat()) : block;
 			};
 
 			const rewriteContext: RewriteContext = {

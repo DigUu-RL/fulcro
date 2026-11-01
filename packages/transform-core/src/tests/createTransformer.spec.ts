@@ -3,21 +3,25 @@ import * as path from 'node:path';
 import typescript from 'typescript';
 import { afterAll, assert, beforeAll, describe, expect, it } from 'vitest';
 
-import type { CallRewriter, FileAnalyzer } from '@/src/shared';
+import type { CallRewriter, FileAnalyzer, StatementRewriter } from '@/src/shared';
 import { createWorkspace } from '@/src/tests/workspace';
 import { createTransformer } from '@/src/transformer';
 
 /**
- * Behaviour suite for `createTransformer`, on the analyzers it runs.
+ * Behaviour suite for `createTransformer`, on the analyzers and the statement
+ * rewriters it runs.
  *
  * An analyzer checks a file without rewriting it, before any rewriter runs,
  * and refuses code the way a rewriter does: through `addDiagnostic` when the
- * compiler offers it, and otherwise as one error once the file is walked.
+ * compiler offers it, and otherwise as one error once the file is walked. A
+ * statement rewriter replaces a statement of a block with statements of its
+ * own, which the rest of the transformer then walks.
  */
 
 let workspace: { root: string; remove: () => void };
 let program: typescript.Program;
 let fixture: typescript.SourceFile;
+let blocks: typescript.SourceFile;
 
 beforeAll(() => {
 	workspace = createWorkspace({
@@ -28,22 +32,42 @@ beforeAll(() => {
 			'export const second = rename(flag(2));',
 			'',
 		].join('\n'),
+		'src/blocks.fixture.ts': [
+			'const rename = (value: number): number => value;',
+			'const scope = (value: number): number => value;',
+			'export const run = (): number => {',
+			'\tconst first = scope(1);',
+			'\tif (first > 0) {',
+			'\t\tconst second = scope(rename(2));',
+			'\t\treturn second;',
+			'\t}',
+			'\treturn first;',
+			'};',
+			'export const untouched = (): number => {',
+			'\treturn rename(3);',
+			'};',
+			'',
+		].join('\n'),
 	});
 
-	const fileName: string = path.join(workspace.root, 'src', 'fixture.ts');
+	const fileNames: string[] = ['fixture.ts', 'blocks.fixture.ts'].map((name) => {
+		return path.join(workspace.root, 'src', name);
+	});
 
-	program = typescript.createProgram([fileName], {
+	program = typescript.createProgram(fileNames, {
 		module: typescript.ModuleKind.ESNext,
 		target: typescript.ScriptTarget.ES2022,
 		strict: true,
 	});
 
-	const source: typescript.SourceFile | undefined = program.getSourceFile(
-		fileName.split(path.sep).join('/'),
-	);
+	const [source, blocksSource] = fileNames.map((fileName) => {
+		return program.getSourceFile(fileName.split(path.sep).join('/'));
+	});
 
 	assert.isDefined(source);
+	assert.isDefined(blocksSource);
 	fixture = source;
+	blocks = blocksSource;
 });
 
 afterAll(() => {
@@ -192,5 +216,110 @@ describe('createTransformer with analyzers', () => {
 
 	it('should rewrite as before with no analyzer at all', () => {
 		expect(run([])).toContain('renamed(flag(2))');
+	});
+});
+
+/**
+ * Puts `opened();` before every declaration whose value is a call to `scope`,
+ * keeping the declaration as it was.
+ */
+const scoping: StatementRewriter = {
+	functionNames: ['scope'],
+	rewrite: (statement, context) => {
+		if (!typescript.isVariableStatement(statement)) return null;
+
+		const [declaration] = statement.declarationList.declarations;
+		const value: typescript.Expression | undefined = declaration?.initializer;
+
+		const scoped: boolean =
+			value !== undefined &&
+			typescript.isCallExpression(value) &&
+			typescript.isIdentifier(value.expression) &&
+			value.expression.text === 'scope';
+
+		if (!scoped) return null;
+
+		return [
+			context.factory.createExpressionStatement(
+				context.factory.createCallExpression(
+					context.factory.createIdentifier('opened'),
+					undefined,
+					[],
+				),
+			),
+			statement,
+		];
+	},
+};
+
+/**
+ * Applies a transformer with statement rewriters to the file of blocks.
+ *
+ * @param statementRewriters Statement rewriters to build it with.
+ * @returns The transformed file, and the file as printed.
+ */
+const runOnBlocks = (
+	statementRewriters: readonly StatementRewriter[],
+): { transformed: typescript.SourceFile; printed: string } => {
+	const result = typescript.transform(blocks, [
+		createTransformer([renaming], [], statementRewriters)(program),
+	]);
+
+	const [transformed] = result.transformed;
+
+	assert.isDefined(transformed);
+
+	const printed: string = typescript.createPrinter().printFile(transformed);
+
+	result.dispose();
+
+	return { transformed, printed };
+};
+
+describe('createTransformer with statement rewriters', () => {
+	it('should put what a statement rewriter returns in place of the statement, in every block', () => {
+		const { printed } = runOnBlocks([scoping]);
+
+		expect(printed).toMatch(/opened\(\);\s+const first = scope\(1\);/);
+		expect(printed).toMatch(/opened\(\);\s+const second = scope\(renamed\(2\)\);/);
+	});
+
+	it('should apply the call rewriters inside what a statement rewriter keeps', () => {
+		expect(runOnBlocks([scoping]).printed).toContain('scope(renamed(2))');
+	});
+
+	it('should leave the statements no rewriter answers for, and their calls rewritten', () => {
+		const { printed } = runOnBlocks([scoping]);
+
+		expect(printed.match(/opened\(\)/g)).toHaveLength(2);
+		expect(printed).toContain('renamed(3)');
+	});
+
+	it('should hand back the same file when no statement rewriter answers and no call is claimed', () => {
+		const declining: StatementRewriter = { functionNames: ['scope'], rewrite: () => null };
+
+		const result = typescript.transform(blocks, [createTransformer([], [], [declining])(program)]);
+
+		expect(result.transformed[0]).toBe(blocks);
+
+		result.dispose();
+	});
+
+	it('should give a statement to the first rewriter that answers, and ask no other', () => {
+		const asked: string[] = [];
+
+		const after: StatementRewriter = {
+			functionNames: ['scope'],
+			rewrite: (statement) => {
+				asked.push(statement.getText());
+
+				return null;
+			},
+		};
+
+		runOnBlocks([scoping, after]);
+
+		expect(asked).not.toContain('const first = scope(1);');
+		expect(asked).toContain('return first;');
 	});
 });
