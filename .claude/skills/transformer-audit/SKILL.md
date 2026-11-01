@@ -32,14 +32,16 @@ placeholder validator or a narrowed type so that a case produces something is
 the one move this skill may not make — it converts a known gap into a wrong
 answer nobody is looking for.
 
-**Three transformers, two that rewrite.** `@fulcro/memory` ships the third, and
-it rewrites nothing: it refuses a use after `move` and a conflicting borrow,
-which its runtime also refuses. The dimensions below that read an emit —
-recognition, the rewrite, the decline to a fallback — have nothing to read in
-it, so they cover the transformers of `@fulcro/collections` and
-`@fulcro/reflect`. What memory's does to the other two, and what they do to it,
-is the coexistence dimension, and that one covers all three. Its own refusals
-are asserted by its package suites, and the code that produces them is
+**Three transformers, two that rewrite a call.** `@fulcro/memory` ships the
+third, and it rewrites no call: it refuses a use after `move` and a conflicting
+borrow, which its runtime also refuses, and rewrites one declaration — a storage
+that cannot outlive its block is allocated from a frame of its managed
+allocator. The dimensions below that read the emit of a call — recognition, the
+rewrite, the decline to a fallback — cover the transformers of
+`@fulcro/collections` and `@fulcro/reflect`. What memory's does to the other
+two, and what they do to it, is the coexistence dimension, and that one covers
+all three. Its refusals and its one rewrite are asserted by its package suites
+(`ownershipAnalyzer`, `escapeRewriter`), and the code that produces them is
 `transformer-reviewer`'s to read.
 
 ## Invocation

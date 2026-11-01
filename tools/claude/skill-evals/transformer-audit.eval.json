@@ -115,11 +115,11 @@
 			"id": "the-transformer-that-only-refuses",
 			"kind": "edge",
 			"prompt": "/transformer-audit memory",
-			"why": "Memory's transformer rewrites nothing, so the dimensions that read an emit have nothing to read in it. What can still break is how it walks the tree the other two rewrote, which is the coexistence dimension.",
+			"why": "Memory's transformer rewrites no call — its one rewrite is a declaration moved into a frame, which its own package suites assert — so the dimensions that read the emit of a call have nothing to read in it. What can still break is how it walks the tree the other two rewrote, which is the coexistence dimension.",
 			"expect": {
 				"invokes": true,
 				"output": "The coexistence dimension alone, after npm run build: the coexistence sample compiled with all three plugins and the emit quoted to show memory's calls left as written and the calls inside them rewritten, the rejected sample refused with its FULCRO code, file and line, and the rewriting dimensions listed as not applicable with that reason.",
-				"refuses": "Filling recognition, rewrite or decline rows for memory, which emits nothing for them to describe."
+				"refuses": "Filling recognition, rewrite or decline rows for memory, which rewrites no call for them to describe."
 			}
 		}
 	]

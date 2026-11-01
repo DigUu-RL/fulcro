@@ -80,7 +80,7 @@ const step = (stack: StackAllocator): void => {
 
 | Allocator                    | Memory goes back                          |
 | ---------------------------- | ----------------------------------------- |
-| `createManagedAllocator`     | When the garbage collector reclaims it    |
+| `createManagedAllocator`     | By the garbage collector, or with a frame |
 | `createArenaAllocator`       | All at once, on `reset()` or with `using` |
 | `createStackAllocator`       | A frame at a time, last in first out      |
 | `createFixedBufferAllocator` | All at once, on `reset()` or with `using` |
@@ -166,7 +166,11 @@ A borrow that has ended throws on its next access, and so does anything made
 from it. Declared with `using`, an owner ends with its scope — every borrow of
 it ends there — unless it was moved out first. The optional transformer —
 `@fulcro/memory/transformer` for `ts-patch`, `@fulcro/memory/unplugin` for a
-bundler — refuses the same uses when the code is compiled. It rewrites nothing.
+bundler — refuses the same uses when the code is compiled. It rewrites no call;
+what it does rewrite is a storage allocated from a managed allocator that
+cannot outlive its block, which it allocates from a frame of that allocator
+(`using frame = managed.enter()`), so the next run of the block reuses its
+bytes.
 
 ---
 

@@ -156,7 +156,7 @@ describe('ownership rules at compile time', () => {
 		);
 	});
 
-	it('should rewrite nothing, leaving every call to the runtime', () => {
+	it('should rewrite no ownership call, leaving every one to the runtime', () => {
 		expect(accepted.emitted).toContain('borrow(owner)');
 		expect(accepted.emitted).toContain('move(owner)');
 		expect(rejected.emitted).toContain('borrow(owner); // FULCRO7027');

@@ -1,10 +1,11 @@
 import * as fileSystem from 'node:fs';
 import * as path from 'node:path';
 
+import typescript from 'typescript';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { createFileTransformer } from '@/src/program';
-import type { CallRewriter, FileAnalyzer } from '@/src/shared';
+import type { CallRewriter, FileAnalyzer, StatementRewriter } from '@/src/shared';
 import { createWorkspace } from '@/src/tests/workspace';
 
 /**
@@ -37,6 +38,14 @@ beforeAll(() => {
 		'src/untouched.ts': ['// mentions flag in a comment only', 'export const value = 1;', ''].join(
 			'\n',
 		),
+		'src/scoped.ts': [
+			'const scope = (value: number): number => value;',
+			'export const run = (): number => {',
+			'\tconst value = scope(1);',
+			'\treturn value;',
+			'};',
+			'',
+		].join('\n'),
 	});
 });
 
@@ -65,26 +74,55 @@ const unused: CallRewriter = {
 	rewrite: () => null,
 };
 
+/** Puts `opened();` before the first statement of every block. */
+const opening: StatementRewriter = {
+	functionNames: ['scope'],
+	rewrite: (statement, context) => {
+		const block: typescript.Node = typescript.getOriginalNode(statement).parent;
+
+		if (!typescript.isBlock(block) || block.statements[0] !== statement) return null;
+
+		return [
+			context.factory.createExpressionStatement(
+				context.factory.createCallExpression(
+					context.factory.createIdentifier('opened'),
+					undefined,
+					[],
+				),
+			),
+			statement,
+		];
+	},
+};
+
 /**
  * Transforms one file of the workspace.
  *
  * @param name File under `src`.
  * @param analyzers Analyzers of the core.
+ * @param statementRewriters Statement rewriters of the core.
  * @returns What the core handed back.
  */
-const transform = (name: string, analyzers: readonly FileAnalyzer[]): string | null => {
+const transform = (
+	name: string,
+	analyzers: readonly FileAnalyzer[],
+	statementRewriters: readonly StatementRewriter[] = [],
+): string | null => {
 	const fileName: string = path.join(workspace.root, 'src', name);
 
-	return createFileTransformer([unused], { root: workspace.root }, analyzers).transform(
-		fileName,
-		fileSystem.readFileSync(fileName, 'utf8'),
-	);
+	return createFileTransformer(
+		[unused],
+		{ root: workspace.root },
+		analyzers,
+		statementRewriters,
+	).transform(fileName, fileSystem.readFileSync(fileName, 'utf8'));
 };
 
 /** What each transformation handed back, or the error it threw. */
 let checked: unknown;
 let untouched: string | null;
 let mentions: string | null;
+let scoped: string | null;
 
 // Each transformation builds a language service and checks a program — the
 // costly part, and not what is asserted — so they run under the hook's
@@ -100,6 +138,7 @@ beforeAll(() => {
 
 	untouched = transform('untouched.ts', [flagging]);
 	mentions = transform('mentions.ts', []);
+	scoped = transform('scoped.ts', [], [opening]);
 });
 
 describe('createFileTransformer with analyzers', () => {
@@ -114,5 +153,9 @@ describe('createFileTransformer with analyzers', () => {
 
 	it('should hand back null for a file naming a rewriter it never calls', () => {
 		expect(mentions).toBeNull();
+	});
+
+	it('should rewrite a file only a statement rewriter names, and print it', () => {
+		expect(scoped).toMatch(/opened\(\);\s+const value = scope\(1\);/);
 	});
 });

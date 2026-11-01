@@ -30,8 +30,10 @@ nothing to configure. `@fulcro/collections`, `@fulcro/reflect` and
 separate entry points — so one install gets you everything, and a runtime-only
 bundle still pulls in none of the compiler machinery. None knows the others
 exist; each claims only what it can trace back to itself, a call to one of its
-utilities. Memory's rewrites nothing: it refuses, at build time, a value used
-after `move` — which the runtime refuses as well, later.
+utilities. Memory's rewrites no call: it refuses, at build time, a value used
+after `move` — which the runtime refuses as well, later — and moves a storage
+that cannot outlive its block into a frame of its managed allocator, so the
+next run of the block reuses its bytes.
 
 Wiring a transformer up is optional for the utilities, except `defaultOf`, which
 throws without it because a default it cannot compute would be a lie. `nameOf`

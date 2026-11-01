@@ -307,6 +307,31 @@ own and never releases one: the garbage collector reclaims an allocation once
 nothing holds it. Pass it when nothing about the situation calls for anything
 else.
 
+It also lends memory for the length of a scope. `managed.enter()` opens a
+frame; allocating from the frame reserves memory that lasts until the frame is
+left, and the frames after it reuse those bytes instead of asking the engine
+again:
+
+```ts
+const managed = createManagedAllocator();
+
+const step = (): void => {
+	using frame = managed.enter();
+	const particles = allocate(Particle, 10_000, frame);
+	// …
+}; // the particles are released here; the next step reuses their bytes
+```
+
+Unlike a stack's, these frames never refuse. The reused memory is made when the
+outermost frame is left, sized for the most the frames held at once; until it
+exists, and for a request it has no room for, a frame hands out a buffer of its
+own, as the allocator would. Frames may be left in any order: one left early
+keeps its bytes until every frame opened after it is left too. A frame already
+left refuses to allocate, with
+[`FULCRO7012`](./errors/FULCRO7xxx.md#fulcro7012). The memory transformer opens
+such frames for you — see
+[Allocated from a frame when the code is compiled](#allocated-from-a-frame-when-the-code-is-compiled).
+
 **Arena.** `createArenaAllocator(chunkSize)` reserves memory `chunkSize` bytes
 at a time and hands it out front to back. `reset()` releases everything at
 once, and keeps the chunks, so the next pass asks the engine for no memory at
@@ -357,22 +382,78 @@ Disposing an allocation whose block already went back does nothing, even once
 the block was handed to someone else; `deallocate` on it still throws
 [`FULCRO7009`](./errors/FULCRO7xxx.md#fulcro7009).
 
-Each factory returns its allocator under its own type — `ArenaAllocator`,
-`StackAllocator`, `FixedBufferAllocator`, `PoolAllocator` — which is
-`Allocator` plus the methods that give memory back. `createManagedAllocator`
-returns a plain `Allocator`, since it has nothing to give back. Take the
-specific type where you call those methods, and `Allocator` everywhere else.
+Each factory returns its allocator under its own type — `ManagedAllocator`,
+`ArenaAllocator`, `StackAllocator`, `FixedBufferAllocator`, `PoolAllocator` —
+which is `Allocator` plus the methods that give memory back. Take the specific
+type where you call those methods, and `Allocator` everywhere else.
 
 ### Allocation domains
 
 An `AllocationDomain` is an allocator that is also `Disposable`: leaving its
 `using` scope releases its whole region at once. An arena is one, a fixed
-buffer allocator is one, and so is every frame of a stack. Leaving costs the
-same whatever was allocated — nothing is released one allocation at a time.
+buffer allocator is one, and so is every frame of a stack or of a managed
+allocator. Leaving costs the same whatever was allocated — nothing is released
+one allocation at a time.
 
 `using` and `await using` are TypeScript's own, and need TypeScript 5.2 or
 later with `esnext.disposable` in `lib` (or `@types/node`, which declares the
 same) — the types `Disposable` and `AsyncDisposable` come from there.
+
+### Allocated from a frame when the code is compiled
+
+With the memory transformer wired up (see
+[Refused when the code is compiled](#refused-when-the-code-is-compiled)), you
+do not have to open the frame yourself. A storage allocated from a managed
+allocator that nothing can reach once its block ends is moved into a frame of
+that allocator:
+
+```ts
+const managed = createManagedAllocator();
+
+const step = (): number => {
+	const particles = allocate(Particle, 1_000, managed);
+
+	particles.set(0, start);
+
+	return particles.get(0).x;
+};
+```
+
+compiles as if it read
+
+```ts
+const step = (): number => {
+	using frame = managed.enter();
+	const particles = allocate(Particle, 1_000, frame);
+
+	particles.set(0, start);
+
+	return particles.get(0).x;
+};
+```
+
+What the program computes does not change; how often it asks the engine for
+memory does. A loop that allocated a buffer each round makes two in all: the
+first round's, and the memory every later round reuses.
+
+The transformer does this only when it can prove it, and leaves the storage
+where it was written otherwise. It moves a declaration when:
+
+- it is `const storage = allocate(element, length, allocator)`;
+- `allocator` is a `const` holding `createManagedAllocator()`, in this module
+  or imported from another;
+- the declaration is in a block of a function that is neither `async` nor a
+  generator — never at the top of a module, which never ends, nor where a
+  suspension could leave the frame open while other code opens frames of its
+  own;
+- the storage is only used as `storage.get(…)`, `storage.set(…)` or
+  `storage.length`, in that block and outside any function created in it.
+
+Anything else counts as escaping: returning the storage, passing it to a
+function — `move`, `borrow` and `asView` included — capturing it in a closure,
+storing it in an object or an array, giving it another name, or taking
+`storage.get` off it. A storage that escapes stays in the allocator, live for
+as long as it is reachable. Without the transformer, every storage does.
 
 ### Released memory is refused, not read
 
@@ -809,7 +890,10 @@ FULCRO7028: borrow: the borrow 'reading' is used after borrowMutable(scores) at 
 FULCRO7029: borrow: the borrow 'reading' is used after its owner 'scores' was moved at line 9.
 ```
 
-It is optional, and rewrites nothing. Wire it through `ts-patch`:
+It is optional, and rewrites no call: the one thing it rewrites is a
+declaration it can prove does not outlive its block — see
+[Allocated from a frame when the code is compiled](#allocated-from-a-frame-when-the-code-is-compiled).
+Wire it through `ts-patch`:
 
 ```json
 { "plugins": [{ "transform": "@fulcro/memory/transformer" }] }
@@ -891,7 +975,7 @@ visible in the type you hold.
 | [`FULCRO7009`](./errors/FULCRO7xxx.md#fulcro7009) | Memory used after its allocator released it              |
 | [`FULCRO7010`](./errors/FULCRO7xxx.md#fulcro7010) | A request a pool's blocks cannot hold                    |
 | [`FULCRO7011`](./errors/FULCRO7xxx.md#fulcro7011) | An allocation returned to a pool that did not make it    |
-| [`FULCRO7012`](./errors/FULCRO7xxx.md#fulcro7012) | A stack frame allocated from after it was left           |
+| [`FULCRO7012`](./errors/FULCRO7xxx.md#fulcro7012) | A frame allocated from after it was left                 |
 | [`FULCRO7013`](./errors/FULCRO7xxx.md#fulcro7013) | Something other than an `ArrayBuffer` for a fixed buffer |
 | [`FULCRO7014`](./errors/FULCRO7xxx.md#fulcro7014) | A region that does not fit inside its source             |
 | [`FULCRO7015`](./errors/FULCRO7xxx.md#fulcro7015) | A position an array shrank past after it was viewed      |

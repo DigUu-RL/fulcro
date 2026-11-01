@@ -1,10 +1,13 @@
 import type { TransformerUnplugin } from '@fulcro/transform-core/unplugin';
 import { createTransformerUnplugin } from '@fulcro/transform-core/unplugin';
 
+import { escapeRewriter } from '@/src/transformer/escape/index.js';
 import { ANALYZERS } from '@/src/transformer/index.js';
 
 /**
- * Bundler plugin checking `move`, `borrow` and `borrowMutable` at build time.
+ * Bundler plugin checking `move`, `borrow` and `borrowMutable` at build time,
+ * and allocating from a frame what cannot outlive its block — the same
+ * transformer as `@fulcro/memory/transformer`.
  *
  * The same integration serves Vite, Rollup, Webpack, esbuild, Rspack and Farm,
  * and through them the frameworks layered on top:
@@ -20,7 +23,7 @@ import { ANALYZERS } from '@/src/transformer/index.js';
  * other function of that name takes the checker.
  */
 
-const plugins = createTransformerUnplugin([], 'fulcro-memory', ANALYZERS);
+const plugins = createTransformerUnplugin([], 'fulcro-memory', ANALYZERS, [escapeRewriter]);
 
 export type { PluginOptions } from '@fulcro/transform-core/unplugin';
 

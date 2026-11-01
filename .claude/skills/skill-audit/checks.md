@@ -71,7 +71,8 @@ how many that is.
 **Not a finding.**
 
 - A set narrowed by the sentence itself, or by its section. "The transformers
-  that rewrite a call" are two, because memory's refuses and rewrites nothing.
+  that rewrite a call" are two, because memory's refuses and rewrites no call,
+  only a declaration.
   "`@fulcro/memory`'s `*.unchecked.spec.ts` run with the other two" is exact.
 - A count in narration: "when the second transformer arrived" stays true.
 - A skill whose scope is narrowed in its own description and body, consistently.

@@ -3,16 +3,18 @@ import * as path from 'node:path';
 import typescript from 'typescript';
 import { afterAll, assert, beforeAll, describe, expect, it } from 'vitest';
 
-import type { FileAnalyzer } from '@/src/shared';
+import type { FileAnalyzer, StatementRewriter } from '@/src/shared';
 import { createWorkspace } from '@/src/tests/workspace';
 import { createTransformer } from '@/src/transformer';
 
 /**
- * Performance suite for `createTransformer`, on the analyzers it runs.
+ * Performance suite for `createTransformer`, on the analyzers and the
+ * statement rewriters it runs.
  *
  * Counted, never timed (`docs/testing.md`). An analyzer exists so that a
  * question about a whole file is asked once per file, not once per call in it,
- * so what is counted is how often each analyzer is invoked.
+ * so what is counted is how often each analyzer is invoked; a statement
+ * rewriter is asked once per statement, never again for what it declined.
  */
 
 /** Files in the program. */
@@ -21,9 +23,13 @@ const FILES = 20;
 /** Calls in each file: enough that a per-call invocation would stand out. */
 const CALLS = 200;
 
+/** Functions in the file of blocks. */
+const BLOCKS = 20;
+
 let workspace: { root: string; remove: () => void };
 let program: typescript.Program;
 let fileNames: string[];
+let blockFileName: string;
 
 beforeAll(() => {
 	const body: string = [
@@ -38,10 +44,29 @@ beforeAll(() => {
 		files[`src/file${String(index)}.ts`] = body;
 	}
 
-	workspace = createWorkspace(files);
-	fileNames = Object.keys(files).map((name) => path.join(workspace.root, ...name.split('/')));
+	files['src/blocks.ts'] = [
+		'const flag = (value: number): number => value;',
+		...Array.from({ length: BLOCKS }, (_, block) => {
+			return [
+				`export const run${String(block)} = (): number => {`,
+				...Array.from({ length: CALLS }, (_, index) => `\tflag(${String(index)});`),
+				'\treturn 0;',
+				'};',
+			].join('\n');
+		}),
+		'',
+	].join('\n');
 
-	program = typescript.createProgram(fileNames, {
+	workspace = createWorkspace(files);
+
+	const paths: string[] = Object.keys(files).map((name) => {
+		return path.join(workspace.root, ...name.split('/'));
+	});
+
+	fileNames = paths.filter((name) => !name.endsWith('blocks.ts'));
+	blockFileName = paths.find((name) => name.endsWith('blocks.ts')) ?? '';
+
+	program = typescript.createProgram(paths, {
 		module: typescript.ModuleKind.ESNext,
 		strict: true,
 	});
@@ -76,5 +101,31 @@ describe('createTransformer with analyzers, counted', () => {
 		}
 
 		expect(counts).toEqual([FILES, FILES]);
+	});
+
+	it('should offer each statement of a block to a statement rewriter once', () => {
+		let offered = 0;
+
+		const counting: StatementRewriter = {
+			functionNames: ['flag'],
+			rewrite: () => {
+				offered++;
+
+				return null;
+			},
+		};
+
+		const transformer = createTransformer([], [], [counting])(program);
+
+		const source: typescript.SourceFile | undefined = program.getSourceFile(
+			blockFileName.split(path.sep).join('/'),
+		);
+
+		assert.isDefined(source);
+		typescript.transform(source, [transformer]).dispose();
+
+		// The top level is not a block; each function body holds its calls, and
+		// one statement more for the return.
+		expect(offered).toBe(BLOCKS * (CALLS + 1));
 	});
 });
