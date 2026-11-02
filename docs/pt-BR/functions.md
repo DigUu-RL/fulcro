@@ -38,25 +38,27 @@ import {
 Passe um ramo por membro, e **o compilador garante que todo membro tenha um**:
 
 ```ts
-enum Status {
-	Draft,
-	Published,
-	Archived,
+enum HyperdriveStatus {
+	Online,
+	Damaged,
+	Offline,
 }
 
 const label = switchFor(status, {
-	[Status.Draft]: () => 'draft',
-	[Status.Published]: () => 'published',
-	[Status.Archived]: () => 'archived',
+	[HyperdriveStatus.Online]: () => 'ready to jump',
+	[HyperdriveStatus.Damaged]: () => 'jump at your own risk',
+	[HyperdriveStatus.Offline]: () => "it's not my fault",
 });
 ```
 
 Deixe um de fora e não compila:
 
 ```text
-error TS2345: Property '[Status.Archived]' is missing in type
-'{ 0: () => string; 1: () => string; }' but required in type
-'ExhaustiveCases<Status, string>'.
+error TS2769: No overload matches this call.
+  …
+      Property '[HyperdriveStatus.Offline]' is missing in type
+      '{ 0: () => string; 1: () => string; }' but required in type
+      'ExhaustiveCases<HyperdriveStatus, string>'.
 ```
 
 **Esse erro é o objetivo inteiro.** Acrescente um membro ao enum daqui a seis
@@ -68,45 +70,191 @@ Não há, de propósito, **nenhum fallback** nesta forma. Um fallback é
 exatamente o que absorveria o membro novo em silêncio e levaria a garantia
 embora.
 
+O painel de prontidão do hangar de um contrabandista, uma linha por nave:
+
+```ts
+import { switchFor } from '@fulcro/functions';
+
+enum HyperdriveStatus {
+	Online,
+	Damaged,
+	Offline,
+}
+
+interface Ship {
+	name: string;
+	hyperdrive: HyperdriveStatus;
+}
+
+const hangar: Ship[] = [
+	{ name: 'Millennium Falcon', hyperdrive: HyperdriveStatus.Offline },
+	{ name: 'Ghost', hyperdrive: HyperdriveStatus.Online },
+	{ name: 'Razor Crest', hyperdrive: HyperdriveStatus.Damaged },
+];
+
+const readiness = (ship: Ship): string => {
+	return switchFor(ship.hyperdrive, {
+		[HyperdriveStatus.Online]: () => `${ship.name}: ready to jump`,
+		[HyperdriveStatus.Damaged]: () => `${ship.name}: jump at your own risk`,
+		[HyperdriveStatus.Offline]: () => `${ship.name}: it's not my fault`,
+	});
+};
+
+console.log(hangar.map(readiness));
+// ["Millennium Falcon: it's not my fault", 'Ghost: ready to jump', 'Razor Crest: jump at your own risk']
+```
+
 Cada ramo recebe o único membro que trata, já estreitado:
 
 ```ts
 switchFor(status, {
-	[Status.Draft]: (value) => {
-		const draft: Status.Draft = value; // não Status
-		return render(draft);
+	[HyperdriveStatus.Damaged]: (value) => {
+		const damaged: HyperdriveStatus.Damaged = value; // não HyperdriveStatus
+		return scheduleRepair(damaged);
 	},
 	// …
 });
+```
+
+O membro estreitado, passado adiante para uma função que só aceita aquele:
+
+```ts
+import { switchFor } from '@fulcro/functions';
+
+enum HyperdriveStatus {
+	Online,
+	Damaged,
+	Offline,
+}
+
+// Só um hiperpropulsor danificado pode ser agendado na baia de reparos do Chewbacca.
+const scheduleRepair = (status: HyperdriveStatus.Damaged): string => {
+	return `Repair bay booked (status ${String(status)}): Chewie has the hydrospanner`;
+};
+
+const nextStep = (status: HyperdriveStatus): string => {
+	return switchFor(status, {
+		[HyperdriveStatus.Online]: () => 'Punch it',
+		[HyperdriveStatus.Damaged]: (value) => {
+			const damaged: HyperdriveStatus.Damaged = value;
+
+			return scheduleRepair(damaged);
+		},
+		[HyperdriveStatus.Offline]: () => 'Find a new motivator',
+	});
+};
+
+console.log(nextStep(HyperdriveStatus.Damaged)); // 'Repair bay booked (status 1): Chewie has the hydrospanner'
+console.log(nextStep(HyperdriveStatus.Online)); // 'Punch it'
 ```
 
 Funciona com enums numéricos, enums de string e uniões de literais de string ou
 de número:
 
 ```ts
-const icon = switchFor(theme, {
-	dark: () => '🌙',
-	light: () => '☀️',
+const blade = switchFor(side, {
+	light: () => '🔵',
+	dark: () => '🔴',
 });
 ```
 
 Um membro cujo valor é `0` é despachado como qualquer outro — o ramo é
 encontrado pela chave, nunca testando se o valor é verdadeiro.
 
+Uma união de literais, e um enum cujo primeiro membro é `0`:
+
+```ts
+import { switchFor } from '@fulcro/functions';
+
+type Side = 'light' | 'dark';
+
+enum Rank {
+	Youngling,
+	Padawan,
+	Knight,
+	Master,
+}
+
+interface ForceUser {
+	name: string;
+	side: Side;
+	rank: Rank;
+}
+
+const describe = (user: ForceUser): string => {
+	const blade = switchFor(user.side, {
+		light: () => 'blue',
+		dark: () => 'red',
+	});
+
+	const title = switchFor(user.rank, {
+		[Rank.Youngling]: () => 'Youngling',
+		[Rank.Padawan]: () => 'Padawan',
+		[Rank.Knight]: () => 'Jedi Knight',
+		[Rank.Master]: () => 'Master',
+	});
+
+	return `${title} ${user.name}, ${blade} blade`;
+};
+
+console.log(describe({ name: 'Grogu', side: 'light', rank: Rank.Youngling })); // 'Youngling Grogu, blue blade'
+console.log(describe({ name: 'Kylo Ren', side: 'dark', rank: Rank.Knight })); // 'Jedi Knight Kylo Ren, red blade'
+```
+
 ### Executando pelos efeitos
 
 Não há uma função separada que retorne `void`, e nenhuma é necessária:
 
 ```ts
-switchFor(status, {
-	[Status.Draft]: () => saveDraft(),
-	[Status.Published]: () => publish(),
-	[Status.Archived]: () => archive(),
+switchFor(alert, {
+	[Alert.Green]: () => resumePatrols(),
+	[Alert.Yellow]: () => scrambleSnowspeeders(),
+	[Alert.Red]: () => evacuateEchoBase(),
 });
 ```
 
 A verificação de exaustividade vale aqui exatamente como vale para uma chamada
 cujo resultado é lido.
+
+O painel de alerta da Base Echo, onde cada nível faz algo em vez de devolver
+algo:
+
+```ts
+import { switchFor } from '@fulcro/functions';
+
+enum Alert {
+	Green,
+	Yellow,
+	Red,
+}
+
+const orders: string[] = [];
+
+const resumePatrols = (): void => {
+	orders.push('Tauntaun patrols resume');
+};
+
+const scrambleSnowspeeders = (): void => {
+	orders.push('Rogue Squadron to the snowspeeders');
+};
+
+const evacuateEchoBase = (): void => {
+	orders.push('Begin evacuation — transports first');
+};
+
+const raise = (alert: Alert): void => {
+	switchFor(alert, {
+		[Alert.Green]: () => resumePatrols(),
+		[Alert.Yellow]: () => scrambleSnowspeeders(),
+		[Alert.Red]: () => evacuateEchoBase(),
+	});
+};
+
+raise(Alert.Yellow);
+raise(Alert.Red);
+
+console.log(orders); // ['Rogue Squadron to the snowspeeders', 'Begin evacuation — transports first']
+```
 
 ### A forma por predicado — todo o resto
 
@@ -114,12 +262,12 @@ Onde os ramos são condições, e não valores:
 
 ```ts
 const size = switchFor(
-	order,
+	ship,
 	[
-		{ when: (o) => o.total > 1000, then: () => 'large' },
-		{ when: (o) => o.items.length === 0, then: () => 'empty' },
+		{ when: (s) => s.crew > 1000, then: () => 'capital ship' },
+		{ when: (s) => s.hyperdriveClass === null, then: () => 'sublight only' },
 	],
-	() => 'standard',
+	() => 'starfighter',
 );
 ```
 
@@ -130,13 +278,54 @@ avaliados — nem as condições, nem os corpos.
 escondido:
 
 ```ts
-const a = switchFor(n, cases); // string | undefined
-const b = switchFor(n, cases, () => 'fallback'); // string
+const a = switchFor(ship, cases); // string | undefined
+const b = switchFor(ship, cases, () => 'starfighter'); // string
 ```
 
 Esta forma **não pode** ser exaustiva. Uma condição é uma função arbitrária, e o
 compilador não consegue raciocinar sobre quais valores ela aceita — é por isso
 que ela aceita um fallback e a forma exaustiva não.
+
+Um registro de frota classificando naves, com e sem fallback, e contando as
+condições que de fato avaliou:
+
+```ts
+import { type SwitchCase, switchFor } from '@fulcro/functions';
+
+interface Ship {
+	name: string;
+	crew: number;
+	hyperdriveClass: number | null;
+}
+
+let conditionsTested = 0;
+
+const cases: SwitchCase<Ship, string>[] = [
+	{
+		when: (ship) => (conditionsTested++, ship.crew > 1000),
+		then: () => 'capital ship',
+	},
+	{
+		when: (ship) => (conditionsTested++, ship.hyperdriveClass === null),
+		then: () => 'sublight only',
+	},
+];
+
+const fleet: Ship[] = [
+	{ name: 'Executor', crew: 279_144, hyperdriveClass: 2 },
+	{ name: 'TIE fighter', crew: 1, hyperdriveClass: null },
+	{ name: 'X-wing', crew: 1, hyperdriveClass: 1 },
+];
+
+const classes = fleet.map((ship) => `${ship.name}: ${switchFor(ship, cases, () => 'starfighter')}`);
+
+console.log(classes); // ['Executor: capital ship', 'TIE fighter: sublight only', 'X-wing: starfighter']
+console.log(conditionsTested); // 5 — a segunda condição do Executor nunca foi avaliada
+
+const unclassified: string | undefined = switchFor(fleet[2], cases);
+
+console.log(unclassified); // undefined — sem fallback, e o tipo diz isso
+```
 
 ### Por que se dar ao trabalho
 
@@ -147,8 +336,8 @@ Porque a alternativa é um ternário aninhado ou um `let` mutável:
 let label: string;
 
 switch (status) {
-	case Status.Draft:
-		label = 'draft';
+	case HyperdriveStatus.Online:
+		label = 'ready to jump';
 		break;
 	// …esqueça um caso e nada reclama
 }
@@ -158,13 +347,47 @@ Um `switch` nativo é uma instrução, então não pode inicializar uma `const`,
 pode ser o corpo de uma arrow function e não pode ficar dentro de um objeto
 literal ou de um atributo JSX. `switchFor` pode.
 
+O relatório pré-voo que o computador da nave entrega ao piloto, montado como um
+único objeto literal — o lugar onde um `switch` não pode ir:
+
+```ts
+import { switchFor } from '@fulcro/functions';
+
+enum HyperdriveStatus {
+	Online,
+	Damaged,
+	Offline,
+}
+
+interface PreflightReport {
+	ship: string;
+	hyperdrive: string;
+	canJump: boolean;
+}
+
+const preflight = (ship: string, status: HyperdriveStatus): PreflightReport => ({
+	ship,
+	hyperdrive: switchFor(status, {
+		[HyperdriveStatus.Online]: () => 'ready to jump',
+		[HyperdriveStatus.Damaged]: () => 'jump at your own risk',
+		[HyperdriveStatus.Offline]: () => "it's not my fault",
+	}),
+	canJump: status !== HyperdriveStatus.Offline,
+});
+
+console.log(preflight('Millennium Falcon', HyperdriveStatus.Offline));
+// { ship: 'Millennium Falcon', hyperdrive: "it's not my fault", canJump: false }
+```
+
 ## `Result`
 
 O resultado de uma operação, como valor: ou um **sucesso**, com o valor que ela
 produziu, ou uma **falha**, com o erro com que ela falhou.
 
 ```ts
-const parsed: Result<number, string> = Number.isNaN(n) ? failure('not a number') : success(n);
+const jump: Result<number, string> = Number.isNaN(parsecs)
+	? failure('not a coordinate')
+	: success(parsecs);
 ```
 
 |           | `value` | `error`          |
@@ -172,40 +395,106 @@ const parsed: Result<number, string> = Number.isNaN(n) ? failure('not a number')
 | `Success` | `T`     | `null`           |
 | `Failure` | `null`  | `NonNullable<E>` |
 
+Um computador de navegação interpretando as distâncias digitadas nele, todo
+desfecho como valor:
+
+```ts
+import { failure, type Result, success } from '@fulcro/functions';
+
+const parseParsecs = (input: string): Result<number, string> => {
+	const parsecs = Number(input);
+
+	if (Number.isNaN(parsecs)) return failure(`'${input}' is not a coordinate`);
+	if (parsecs <= 0) return failure('a jump needs a distance');
+
+	return success(parsecs);
+};
+
+console.log(parseParsecs('12').value); // 12 — a Corrida de Kessel, em menos de doze
+console.log(parseParsecs('Kessel').error); // "'Kessel' is not a coordinate"
+console.log(parseParsecs('0').error); // 'a jump needs a distance'
+```
+
 ### Trate as duas variantes com `handle`
 
 ```ts
-const message = parsed.handle({
-	success: (value) => `got ${value}`,
-	failure: (error) => `failed: ${error}`,
+const message = jump.handle({
+	success: (value) => `plotted ${value} parsecs`,
+	failure: (error) => `cannot jump: ${error}`,
 });
 ```
 
 Os dois ramos são obrigatórios, e **deixar um de fora não compila**:
 
 ```text
-Property 'failure' is missing in type '{ success: (value: number) => string; }'
-but required in type 'ResultCases<number, string, unknown>'.
+error TS2345: Argument of type '{ success: (value: number) => string; }' is not
+assignable to parameter of type 'ResultCases<number, string, unknown>'.
+  Property 'failure' is missing in type '{ success: (value: number) => string; }'
+  but required in type 'ResultCases<number, string, unknown>'.
 ```
 
 Só o ramo da variante em questão é executado. Nomear um terceiro ramo também não
 compila.
 
+O visor do computador de navegação, uma mensagem para cada desfecho:
+
+```ts
+import { failure, type Result, success } from '@fulcro/functions';
+
+const parseParsecs = (input: string): Result<number, string> => {
+	const parsecs = Number(input);
+
+	return Number.isNaN(parsecs) ? failure(`'${input}' is not a coordinate`) : success(parsecs);
+};
+
+const display = (input: string): string => {
+	return parseParsecs(input).handle({
+		success: (value) => `Plotted: ${String(value)} parsecs`,
+		failure: (error) => `Cannot jump: ${error}`,
+	});
+};
+
+console.log(display('12')); // 'Plotted: 12 parsecs'
+console.log(display('Dagobah')); // "Cannot jump: 'Dagobah' is not a coordinate"
+```
+
 ### Ou estreite antes
 
 ```ts
-if (parsed.isSuccess()) {
-	parsed.value; // number, não number | null
+if (jump.isSuccess()) {
+	jump.value; // number, não number | null
 }
 
-if (parsed.isFailure()) {
-	parsed.error; // string
+if (jump.isFailure()) {
+	jump.error; // string
 }
 ```
 
 `error === null` estreita do mesmo jeito, e é a verificação a usar num resultado
 que foi copiado — por `structuredClone`, através de um worker ou por JSON. A
 cópia mantém os dados do resultado, mas não os métodos que ele herda.
+
+Uma rota calculada numa nave e enviada para outra: o original estreita com os
+seus métodos, a cópia com `error === null`:
+
+```ts
+import { type Result, success } from '@fulcro/functions';
+
+const course: Result<number, string> = success(12);
+
+if (course.isSuccess()) {
+	console.log(course.value + 1); // 13 — `value` é um number aqui
+}
+
+// Enviado pelo link de comunicação, o resultado chega como os seus dados, sem os métodos.
+const received: Result<number, string> = structuredClone(course);
+
+console.log(typeof received.isSuccess); // 'undefined'
+
+if (received.error === null) {
+	console.log(`Course received: ${String(received.value)} parsecs`); // 'Course received: 12 parsecs'
+}
+```
 
 ### Distinga pela variante, nunca por `value`
 
@@ -222,27 +511,87 @@ Executa uma operação e devolve o resultado dela como um [`Result`](#result), e
 vez de lançar:
 
 ```ts
-const result = await tryCatch(() => fetch(url));
+const result = await tryCatch(() => hailRebelBase(frequency));
 
 if (result.isFailure()) return fallback;
 
 use(result.value);
 ```
 
+Um transmissor que lança quando o Império bloqueia a frequência, transformado
+num valor sobre o qual quem chamou pode decidir:
+
+```ts
+import { tryCatch } from '@fulcro/functions';
+
+const jammed = new Set([1138]);
+
+const hailRebelBase = async (frequency: number): Promise<string> => {
+	await new Promise((resolve) => setTimeout(resolve, 5));
+
+	if (jammed.has(frequency)) throw new Error(`frequency ${String(frequency)} is jammed`);
+
+	return 'Echo Base here — go ahead, Rogue Leader';
+};
+
+const contact = async (frequency: number): Promise<string> => {
+	const result = await tryCatch(() => hailRebelBase(frequency));
+
+	if (result.isFailure())
+		return `No answer (${(result.error as Error).message}); switching to the backup channel`;
+
+	return result.value;
+};
+
+console.log(await contact(1977)); // 'Echo Base here — go ahead, Rogue Leader'
+console.log(await contact(1138)); // 'No answer (frequency 1138 is jammed); switching to the backup channel'
+```
+
 ### Prefira a forma com callback
 
 ```ts
-await tryCatch(() => risky()); // ✓ captura tudo
-await tryCatch(risky()); // ✗ perde um throw síncrono
+await tryCatch(() => openBlastDoors(code)); // ✓ captura tudo
+await tryCatch(openBlastDoors(code)); // ✗ perde um throw síncrono
 ```
 
-Na segunda forma, `risky` roda **antes** de `tryCatch`, então qualquer coisa que
-ela lance no caminho até produzir uma promise escapa por completo. A forma com
-callback move essa chamada para dentro do `try`, que é o único jeito de cobrir
-tanto a falha síncrona quanto a assíncrona de uma mesma operação.
+Na segunda forma, `openBlastDoors` roda **antes** de `tryCatch`, então qualquer
+coisa que ela lance no caminho até produzir uma promise escapa por completo. A
+forma com callback move essa chamada para dentro do `try`, que é o único jeito
+de cobrir tanto a falha síncrona quanto a assíncrona de uma mesma operação.
 
 A forma com promise continua aceita, e lê melhor quando a promise já está em
 mãos.
+
+As portas blindadas da Estrela da Morte, que recusam um código errado antes de
+existir qualquer promise — e o que cada forma faz disso:
+
+```ts
+import { tryCatch } from '@fulcro/functions';
+
+const openBlastDoors = (code: string): Promise<string> => {
+	if (code !== 'THX-1138') throw new Error('access denied');
+
+	return Promise.resolve('Blast doors open');
+};
+
+const caught = await tryCatch(() => openBlastDoors('TK-421'));
+
+console.log(caught.isFailure()); // true — o throw síncrono virou um valor
+
+let escaped = false;
+
+try {
+	await tryCatch(openBlastDoors('TK-421'));
+} catch {
+	escaped = true;
+}
+
+console.log(escaped); // true — lançou antes mesmo de tryCatch ser chamado
+
+const opened = await tryCatch(openBlastDoors('THX-1138'));
+
+console.log(opened.value); // 'Blast doors open' — tudo certo quando a promise já está em mãos
+```
 
 ### `E` tem `unknown` como padrão, não `Error`
 
@@ -252,7 +601,7 @@ promessa que a função não consegue cumprir — `result.error.message` leria
 ou informe o tipo quando você controla todos os pontos que lançam:
 
 ```ts
-const result = await tryCatch<User, ApiError>(() => api.load(id));
+const result = await tryCatch<Pilot, ArchiveError>(() => rebelArchive.load(callSign));
 ```
 
 Um `null` ou `undefined` lançado — válido, por mais patológico que seja — é
@@ -260,19 +609,60 @@ envolvido num `Error` que carrega o original como `cause`
 ([`FULCRO2001`](./errors/FULCRO2xxx.md#fulcro2001)), porque guardá-lo como veio
 tornaria a falha indistinguível de um sucesso.
 
+Um arquivo que controla todos os seus pontos de throw, e diz isso no tipo:
+
+```ts
+import { tryCatch } from '@fulcro/functions';
+
+interface Pilot {
+	callSign: string;
+	name: string;
+}
+
+class ArchiveError extends Error {
+	constructor(readonly callSign: string) {
+		super(`no pilot on file as ${callSign}`);
+	}
+}
+
+const pilots = new Map([['Red Five', { callSign: 'Red Five', name: 'Luke Skywalker' }]]);
+
+const rebelArchive = {
+	load: async (callSign: string): Promise<Pilot> => {
+		const pilot = pilots.get(callSign);
+
+		if (pilot === undefined) throw new ArchiveError(callSign);
+
+		return pilot;
+	},
+};
+
+const result = await tryCatch<Pilot, ArchiveError>(() => rebelArchive.load('Red Six'));
+
+if (result.isFailure()) {
+	console.log(result.error.callSign); // 'Red Six' — tipado, porque todo ponto de throw é nosso
+}
+
+const thrownNothing = await tryCatch(() => {
+	throw undefined;
+});
+
+console.log((thrownNothing.error as Error).message.startsWith('FULCRO2001')); // true
+```
+
 ### Onde você realmente usa
 
 ```ts
 // Várias coisas independentes, em que uma falhar não deve parar as outras.
-const [user, orders, settings] = await Promise.all([
-	tryCatch(() => loadUser(id)),
-	tryCatch(() => loadOrders(id)),
-	tryCatch(() => loadSettings(id)),
+const [plans, fleet, intelligence] = await Promise.all([
+	tryCatch(() => loadDeathStarPlans()),
+	tryCatch(() => loadFleetPositions()),
+	tryCatch(() => loadBothanReports()),
 ]);
 
-render({
-	user: user.value,
-	orders: orders.handle({ success: (list) => list, failure: () => [] }),
+brief({
+	plans: plans.value,
+	fleet: fleet.handle({ success: (ships) => ships, failure: () => [] }),
 });
 ```
 
@@ -280,7 +670,59 @@ render({
 // Uma fronteira em que um throw seria pior do que um valor.
 const parsed = await tryCatch(async () => JSON.parse(body));
 
-if (parsed.isFailure()) return reply.status(400).send('bad json');
+if (parsed.isFailure()) return reply.status(400).send('garbled transmission');
+```
+
+O briefing de Mon Mothma antes de Endor, montado a partir de três fontes em que
+uma falhar não pode cancelar o briefing:
+
+```ts
+import { tryCatch } from '@fulcro/functions';
+
+const loadDeathStarPlans = async (): Promise<string> => 'Shield generator on the forest moon';
+
+const loadFleetPositions = async (): Promise<string[]> => {
+	throw new Error('Sullust relay is down');
+};
+
+const loadBothanReports = async (): Promise<number> => 3;
+
+const [plans, fleet, intelligence] = await Promise.all([
+	tryCatch(() => loadDeathStarPlans()),
+	tryCatch(() => loadFleetPositions()),
+	tryCatch(() => loadBothanReports()),
+]);
+
+const briefing = {
+	plans: plans.value,
+	fleet: fleet.handle({ success: (ships) => ships, failure: () => [] }),
+	reports: intelligence.value ?? 0,
+};
+
+console.log(briefing); // { plans: 'Shield generator on the forest moon', fleet: [], reports: 3 }
+```
+
+E o retransmissor de Mos Eisley, que precisa responder a uma transmissão
+truncada com um status em vez de cair:
+
+```ts
+import { tryCatch } from '@fulcro/functions';
+
+interface Reply {
+	code: number;
+	body: string;
+}
+
+const relay = async (body: string): Promise<Reply> => {
+	const parsed = await tryCatch(async (): Promise<{ to: string }> => JSON.parse(body));
+
+	if (parsed.isFailure()) return { code: 400, body: 'garbled transmission' };
+
+	return { code: 200, body: `relayed to ${parsed.value.to}` };
+};
+
+console.log(await relay('{ "to": "Tantive IV" }')); // { code: 200, body: 'relayed to Tantive IV' }
+console.log(await relay('help me obi-wan')); // { code: 400, body: 'garbled transmission' }
 ```
 
 ### Coletando falhas ao longo de um lote
@@ -288,12 +730,8 @@ if (parsed.isFailure()) return reply.status(400).send('bad json');
 Ele se compõe com os outros pacotes em vez de precisar de um modo próprio:
 
 ```ts
-import { AsyncSequenceCollection } from '@fulcro/collections/async';
-import { SequenceCollection } from '@fulcro/collections';
-import { tryCatch } from '@fulcro/functions';
-
-const outcomes = await AsyncSequenceCollection.from(ids)
-	.selectAwait((id) => tryCatch(() => loadUser(id)), { concurrency: 8 })
+const outcomes = await AsyncSequenceCollection.from(callSigns)
+	.selectAwait((callSign) => tryCatch(() => rebelArchive.load(callSign)), { concurrency: 8 })
 	.toArray();
 
 const [loaded, failed] = SequenceCollection.from(outcomes).partition((outcome) =>
@@ -306,32 +744,102 @@ Todo elemento é tentado, nada para antes da hora, e você recebe as duas metade
 `tryCatch` sempre devolve uma promise, inclusive para uma operação totalmente
 síncrona.
 
+Carregando todos os pilotos da escala de um esquadrão, com os indicativos de que
+o arquivo nunca ouviu falar separados, em vez de interromperem a carga:
+
+```ts
+import { SequenceCollection } from '@fulcro/collections';
+import { AsyncSequenceCollection } from '@fulcro/collections/async';
+import { tryCatch } from '@fulcro/functions';
+
+const pilots = new Map([
+	['Red Two', 'Wedge Antilles'],
+	['Red Five', 'Luke Skywalker'],
+	['Gold Leader', 'Lando Calrissian'],
+]);
+
+const rebelArchive = {
+	load: async (callSign: string): Promise<string> => {
+		await new Promise((resolve) => setTimeout(resolve, 5));
+
+		const name = pilots.get(callSign);
+
+		if (name === undefined) throw new Error(`${callSign} is not on file`);
+
+		return name;
+	},
+};
+
+const callSigns = ['Red Two', 'Red Six', 'Red Five', 'Gold Leader'];
+
+const outcomes = await AsyncSequenceCollection.from(callSigns)
+	.selectAwait((callSign) => tryCatch(() => rebelArchive.load(callSign)), { concurrency: 8 })
+	.toArray();
+
+const [loaded, failed] = SequenceCollection.from(outcomes).partition((outcome) =>
+	outcome.isSuccess(),
+);
+
+console.log(loaded.select((outcome) => outcome.value).toArray()); // ['Wedge Antilles', 'Luke Skywalker', 'Lando Calrissian']
+console.log(failed.select((outcome) => (outcome.error as Error).message).toArray()); // ['Red Six is not on file']
+```
+
 ## `Option`
 
 Um valor que pode estar ausente, como um valor próprio em vez de `null`: ou
 **algum** valor (`some`), ou **nenhum** (`none`).
 
 ```ts
-const port: Option<number> = some(8080);
-const nothing: Option<number> = none();
+const hyperdrive: Option<number> = some(0.5);
+const noHyperdrive: Option<number> = none();
 ```
 
 A maioria das options vem de um valor que pode ser `null` ou `undefined`, e
 `optionOf` converte um no outro:
 
 ```ts
-const user: Option<User> = optionOf(users.get(id));
+const ship: Option<Starship> = optionOf(registry.get(registryNumber));
 ```
 
 Só `null` e `undefined` são ausentes. `0`, `''` e `false` são presentes — cada um
 é um valor que alguém quis dizer.
 
+O registro da autoridade portuária, onde uma nave que falta é um valor e uma
+nave com tripulação zero não está faltando:
+
+```ts
+import { none, type Option, optionOf, some } from '@fulcro/functions';
+
+interface Starship {
+	name: string;
+	crew: number;
+}
+
+const registry = new Map<string, Starship>([
+	['YT-1300 492727ZED', { name: 'Millennium Falcon', crew: 2 }],
+	['ST-70 Razor Crest', { name: 'Razor Crest', crew: 1 }],
+	['B-wing derelict', { name: 'Derelict B-wing', crew: 0 }],
+]);
+
+const hyperdrive: Option<number> = some(0.5);
+const noHyperdrive: Option<number> = none();
+
+const falcon = optionOf(registry.get('YT-1300 492727ZED'));
+const phantom = optionOf(registry.get('TIE/x1 Vader'));
+const crewOfDerelict = optionOf(registry.get('B-wing derelict')?.crew);
+
+console.log(hyperdrive.isSome(), noHyperdrive.isNone()); // true true
+console.log(falcon.isSome()); // true
+console.log(phantom.isNone()); // true
+console.log(crewOfDerelict.isSome(), crewOfDerelict.value); // true 0 — zero é um valor que alguém quis dizer
+```
+
 ### Trate um valor presente e um ausente com `handle`
 
 ```ts
-const greeting = user.handle({
-	some: (found) => `Hello, ${found.name}`,
-	none: () => 'Hello, stranger',
+const greeting = ship.handle({
+	some: (found) => `Welcome aboard the ${found.name}`,
+	none: () => 'No such ship docked here',
 });
 ```
 
@@ -341,8 +849,41 @@ compila. Só o ramo da variante em questão é executado.
 ### Ou estreite para o valor presente
 
 ```ts
-if (user.isSome()) {
-	user.value; // User, não User | null
+if (ship.isSome()) {
+	ship.value; // Starship, não Starship | null
+}
+```
+
+O terminal de atracagem da Cidade das Nuvens, recebendo as chegadas pela
+plataforma:
+
+```ts
+import { optionOf } from '@fulcro/functions';
+
+interface Starship {
+	name: string;
+	captain: string;
+}
+
+const landingPads = new Map<string, Starship>([
+	['Pad 7', { name: 'Millennium Falcon', captain: 'Han Solo' }],
+	['Pad 9', { name: 'Slave I', captain: 'Boba Fett' }],
+]);
+
+const greet = (pad: string): string => {
+	return optionOf(landingPads.get(pad)).handle({
+		some: (found) => `Welcome to Cloud City, Captain ${found.captain} of the ${found.name}`,
+		none: () => `${pad} is empty`,
+	});
+};
+
+console.log(greet('Pad 7')); // 'Welcome to Cloud City, Captain Han Solo of the Millennium Falcon'
+console.log(greet('Pad 3')); // 'Pad 3 is empty'
+
+const onPadNine = optionOf(landingPads.get('Pad 9'));
+
+if (onPadNine.isSome()) {
+	console.log(onPadNine.value.captain); // 'Boba Fett' — um Starship aqui, não Starship | null
 }
 ```
 
@@ -360,12 +901,45 @@ valores iguais, dois arrays com elementos iguais —, onde `===` só diz se são
 mesmo objeto.
 
 ```ts
-equals({ id: 1, tags: ['a'] }, { id: 1, tags: ['a'] }); // true
-equals([1, 2, 3], [1, 3, 2]); // false
+equals(
+	{ system: 'Hoth', waypoints: ['Ord Mantell'] },
+	{ system: 'Hoth', waypoints: ['Ord Mantell'] },
+); // true
+equals(['Hoth', 'Bespin', 'Endor'], ['Hoth', 'Endor', 'Bespin']); // false
 ```
 
 `right` recebe o tipo de `left`, então dois valores que nunca poderiam ser
 iguais não compilam: `equals(1, 'one')` é recusado.
+
+Dois droides astromecânicos calculando o mesmo plano de voo de forma
+independente, e o navegador conferindo que eles concordam antes do salto:
+
+```ts
+import { equals } from '@fulcro/functions';
+
+interface FlightPlan {
+	destination: string;
+	waypoints: string[];
+	jumpAt: Date;
+}
+
+const fromR2D2: FlightPlan = {
+	destination: 'Dagobah',
+	waypoints: ['Hoth', 'Anoat'],
+	jumpAt: new Date(0),
+};
+
+const fromChopper: FlightPlan = {
+	jumpAt: new Date(0),
+	waypoints: ['Hoth', 'Anoat'],
+	destination: 'Dagobah',
+};
+
+console.log(fromR2D2 === fromChopper); // false — dois objetos
+console.log(equals(fromR2D2, fromChopper)); // true — o mesmo plano, chaves em qualquer ordem
+console.log(equals(fromR2D2, { ...fromChopper, waypoints: ['Anoat', 'Hoth'] })); // false — num array, a ordem importa
+console.log(equals(Number.NaN, Number.NaN)); // true — um valor é sempre igual a si mesmo
+```
 
 ### O que é comparado pelo conteúdo, e o que pela identidade
 
@@ -423,14 +997,46 @@ suas chaves. O descritor conhece o tipo; passe-o ao
 [`createEquals`](#suas-próprias-regras-createequals) como regra:
 
 ```ts
-const sameShape = createEquals([Wide, Tall]); // Matrix(DoublePrecisionFloat, 2, 3) e (…, 3, 2)
+const sameShape = createEquals([Formation, Column]); // Matrix(DoublePrecisionFloat, 2, 3) e (…, 3, 2)
 
-equals(wide, tall); // true: os mesmos seis números
-sameShape(wide, tall); // false: cada uma é reconhecida pelo próprio descritor
+equals<unknown>(formation, column); // true: os mesmos seis números
+sameShape<unknown>(formation, column); // false: cada uma é reconhecida pelo próprio descritor
 ```
+
+As duas matrizes são de tipos diferentes, que `equals` se recusa a comparar a
+menos que a chamada diga em que tipo é feita — aqui, `unknown`.
 
 Uma struct passada como regra nunca é igual a um objeto comum que só tem os
 mesmos campos, e cada campo dela é comparado como o próprio tipo compara.
+
+Duas leituras da força dos escudos dos mesmos seis caças — uma organizada como a
+formação de ataque, outra como a coluna em que voaram:
+
+```ts
+import { createEquals, equals } from '@fulcro/functions';
+import { DoublePrecisionFloat, Matrix } from '@fulcro/types';
+
+// As linhas são as alas, as colunas os caças de cada ala.
+const Formation = Matrix(DoublePrecisionFloat, 2, 3);
+const Column = Matrix(DoublePrecisionFloat, 3, 2);
+
+const attackFormation = Formation.from([
+	[100, 80, 65],
+	[90, 70, 55],
+]);
+
+const inColumn = Column.from([
+	[100, 80],
+	[65, 90],
+	[70, 55],
+]);
+
+const sameShape = createEquals([Formation, Column]);
+
+// De tipos diferentes, então cada comparação é feita em `unknown`.
+console.log(equals<unknown>(attackFormation, inColumn)); // true — as mesmas seis leituras, lidas como arrays
+console.log(sameShape<unknown>(attackFormation, inColumn)); // false — uma formação não é uma coluna
+```
 
 ### Suas próprias regras: `createEquals`
 
@@ -439,14 +1045,41 @@ por regras suas. Uma regra reconhece seus valores com `is` e compara dois deles
 com `equals`:
 
 ```ts
-const byId: EqualityRule<User> = {
-	is: (value): value is User => value instanceof User,
-	equals: (left, right) => left.id === right.id,
+const byCallSign: EqualityRule<Pilot> = {
+	is: (value): value is Pilot => value instanceof Pilot,
+	equals: (left, right) => left.callSign === right.callSign,
 };
 
-const sameUsers = createEquals([byId]);
+const sameRoster = createEquals([byCallSign]);
 
-sameUsers([alice], [aliceRenamed]); // true: os arrays como `equals` compara, os usuários pelo id
+sameRoster([wedge], [wedgeAfterPromotion]); // true: os arrays como `equals` compara, os pilotos pelo indicativo
+```
+
+Duas escalas do Esquadrão Vermelho, uma feita antes da promoção do Wedge e outra
+depois — os mesmos pilotos, pelo indicativo:
+
+```ts
+import { createEquals, type EqualityRule, equals } from '@fulcro/functions';
+
+class Pilot {
+	constructor(
+		readonly callSign: string,
+		readonly rank: string,
+	) {}
+}
+
+const byCallSign: EqualityRule<Pilot> = {
+	is: (value): value is Pilot => value instanceof Pilot,
+	equals: (left, right) => left.callSign === right.callSign,
+};
+
+const sameRoster = createEquals([byCallSign]);
+
+const beforeHoth = [new Pilot('Red Two', 'Lieutenant'), new Pilot('Red Five', 'Commander')];
+const afterHoth = [new Pilot('Red Two', 'Commander'), new Pilot('Red Five', 'Commander')];
+
+console.log(equals(beforeHoth, afterHoth)); // false — instâncias de classe só são iguais a si mesmas
+console.log(sameRoster(beforeHoth, afterHoth)); // true — os mesmos indicativos, na mesma ordem
 ```
 
 O descritor de cada tipo de `@fulcro/types` já é uma regra, já que cada um tem
@@ -458,6 +1091,27 @@ const byValue: EqualityRule<Decimal> = {
 	is: Decimal.is,
 	equals: (left, right) => left.equals(right),
 };
+```
+
+Dois livros-caixa dos mesmos pagamentos de recompensa, um escrito com zeros à
+direita:
+
+```ts
+import { createEquals, type EqualityRule, equals } from '@fulcro/functions';
+import { Decimal } from '@fulcro/types';
+
+const byValue: EqualityRule<Decimal> = {
+	is: Decimal.is,
+	equals: (left, right) => left.equals(right),
+};
+
+const sameLedger = createEquals([byValue]);
+
+const guildLedger = [Decimal.from('50000.00'), Decimal.from('15000.50')];
+const huttLedger = [Decimal.from('50000'), Decimal.from('15000.5')];
+
+console.log(equals(guildLedger, huttLedger)); // false — cada Decimal é uma instância distinta
+console.log(sameLedger(guildLedger, huttLedger)); // true — os mesmos valores
 ```
 
 Dois valores são comparados nesta ordem:
@@ -477,12 +1131,46 @@ uma estrutura que se refere a si mesma continua sendo comparada dando uma volta
 só:
 
 ```ts
-const byLabel: EqualityRule<Tree> = {
-	is: (value): value is Tree => value instanceof Tree,
+const byName: EqualityRule<Lineage> = {
+	is: (value): value is Lineage => value instanceof Lineage,
 	equals: (left, right, nested) => {
-		return left.label === right.label && nested(left.children, right.children);
+		return left.name === right.name && nested(left.apprentices, right.apprentices);
 	},
 };
+```
+
+A linhagem Jedi como dois arquivos a registraram — os mesmos mestres e
+aprendizes, um dos arquivos anotando as patentes que tinham na época:
+
+```ts
+import { createEquals, type EqualityRule } from '@fulcro/functions';
+
+class Lineage {
+	constructor(
+		readonly name: string,
+		readonly rank: string,
+		readonly apprentices: Lineage[],
+	) {}
+}
+
+const byName: EqualityRule<Lineage> = {
+	is: (value): value is Lineage => value instanceof Lineage,
+	equals: (left, right, nested) => {
+		return left.name === right.name && nested(left.apprentices, right.apprentices);
+	},
+};
+
+const sameLineage = createEquals([byName]);
+
+const templeArchive = new Lineage('Qui-Gon Jinn', 'Master', [
+	new Lineage('Obi-Wan Kenobi', 'Master', [new Lineage('Anakin Skywalker', 'Knight', [])]),
+]);
+
+const holocronOfIlum = new Lineage('Qui-Gon Jinn', 'Master', [
+	new Lineage('Obi-Wan Kenobi', 'Padawan', [new Lineage('Anakin Skywalker', 'Padawan', [])]),
+]);
+
+console.log(sameLineage(templeArchive, holocronOfIlum)); // true — os mesmos nomes, até o fim
 ```
 
 As regras e seus membros são lidos uma vez, quando a variante é criada: mudar a
