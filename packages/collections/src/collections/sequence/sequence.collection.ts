@@ -18,6 +18,7 @@ import type { OrderedSequence } from '@/src/@types/collections/ordered';
 import type { Sequence } from '@/src/@types/collections/sequence';
 import { createGroup, createOrderedSequence } from '@/src/collections/factories';
 import { isArraySource, isIndexKey, resolveDeclaredCount } from '@/src/functions/collections';
+import { Pipeline } from '@/src/functions/pipeline';
 import { TopWindow } from '@/src/functions/ranking';
 import { describeExpected, describeType, resolveTypeTest } from '@/src/functions/types';
 
@@ -236,18 +237,10 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 * @returns A deferred sequence with the matching elements.
 	 */
 	where(predicate: Predicate<T>): Sequence<T> {
-		const source: Iterable<T> = this.source;
-
-		return SequenceCollection.deferred(
-			{
-				*[Symbol.iterator](): Iterator<T> {
-					for (const item of source) {
-						if (predicate(item)) yield item;
-					}
-				},
-			},
-			UNKNOWN_COUNT,
-		);
+		// Extends the pipeline of an adjacent `where` or `select` rather than
+		// wrapping it, so the run is traversed by one generator however long it
+		// is. See `Pipeline`.
+		return SequenceCollection.deferred(Pipeline.over(this.source).filter(predicate), UNKNOWN_COUNT);
 	}
 
 	/**
@@ -258,14 +251,9 @@ export class SequenceCollection<T> implements Sequence<T> {
 	 * @returns A deferred sequence with the projected elements.
 	 */
 	select<R>(selector: Selector<T, R>): Sequence<R> {
-		const source: Iterable<T> = this.source;
-
+		// Fused with its neighbours, as `where` is.
 		return SequenceCollection.deferred(
-			{
-				*[Symbol.iterator](): Iterator<R> {
-					for (const item of source) yield selector(item);
-				},
-			},
+			Pipeline.over(this.source).project(selector),
 			() => this.knownCount,
 		);
 	}

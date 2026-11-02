@@ -65,6 +65,17 @@ Tudo o que devolve um valor em vez de uma sequência: `toArray`, `count`, `sum`,
 `first`, `any`, `aggregate`, `forEach` e o resto da coluna da direita na
 [referência](#referência) abaixo.
 
+### Uma sequência de `where` e `select` é um laço só
+
+Chamadas adjacentes de `where` e `select`, em qualquer ordem e em qualquer
+quantidade, são percorridas por um único laço sobre a fonte, e não por um
+gerador por chamada. Nada que você possa observar muda: cada predicado e cada
+projeção roda as mesmas vezes, e na mesma ordem, elemento por elemento, que
+rodaria estágio por estágio, e parar antes ainda fecha a fonte. O que some é o
+custo de retomar mais um gerador para cada elemento em cada estágio. Qualquer
+outro operador no meio — `orderBy`, `take`, `distinct` — começa uma nova
+sequência fundida.
+
 ## Criando uma sequência
 
 ```ts
