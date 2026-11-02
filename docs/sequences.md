@@ -65,6 +65,16 @@ Anything that returns a value rather than a sequence: `toArray`, `count`, `sum`,
 `first`, `any`, `aggregate`, `forEach`, and the rest of the right-hand column in
 the [reference](#reference) below.
 
+### A run of `where` and `select` is one loop
+
+Adjacent `where` and `select` calls, in any order and any number, are traversed
+by a single loop over the source rather than one generator per call. Nothing
+you can observe changes: every predicate and projection runs as often, and in
+the same order, element by element, as it would stage by stage, and stopping
+early still closes the source. What goes away is the cost of resuming one more
+generator for every element at every stage. Any other operator in between —
+`orderBy`, `take`, `distinct` — starts a new run.
+
 ## Creating a sequence
 
 ```ts
