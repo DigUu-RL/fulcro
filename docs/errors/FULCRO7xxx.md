@@ -71,10 +71,32 @@ Store a fixed-width integer instead, or a struct of the parts you need:
 createFixedBufferStorage(SignedInteger(64), 1_000);
 ```
 
+The Imperial treasury's balances, refused as `BigInteger` and held as 64-bit
+integers instead:
+
+```ts
+import { createFixedBufferStorage } from '@fulcro/memory';
+import { BigInteger, SignedInteger } from '@fulcro/types';
+
+try {
+	createFixedBufferStorage(BigInteger as never, 1_000);
+} catch (error) {
+	// A BigInteger has no fixed size to store.
+	console.log((error as Error).message.startsWith('FULCRO7003')); // true
+}
+
+const Credits = SignedInteger(64);
+const treasury = createFixedBufferStorage(Credits, 1_000);
+
+treasury.set(0, Credits.from(9_007_199_254_740_993n)); // past 2 ** 53, and still exact
+
+console.log(treasury.get(0)); // 9007199254740993n
+```
+
 ## FULCRO7004
 
 ```text
-TypeError: FULCRO7004: FixedBufferStorage.set: the value is not a value of Point.
+TypeError: FULCRO7004: FixedBufferStorage.set: the value is not a value of SensorContact.
 ```
 
 Details:
@@ -87,9 +109,9 @@ Details:
 object with the right fields, a value of a struct with other fields, or one
 whose field is outside its type's range. Nothing was written.
 
-Make the value with the struct itself: `Point.from({ x, y })`. The compiler
-already refuses this when the call is typed; it is reached from code that is
-not, or through a cast.
+Make the value with the struct itself: `SensorContact.from({ bearing, range })`.
+The compiler already refuses this when the call is typed; it is reached from
+code that is not, or through a cast.
 
 ## FULCRO7005
 
@@ -426,7 +448,7 @@ pointer from an allocation only within the bytes you asked for.
 ## FULCRO7020
 
 ```text
-RangeError: FULCRO7020: nativePointerTo: address 4 is not a multiple of 8, where a value of Sample may start.
+RangeError: FULCRO7020: nativePointerTo: address 4 is not a multiple of 8, where a value of ParsecReading may start.
 ```
 
 Details:
@@ -447,7 +469,7 @@ address as a type that may start there, give `at` that type.
 ## FULCRO7021
 
 ```text
-RangeError: FULCRO7021: NativePointer.get: the 8 bytes of Sample at address 16 run past 16, the end of where this pointer may read.
+RangeError: FULCRO7021: NativePointer.get: the 8 bytes of ParsecReading at address 16 run past 16, the end of where this pointer may read.
 ```
 
 Details:
@@ -567,7 +589,7 @@ giving it ownership, pass it the borrow itself.
 ## FULCRO7027
 
 ```text
-FULCRO7027: move: 'queue' is used after it was moved at line 12; use the owner move returned.
+FULCRO7027: move: 'launchQueue' is used after it was moved at line 12; use the owner move returned.
 ```
 
 Details:
@@ -588,7 +610,7 @@ the variable a new value on that branch, or move it on every one.
 ## FULCRO7028
 
 ```text
-FULCRO7028: borrow: the borrow 'reading' is used after borrowMutable(scores) at line 8 ended it.
+FULCRO7028: borrow: the borrow 'reading' is used after borrowMutable(shieldGrid) at line 8 ended it.
 ```
 
 Details:
@@ -610,7 +632,7 @@ after it.
 ## FULCRO7029
 
 ```text
-FULCRO7029: borrow: the borrow 'reading' is used after its owner 'scores' was moved at line 9.
+FULCRO7029: borrow: the borrow 'reading' is used after its owner 'shieldGrid' was moved at line 9.
 ```
 
 Details:

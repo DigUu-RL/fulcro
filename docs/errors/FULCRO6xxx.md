@@ -11,8 +11,8 @@ what you want, each type says so by name: `wrap()` on an integer, a rounding
 mode on a `Decimal`.
 
 The messages start with the operation that refused — `SignedInteger<8>.add`,
-`Decimal.round`, `Vector3.from` — so the name of the type is always in front of
-you.
+`Decimal.round`, `Starfighter.from` — so the name of the type is always in front
+of you.
 
 ## FULCRO6001
 
@@ -130,7 +130,7 @@ knows.
 ## FULCRO6008
 
 ```text
-TypeError: FULCRO6008: struct Point: expected an object of methods, received null.
+TypeError: FULCRO6008: struct Starfighter: expected an object of methods, received null.
 ```
 
 Details:
@@ -144,7 +144,7 @@ The third argument of `struct()` was given, and is not an object.
 ## FULCRO6009
 
 ```text
-TypeError: FULCRO6009: struct Point: method 'x' has the name of a field; a value could not hold both.
+TypeError: FULCRO6009: struct Starfighter: method 'shields' has the name of a field; a value could not hold both.
 ```
 
 Details:
@@ -159,7 +159,7 @@ them.
 ## FULCRO6010
 
 ```text
-TypeError: FULCRO6010: struct Point: '0' cannot name a method; …
+TypeError: FULCRO6010: struct Starfighter: '0' cannot name a method; …
 ```
 
 Details:
@@ -175,7 +175,7 @@ name the layout itself is declared under.
 ## FULCRO6011
 
 ```text
-TypeError: FULCRO6011: struct Point: method 'length' must be a function, received number.
+TypeError: FULCRO6011: struct Starfighter: method 'integrity' must be a function, received number.
 ```
 
 Details:
@@ -204,7 +204,7 @@ every message about the struct starts with.
 ## FULCRO6013
 
 ```text
-TypeError: FULCRO6013: struct Point: expected an object of fields, received undefined.
+TypeError: FULCRO6013: struct Starfighter: expected an object of fields, received undefined.
 ```
 
 Details:
@@ -218,7 +218,7 @@ The second argument of `struct()` is not an object.
 ## FULCRO6014
 
 ```text
-TypeError: FULCRO6014: struct Empty: expected at least one field.
+TypeError: FULCRO6014: struct Probe: expected at least one field.
 ```
 
 Details:
@@ -233,7 +233,7 @@ declare.
 ## FULCRO6015
 
 ```text
-TypeError: FULCRO6015: struct Point: '0' cannot name a field; …
+TypeError: FULCRO6015: struct Starfighter: '0' cannot name a field; …
 ```
 
 Details:
@@ -249,7 +249,7 @@ the layout.
 ## FULCRO6016
 
 ```text
-TypeError: FULCRO6016: struct Account: field 'balance' has no fixed layout. …
+TypeError: FULCRO6016: struct BountyLedger: field 'credits' has no fixed layout. …
 ```
 
 Details:
@@ -265,7 +265,7 @@ fixed-width numeric type, or with another struct.
 ## FULCRO6017
 
 ```text
-TypeError: FULCRO6017: Vector3.write: expected a DataView, received object.
+TypeError: FULCRO6017: Starfighter.write: expected a DataView, received object.
 ```
 
 Details:
@@ -281,7 +281,7 @@ Wrap the buffer: `new DataView(buffer)`.
 ## FULCRO6018
 
 ```text
-RangeError: FULCRO6018: Vector3.write: 12 bytes at offset 4 do not fit in a view of 12 bytes.
+RangeError: FULCRO6018: Starfighter.write: 12 bytes at offset 4 do not fit in a view of 12 bytes.
 ```
 
 Details:
@@ -297,7 +297,7 @@ negative, not a whole number, or too close to the end for the type's
 ## FULCRO6019
 
 ```text
-TypeError: FULCRO6019: Vector3.from: expected an object, received null.
+TypeError: FULCRO6019: Starfighter.from: expected an object, received null.
 ```
 
 Details:
@@ -311,7 +311,7 @@ Details:
 ## FULCRO6020
 
 ```text
-TypeError: FULCRO6020: Vector3.from: 'w' is not a field; the fields are x, y, z.
+TypeError: FULCRO6020: Starfighter.from: 'hyperdrive' is not a field; the fields are shields, hull, speed.
 ```
 
 Details:
@@ -329,7 +329,7 @@ The same holds for the object of parts given to `from()` of a `Fraction`, a
 ## FULCRO6021
 
 ```text
-TypeError: FULCRO6021: Vector3.from: missing field 'z'.
+TypeError: FULCRO6021: Starfighter.from: missing field 'speed'.
 ```
 
 Details:

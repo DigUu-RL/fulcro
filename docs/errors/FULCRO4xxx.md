@@ -95,7 +95,7 @@ that is not substituted yet.
 ## FULCRO4006
 
 ```text
-TypeError: FULCRO4006: as<Order>() refused a value of type string.
+TypeError: FULCRO4006: as<DockingRecord>() refused a value of type string.
 ```
 
 Details:
@@ -112,7 +112,7 @@ Use `is<T>()` to branch on the answer instead of stopping.
 ## FULCRO4007
 
 ```text
-TypeError: FULCRO4007: as<Order>() refused a value: customer.email: expected string, got number
+TypeError: FULCRO4007: as<DockingRecord>() refused a value: captain.name: expected string, got number
 ```
 
 Details:
@@ -137,7 +137,7 @@ Details:
 ```
 
 The type-argument form of `nameOf` reached runtime. The forms taking a value or
-an accessor, `nameOf(value)` and `nameOf(() => order.total)`, need no
+an accessor, `nameOf(value)` and `nameOf(() => bounty.credits)`, need no
 transformer.
 
 ## FULCRO4009
@@ -162,7 +162,7 @@ literal, such as a variable holding the name.
 ## FULCRO4010
 
 ```text
-FULCRO4010: constantOf(…) cannot be evaluated at compile time: 'counter' is declared with let or var, so it can change. …
+FULCRO4010: constantOf(…) cannot be evaluated at compile time: 'jumpsPlotted' is declared with let or var, so it can change. …
 ```
 
 Details:
