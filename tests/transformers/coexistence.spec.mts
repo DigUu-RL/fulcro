@@ -99,8 +99,32 @@ const compileFixture = (): string => {
 	return output;
 };
 
+/** Fixture memory's plugin must refuse, compiled beside the other two. */
+const REJECTED = path.resolve(
+	path.dirname(fileURLToPath(import.meta.url)),
+	'coexistence.rejected.sample.ts',
+);
+
+/**
+ * Program over the rejected fixture, built and type-checked here rather than in
+ * the test that emits it: that is the expensive part, and only a hook has the
+ * ceiling `vitest.config.mts` gives these suites. A test body has the default
+ * five seconds, which a full run once crossed.
+ */
+let rejectedProgram: typescript.Program;
+
 beforeAll(() => {
 	emitted = compileFixture();
+
+	rejectedProgram = typescript.createProgram([REJECTED], {
+		target: typescript.ScriptTarget.ES2022,
+		module: typescript.ModuleKind.ESNext,
+		moduleResolution: typescript.ModuleResolutionKind.Bundler,
+		strict: true,
+		skipLibCheck: true,
+	});
+
+	typescript.getPreEmitDiagnostics(rejectedProgram, rejectedProgram.getSourceFile(REJECTED));
 });
 
 describe('the plugins on one file', () => {
@@ -171,11 +195,6 @@ describe('the plugins on one file', () => {
 	});
 
 	it('should still refuse a use after move among calls the others rewrite', () => {
-		const rejected: string = path.resolve(
-			path.dirname(fileURLToPath(import.meta.url)),
-			'coexistence.rejected.sample.ts',
-		);
-
 		const reflect = (
 			require('@fulcro/reflect/transformer') as {
 				readonly default: (
@@ -187,16 +206,10 @@ describe('the plugins on one file', () => {
 		const memory = (require('@fulcro/memory/transformer') as { readonly default: typeof reflect })
 			.default;
 
-		const program: typescript.Program = typescript.createProgram([rejected], {
-			target: typescript.ScriptTarget.ES2022,
-			module: typescript.ModuleKind.ESNext,
-			moduleResolution: typescript.ModuleResolutionKind.Bundler,
-			strict: true,
-			skipLibCheck: true,
-		});
+		const program: typescript.Program = rejectedProgram;
 
 		expect(() => {
-			return program.emit(program.getSourceFile(rejected), () => undefined, undefined, false, {
+			return program.emit(program.getSourceFile(REJECTED), () => undefined, undefined, false, {
 				before: [reflect(program), memory(program)],
 			});
 		}).toThrow(

@@ -34,6 +34,13 @@ const COMPILER_OPTIONS: typescript.CompilerOptions = {
 interface Compiled {
 	readonly emitted: string;
 	readonly refused: readonly typescript.Diagnostic[];
+	/**
+	 * The program it was compiled from, kept so a test can emit it again with a
+	 * transformer wired differently. Building the program is the expensive part,
+	 * and only the hook has the ceiling the transformer suites are given; a test
+	 * body has the default five seconds, which a full run once crossed.
+	 */
+	readonly program: typescript.Program;
 }
 
 /**
@@ -66,7 +73,7 @@ const compile = (fileName: string): Compiled => {
 		{ before: [transform] },
 	);
 
-	return { emitted, refused };
+	return { emitted, refused, program };
 };
 
 /** Output of the fixture whose every call is provable. */
@@ -314,7 +321,7 @@ describe('constantOf at compile time', () => {
 
 		it('should throw every refusal of a file at once without a place to report them', () => {
 			const fixture: string = path.resolve(__dirname, 'constantOf.rejected.fixture.ts');
-			const program: typescript.Program = typescript.createProgram([fixture], COMPILER_OPTIONS);
+			const program: typescript.Program = rejected.program;
 			const transform = transformer(program, { projectRoot: PROJECT_ROOT });
 
 			let thrown: unknown;
