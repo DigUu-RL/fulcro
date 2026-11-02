@@ -1,5 +1,12 @@
 # @fulcro/collections
 
+## 2.1.1
+
+### Patch Changes
+
+- bd3e25f: Adjacent `where` and `select` stages of a sequence are now traversed by one loop instead of one generator per stage; results, call order and early termination are unchanged.
+- @fulcro/transform-core@2.1.1
+
 ## 2.1.0
 
 ### Patch Changes
