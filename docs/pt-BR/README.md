@@ -21,15 +21,48 @@ assíncrona mantém todo nome que a síncrona usa.
 configurado, o tipo que você já escreveu vira a verificação em runtime:
 
 ```ts
-const order = as<Order>(await response.json()); // lança, dizendo qual campo está errado
-const orders = SequenceCollection.from(rows).cast<Order>(); // sobre muitos
+const record = as<DockingRecord>(JSON.parse(transmission)); // lança, dizendo qual campo está errado
+const records = SequenceCollection.from(arrivals).cast<DockingRecord>(); // sobre muitos
 ```
 
-`response.json()` devolve `any`. Essa linha é o último lugar em que os dados não
+`JSON.parse` devolve `any`. Essa linha é o último lugar em que os dados não
 foram verificados, e não há schema para manter em sincronia com o tipo, porque o
 schema _é_ o tipo. Veja [Reflexão](./reflect.md) para um valor só e
 [Sequências](./sequences.md#oftype-e-cast--a-mesma-pergunta-duas-respostas) para
 uma coleção.
+
+O controle de atracagem de Mos Eisley, conferindo uma transmissão e um dia
+inteiro de chegadas contra o tipo que ele já tinha:
+
+```ts
+// Precisa dos transformers do @fulcro/reflect e do @fulcro/collections.
+import { SequenceCollection } from '@fulcro/collections';
+import { as } from '@fulcro/reflect';
+
+interface DockingRecord {
+	bay: number;
+	ship: string;
+	captain: { name: string };
+}
+
+const transmission =
+	'{ "bay": 94, "ship": "Millennium Falcon", "captain": { "name": "Han Solo" } }';
+
+const record = as<DockingRecord>(JSON.parse(transmission));
+
+console.log(`${record.captain.name} in bay ${String(record.bay)}`); // 'Han Solo in bay 94'
+
+const arrivals: unknown[] = [
+	record,
+	{ bay: '86', ship: 'Slave I', captain: { name: 'Boba Fett' } },
+];
+
+try {
+	SequenceCollection.from(arrivals).cast<DockingRecord>().toArray();
+} catch (error) {
+	console.log((error as Error).message); // "FULCRO1015: cast('DockingRecord') found a Object at index 1."
+}
+```
 
 ## Guias
 
