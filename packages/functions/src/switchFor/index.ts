@@ -53,16 +53,16 @@ export type ExhaustiveCases<T extends PropertyKey, R> = {
  * one:
  *
  * ```ts
- * enum Status {
- * 	Draft,
- * 	Published,
- * 	Archived,
+ * enum HyperdriveStatus {
+ * 	Online,
+ * 	Damaged,
+ * 	Offline,
  * }
  *
  * const label = switchFor(status, {
- * 	[Status.Draft]: () => 'draft',
- * 	[Status.Published]: () => 'published',
- * 	[Status.Archived]: () => 'archived',
+ * 	[HyperdriveStatus.Online]: () => 'ready to jump',
+ * 	[HyperdriveStatus.Damaged]: () => 'jump at your own risk',
+ * 	[HyperdriveStatus.Offline]: () => "it's not my fault",
  * });
  * ```
  *
@@ -78,13 +78,13 @@ export type ExhaustiveCases<T extends PropertyKey, R> = {
  * than values:
  *
  * ```ts
- * const size = switchFor(
- * 	order,
+ * const threat = switchFor(
+ * 	contact,
  * 	[
- * 		{ when: (o) => o.total > 1000, then: () => 'large' },
- * 		{ when: (o) => o.items.length === 0, then: () => 'empty' },
+ * 		{ when: (ship) => ship.turbolasers > 50, then: () => 'capital ship' },
+ * 		{ when: (ship) => ship.crew === 0, then: () => 'derelict' },
  * 	],
- * 	() => 'standard',
+ * 	() => 'fighter',
  * );
  * ```
  *
@@ -108,9 +108,9 @@ export type ExhaustiveCases<T extends PropertyKey, R> = {
  *
  * ```ts
  * switchFor(status, {
- * 	[Status.Draft]: () => saveDraft(),
- * 	[Status.Published]: () => publish(),
- * 	[Status.Archived]: () => archive(),
+ * 	[HyperdriveStatus.Online]: () => punchIt(),
+ * 	[HyperdriveStatus.Damaged]: () => callChewie(),
+ * 	[HyperdriveStatus.Offline]: () => kickThePanel(),
  * });
  * ```
  *

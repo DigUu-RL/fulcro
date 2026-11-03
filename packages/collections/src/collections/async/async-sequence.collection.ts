@@ -116,7 +116,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	 * wanted.
 	 *
 	 * Elements of a synchronous source that are promises are awaited on the way
-	 * through, which covers the common `ids.map(load)` shape.
+	 * through, which covers the common `callSigns.map(loadPilot)` shape.
 	 *
 	 * @template T Type of the elements contained in the sequence.
 	 * @param source Asynchronous iterable, or iterable of values and promises,

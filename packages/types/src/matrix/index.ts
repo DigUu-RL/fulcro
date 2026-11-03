@@ -27,14 +27,14 @@ import { registerRepeatedCodec } from '@/src/struct/codec';
  *
  * ```ts
  * const Transform = Matrix(SinglePrecisionFloat, 3, 4);
- * const shift: Matrix<SinglePrecisionFloat, 3, 4> = Transform.from([
+ * const jump: Matrix<SinglePrecisionFloat, 3, 4> = Transform.from([
  * 	[1, 0, 0, 5],
  * 	[0, 1, 0, 0],
  * 	[0, 0, 1, 0],
  * ]);
  *
- * shift[3]; // 5 — row 0, column 3
- * shift.rows; // 3
+ * jump[3]; // 5 — row 0, column 3
+ * jump.rows; // 3
  * ```
  *
  * The value is a frozen array of its elements, row after row, so it indexes,
@@ -167,8 +167,8 @@ export interface MatrixOperations<T, R extends number, C extends number> {
 	 * columns, and checked by the compiler:
 	 *
 	 * ```ts
-	 * Transform.multiply(shift, point); // Matrix<T, 3, 1>, point being 4 × 1
-	 * Transform.multiply(shift, shift);
+	 * Transform.multiply(jump, falcon); // Matrix<T, 3, 1>, falcon being 4 × 1
+	 * Transform.multiply(jump, jump);
 	 * // Cannot multiply Matrix<T, 3, 4> by Matrix<T, 3, 4>. Expected a matrix with 4 rows.
 	 * ```
 	 *

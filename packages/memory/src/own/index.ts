@@ -27,8 +27,8 @@ const isStorage = (value: unknown): value is Storage<unknown> => {
  * reached only through borrows.
  *
  * ```ts
- * const scores: Owned<number> = own(() => createManagedStorage(100, 0));
- * const particles = own(() => allocate(Particle, 10_000, arena));
+ * const shieldStrength: Owned<number> = own(() => createManagedStorage(100, 0));
+ * const bolts = own(() => allocate(BlasterBolt, 10_000, arena));
  * ```
  *
  * The storage is created inside `create` rather than handed in, so that no

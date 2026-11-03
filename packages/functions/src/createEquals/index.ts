@@ -18,9 +18,9 @@ export type Equals = <T>(left: T, right: NoInfer<T>) => boolean;
  * {@link createEquals}.
  *
  * ```ts
- * const byId: EqualityRule<User> = {
- * 	is: (value): value is User => value instanceof User,
- * 	equals: (left, right) => left.id === right.id,
+ * const byCallSign: EqualityRule<Pilot> = {
+ * 	is: (value): value is Pilot => value instanceof Pilot,
+ * 	equals: (left, right) => left.callSign === right.callSign,
  * };
  * ```
  *
@@ -147,9 +147,9 @@ const isObject = (value: unknown): value is object => typeof value === 'object' 
  * of your own.
  *
  * ```ts
- * const sameUser = createEquals([byId]);
+ * const sameRoster = createEquals([byCallSign]);
  *
- * sameUser([alice], [aliceAgain]); // true: the arrays as `equals` compares them, users by id
+ * sameRoster([wedge], [wedgeAfterPromotion]); // true: the arrays as `equals` compares them, the pilots by call sign
  * ```
  *
  * Two values are compared in this order:

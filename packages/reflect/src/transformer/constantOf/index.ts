@@ -590,8 +590,8 @@ const computeOutcome = (call: typescript.CallExpression, context: RewriteContext
  * Rewriter of `constantOf`.
  *
  * ```ts
- * // written                                   // emitted
- * constantOf(() => [1, 2, 3].map((n) => n * n)) Object.freeze([1, 4, 9])
+ * // written                                                  // emitted
+ * constantOf(() => [1, 2, 3].map((parsecs) => parsecs * parsecs)) Object.freeze([1, 4, 9])
  * ```
  */
 export const constantOfRewriter: CallRewriter = {

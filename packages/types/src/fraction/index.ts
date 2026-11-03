@@ -20,11 +20,11 @@ import type { Multiply } from '@/src/struct/arithmetic';
  * integer type `T`.
  *
  * ```ts
- * const Ratio = Fraction(SignedInteger(32));
- * const third = Ratio.from({ numerator: 1, denominator: 3 });
+ * const Spoils = Fraction(SignedInteger(32));
+ * const third = Spoils.from({ numerator: 1, denominator: 3 });
  *
- * Ratio.add(third, third); // { numerator: 2, denominator: 3 }
- * Ratio.multiply(third, Ratio.from(3)); // { numerator: 1, denominator: 1 }
+ * Spoils.add(third, third); // { numerator: 2, denominator: 3 }
+ * Spoils.multiply(third, Spoils.from(3)); // { numerator: 1, denominator: 1 }
  * ```
  *
  * Always in lowest terms, with a positive denominator, so two fractions are
@@ -88,11 +88,11 @@ const isIntegerDescriptor = (descriptor: unknown): boolean => {
  * Declares a fraction type over an integer type.
  *
  * ```ts
- * const Ratio = Fraction(BigInteger);
+ * const Spoils = Fraction(BigInteger);
  *
- * Ratio.from(4); // { numerator: 4n, denominator: 1n }
- * Ratio.from({ numerator: 6, denominator: -4 }); // { numerator: -3n, denominator: 2n }
- * Ratio.lessThan(Ratio.from({ numerator: 1, denominator: 3 }), Ratio.from(0)); // false
+ * Spoils.from(4); // { numerator: 4n, denominator: 1n }
+ * Spoils.from({ numerator: 6, denominator: -4 }); // { numerator: -3n, denominator: 2n }
+ * Spoils.lessThan(Spoils.from({ numerator: 1, denominator: 3 }), Spoils.from(0)); // false
  * ```
  *
  * @template TElement Descriptor of the integer type.

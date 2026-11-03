@@ -59,9 +59,9 @@ export interface ResultMethods<T, E> {
 	 * Handles both variants, as an expression.
 	 *
 	 * ```ts
-	 * const message = result.handle({
-	 * 	success: (user) => `Hello, ${user.name}`,
-	 * 	failure: (error) => `Could not load: ${String(error)}`,
+	 * const message = lookup.handle({
+	 * 	success: (pilot) => `Welcome back, ${pilot.callSign}`,
+	 * 	failure: (error) => `No record in the Rebel archive: ${String(error)}`,
 	 * });
 	 * ```
 	 *
@@ -112,16 +112,16 @@ export interface Failure<T = never, E = unknown> extends ResultMethods<T, E> {
  * both are covered:
  *
  * ```ts
- * const label = result.handle({
- * 	success: (value) => `got ${value}`,
- * 	failure: (error) => `failed: ${String(error)}`,
+ * const report = jump.handle({
+ * 	success: (parsecs) => `made it in ${String(parsecs)} parsecs`,
+ * 	failure: (error) => `jump failed: ${String(error)}`,
  * });
  * ```
  *
  * or narrow first, with `isSuccess()` or `isFailure()`:
  *
  * ```ts
- * if (result.isSuccess()) use(result.value);
+ * if (jump.isSuccess()) logParsecs(jump.value);
  * ```
  *
  * `error === null` narrows too, and is the check to use on a result that has
@@ -161,7 +161,7 @@ const FAILURE = variantPrototype({
  * Creates a success.
  *
  * ```ts
- * const parsed: Result<number, string> = success(42);
+ * const kesselRun: Result<number, string> = success(12);
  * ```
  *
  * @template T Type of the value.
@@ -174,7 +174,7 @@ export const success = <T>(value: T): Success<T> => createVariant(SUCCESS, { val
  * Creates a failure.
  *
  * ```ts
- * const parsed: Result<number, string> = failure('not a number');
+ * const kesselRun: Result<number, string> = failure("it's not my fault");
  * ```
  *
  * @template E Type of the error.

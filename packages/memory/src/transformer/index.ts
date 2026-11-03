@@ -17,8 +17,8 @@ export type { TransformerOptions } from '@fulcro/transform-core';
  * when they run:
  *
  * ```ts
- * const next = move(queue);
- * borrow(queue); // FULCRO7027: 'queue' is used after it was moved at line 1
+ * const hangarCrew = move(launchQueue);
+ * borrow(launchQueue); // FULCRO7027: 'launchQueue' is used after it was moved at line 1
  * ```
  *
  * And it rewrites one thing. A storage allocated from a managed allocator and
@@ -27,10 +27,10 @@ export type { TransformerOptions } from '@fulcro/transform-core';
  * when it ends:
  *
  * ```ts
- * const particles = allocate(Particle, 1_000, managed);
+ * const bolts = allocate(BlasterBolt, 1_000, managed);
  * // becomes
  * using frame = managed.enter();
- * const particles = allocate(Particle, 1_000, frame);
+ * const bolts = allocate(BlasterBolt, 1_000, frame);
  * ```
  *
  * Nothing the program can observe changes — nothing can reach the storage

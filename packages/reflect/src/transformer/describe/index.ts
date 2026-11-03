@@ -74,7 +74,7 @@ export interface Path {
  * Tells whether a type is one this stops at rather than descends into.
  *
  * **The rule the whole walk rests on.** Without it, a `string` property yields
- * the entire `String.prototype` — `customer.email.trimLeft` is a real property
+ * the entire `String.prototype` — `captain.name.trimLeft` is a real property
  * path and nonsense as a data path.
  *
  * @param type Type being classified.

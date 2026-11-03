@@ -8,18 +8,18 @@ import { requireLength } from '@/src/storage/requireLength';
  * its bytes, end to end, behind the {@link Storage} contract.
  *
  * ```ts
- * const Point = struct('Point', {
- * 	x: SinglePrecisionFloat,
- * 	y: SinglePrecisionFloat,
+ * const SensorContact = struct('SensorContact', {
+ * 	bearing: SinglePrecisionFloat,
+ * 	range: SinglePrecisionFloat,
  * });
  *
- * const points: Storage<Struct<typeof Point>> = createFixedBufferStorage(
- * 	Point,
+ * const contacts: Storage<Struct<typeof SensorContact>> = createFixedBufferStorage(
+ * 	SensorContact,
  * 	1_000,
  * );
  *
- * points.set(0, Point.from({ x: 1, y: 2 }));
- * points.get(0).x; // 1
+ * contacts.set(0, SensorContact.from({ bearing: 90, range: 1_200 }));
+ * contacts.get(0).bearing; // 90
  * ```
  *
  * The buffer is allocated once, `length × element.layout.size` bytes, and

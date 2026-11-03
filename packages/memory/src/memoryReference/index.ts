@@ -6,14 +6,14 @@
  * storage.
  *
  * ```ts
- * const increment = (counter: MemoryReference<number>): void => {
+ * const recordKill = (counter: MemoryReference<number>): void => {
  * 	counter.set(counter.get() + 1);
  * };
  *
- * const hits = referenceTo(0);
+ * const hansKills = referenceTo(0);
  *
- * increment(hits);
- * hits.get(); // 1
+ * recordKill(hansKills);
+ * hansKills.get(); // 1
  * ```
  *
  * A reference has no position and no arithmetic: that is what a

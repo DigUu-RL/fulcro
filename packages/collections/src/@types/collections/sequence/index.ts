@@ -656,15 +656,15 @@ export interface Sequence<T> extends Iterable<T> {
 	 * one. And a chain that is iterated twice runs its projections twice.
 	 *
 	 * ```ts
-	 * const query = SequenceCollection.from(rows()).select(expensive);
+	 * const decoded = SequenceCollection.from(interceptedTransmissions()).select(decrypt);
 	 *
-	 * query.count();   // reads the generator, runs `expensive` per row
-	 * query.toArray(); // [] — the generator is spent
+	 * decoded.count();   // reads the generator, runs `decrypt` per transmission
+	 * decoded.toArray(); // [] — the generator is spent
 	 *
-	 * const kept = query.memoize();
+	 * const kept = decoded.memoize();
 	 *
-	 * kept.count();    // reads it once
-	 * kept.toArray();  // every row, and `expensive` never ran again
+	 * kept.count();      // reads it once
+	 * kept.toArray();    // every transmission, and `decrypt` never ran again
 	 * ```
 	 *
 	 * The cost is memory: everything pulled through is held. Elements are
@@ -679,7 +679,7 @@ export interface Sequence<T> extends Iterable<T> {
 	 * Splits the sequence in two by a condition, in a single traversal.
 	 *
 	 * ```ts
-	 * const [active, archived] = users.partition((user) => user.active);
+	 * const [survivors, fallen] = pilots.partition((pilot) => pilot.active);
 	 * ```
 	 *
 	 * Two calls to {@link Sequence.where} would read the source twice — which a
@@ -696,12 +696,12 @@ export interface Sequence<T> extends Iterable<T> {
 	 * Accumulates the sequence, yielding every intermediate value.
 	 *
 	 * Where {@link Sequence.aggregate} returns only the final result, this
-	 * emits the accumulation as it goes — a running total, a balance after each
-	 * transaction, a cumulative count.
+	 * emits the accumulation as it goes — a running tally of TIE fighters
+	 * downed, a bounty's credits after each payment, a cumulative count.
 	 *
 	 * ```ts
-	 * SequenceCollection.from([1, 2, 3]).scan(0, (total, n) => total + n);
-	 * // 1, 3, 6
+	 * SequenceCollection.from([1, 2, 1]).scan(0, (tally, downed) => tally + downed);
+	 * // 1, 3, 4
 	 * ```
 	 *
 	 * The seed is not emitted: one value comes out per element in, which keeps
@@ -731,7 +731,8 @@ export interface Sequence<T> extends Iterable<T> {
 	 * Yields each element paired with the one before it.
 	 *
 	 * The typed form of a window of two, for comparing an element with its
-	 * predecessor — deltas between readings, gaps between timestamps.
+	 * predecessor — the drop between two shield readings, the gap between two
+	 * hyperspace jumps.
 	 *
 	 * @returns A deferred sequence of consecutive pairs.
 	 */
@@ -745,8 +746,8 @@ export interface Sequence<T> extends Iterable<T> {
 	 * so the same key can open several groups, and nothing is buffered beyond
 	 * the run in hand.
 	 *
-	 * The natural fit for data already in order: log lines by level as they
-	 * arrive, readings by day, runs of equal values.
+	 * The natural fit for data already in order: a ship's log by sector as it
+	 * arrives, probe reports by day, runs of equal values.
 	 *
 	 * @template K Type of the grouping key.
 	 * @param keySelector Projection returning the key of each element.
@@ -853,17 +854,17 @@ export interface Sequence<T> extends Iterable<T> {
 	 * Keeps only the elements of a class, of a shape, or of a type written as a
 	 * type argument, narrowing the sequence to it.
 	 *
-	 * - **A class** — `ofType(Admin)` tests each element with `instanceof`.
+	 * - **A class** — `ofType(Starship)` tests each element with `instanceof`.
 	 * - **A shape test** — what the transformer emits for a type with no single
 	 *   runtime token, and writable by hand for one it refuses:
 	 *
 	 *   ```ts
-	 *   values.ofType<Account>({
-	 *   	matches: (value) => typeof (value as Account)?.id === 'number',
+	 *   reports.ofType<Garrison>({
+	 *   	matches: (value) => typeof (value as Garrison)?.Scarif === 'number',
 	 *   });
 	 *   ```
 	 *
-	 * - **Nothing, with a type argument** — `ofType<Admin>()` needs the
+	 * - **Nothing, with a type argument** — `ofType<Starship>()` needs the
 	 *   transformer of this package, which resolves the type argument into one
 	 *   of the two forms above. It is the only part of `@fulcro/collections`
 	 *   that does, and it refuses at runtime rather than guessing when the

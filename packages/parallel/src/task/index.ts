@@ -43,7 +43,7 @@ const asFailure = (thrown: unknown): NonNullish => {
  * ```ts
  * await using scope = createTaskScope({ concurrency: 8 });
  *
- * for (const id of ids) scope.spawn((token) => loadUser(id, token.signal));
+ * for (const outpost of outposts) scope.spawn((token) => pollOutpost(outpost, token.signal));
  *
  * await scope.join();
  * ```

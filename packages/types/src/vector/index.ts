@@ -14,13 +14,13 @@ import {
  * A vector: a matrix with one row or one column.
  *
  * ```ts
- * type Point = Vector<SinglePrecisionFloat, 3, 1>; // a column
- * type Weights = Vector<SinglePrecisionFloat, 1, 3>; // a row
+ * type Heading = Vector<SinglePrecisionFloat, 3, 1>; // a column
+ * type ShieldAllocation = Vector<SinglePrecisionFloat, 1, 3>; // a row
  * ```
  *
  * The same type as {@link Matrix} of that shape, not a second one beside it, so
- * a vector goes wherever a matrix of its shape goes — `Transform.multiply(shift,
- * point)` needs no conversion. There is no `Vector3D`: the dimensions are type
+ * a vector goes wherever a matrix of its shape goes — `Transform.multiply(jump,
+ * falcon)` needs no conversion. There is no `Vector3D`: the dimensions are type
  * parameters.
  *
  * @template T Type of the elements.
@@ -84,11 +84,11 @@ export interface VectorType<
  * Declares a vector shape: its element type, and one row or one column.
  *
  * ```ts
- * const Point = Vector(SinglePrecisionFloat, 3, 1);
- * const up = Point.from([0, 1, 0]);
+ * const Heading = Vector(SinglePrecisionFloat, 3, 1);
+ * const toKessel = Heading.from([0, 1, 0]);
  *
- * Point.dot(up, up); // 1
- * Point.add(up, up); // [0, 2, 0]
+ * Heading.dot(toKessel, toKessel); // 1
+ * Heading.add(toKessel, toKessel); // [0, 2, 0]
  * ```
  *
  * A shape with neither one row nor one column does not compile, and throws for

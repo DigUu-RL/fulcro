@@ -51,8 +51,8 @@ const _everyTemplateTakesDetails: [WithoutDetails] extends [never] ? true : With
  * Creates the error a code names, ready to be thrown.
  *
  * ```ts
- * throw createError('FULCRO6021', { operation: 'Vector3.from', field: 'x' });
- * // TypeError: FULCRO6021: Vector3.from: missing field 'x'.
+ * throw createError('FULCRO6021', { operation: 'Starfighter.from', field: 'speed' });
+ * // TypeError: FULCRO6021: Starfighter.from: missing field 'speed'.
  * ```
  *
  * The message starts with the code, and the code and the details are also on

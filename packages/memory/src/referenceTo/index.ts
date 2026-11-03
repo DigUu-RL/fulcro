@@ -5,10 +5,10 @@ import type { MemoryReference } from '@/src/memoryReference';
  * replaced, handed to code that has to change it.
  *
  * ```ts
- * const retries: MemoryReference<number> = referenceTo(0);
+ * const jumpAttempts: MemoryReference<number> = referenceTo(0);
  *
- * retries.set(retries.get() + 1);
- * retries.get(); // 1
+ * jumpAttempts.set(jumpAttempts.get() + 1);
+ * jumpAttempts.get(); // 1
  * ```
  *
  * The value is held as it is, never copied: `get` returns the very value `set`

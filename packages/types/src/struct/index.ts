@@ -253,8 +253,8 @@ export interface StructType<
  * The type of the values of a struct, named from its descriptor.
  *
  * ```ts
- * export const Vector3 = struct('Vector3', { x: SinglePrecisionFloat, … });
- * export type Vector3 = Struct<typeof Vector3>;
+ * export const Starfighter = struct('Starfighter', { shields: SinglePrecisionFloat, … });
+ * export type Starfighter = Struct<typeof Starfighter>;
  * ```
  *
  * @template TDescriptor Type of the descriptor `struct` returned.
@@ -378,17 +378,17 @@ const methodPrototype = (name: string, fields: StructFields, methods: StructMeth
  * Declares a struct: a value type with a fixed layout.
  *
  * ```ts
- * export const Vector3 = struct('Vector3', {
- * 	x: SinglePrecisionFloat,
- * 	y: SinglePrecisionFloat,
- * 	z: SinglePrecisionFloat,
+ * export const Starfighter = struct('Starfighter', {
+ * 	shields: SinglePrecisionFloat,
+ * 	hull: SinglePrecisionFloat,
+ * 	speed: SinglePrecisionFloat,
  * });
- * export type Vector3 = Struct<typeof Vector3>;
+ * export type Starfighter = Struct<typeof Starfighter>;
  *
- * const up: Vector3 = Vector3.from({ x: 0, y: 1, z: 0 });
+ * const redFive: Starfighter = Starfighter.from({ shields: 1, hull: 1, speed: 0.5 });
  *
- * Vector3.layout.size; // 12
- * Vector3.write(new DataView(buffer), 0, up);
+ * Starfighter.layout.size; // 12
+ * Starfighter.write(new DataView(hangarBay), 0, redFive);
  * ```
  *
  * A value has no identity: it is frozen, two values with the same fields are
@@ -402,13 +402,13 @@ const methodPrototype = (name: string, fields: StructFields, methods: StructMeth
  * that changes something returns a new value:
  *
  * ```ts
- * const Vector3 = struct('Vector3', { x: SinglePrecisionFloat, … }, {
- * 	length() {
- * 		return Math.hypot(this.x, this.y, this.z);
+ * const Starfighter = struct('Starfighter', { shields: SinglePrecisionFloat, … }, {
+ * 	integrity() {
+ * 		return (this.shields + this.hull) / 2;
  * 	},
  * });
  *
- * Vector3.from({ x: 3, y: 4, z: 0 }).length(); // 5
+ * Starfighter.from({ shields: 0.5, hull: 1, speed: 0.5 }).integrity(); // 0.75
  * ```
  *
  * @param name Name of the struct, for error messages.

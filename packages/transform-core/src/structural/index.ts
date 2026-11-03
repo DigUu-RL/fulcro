@@ -13,25 +13,25 @@ import { buildExplainer } from '@/src/structural/explain';
  * all the way down.
  *
  * ```ts
- * // interface Account { id: number; tags: string[] }
- * values.ofType<Account>();
+ * // interface StarshipManifest { registry: number; crew: string[] }
+ * hangar.ofType<StarshipManifest>();
  *
  * // becomes, near enough:
- * values.ofType({
- * 	name: 'Account',
- * 	matches: (v) =>
- * 		v !== null &&
- * 		typeof v === 'object' &&
- * 		typeof v.id === 'number' &&
- * 		Array.isArray(v.tags) &&
- * 		v.tags.every((e) => typeof e === 'string'),
+ * hangar.ofType({
+ * 	name: 'StarshipManifest',
+ * 	matches: (manifest) =>
+ * 		manifest !== null &&
+ * 		typeof manifest === 'object' &&
+ * 		typeof manifest.registry === 'number' &&
+ * 		Array.isArray(manifest.crew) &&
+ * 		manifest.crew.every((member) => typeof member === 'string'),
  * });
  * ```
  *
  * **The governing rule is that it refuses whatever it cannot prove.** A test
- * that answers `true` for something that is not an `Account` is worse than no
- * test at all: it is false confidence at exactly the boundary where the data is
- * least trustworthy. So every construct this does not fully understand returns
+ * that answers `true` for something that is not a `StarshipManifest` is worse
+ * than no test at all: it is false confidence at exactly the boundary where the
+ * data is least trustworthy. So every construct this does not fully understand returns
  * `null` from here, and the call is left unresolved for the runtime to reject
  * out loud. There is no partial or optimistic check anywhere in this file.
  */

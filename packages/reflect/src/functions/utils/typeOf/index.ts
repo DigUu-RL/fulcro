@@ -73,8 +73,8 @@ export interface TypeOf {
 	 * Names of the prototype chain, from the closest ancestor to the root.
 	 *
 	 * This is as close as a runtime inspection can get to "where does this type
-	 * come from": an instance of `Admin extends User` reports
-	 * `['Admin', 'User', 'Object']`. It is a chain of constructors, never a
+	 * come from": an instance of `Stormtrooper extends Trooper` reports
+	 * `['Stormtrooper', 'Trooper', 'Object']`. It is a chain of constructors, never a
 	 * module path — the compiler keeps no record of where a class was declared.
 	 */
 	readonly lineage: readonly string[];
@@ -497,17 +497,17 @@ const isIterable = (value: unknown): boolean => {
  * strings and collapses most of what a program actually needs to tell apart:
  *
  * ```ts
- * typeof null;            // 'object'
- * typeOf(null).typeId;    // 'null'
+ * typeof null;                       // 'object'
+ * typeOf(null).typeId;               // 'null'
  *
- * typeof [1, 2];          // 'object'
- * typeOf([1, 2]).typeId;  // 'array'
+ * typeof ['R2-D2', 'C-3PO'];         // 'object'
+ * typeOf(['R2-D2', 'C-3PO']).typeId; // 'array'
  *
- * typeof NaN;             // 'number'
- * typeOf(NaN).typeId;     // 'nan'
+ * typeof NaN;                        // 'number'
+ * typeOf(NaN).typeId;                // 'nan'
  *
- * typeof new User();      // 'object'
- * typeOf(new User());     // { typeId: 'instance', name: 'User', ... }
+ * typeof new Stormtrooper();         // 'object'
+ * typeOf(new Stormtrooper());        // { typeId: 'instance', name: 'Stormtrooper', ... }
  * ```
  *
  * The *declared* TypeScript type — the one that can name an interface or point

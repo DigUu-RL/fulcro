@@ -9,10 +9,10 @@ import type { View } from '@/src/view';
  * Observes a region of a storage, a view or an array, copying nothing.
  *
  * ```ts
- * const readings = createFixedBufferStorage(Reading, 1_000);
- * const lastHundred: View<Struct<typeof Reading>> = asView(readings, 900);
+ * const scans = createFixedBufferStorage(ScannerReading, 1_000);
+ * const lastHundred: View<Struct<typeof ScannerReading>> = asView(scans, 900);
  *
- * lastHundred.set(0, Reading.from({ value: 1.5 })); // writes readings[900]
+ * lastHundred.set(0, ScannerReading.from({ strength: 1.5 })); // writes scans[900]
  * ```
  *
  * Nothing is read when the view is made, however long it is. Every `get` and
@@ -38,8 +38,8 @@ export function asView<T>(source: Storage<T> | T[], start?: number, length?: num
  * Observes the region that starts where a pointer points, copying nothing.
  *
  * ```ts
- * const cursor = pointerTo(readings, 10);
- * const next: View<number> = asView(cursor, 5); // readings 10 to 14
+ * const cursor = pointerTo(shieldStrength, 10);
+ * const next: View<number> = asView(cursor, 5); // generators 10 to 14
  * ```
  *
  * @template T Type of the values.
@@ -55,10 +55,10 @@ export function asView<T>(source: Pointer<T>, length?: number): View<T>;
  * Observes the one value of a reference, as a view of length `1`.
  *
  * ```ts
- * const total = referenceTo(0);
+ * const hansKills = referenceTo(0);
  *
- * asView(total).set(0, 10);
- * total.get(); // 10
+ * asView(hansKills).set(0, 10);
+ * hansKills.get(); // 10
  * ```
  *
  * @template T Type of the value.

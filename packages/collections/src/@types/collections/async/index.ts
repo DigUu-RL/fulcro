@@ -161,7 +161,7 @@ export interface AsyncSequence<T> extends AsyncIterable<T> {
 	 * between the sum of the waits and the longest of them.
 	 *
 	 * ```ts
-	 * const users = await ids.selectAwait(loadUser, { concurrency: 8 }).toArray();
+	 * const pilots = await callSigns.selectAwait(loadPilot, { concurrency: 8 }).toArray();
 	 * ```
 	 *
 	 * It deliberately gives up the back pressure the rest of the type keeps: up

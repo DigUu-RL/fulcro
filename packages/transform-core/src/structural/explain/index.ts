@@ -4,16 +4,16 @@ import typescript from 'typescript';
  * Writing out *where* a value stopped matching a type.
  *
  * The check beside this one answers yes or no, which is all a filter needs. An
- * `as<Order>(payload)` that refuses needs more than that: told only "not an
- * Order" about a record with forty fields, you are no better off than before
- * the check existed.
+ * `as<DockingRecord>(payload)` that refuses needs more than that: told only
+ * "not a DockingRecord" about a record with forty fields, you are no better
+ * off than before the check existed.
  *
  * So this emits a second walker that returns the first path that failed, and
  * what was there instead:
  *
  * ```text
- * customer.email: expected string, got number
- * items[3].quantity: expected number, got undefined
+ * captain.name: expected string, got number
+ * cargo[3].tonnage: expected number, got undefined
  * ```
  *
  * It runs **only after the fast check has already refused**, so nothing on the

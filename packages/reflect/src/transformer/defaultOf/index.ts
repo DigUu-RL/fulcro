@@ -10,9 +10,9 @@ import { IDENTIFIER_PATTERN, isTupleType, utilityModuleSegment } from '@fulcro/t
  * built by reading the type itself:
  *
  * ```ts
- * // written                  // emitted
- * defaultOf<string>()         ''
- * defaultOf<Order>()          { id: 0, customer: { name: '', active: false }, items: [] }
+ * // written                          // emitted
+ * defaultOf<string>()                 ''
+ * defaultOf<PreflightChecklist>()     { torpedoes: 0, pilot: { callSign: '', cleared: false }, astromechs: [] }
  * ```
  *
  * The rule driving every branch is that the emitted expression must be a valid

@@ -26,11 +26,12 @@ const describe = (value: unknown): string => {
  * Returns a value as a type, refusing if it is not one.
  *
  * The checked counterpart of the language's `as`, which asserts without
- * verifying: `payload as Order` compiles whatever `payload` turns out to be,
- * and the mistake surfaces later, somewhere else, as a property of `undefined`.
+ * verifying: `payload as DockingRecord` compiles whatever `payload` turns out
+ * to be, and the mistake surfaces later, somewhere else, as a property of
+ * `undefined`.
  *
  * ```ts
- * const order = as<Order>(await response.json());
+ * const record = as<DockingRecord>(await response.json());
  * ```
  *
  * The value is returned unchanged when it matches — the same object, not a
@@ -38,7 +39,7 @@ const describe = (value: unknown): string => {
  * than only that it did:
  *
  * ```text
- * as<Order>() refused a value: customer.email: expected string, got number
+ * as<DockingRecord>() refused a value: captain.name: expected string, got number
  * ```
  *
  * That message is built by a second walker the transformer emits beside the

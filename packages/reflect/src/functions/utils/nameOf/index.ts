@@ -60,15 +60,15 @@ const parseAccessedName = (accessor: NameAccessor): string | null => {
  * // An accessor, for variables, properties and methods. The name is read from
  * // the source of the closure, so the value itself is never evaluated for its
  * // name, and a deep path reports its last segment.
- * const email = 'a@b.c';
- * nameOf(() => email);          // 'email'
- * nameOf(() => user.profile);   // 'profile'
- * nameOf(() => user.save);      // 'save'
- * nameOf(() => user['email']);  // 'email'
+ * const callSign = 'Red Five';
+ * nameOf(() => callSign);              // 'callSign'
+ * nameOf(() => pilot.starfighter);     // 'starfighter'
+ * nameOf(() => pilot.eject);           // 'eject'
+ * nameOf(() => pilot['callSign']);     // 'callSign'
  *
  * // A value, for classes and callables, which carry their own name.
- * nameOf(User);                 // 'User'
- * nameOf(() => {});             // '(anonymous)'
+ * nameOf(Starfighter);                 // 'Starfighter'
+ * nameOf(() => {});                    // '(anonymous)'
  * ```
  *
  * Two limits are worth knowing, both of them consequences of the language
@@ -77,12 +77,12 @@ const parseAccessedName = (accessor: NameAccessor): string | null => {
  * - **Interfaces and type aliases cannot be named.** They are erased by the
  *   compiler and leave nothing to read at runtime. Only a compile time
  *   transformer could report them.
- * - **A minifier renames local variables**, so `nameOf(() => email)` may report
+ * - **A minifier renames local variables**, so `nameOf(() => callSign)` may report
  *   the mangled name in a bundled build. Property and method names normally
  *   survive minification, and so does the form taking a class.
  *
  * Anything else falls back to the name of its type, so the function always
- * answers with something usable: `nameOf(42)` reads `'Number'`.
+ * answers with something usable: `nameOf(1138)` reads `'Number'`.
  *
  * @param input Accessor naming a member, or a value to be named.
  * @returns The name that was read.

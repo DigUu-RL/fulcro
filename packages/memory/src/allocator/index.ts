@@ -11,7 +11,7 @@
  * ```ts
  * const allocation: Allocation = arena.allocate(64, 8);
  *
- * allocation.bytes.setFloat64(0, 1.5);
+ * allocation.bytes.setFloat64(0, 1.5); // a scanner reading
  * arena.reset();
  * allocation.isLive(); // false — the bytes are the arena's again
  * ```
@@ -40,7 +40,7 @@ export interface Allocation {
  * pool, and over a strategy written later, without changing.
  *
  * ```ts
- * const createSamples = (allocator: Allocator, count: number): DataView =>
+ * const createSensorBuffer = (allocator: Allocator, count: number): DataView =>
  * 	allocator.allocate(count * 8, 8).bytes;
  * ```
  *
@@ -70,7 +70,7 @@ export interface Allocator {
  * ```ts
  * {
  * 	using frame = stack.enter();
- * 	const particles = allocate(Particle, 10_000, frame);
+ * 	const bolts = allocate(BlasterBolt, 10_000, frame);
  * 	// …
  * } // every allocation made through `frame` is released here, at once
  * ```

@@ -13,10 +13,10 @@ import { frozenObject } from '@/src/transformer/literal';
  *
  * ```ts
  * // written                  // emitted
- * layoutOf<Pair>()            Object.freeze({ size: 8, alignment: 4,
+ * layoutOf<SensorContact>()   Object.freeze({ size: 8, alignment: 4,
  *                               fields: Object.freeze({
- *                                 left: Object.freeze({ offset: 0, size: 4, alignment: 4 }),
- *                                 right: Object.freeze({ offset: 4, size: 4, alignment: 4 }) }) })
+ *                                 bearing: Object.freeze({ offset: 0, size: 4, alignment: 4 }),
+ *                                 range: Object.freeze({ offset: 4, size: 4, alignment: 4 }) }) })
  * ```
  *
  * Declines on everything `readLayout` declines on.

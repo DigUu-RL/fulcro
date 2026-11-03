@@ -7,13 +7,13 @@ import type { MemoryReference } from '@/src/memoryReference';
  * stored there.
  *
  * ```ts
- * const particle: NativePointer<Particle> = nativePointerTo(memory, 64, Particle);
- * const velocity: NativePointer<Point> = particle.at(
- * 	Particle.layout.fields.velocity.offset,
- * 	Point,
+ * const xWing: NativePointer<Starfighter> = nativePointerTo(memory, 64, Starfighter);
+ * const thrust: NativePointer<Thrust> = xWing.at(
+ * 	Starfighter.layout.fields.thrust.offset,
+ * 	Thrust,
  * );
  *
- * velocity.set(Point.from({ x: 0, y: -9.8 })); // writes the particle, in place
+ * thrust.set(Thrust.from({ forward: 0, lateral: -9.8 })); // writes the starfighter, in place
  * ```
  *
  * Where a {@link Pointer} counts values, this counts bytes: it can point into

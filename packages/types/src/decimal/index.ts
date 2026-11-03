@@ -42,9 +42,9 @@ const DEFAULT_MODE: RoundingMode = 'halfEven';
  * special values `NaN`, `Infinity`, `-Infinity` and `-0`.
  *
  * ```ts
- * const price = Decimal.from('19.99');
+ * const coupling = Decimal.from('19.99'); // Watto's price for a podracer coupling
  *
- * price.multiply(Decimal.from(3)).toString(); // '59.97'
+ * coupling.multiply(Decimal.from(3)).toString(); // '59.97'
  * Decimal.from('0.1').add(Decimal.from('0.2')).equals(Decimal.from('0.3')); // true
  * ```
  *
@@ -189,10 +189,10 @@ export class Decimal {
 	 * says it does.
 	 *
 	 * ```ts
-	 * const view = new DataView(new ArrayBuffer(Decimal.layout.size));
+	 * const ledger = new DataView(new ArrayBuffer(Decimal.layout.size));
 	 *
-	 * Decimal.write(view, 0, Decimal.from('19.99'));
-	 * Decimal.read(view, 0).toString(); // '19.99'
+	 * Decimal.write(ledger, 0, Decimal.from('19.99'));
+	 * Decimal.read(ledger, 0).toString(); // '19.99'
 	 * ```
 	 *
 	 * @param view Bytes to read from.

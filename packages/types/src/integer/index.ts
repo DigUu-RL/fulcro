@@ -61,10 +61,10 @@ export type IntegerRepresentation<N extends IntegerWidth> = N extends 64 | 128 ?
  *
  * ```ts
  * const Int32 = SignedInteger(32);
- * const view = new DataView(new ArrayBuffer(Int32.layout.size));
+ * const logbook = new DataView(new ArrayBuffer(Int32.layout.size));
  *
- * Int32.write(view, 0, Int32.from(-2));
- * Int32.read(view, 0); // -2
+ * Int32.write(logbook, 0, Int32.from(-2));
+ * Int32.read(logbook, 0); // -2
  * ```
  *
  * @template T Type of the values this descriptor produces.

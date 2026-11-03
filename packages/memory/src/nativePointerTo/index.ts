@@ -201,10 +201,10 @@ const createNativePointer = <T>(
  *
  * ```ts
  * const memory = createLinearMemory(moduleExports.memory);
- * const latest: NativePointer<Reading> = nativePointerTo(
+ * const latest: NativePointer<ScannerReading> = nativePointerTo(
  * 	memory,
  * 	moduleExports.latest(),
- * 	Reading,
+ * 	ScannerReading,
  * );
  *
  * latest.get(); // the reading the module wrote, read in place
@@ -237,10 +237,10 @@ export function nativePointerTo<T>(
  * Points at the first byte of an allocation, at a value of the type given.
  *
  * ```ts
- * const header = arena.allocate(Header.layout.size, Header.layout.alignment);
- * const pointer: NativePointer<Header> = nativePointerTo(header, Header);
+ * const header = arena.allocate(TransmissionHeader.layout.size, TransmissionHeader.layout.alignment);
+ * const pointer: NativePointer<TransmissionHeader> = nativePointerTo(header, TransmissionHeader);
  *
- * pointer.set(Header.from({ version: 2, length: 0 }));
+ * pointer.set(TransmissionHeader.from({ channel: 1138, length: 0 }));
  * arena.reset();
  * pointer.get(); // throws FULCRO7009 — the bytes are the arena's again
  * ```

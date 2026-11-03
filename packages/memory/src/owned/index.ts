@@ -9,10 +9,10 @@ declare const owner: unique symbol;
  * borrowed from, and the thing that moves when ownership changes hands.
  *
  * ```ts
- * const scores: Owned<number> = own(() => createManagedStorage(100, 0));
+ * const shieldGrid: Owned<number> = own(() => createManagedStorage(100, 0));
  *
- * borrowMutable(scores).set(3, 42);
- * borrow(scores).get(3); // 42
+ * borrowMutable(shieldGrid).set(3, 42);
+ * borrow(shieldGrid).get(3); // 42
  * ```
  *
  * An owner exposes no values of its own. Reading goes through
@@ -26,10 +26,10 @@ declare const owner: unique symbol;
  *
  * ```ts
  * {
- * 	using scores = own(() => createManagedStorage(100, 0));
- * 	const view = borrowMutable(scores);
+ * 	using shieldGrid = own(() => createManagedStorage(100, 0));
+ * 	const generators = borrowMutable(shieldGrid);
  * 	// …
- * } // every borrow of scores ends here, however the block is left
+ * } // every borrow of shieldGrid ends here, however the block is left
  * ```
  *
  * @template T Type of the values owned.
