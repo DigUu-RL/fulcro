@@ -6,17 +6,46 @@ packages; import it to recognise those errors, or to create the same ones in
 code of your own.
 
 ```text
-TypeError: FULCRO6021: Vector3.from: missing field 'x'.
+TypeError: FULCRO6021: Starfighter.from: missing field 'speed'.
 ```
 
 ```ts
 import { isFulcroError } from '@fulcro/errors';
 
 try {
-	Vector3.from(payload);
+	Starfighter.from(telemetry);
 } catch (error) {
 	if (isFulcroError(error, 'FULCRO6021')) {
-		error.details.field; // 'x' — the field that is missing
+		error.details.field; // 'speed' — the field that is missing
+	}
+}
+```
+
+The hangar on Yavin 4 reading the telemetry of an X-wing that came back from the
+trench with its speed sensor shot away, and telling the crew which field to
+check:
+
+```ts
+import { FulcroError, isFulcroError } from '@fulcro/errors';
+import { SinglePrecisionFloat, struct } from '@fulcro/types';
+
+const Starfighter = struct('Starfighter', {
+	shields: SinglePrecisionFloat,
+	hull: SinglePrecisionFloat,
+	speed: SinglePrecisionFloat,
+});
+
+const telemetry: unknown = JSON.parse('{ "shields": 0, "hull": 0.4 }');
+
+try {
+	Starfighter.from(telemetry as never);
+} catch (error) {
+	console.log((error as Error).message); // "FULCRO6021: Starfighter.from: missing field 'speed'."
+
+	if (isFulcroError(error, 'FULCRO6021')) {
+		console.log(error.code, error.details.field); // FULCRO6021 speed
+		console.log(error instanceof TypeError, error instanceof FulcroError); // true true
+		console.log(Object.isFrozen(error.details)); // true
 	}
 }
 ```

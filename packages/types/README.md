@@ -13,14 +13,44 @@ npm install @fulcro/types
 ```ts
 import { Decimal, SignedInteger, UnsignedInteger } from '@fulcro/types';
 
-const Int32 = SignedInteger(32);
+const Garrison = SignedInteger(32);
 
-Int32.add(Int32.from(2), Int32.from(3)); // 5
-Int32.add(Int32.maximum, Int32.from(1)); // RangeError: FULCRO6031: … outside [-2147483648, 2147483647]
+Garrison.add(Garrison.from(9_700), Garrison.from(300)); // 10000
+Garrison.add(Garrison.maximum, Garrison.from(1)); // RangeError: FULCRO6031: … outside [-2147483648, 2147483647]
 UnsignedInteger(8).wrap(-1); // 255, when modular arithmetic is what you mean
 
 Decimal.from('0.1').add(Decimal.from('0.2')).toString(); // '0.3'
 Decimal.from('19.99').multiply(Decimal.from(3)).toString(); // '59.97'
+```
+
+The Death Star's muster, an astromech's counter rolling over on purpose, and
+Watto's bill for three podracer couplings:
+
+```ts
+import { Decimal, SignedInteger, UnsignedInteger } from '@fulcro/types';
+
+const Garrison = SignedInteger(32);
+
+const crew = Garrison.from(342_953);
+const stormtroopers = Garrison.from(25_984);
+
+console.log(Garrison.add(crew, stormtroopers)); // 368937
+
+try {
+	Garrison.add(Garrison.maximum, Garrison.from(1));
+} catch (error) {
+	console.log(error instanceof RangeError, (error as Error).message.startsWith('FULCRO6031')); // true true
+}
+
+const Counter = UnsignedInteger(8);
+
+console.log(Counter.wrap(Counter.maximum + 1)); // 0 — the counter rolls over, because wrap says so
+
+const coupling = Decimal.from('19.99');
+const bill = coupling.multiply(Decimal.from(3));
+
+console.log(bill.toString()); // '59.97'
+console.log(Decimal.from('0.1').add(Decimal.from('0.2')).toString()); // '0.3' — not 0.30000000000000004
 ```
 
 | Type                                         | What it is                                         |
@@ -51,15 +81,47 @@ per value:
 ```ts
 import { SinglePrecisionFloat, struct, type Struct } from '@fulcro/types';
 
-const Vector3 = struct('Vector3', {
-	x: SinglePrecisionFloat,
-	y: SinglePrecisionFloat,
-	z: SinglePrecisionFloat,
+const Starfighter = struct('Starfighter', {
+	shields: SinglePrecisionFloat,
+	hull: SinglePrecisionFloat,
+	speed: SinglePrecisionFloat,
 });
-type Vector3 = Struct<typeof Vector3>;
+type Starfighter = Struct<typeof Starfighter>;
 
-Vector3.layout.size; // 12, and sizeOf<Vector3>() at compile time
-Vector3.write(view, 0, Vector3.from({ x: 0, y: 1, z: 0 }));
+Starfighter.layout.size; // 12, and sizeOf<Starfighter>() at compile time
+Starfighter.write(view, 0, Starfighter.from({ shields: 1, hull: 1, speed: 0.5 }));
+```
+
+Rogue Squadron's twelve snowspeeders, held as one buffer of bytes rather than
+twelve objects:
+
+```ts
+import { SinglePrecisionFloat, struct, type Struct } from '@fulcro/types';
+
+const Starfighter = struct('Starfighter', {
+	shields: SinglePrecisionFloat,
+	hull: SinglePrecisionFloat,
+	speed: SinglePrecisionFloat,
+});
+type Starfighter = Struct<typeof Starfighter>;
+
+const squadron = new DataView(new ArrayBuffer(Starfighter.layout.size * 12));
+
+const fresh: Starfighter = Starfighter.from({ shields: 1, hull: 1, speed: 0.5 });
+const afterTheAtAts = Starfighter.from({ shields: 0, hull: 0.25, speed: 0.5 });
+
+for (let slot = 0; slot < 12; slot++) {
+	Starfighter.write(squadron, Starfighter.layout.size * slot, fresh);
+}
+
+Starfighter.write(squadron, Starfighter.layout.size * 7, afterTheAtAts); // Rogue Eight
+
+const rogueEight = Starfighter.read(squadron, Starfighter.layout.size * 7);
+
+console.log(Starfighter.layout.size, squadron.byteLength); // 12 144
+console.log(rogueEight.hull); // 0.25
+console.log(Starfighter.equals(rogueEight, afterTheAtAts)); // true — compared by field
+console.log(Object.isFrozen(rogueEight)); // true
 ```
 
 ## Mathematics
@@ -73,11 +135,34 @@ compile:
 import { Matrix, SinglePrecisionFloat, Vector } from '@fulcro/types';
 
 const Transform = Matrix(SinglePrecisionFloat, 3, 4);
-const Point = Vector(SinglePrecisionFloat, 4, 1);
+const Position = Vector(SinglePrecisionFloat, 4, 1);
 
-Transform.multiply(shift, point); // Matrix<SinglePrecisionFloat, 3, 1>
-Transform.multiply(shift, shift);
+Transform.multiply(jump, falcon); // Matrix<SinglePrecisionFloat, 3, 1>
+Transform.multiply(jump, jump);
 // Cannot multiply Matrix<T, 3, 4> by Matrix<T, 3, 4>. Expected a matrix with 4 rows.
+```
+
+The Falcon's navicomputer moving the ship five units along the hyperspace lane:
+
+```ts
+import { Matrix, SinglePrecisionFloat, Vector } from '@fulcro/types';
+
+// A translation five units along x, written as an affine transform.
+const Transform = Matrix(SinglePrecisionFloat, 3, 4);
+const Position = Vector(SinglePrecisionFloat, 4, 1);
+
+const jump = Transform.from([
+	[1, 0, 0, 5],
+	[0, 1, 0, 0],
+	[0, 0, 1, 0],
+]);
+
+const falcon = Position.from([1, 2, 3, 1]);
+
+const arrived = Transform.multiply(jump, falcon);
+
+console.log([...arrived]); // [6, 2, 3]
+console.log([arrived.rows, arrived.columns]); // [3, 1]
 ```
 
 ---
