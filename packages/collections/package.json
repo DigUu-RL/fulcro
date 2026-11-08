@@ -1,6 +1,6 @@
 {
 	"name": "@fulcro/collections",
-	"version": "2.1.1",
+	"version": "2.1.2",
 	"description": "Lazily evaluated sequences with a composable query operator set.",
 	"type": "module",
 	"keywords": [
@@ -60,8 +60,8 @@
 		"url": "https://github.com/DigUu-RL/fulcro/issues"
 	},
 	"dependencies": {
-		"@fulcro/errors": "^3.0.0",
-		"@fulcro/transform-core": "^2.1.1"
+		"@fulcro/errors": "^3.1.1",
+		"@fulcro/transform-core": "^2.1.2"
 	},
 	"peerDependencies": {
 		"typescript": ">=5.9 <7"

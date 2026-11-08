@@ -1,5 +1,14 @@
 # @fulcro/errors
 
+## 3.1.1
+
+### Patch Changes
+
+- 29c5fb1: The examples in the doc comments your editor shows now use Star Wars names and
+  data, the same as the guides. Two of them had drifted from the code and are
+  fixed: `prefixError` quoted a message format the types no longer produce, and
+  `defaultOf` and the transformer tables now show what the calls actually return.
+
 ## 3.1.0
 
 ### Minor Changes
