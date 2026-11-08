@@ -59,7 +59,7 @@ const createMeter = (): Meter => {
 				try {
 					for (let turn = 0; turn < delay; turn++) await Promise.resolve();
 
-					if (fails) throw new Error('counted failure');
+					if (fails) throw new Error('a counted ambush');
 
 					return delay;
 				} finally {

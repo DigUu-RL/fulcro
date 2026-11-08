@@ -29,11 +29,13 @@ describe('startWhile', () => {
 		const queue = createWaitingQueue();
 		const started: string[] = [];
 
-		for (const name of ['a', 'b', 'c']) queue.push(entryFor(started, name));
+		for (const name of ['Gold Leader', 'Gold Two', 'Gold Three']) {
+			queue.push(entryFor(started, name));
+		}
 
 		queue.startWhile(() => true);
 
-		expect(started).toEqual(['a', 'b', 'c']);
+		expect(started).toEqual(['Gold Leader', 'Gold Two', 'Gold Three']);
 	});
 
 	it('should stop as soon as there is no room, and resume from there', () => {
@@ -41,17 +43,17 @@ describe('startWhile', () => {
 		const started: string[] = [];
 		let room = 2;
 
-		for (const name of ['a', 'b', 'c', 'd']) {
+		for (const name of ['Gold Leader', 'Gold Two', 'Gold Three', 'Gold Five']) {
 			queue.push(entryFor(started, name));
 		}
 
 		queue.startWhile(() => room-- > 0);
 
-		expect(started).toEqual(['a', 'b']);
+		expect(started).toEqual(['Gold Leader', 'Gold Two']);
 
 		queue.startWhile(() => true);
 
-		expect(started).toEqual(['a', 'b', 'c', 'd']);
+		expect(started).toEqual(['Gold Leader', 'Gold Two', 'Gold Three', 'Gold Five']);
 	});
 
 	it('should skip an entry whose start was cleared, without using room for it', () => {
@@ -91,12 +93,12 @@ describe('startWhile', () => {
 		const queue = createWaitingQueue();
 		const started: string[] = [];
 
-		queue.push(entryFor(started, 'first'));
+		queue.push(entryFor(started, 'Red Leader'));
 		queue.startWhile(() => true);
-		queue.push(entryFor(started, 'second'));
+		queue.push(entryFor(started, 'Red Two'));
 		queue.startWhile(() => true);
 
-		expect(started).toEqual(['first', 'second']);
+		expect(started).toEqual(['Red Leader', 'Red Two']);
 		expect(queue.held()).toBe(0);
 	});
 });

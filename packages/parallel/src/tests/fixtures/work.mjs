@@ -62,7 +62,7 @@ export const burn = (rounds) => {
  */
 export const doubleThenThrow = (value) => {
 	setTimeout(() => {
-		throw new Error('left behind by an earlier task');
+		throw new Error('left behind by an earlier sortie');
 	}, 0);
 
 	return value * 2;
@@ -74,7 +74,7 @@ export const doubleThenThrow = (value) => {
  * @returns {never} Never returns.
  */
 export const explode = () => {
-	throw new Error('the task refused');
+	throw new Error('the droid refused');
 };
 
 /**

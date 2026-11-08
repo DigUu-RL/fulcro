@@ -49,7 +49,7 @@ describe('spawn', () => {
 	it('should accept work that returns a plain value', async () => {
 		const scope = createTaskScope();
 
-		expect(await scope.spawn(() => 'plain')).toBe('plain');
+		expect(await scope.spawn(() => 'Help me, Obi-Wan Kenobi')).toBe('Help me, Obi-Wan Kenobi');
 
 		await scope.join();
 	});
@@ -76,10 +76,10 @@ describe('spawn', () => {
 		const task = scope.spawn(work.work);
 
 		await flush();
-		scope.cancel('stop');
+		scope.cancel('abort the run');
 
 		expect(work.token()?.isCancelled).toBe(true);
-		expect(work.token()?.reason).toBe('stop');
+		expect(work.token()?.reason).toBe('abort the run');
 		expect(task.token).toBe(work.token());
 
 		await rejectionOf(scope.join());
@@ -87,7 +87,7 @@ describe('spawn', () => {
 
 	it('should read a synchronous throw as the task failing', async () => {
 		const scope = createTaskScope();
-		const error = new Error('thrown at once');
+		const error = new Error('thrown before the jump');
 
 		const task = scope.spawn(() => {
 			throw error;
@@ -152,12 +152,12 @@ describe('join', () => {
 		});
 
 		await flush();
-		second.succeed('b');
+		second.succeed('Yavin 4');
 		await flush();
 
 		expect(joined).toBe(false);
 
-		first.succeed('a');
+		first.succeed('Hoth');
 		await joining;
 
 		expect(joined).toBe(true);
@@ -210,7 +210,7 @@ describe('join', () => {
 
 	it('should report the same outcome to a second call', async () => {
 		const scope = createTaskScope();
-		const error = new Error('once');
+		const error = new Error('it was a trap');
 
 		scope.spawn(() => Promise.reject(error));
 
@@ -269,7 +269,7 @@ describe('the first failure', () => {
 		const scope = createTaskScope();
 		const failing = controlledWork<number>();
 		const sibling = controlledWork<number>();
-		const error = new Error('broken');
+		const error = new Error('the Death Star is operational');
 
 		scope.spawn(failing.work);
 		const siblingTask = scope.spawn(sibling.work);
@@ -287,7 +287,7 @@ describe('the first failure', () => {
 		const scope = createTaskScope({ concurrency: 1 });
 		const failing = controlledWork<number>();
 		const waiting = controlledWork<number>();
-		const error = new Error('broken');
+		const error = new Error('the Death Star is operational');
 
 		scope.spawn(failing.work);
 		const waitingTask = scope.spawn(waiting.work);
@@ -303,7 +303,7 @@ describe('the first failure', () => {
 
 	it('should keep the first failure when the cancelled siblings reject with errors of their own', async () => {
 		const scope = createTaskScope();
-		const first = new Error('first');
+		const first = new Error('Red Leader');
 
 		scope.spawn(() => Promise.reject(first));
 
@@ -327,7 +327,7 @@ describe('the first failure', () => {
 		const stubbornTask = scope.spawn(stubborn.work);
 
 		await flush();
-		failing.fail(new Error('broken'));
+		failing.fail(new Error('the Death Star is operational'));
 		stubborn.succeed(5);
 
 		await rejectionOf(scope.join());
@@ -340,12 +340,12 @@ describe('task.cancel', () => {
 	it('should read a failure as a cancellation when the call lands in the same turn', async () => {
 		const scope = createTaskScope();
 		const work = controlledWork<number>({ honoursCancellation: false });
-		const error = new Error('raced');
+		const error = new Error('Han shot first');
 		const task = scope.spawn(work.work);
 
 		await flush();
 		work.fail(error);
-		task.cancel('in the same turn');
+		task.cancel('called off in the same turn');
 
 		await expect(scope.join()).resolves.toBeUndefined();
 		expect(await rejectionOf(task)).toBe(error);
@@ -360,11 +360,11 @@ describe('task.cancel', () => {
 		scope.spawn(sibling.work);
 
 		await flush();
-		task.cancel('only this one');
+		task.cancel('only Red Five');
 		sibling.succeed(2);
 
 		await expect(scope.join()).resolves.toBeUndefined();
-		expect(await rejectionOf(task)).toBe('only this one');
+		expect(await rejectionOf(task)).toBe('only Red Five');
 		expect(sibling.token()?.isCancelled).toBe(false);
 	});
 
@@ -378,9 +378,9 @@ describe('task.cancel', () => {
 		const waitingTask = scope.spawn(waiting.work);
 		scope.spawn(next.work);
 
-		waitingTask.cancel('not needed');
+		waitingTask.cancel('the Falcon is not needed');
 
-		expect(await rejectionOf(waitingTask)).toBe('not needed');
+		expect(await rejectionOf(waitingTask)).toBe('the Falcon is not needed');
 
 		running.succeed(1);
 		await flush();
@@ -407,11 +407,11 @@ describe('task.cancel', () => {
 		const scope = createTaskScope();
 		const task = scope.spawn(controlledWork<number>().work);
 
-		task.cancel('why');
+		task.cancel('the trench is too narrow');
 
 		const settled = await task.settled;
 
-		expect(settled.isFailure() && settled.error).toBe('why');
+		expect(settled.isFailure() && settled.error).toBe('the trench is too narrow');
 
 		await scope.join();
 	});
@@ -424,21 +424,21 @@ describe('scope.cancel', () => {
 
 		scope.spawn(work.work);
 		await flush();
-		scope.cancel('enough');
+		scope.cancel('retreat to the rendezvous point');
 
-		expect(await rejectionOf(scope.join())).toBe('enough');
-		expect(work.token()?.reason).toBe('enough');
+		expect(await rejectionOf(scope.join())).toBe('retreat to the rendezvous point');
+		expect(work.token()?.reason).toBe('retreat to the rendezvous point');
 	});
 
 	it('should hand a task spawned afterwards the reason without starting it', async () => {
 		const scope = createTaskScope();
 		const work = controlledWork<number>();
 
-		scope.cancel('already');
+		scope.cancel('the shield gate is closed');
 
 		const task = scope.spawn(work.work);
 
-		expect(await rejectionOf(task)).toBe('already');
+		expect(await rejectionOf(task)).toBe('the shield gate is closed');
 		expect(work.started()).toBe(false);
 
 		await rejectionOf(scope.join());
@@ -451,9 +451,9 @@ describe('scope.cancel', () => {
 
 		scope.spawn(work.work);
 		await flush();
-		parent.cancel('from outside');
+		parent.cancel('orders from Home One');
 
-		expect(await rejectionOf(scope.join())).toBe('from outside');
+		expect(await rejectionOf(scope.join())).toBe('orders from Home One');
 	});
 });
 
@@ -475,7 +475,7 @@ describe('await using', () => {
 	});
 
 	it('should throw a failure nobody joined', async () => {
-		const error = new Error('unseen');
+		const error = new Error('a TIE fighter nobody saw');
 
 		const leaving = async (): Promise<void> => {
 			await using scope = createTaskScope();
@@ -488,7 +488,7 @@ describe('await using', () => {
 	});
 
 	it('should not throw a failure join already reported', async () => {
-		const error = new Error('seen');
+		const error = new Error('a TIE fighter on the scope');
 		let joinedWith: unknown;
 
 		const leaving = async (): Promise<void> => {
@@ -535,7 +535,7 @@ describe('a task nobody awaits', () => {
 		try {
 			const scope = createTaskScope();
 
-			scope.spawn(() => Promise.reject(new Error('dropped')));
+			scope.spawn(() => Promise.reject(new Error('a transmission nobody heard')));
 			scope.spawn(controlledWork<number>().work);
 
 			await rejectionOf(scope.join());
@@ -588,7 +588,7 @@ describe('types', () => {
 		const scope = createTaskScope();
 
 		expectTypeOf(scope.spawn(() => 1)).toEqualTypeOf<Task<number>>();
-		expectTypeOf(scope.spawn(() => Promise.resolve('text'))).toEqualTypeOf<Task<string>>();
+		expectTypeOf(scope.spawn(() => Promise.resolve('Kessel'))).toEqualTypeOf<Task<string>>();
 
 		void scope.join();
 	});
@@ -596,7 +596,7 @@ describe('types', () => {
 	it('should be awaitable as its value, and settle as a Result', () => {
 		expectTypeOf<Awaited<Task<number>>>().toEqualTypeOf<number>();
 
-		expectTypeOf<Task<number>['settled']>().toEqualTypeOf<Promise<Result<number>>>();
+		expectTypeOf<Task<number>['Kessel Run']>().toEqualTypeOf<Promise<Result<number>>>();
 	});
 
 	it('should be async disposable, so await using ends it', () => {
