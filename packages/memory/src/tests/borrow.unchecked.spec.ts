@@ -42,9 +42,9 @@ describe('borrow, unchecked', () => {
 
 	it('should end what was made from it as well', () => {
 		const owner: Owned<number> = own(() => createManagedStorage(3, 0));
-		const reading = borrow(owner);
-		const subview = reading.subview(1).subview(1);
-		const viewed = asReadOnlyView(reading, 1);
+		const scan = borrow(owner);
+		const subview = scan.subview(1).subview(1);
+		const viewed = asReadOnlyView(scan, 1);
 
 		borrowMutable(owner);
 
@@ -55,10 +55,10 @@ describe('borrow, unchecked', () => {
 	it('should end an exclusive borrow taken before it, and not the other way round', () => {
 		const owner: Owned<number> = own(() => createManagedStorage(1, 0));
 		const writing = borrowMutable(owner);
-		const reading = borrow(owner);
+		const scan = borrow(owner);
 
 		expect(() => writing.get(0)).toThrow(ended('View.get'));
-		expect(reading.get(0)).toBe(0);
+		expect(scan.get(0)).toBe(0);
 	});
 
 	it('should read again through a borrow taken after the conflict', () => {

@@ -23,12 +23,12 @@ import type { Storage } from '@/src/storage';
  */
 
 /** Sixteen bytes per value, aligned to eight. */
-const Sample = struct('Sample', {
+const ScannerReading = struct('ScannerReading', {
 	value: DoublePrecisionFloat,
 	channel: UnsignedInteger(8),
 });
 
-type Sample = Struct<typeof Sample>;
+type ScannerReading = Struct<typeof ScannerReading>;
 
 /** Enough values for a per-element cost to separate from a constant one. */
 const VOLUME = 100_000;
@@ -38,20 +38,20 @@ let livenessChecks = 0;
 let reads = 0;
 let writes = 0;
 
-/** `Sample`, counting what the storage asks of it. */
+/** `ScannerReading`, counting what the storage asks of it. */
 const counted = {
-	name: Sample.name,
-	layout: Sample.layout,
-	read: (view: DataView, offset: number): Sample => {
+	name: ScannerReading.name,
+	layout: ScannerReading.layout,
+	read: (view: DataView, offset: number): ScannerReading => {
 		reads++;
 
-		return Sample.read(view, offset);
+		return ScannerReading.read(view, offset);
 	},
-	write: (view: DataView, offset: number, value: Sample): void => {
+	write: (view: DataView, offset: number, value: ScannerReading): void => {
 		writes++;
-		Sample.write(view, offset, value);
+		ScannerReading.write(view, offset, value);
 	},
-	is: (value: unknown): value is Sample => Sample.is(value),
+	is: (value: unknown): value is ScannerReading => ScannerReading.is(value),
 };
 
 /** An allocator counting requests, whose allocations count liveness checks. */
@@ -70,7 +70,7 @@ const allocator: Allocator = {
 	},
 };
 
-const sample: Sample = Sample.from({ value: 1.5, channel: 3 });
+const scan: ScannerReading = ScannerReading.from({ value: 1.5, channel: 3 });
 
 beforeEach(() => {
 	requests = 0;
@@ -87,10 +87,10 @@ describe('allocate, counted', () => {
 	});
 
 	it('should ask once whether the memory is live per access, and read once per get', () => {
-		const samples: Storage<Sample> = allocate(counted, VOLUME, allocator);
+		const scans: Storage<ScannerReading> = allocate(counted, VOLUME, allocator);
 
-		for (let index = 0; index < VOLUME; index++) samples.set(index, sample);
-		for (let index = 0; index < VOLUME; index++) samples.get(index);
+		for (let index = 0; index < VOLUME; index++) scans.set(index, scan);
+		for (let index = 0; index < VOLUME; index++) scans.get(index);
 
 		expect([livenessChecks, reads, writes]).toEqual([2 * VOLUME, VOLUME, VOLUME]);
 	});

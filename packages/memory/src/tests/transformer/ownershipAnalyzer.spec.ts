@@ -148,11 +148,11 @@ describe('ownership rules at compile time', () => {
 		});
 
 		expect(messages).toContain(
-			"FULCRO7028: borrow: the borrow 'reading' is used after borrowMutable(owner) at line 40 ended it.",
+			"FULCRO7028: borrow: the borrow 'scan' is used after borrowMutable(owner) at line 40 ended it.",
 		);
 
 		expect(messages).toContain(
-			"FULCRO7029: borrow: the borrow 'reading' is used after its owner 'owner' was moved at line 67.",
+			"FULCRO7029: borrow: the borrow 'scan' is used after its owner 'owner' was moved at line 67.",
 		);
 	});
 

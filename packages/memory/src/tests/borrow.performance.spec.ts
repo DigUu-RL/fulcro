@@ -75,7 +75,7 @@ describe('borrow, counted', () => {
 	});
 
 	it('should ask once per access whether allocated memory is live', () => {
-		const Sample = struct('Sample', { value: DoublePrecisionFloat });
+		const ScannerReading = struct('ScannerReading', { value: DoublePrecisionFloat });
 		let livenessChecks = 0;
 
 		const allocator: Allocator = {
@@ -91,8 +91,8 @@ describe('borrow, counted', () => {
 			},
 		};
 
-		const values: Borrowed<Struct<typeof Sample>> = borrow(
-			own(() => allocate(Sample, VOLUME, allocator)),
+		const values: Borrowed<Struct<typeof ScannerReading>> = borrow(
+			own(() => allocate(ScannerReading, VOLUME, allocator)),
 		);
 
 		for (let index = 0; index < VOLUME; index++) values.get(index);

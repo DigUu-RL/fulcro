@@ -16,12 +16,12 @@ import type { Storage } from '@/src/storage';
  */
 
 /** Sixteen bytes per value, seven of them padding. */
-const Sample = struct('Sample', {
+const ScannerReading = struct('ScannerReading', {
 	value: DoublePrecisionFloat,
 	channel: UnsignedInteger(8),
 });
 
-type Sample = Struct<typeof Sample>;
+type ScannerReading = Struct<typeof ScannerReading>;
 
 /** Enough values for a per-element cost to separate from a constant one. */
 const VOLUME = 100_000;
@@ -31,29 +31,29 @@ let writes = 0;
 let recognitions = 0;
 let offsets: number[] = [];
 
-/** `Sample`, counting what the storage asks of it. */
+/** `ScannerReading`, counting what the storage asks of it. */
 const counted = {
-	name: Sample.name,
-	layout: Sample.layout,
-	read: (view: DataView, offset: number): Sample => {
+	name: ScannerReading.name,
+	layout: ScannerReading.layout,
+	read: (view: DataView, offset: number): ScannerReading => {
 		reads++;
 		offsets.push(offset);
 
-		return Sample.read(view, offset);
+		return ScannerReading.read(view, offset);
 	},
-	write: (view: DataView, offset: number, value: Sample): void => {
+	write: (view: DataView, offset: number, value: ScannerReading): void => {
 		writes++;
 		offsets.push(offset);
-		Sample.write(view, offset, value);
+		ScannerReading.write(view, offset, value);
 	},
-	is: (value: unknown): value is Sample => {
+	is: (value: unknown): value is ScannerReading => {
 		recognitions++;
 
-		return Sample.is(value);
+		return ScannerReading.is(value);
 	},
 };
 
-const sample: Sample = Sample.from({ value: 1.5, channel: 3 });
+const scan: ScannerReading = ScannerReading.from({ value: 1.5, channel: 3 });
 
 beforeEach(() => {
 	reads = 0;
@@ -70,38 +70,38 @@ describe('createFixedBufferStorage, counted', () => {
 	});
 
 	it('should read once per get, and write nothing', () => {
-		const samples: Storage<Sample> = createFixedBufferStorage(counted, VOLUME);
+		const scans: Storage<ScannerReading> = createFixedBufferStorage(counted, VOLUME);
 
-		samples.get(VOLUME - 1);
+		scans.get(VOLUME - 1);
 
 		expect([reads, writes, recognitions]).toEqual([1, 0, 0]);
 	});
 
 	it('should recognise once and write once per set, and read nothing', () => {
-		const samples: Storage<Sample> = createFixedBufferStorage(counted, VOLUME);
+		const scans: Storage<ScannerReading> = createFixedBufferStorage(counted, VOLUME);
 
-		samples.set(VOLUME - 1, sample);
+		scans.set(VOLUME - 1, scan);
 
 		expect([reads, writes, recognitions]).toEqual([0, 1, 1]);
 	});
 
 	it('should touch nothing when an index is refused', () => {
-		const samples: Storage<Sample> = createFixedBufferStorage(counted, VOLUME);
+		const scans: Storage<ScannerReading> = createFixedBufferStorage(counted, VOLUME);
 
 		expect(() => {
-			samples.set(VOLUME, sample);
+			scans.set(VOLUME, scan);
 		}).toThrow(RangeError);
 
-		expect(() => samples.get(-1)).toThrow(RangeError);
+		expect(() => scans.get(-1)).toThrow(RangeError);
 		expect([reads, writes, recognitions]).toEqual([0, 0, 0]);
 	});
 
 	it('should read exactly once per element when a consumer walks it all', () => {
-		const samples: Storage<Sample> = createFixedBufferStorage(counted, VOLUME);
+		const scans: Storage<ScannerReading> = createFixedBufferStorage(counted, VOLUME);
 		let channels = 0;
 
-		for (let index = 0; index < samples.length; index++) {
-			channels += samples.get(index).channel;
+		for (let index = 0; index < scans.length; index++) {
+			channels += scans.get(index).channel;
 		}
 
 		expect(channels).toBe(0);
@@ -109,13 +109,13 @@ describe('createFixedBufferStorage, counted', () => {
 	});
 
 	it('should place the values end to end, one layout size apart', () => {
-		const samples: Storage<Sample> = createFixedBufferStorage(counted, VOLUME);
+		const scans: Storage<ScannerReading> = createFixedBufferStorage(counted, VOLUME);
 
-		for (let index = 0; index < samples.length; index++) {
-			samples.set(index, sample);
+		for (let index = 0; index < scans.length; index++) {
+			scans.set(index, scan);
 		}
 
-		const { size } = Sample.layout;
+		const { size } = ScannerReading.layout;
 
 		expect(size).toBe(16);
 		expect(offsets).toHaveLength(VOLUME);

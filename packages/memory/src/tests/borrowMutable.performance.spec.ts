@@ -23,18 +23,18 @@ const VOLUME = 100_000;
 describe('borrowMutable, counted', () => {
 	it('should touch nothing when it, a subview or a read-only view is made', () => {
 		const { storage, counts } = countedStorage(VOLUME);
-		const scores: MutableBorrow<number> = borrowMutable(own(() => storage));
+		const shieldGrid: MutableBorrow<number> = borrowMutable(own(() => storage));
 
-		scores.subview(3).subview(10, 20).readOnly();
+		shieldGrid.subview(3).subview(10, 20).readOnly();
 
 		expect(counts).toEqual({ reads: 0, writes: 0 });
 	});
 
 	it('should write each value exactly once, and read none, when filled', () => {
 		const { storage, counts } = countedStorage(VOLUME);
-		const scores: MutableBorrow<number> = borrowMutable(own(() => storage));
+		const shieldGrid: MutableBorrow<number> = borrowMutable(own(() => storage));
 
-		for (let index = 0; index < scores.length; index++) scores.set(index, 1);
+		for (let index = 0; index < shieldGrid.length; index++) shieldGrid.set(index, 1);
 
 		expect(counts).toEqual({ reads: 0, writes: VOLUME });
 	});

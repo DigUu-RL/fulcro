@@ -22,12 +22,12 @@ import { coded } from '@/src/tests/coded';
  * write anywhere it is not.
  */
 
-const Point = struct('Point', {
-	x: SinglePrecisionFloat,
-	y: SinglePrecisionFloat,
+const SensorContact = struct('SensorContact', {
+	bearing: SinglePrecisionFloat,
+	range: SinglePrecisionFloat,
 });
 
-type Point = Struct<typeof Point>;
+type SensorContact = Struct<typeof SensorContact>;
 
 /**
  * A storage of `length` numbers holding `0, 1, 2, …`.
@@ -73,11 +73,11 @@ describe('pointerTo', () => {
 	});
 
 	it('should point into a struct storage', () => {
-		const points = createFixedBufferStorage(Point, 2);
+		const points = createFixedBufferStorage(SensorContact, 2);
 
-		pointerTo(points, 1).set(Point.from({ x: 3, y: 4 }));
+		pointerTo(points, 1).set(SensorContact.from({ bearing: 3, range: 4 }));
 
-		expect(points.get(1).x).toBe(3);
+		expect(points.get(1).bearing).toBe(3);
 	});
 
 	it('should stand one past the last value, and refuse to read or write there', () => {
@@ -142,7 +142,7 @@ describe('pointerTo', () => {
 
 	it('should refuse to read once the allocator released its memory', () => {
 		const arena = createArenaAllocator(64);
-		const pointer: Pointer<Point> = pointerTo(allocate(Point, 2, arena), 1);
+		const pointer: Pointer<SensorContact> = pointerTo(allocate(SensorContact, 2, arena), 1);
 
 		arena.reset();
 

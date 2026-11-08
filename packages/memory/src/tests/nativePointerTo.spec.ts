@@ -35,8 +35,8 @@ import { instantiateRecordingModule } from '@/src/tests/recordingModule';
  */
 
 /** Eight bytes, aligned to eight. */
-const Sample = struct('Sample', { value: DoublePrecisionFloat });
-type Sample = Struct<typeof Sample>;
+const ScannerReading = struct('ScannerReading', { value: DoublePrecisionFloat });
+type ScannerReading = Struct<typeof ScannerReading>;
 
 /** The same eight bytes, seen as two 32-bit words. */
 const Words = struct('Words', {
@@ -44,15 +44,15 @@ const Words = struct('Words', {
 	high: UnsignedInteger(32),
 });
 
-const Point = struct('Point', {
-	x: SinglePrecisionFloat,
-	y: SinglePrecisionFloat,
+const SensorContact = struct('SensorContact', {
+	bearing: SinglePrecisionFloat,
+	range: SinglePrecisionFloat,
 });
 
-type Point = Struct<typeof Point>;
+type SensorContact = Struct<typeof SensorContact>;
 
-const Particle = struct('Particle', { position: Point, velocity: Point });
-type Particle = Struct<typeof Particle>;
+const BlasterBolt = struct('BlasterBolt', { position: SensorContact, velocity: SensorContact });
+type BlasterBolt = Struct<typeof BlasterBolt>;
 
 /** One WebAssembly page, in bytes. */
 const PAGE = 65_536;
@@ -123,9 +123,9 @@ const ONE_AND_A_HALF = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf8, 0x3f];
 describe('nativePointerTo a memory', () => {
 	it('should read and write the value at its address, in place', () => {
 		const { memory, buffer } = memoryOf(64);
-		const pointer: NativePointer<Sample> = nativePointerTo(memory, 16, Sample);
+		const pointer: NativePointer<ScannerReading> = nativePointerTo(memory, 16, ScannerReading);
 
-		pointer.set(Sample.from({ value: 1.5 }));
+		pointer.set(ScannerReading.from({ value: 1.5 }));
 
 		expect(pointer.memory).toBe(memory);
 		expect(pointer.address).toBe(16);
@@ -137,18 +137,18 @@ describe('nativePointerTo a memory', () => {
 	});
 
 	it('should read and write a field of a struct through a pointer to it, at the field’s bytes', () => {
-		// A particle is two points of two 32-bit floats: position at bytes 0–7,
+		// A bolt is two sensor contacts of two 32-bit floats: position at bytes 0–7,
 		// velocity at bytes 8–15. Written out rather than read from the layout,
 		// so a wrong offset in it cannot agree with itself.
 		const { memory, buffer } = memoryOf(64);
 		const raw = new DataView(buffer);
-		const particle: NativePointer<Particle> = nativePointerTo(memory, 16, Particle);
-		const velocity: NativePointer<Point> = particle.at(8, Point);
+		const bolt: NativePointer<BlasterBolt> = nativePointerTo(memory, 16, BlasterBolt);
+		const velocity: NativePointer<SensorContact> = bolt.at(8, SensorContact);
 
-		particle.set(
-			Particle.from({
-				position: Point.from({ x: 1, y: 2 }),
-				velocity: Point.from({ x: 3, y: 4 }),
+		bolt.set(
+			BlasterBolt.from({
+				position: SensorContact.from({ bearing: 1, range: 2 }),
+				velocity: SensorContact.from({ bearing: 3, range: 4 }),
 			}),
 		);
 
@@ -156,9 +156,9 @@ describe('nativePointerTo a memory', () => {
 			1, 2, 3, 4,
 		]);
 
-		velocity.set(Point.from({ x: 0, y: -10 }));
+		velocity.set(SensorContact.from({ bearing: 0, range: -10 }));
 
-		expect(Particle.layout.fields.velocity.offset).toBe(8);
+		expect(BlasterBolt.layout.fields.velocity.offset).toBe(8);
 		expect(velocity.address).toBe(24);
 
 		expect([16, 20, 24, 28].map((position) => raw.getFloat32(position, true))).toEqual([
@@ -167,28 +167,28 @@ describe('nativePointerTo a memory', () => {
 
 		raw.setFloat32(28, 6.5, true);
 
-		expect(velocity.get().y).toBe(6.5);
-		expect(particle.get().velocity.y).toBe(6.5);
-		expect(particle.get().position.x).toBe(1);
+		expect(velocity.get().range).toBe(6.5);
+		expect(bolt.get().velocity.range).toBe(6.5);
+		expect(bolt.get().position.bearing).toBe(1);
 	});
 
 	it('should read the same bytes as another type', () => {
 		const { memory, buffer } = memoryOf(16);
-		const sample: NativePointer<Sample> = nativePointerTo(memory, 8, Sample);
+		const scan: NativePointer<ScannerReading> = nativePointerTo(memory, 8, ScannerReading);
 
-		sample.set(Sample.from({ value: 1.5 }));
+		scan.set(ScannerReading.from({ value: 1.5 }));
 
 		expect(bytesOf(buffer, 8, 16)).toEqual(ONE_AND_A_HALF);
 
-		const words = sample.at(0, Words).get();
+		const words = scan.at(0, Words).get();
 
 		expect(words.low).toBe(0);
 		expect(words.high).toBe(0x3ff8_0000);
 
-		sample.at(0, Words).set(Words.from({ low: 0, high: 0x4000_0000 }));
+		scan.at(0, Words).set(Words.from({ low: 0, high: 0x4000_0000 }));
 
 		expect(new DataView(buffer).getFloat64(8, true)).toBe(2);
-		expect(sample.get().value).toBe(2);
+		expect(scan.get().value).toBe(2);
 	});
 
 	it('should point at a numeric type alone, and at one field of a struct by its own type', () => {
@@ -205,8 +205,8 @@ describe('nativePointerTo a memory', () => {
 		expect(bytesOf(buffer, 4, 8)).toEqual([4, 3, 2, 1]);
 		expect(touchedIn(buffer, 0, 32)).toEqual([4, 5, 6, 7]);
 
-		const particle = nativePointerTo(memory, 16, Particle);
-		const velocityY: NativePointer<SinglePrecisionFloat> = particle.at(12, SinglePrecisionFloat);
+		const bolt = nativePointerTo(memory, 16, BlasterBolt);
+		const velocityY: NativePointer<SinglePrecisionFloat> = bolt.at(12, SinglePrecisionFloat);
 
 		velocityY.set(SinglePrecisionFloat.from(6.5));
 
@@ -223,10 +223,10 @@ describe('nativePointerTo a memory', () => {
 
 	it('should move in bytes, keeping its type, and leave the pointer it came from', () => {
 		const { memory, buffer } = patternedMemoryOf(64);
-		const first: NativePointer<Sample> = nativePointerTo(memory, 0, Sample);
-		const third: NativePointer<Sample> = first.at(2 * Sample.layout.size);
+		const first: NativePointer<ScannerReading> = nativePointerTo(memory, 0, ScannerReading);
+		const third: NativePointer<ScannerReading> = first.at(2 * ScannerReading.layout.size);
 
-		third.set(Sample.from({ value: 1.5 }));
+		third.set(ScannerReading.from({ value: 1.5 }));
 
 		expect(bytesOf(buffer, 16, 24)).toEqual(ONE_AND_A_HALF);
 		expect(touchedIn(buffer, 0, 64)).toEqual([16, 17, 18, 19, 20, 21, 22, 23]);
@@ -239,7 +239,7 @@ describe('nativePointerTo a memory', () => {
 	it('should write exactly the value’s bytes, and leave every byte around them as it was', () => {
 		const { memory, buffer } = patternedMemoryOf(64);
 
-		nativePointerTo(memory, 24, Sample).set(Sample.from({ value: 1.5 }));
+		nativePointerTo(memory, 24, ScannerReading).set(ScannerReading.from({ value: 1.5 }));
 
 		expect(touchedIn(buffer, 0, 64)).toEqual([24, 25, 26, 27, 28, 29, 30, 31]);
 		expect(bytesOf(buffer, 24, 32)).toEqual(ONE_AND_A_HALF);
@@ -248,9 +248,9 @@ describe('nativePointerTo a memory', () => {
 	it('should write only a field’s bytes through a pointer to that field', () => {
 		const { memory, buffer } = patternedMemoryOf(64);
 
-		nativePointerTo(memory, 16, Particle)
-			.at(8, Point)
-			.set(Point.from({ x: 0, y: 0 }));
+		nativePointerTo(memory, 16, BlasterBolt)
+			.at(8, SensorContact)
+			.set(SensorContact.from({ bearing: 0, range: 0 }));
 
 		expect(touchedIn(buffer, 0, 64)).toEqual([24, 25, 26, 27, 28, 29, 30, 31]);
 	});
@@ -259,26 +259,26 @@ describe('nativePointerTo a memory', () => {
 		const { memory, buffer } = patternedMemoryOf(32);
 		const before: number[] = bytesOf(buffer, 0, 32);
 
-		nativePointerTo(memory, 8, Sample).get();
-		nativePointerTo(memory, 8, Particle).at(8, Point).get();
+		nativePointerTo(memory, 8, ScannerReading).get();
+		nativePointerTo(memory, 8, BlasterBolt).at(8, SensorContact).get();
 
 		expect(bytesOf(buffer, 0, 32)).toEqual(before);
 	});
 
 	it('should stand at the end of the memory, and refuse to read or write there', () => {
 		const { memory } = memoryOf(16);
-		const end: NativePointer<Sample> = nativePointerTo(memory, 16, Sample);
+		const end: NativePointer<ScannerReading> = nativePointerTo(memory, 16, ScannerReading);
 
 		expect(() => end.get()).toThrow(
 			coded(
 				new RangeError(
-					'FULCRO7021: NativePointer.get: the 8 bytes of Sample at address 16 run past 16, the end of where this pointer may read.',
+					'FULCRO7021: NativePointer.get: the 8 bytes of ScannerReading at address 16 run past 16, the end of where this pointer may read.',
 				),
 				{
 					operation: 'NativePointer.get',
 					address: 16,
 					size: 8,
-					element: 'Sample',
+					element: 'ScannerReading',
 					end: 16,
 				},
 			),
@@ -286,7 +286,7 @@ describe('nativePointerTo a memory', () => {
 
 		expect(
 			thrownBy(() => {
-				end.set(Sample.from({ value: 1 }));
+				end.set(ScannerReading.from({ value: 1 }));
 			}),
 		).toMatchObject({ code: 'FULCRO7021', details: { operation: 'NativePointer.set' } });
 	});
@@ -301,7 +301,7 @@ describe('nativePointerTo a memory', () => {
 	])('should refuse address %s in 16 bytes', (address, shown) => {
 		const { memory } = memoryOf(16);
 
-		expect(() => nativePointerTo(memory, address as number, Sample)).toThrow(
+		expect(() => nativePointerTo(memory, address as number, ScannerReading)).toThrow(
 			coded(
 				new RangeError(
 					`FULCRO7019: nativePointerTo: address ${String(shown)} is outside 0 to 16, where this pointer may point.`,
@@ -314,32 +314,32 @@ describe('nativePointerTo a memory', () => {
 	it('should refuse an address the type may not start at', () => {
 		const { memory } = memoryOf(16);
 
-		expect(() => nativePointerTo(memory, 4, Sample)).toThrow(
+		expect(() => nativePointerTo(memory, 4, ScannerReading)).toThrow(
 			coded(
 				new RangeError(
-					'FULCRO7020: nativePointerTo: address 4 is not a multiple of 8, where a value of Sample may start.',
+					'FULCRO7020: nativePointerTo: address 4 is not a multiple of 8, where a value of ScannerReading may start.',
 				),
 				{
 					operation: 'nativePointerTo',
 					address: 4,
 					alignment: 8,
-					element: 'Sample',
+					element: 'ScannerReading',
 				},
 			),
 		);
 
-		expect(thrownBy(() => nativePointerTo(memory, 0, Sample).at(4))).toMatchObject({
+		expect(thrownBy(() => nativePointerTo(memory, 0, ScannerReading).at(4))).toMatchObject({
 			code: 'FULCRO7020',
 			details: { operation: 'NativePointer.at' },
 		});
 
-		expect(nativePointerTo(memory, 0, Sample).at(4, Point).address).toBe(4);
+		expect(nativePointerTo(memory, 0, ScannerReading).at(4, SensorContact).address).toBe(4);
 	});
 
 	it('should refuse a move outside the memory', () => {
 		const { memory } = memoryOf(16);
 
-		expect(() => nativePointerTo(memory, 8, Sample).at(-16)).toThrow(
+		expect(() => nativePointerTo(memory, 8, ScannerReading).at(-16)).toThrow(
 			coded(
 				new RangeError(
 					'FULCRO7019: NativePointer.at: address -8 is outside 0 to 16, where this pointer may point.',
@@ -353,12 +353,17 @@ describe('nativePointerTo a memory', () => {
 		const { memory } = memoryOf(16);
 
 		expect(() => {
-			nativePointerTo(memory, 0, Sample).set(Point.from({ x: 1, y: 1 }) as unknown as Sample);
+			nativePointerTo(memory, 0, ScannerReading).set(
+				SensorContact.from({ bearing: 1, range: 1 }) as unknown as ScannerReading,
+			);
 		}).toThrow(
-			coded(new TypeError('FULCRO7004: NativePointer.set: the value is not a value of Sample.'), {
-				operation: 'NativePointer.set',
-				element: 'Sample',
-			}),
+			coded(
+				new TypeError('FULCRO7004: NativePointer.set: the value is not a value of ScannerReading.'),
+				{
+					operation: 'NativePointer.set',
+					element: 'ScannerReading',
+				},
+			),
 		);
 	});
 
@@ -373,7 +378,7 @@ describe('nativePointerTo a memory', () => {
 			is: (value: unknown): value is number => typeof value === 'number',
 		};
 
-		expect(() => nativePointerTo(memory, 0, unaligned as unknown as typeof Sample)).toThrow(
+		expect(() => nativePointerTo(memory, 0, unaligned as unknown as typeof ScannerReading)).toThrow(
 			coded(
 				new RangeError(
 					'FULCRO7006: nativePointerTo: expected an alignment that is a positive power of two, received undefined.',
@@ -382,14 +387,19 @@ describe('nativePointerTo a memory', () => {
 			),
 		);
 
-		expect(() => nativePointerTo(memory, 0, {} as unknown as typeof Sample)).toThrow(
+		expect(() => nativePointerTo(memory, 0, {} as unknown as typeof ScannerReading)).toThrow(
 			expect.objectContaining({ code: 'FULCRO7003' }),
 		);
 	});
 
 	it('should refuse to read past the end of a buffer that shrank', () => {
 		const buffer = new ArrayBuffer(16, { maxByteLength: 16 });
-		const pointer: NativePointer<Sample> = nativePointerTo(createLinearMemory(buffer), 8, Sample);
+
+		const pointer: NativePointer<ScannerReading> = nativePointerTo(
+			createLinearMemory(buffer),
+			8,
+			ScannerReading,
+		);
 
 		buffer.resize(8);
 
@@ -401,10 +411,10 @@ describe('nativePointerTo a memory', () => {
 
 	it('should be frozen, its methods working taken off it', () => {
 		const { memory } = memoryOf(16);
-		const pointer: NativePointer<Sample> = nativePointerTo(memory, 0, Sample);
+		const pointer: NativePointer<ScannerReading> = nativePointerTo(memory, 0, ScannerReading);
 		const { get, set, at } = pointer;
 
-		set(Sample.from({ value: 5 }));
+		set(ScannerReading.from({ value: 5 }));
 
 		expect(Object.isFrozen(pointer)).toBe(true);
 		expect(get().value).toBe(5);
@@ -416,13 +426,13 @@ describe('nativePointerTo a WebAssembly memory', () => {
 	it('should read what the module wrote, with no copy, and write where the module reads', () => {
 		const module = instantiateRecordingModule();
 		const memory: LinearMemory = createLinearMemory(module.memory);
-		const pointer: NativePointer<Sample> = nativePointerTo(memory, 8, Sample);
+		const pointer: NativePointer<ScannerReading> = nativePointerTo(memory, 8, ScannerReading);
 
 		module.store(8, 2.5);
 
 		expect(pointer.get().value).toBe(2.5);
 
-		pointer.set(Sample.from({ value: 1.5 }));
+		pointer.set(ScannerReading.from({ value: 1.5 }));
 
 		expect(bytesOf(module.memory.buffer, 0, 24)).toEqual([
 			0,
@@ -448,14 +458,14 @@ describe('nativePointerTo a WebAssembly memory', () => {
 	it('should write into the grown memory, not the buffer it replaced', () => {
 		const module = instantiateRecordingModule();
 
-		const pointer: NativePointer<Sample> = nativePointerTo(
+		const pointer: NativePointer<ScannerReading> = nativePointerTo(
 			createLinearMemory(module.memory),
 			8,
-			Sample,
+			ScannerReading,
 		);
 
 		module.grow(1);
-		pointer.set(Sample.from({ value: 1.5 }));
+		pointer.set(ScannerReading.from({ value: 1.5 }));
 
 		expect(bytesOf(module.memory.buffer, 8, 16)).toEqual(ONE_AND_A_HALF);
 		expect(module.memory.buffer.byteLength).toBe(2 * PAGE);
@@ -464,7 +474,7 @@ describe('nativePointerTo a WebAssembly memory', () => {
 	it('should keep working after the module grows its memory', () => {
 		const module = instantiateRecordingModule();
 		const memory: LinearMemory = createLinearMemory(module.memory);
-		const early: NativePointer<Sample> = nativePointerTo(memory, 8, Sample);
+		const early: NativePointer<ScannerReading> = nativePointerTo(memory, 8, ScannerReading);
 		const before: ArrayBuffer = module.memory.buffer;
 
 		module.store(8, 1.25);
@@ -473,7 +483,7 @@ describe('nativePointerTo a WebAssembly memory', () => {
 		expect(before.byteLength).toBe(0);
 		expect(early.get().value).toBe(1.25);
 
-		const late: NativePointer<Sample> = nativePointerTo(memory, PAGE + 8, Sample);
+		const late: NativePointer<ScannerReading> = nativePointerTo(memory, PAGE + 8, ScannerReading);
 
 		module.store(PAGE + 8, 9.5);
 
@@ -501,9 +511,9 @@ describe('nativePointerTo an allocation', () => {
 			allocator.allocate(8, 8);
 
 			const allocation: Allocation = allocator.allocate(16, 8);
-			const pointer: NativePointer<Sample> = nativePointerTo(allocation, Sample);
+			const pointer: NativePointer<ScannerReading> = nativePointerTo(allocation, ScannerReading);
 
-			pointer.at(8).set(Sample.from({ value: 1.5 }));
+			pointer.at(8).set(ScannerReading.from({ value: 1.5 }));
 
 			expect(pointer.address).toBe(address);
 			expect(pointer.memory.byteLength).toBe(memoryLength);
@@ -532,13 +542,16 @@ describe('nativePointerTo an allocation', () => {
 
 		allocator.allocate(8, 8);
 
-		const pointer: NativePointer<Sample> = nativePointerTo(allocator.allocate(16, 8), Sample);
+		const pointer: NativePointer<ScannerReading> = nativePointerTo(
+			allocator.allocate(16, 8),
+			ScannerReading,
+		);
 
 		allocator.allocate(8, 8);
 		new Uint8Array(buffer).fill(UNTOUCHED);
 
-		pointer.set(Sample.from({ value: 1.5 }));
-		pointer.at(8).set(Sample.from({ value: 1.5 }));
+		pointer.set(ScannerReading.from({ value: 1.5 }));
+		pointer.at(8).set(ScannerReading.from({ value: 1.5 }));
 
 		expect(touchedIn(buffer, 0, 64)).toEqual([
 			8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
@@ -552,7 +565,10 @@ describe('nativePointerTo an allocation', () => {
 
 		allocator.allocate(8, 8);
 
-		const pointer: NativePointer<Sample> = nativePointerTo(allocator.allocate(16, 8), Sample);
+		const pointer: NativePointer<ScannerReading> = nativePointerTo(
+			allocator.allocate(16, 8),
+			ScannerReading,
+		);
 
 		expect(pointer.at(16).address).toBe(24);
 
@@ -575,8 +591,13 @@ describe('nativePointerTo an allocation', () => {
 
 	it('should refuse every access once the allocator released the memory, through every pointer moved from it', () => {
 		const arena = createArenaAllocator(64);
-		const pointer: NativePointer<Sample> = nativePointerTo(arena.allocate(16, 8), Sample);
-		const second: NativePointer<Sample> = pointer.at(8);
+
+		const pointer: NativePointer<ScannerReading> = nativePointerTo(
+			arena.allocate(16, 8),
+			ScannerReading,
+		);
+
+		const second: NativePointer<ScannerReading> = pointer.at(8);
 
 		arena.reset();
 		arena.allocate(16, 8);
@@ -593,7 +614,7 @@ describe('nativePointerTo an allocation', () => {
 		expect(() => pointer.get()).toThrow(released('NativePointer.get'));
 
 		expect(() => {
-			second.set(Sample.from({ value: 1 }));
+			second.set(ScannerReading.from({ value: 1 }));
 		}).toThrow(released('NativePointer.set'));
 	});
 
@@ -602,16 +623,16 @@ describe('nativePointerTo an allocation', () => {
 
 		allocator.allocate(1, 1);
 
-		expect(() => nativePointerTo(allocator.allocate(8, 1), Sample)).toThrow(
+		expect(() => nativePointerTo(allocator.allocate(8, 1), ScannerReading)).toThrow(
 			coded(
 				new RangeError(
-					'FULCRO7020: nativePointerTo: address 1 is not a multiple of 8, where a value of Sample may start.',
+					'FULCRO7020: nativePointerTo: address 1 is not a multiple of 8, where a value of ScannerReading may start.',
 				),
 				{
 					operation: 'nativePointerTo',
 					address: 1,
 					alignment: 8,
-					element: 'Sample',
+					element: 'ScannerReading',
 				},
 			),
 		);
@@ -623,7 +644,7 @@ describe('nativePointerTo an allocation', () => {
 			isLive: () => true,
 		};
 
-		expect(() => nativePointerTo(shared, Sample)).toThrow(
+		expect(() => nativePointerTo(shared, ScannerReading)).toThrow(
 			coded(
 				new TypeError(
 					'FULCRO7018: nativePointerTo: expected an ArrayBuffer or a WebAssembly.Memory that is not shared, received SharedArrayBuffer.',
@@ -641,7 +662,7 @@ describe('nativePointerTo something else', () => {
 		['null', null, 'null'],
 		['a number', 0, 'number'],
 	])('should refuse %s', (_, target, received) => {
-		expect(() => nativePointerTo(target as unknown as Allocation, Sample)).toThrow(
+		expect(() => nativePointerTo(target as unknown as Allocation, ScannerReading)).toThrow(
 			coded(
 				new TypeError(
 					`FULCRO7022: nativePointerTo: expected a linear memory or an allocation, received ${received}.`,
@@ -655,16 +676,16 @@ describe('nativePointerTo something else', () => {
 describe('nativePointerTo types', () => {
 	it('should infer the type at the address, and be a memory reference', () => {
 		const { memory } = memoryOf(16);
-		const pointer = nativePointerTo(memory, 0, Sample);
+		const pointer = nativePointerTo(memory, 0, ScannerReading);
 
-		expectTypeOf(pointer).toEqualTypeOf<NativePointer<Sample>>();
+		expectTypeOf(pointer).toEqualTypeOf<NativePointer<ScannerReading>>();
 
-		expectTypeOf(nativePointerTo(createManagedAllocator().allocate(8, 8), Sample)).toEqualTypeOf<
-			NativePointer<Sample>
-		>();
+		expectTypeOf(
+			nativePointerTo(createManagedAllocator().allocate(8, 8), ScannerReading),
+		).toEqualTypeOf<NativePointer<ScannerReading>>();
 
-		expectTypeOf(pointer.at(8)).toEqualTypeOf<NativePointer<Sample>>();
-		expectTypeOf(pointer.at(0, Point)).toEqualTypeOf<NativePointer<Point>>();
-		expectTypeOf<NativePointer<Sample>>().toExtend<MemoryReference<Sample>>();
+		expectTypeOf(pointer.at(8)).toEqualTypeOf<NativePointer<ScannerReading>>();
+		expectTypeOf(pointer.at(0, SensorContact)).toEqualTypeOf<NativePointer<SensorContact>>();
+		expectTypeOf<NativePointer<ScannerReading>>().toExtend<MemoryReference<ScannerReading>>();
 	});
 });

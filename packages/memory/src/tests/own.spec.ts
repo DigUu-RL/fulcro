@@ -18,10 +18,10 @@ import { thrownBy } from '@/src/tests/thrownBy';
 
 describe('own', () => {
 	it('should own the storage it creates, at its length', () => {
-		const scores: Owned<number> = own(() => createManagedStorage(5, 1));
+		const shieldGrid: Owned<number> = own(() => createManagedStorage(5, 1));
 
-		expect(scores.length).toBe(5);
-		expect(borrow(scores).get(4)).toBe(1);
+		expect(shieldGrid.length).toBe(5);
+		expect(borrow(shieldGrid).get(4)).toBe(1);
 	});
 
 	it('should call create exactly once', () => {

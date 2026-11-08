@@ -62,13 +62,13 @@ describe('move, unchecked', () => {
 
 	it('should end every borrow of the owner it spent, and what was made from them', () => {
 		const first: Owned<number> = own(() => createManagedStorage(4, 0));
-		const reading = borrow(first);
-		const subview = reading.subview(1);
-		const viewed = asReadOnlyView(reading, 3);
+		const scan = borrow(first);
+		const subview = scan.subview(1);
+		const viewed = asReadOnlyView(scan, 3);
 
 		move(first);
 
-		expect(() => reading.get(0)).toThrow(ended('ReadOnlyView.get'));
+		expect(() => scan.get(0)).toThrow(ended('ReadOnlyView.get'));
 		expect(() => subview.get(0)).toThrow(ended('ReadOnlyView.get'));
 		expect(() => viewed.get(0)).toThrow(expect.objectContaining({ code: 'FULCRO7024' }));
 	});
@@ -76,7 +76,7 @@ describe('move, unchecked', () => {
 	it('should end a borrow for writing, its read-only view and a pointer into it', () => {
 		const first: Owned<number> = own(() => createManagedStorage(2, 0));
 		const writing = borrowMutable(first);
-		const reading = writing.readOnly();
+		const scan = writing.readOnly();
 		const pointer = pointerTo(writing, 1);
 
 		move(first);
@@ -85,7 +85,7 @@ describe('move, unchecked', () => {
 			writing.set(0, 1);
 		}).toThrow(ended('View.set'));
 
-		expect(() => reading.get(0)).toThrow(ended('ReadOnlyView.get'));
+		expect(() => scan.get(0)).toThrow(ended('ReadOnlyView.get'));
 
 		expect(() => {
 			pointer.set(1);

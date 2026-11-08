@@ -18,34 +18,39 @@ import { coded } from '@/src/tests/coded';
  * does is in that strategy's own suite.
  */
 
-const Point = struct('Point', {
-	x: SinglePrecisionFloat,
-	y: SinglePrecisionFloat,
+const SensorContact = struct('SensorContact', {
+	bearing: SinglePrecisionFloat,
+	range: SinglePrecisionFloat,
 });
 
-type Point = Struct<typeof Point>;
+type SensorContact = Struct<typeof SensorContact>;
 
-const origin: Point = Point.from({ x: 0, y: 0 });
+const origin: SensorContact = SensorContact.from({ bearing: 0, range: 0 });
 
 /** Each strategy, as a factory of a storage of points. */
 const STRATEGIES = [
-	['ManagedStorage', (length: number): Storage<Point> => createManagedStorage(length, origin)],
+	[
+		'ManagedStorage',
+		(length: number): Storage<SensorContact> => createManagedStorage(length, origin),
+	],
 	[
 		'FixedBufferStorage',
-		(length: number): Storage<Point> => createFixedBufferStorage(Point, length),
+		(length: number): Storage<SensorContact> => createFixedBufferStorage(SensorContact, length),
 	],
 	// What `allocate` returns names its operations after the contract itself,
 	// since no storage strategy of its own stands behind it.
 	[
 		'Storage',
-		(length: number): Storage<Point> => allocate(Point, length, createManagedAllocator()),
+		(length: number): Storage<SensorContact> => {
+			return allocate(SensorContact, length, createManagedAllocator());
+		},
 	],
 	// A view is accepted wherever a storage is; this one sits inside a larger
 	// buffer, so a position it got wrong would land on a neighbour.
 	[
 		'View',
-		(length: number): Storage<Point> => {
-			return asView(createFixedBufferStorage(Point, length + 2), 1, length);
+		(length: number): Storage<SensorContact> => {
+			return asView(createFixedBufferStorage(SensorContact, length + 2), 1, length);
 		},
 	],
 ] as const;
@@ -54,13 +59,13 @@ const STRATEGIES = [
  * A consumer that knows nothing but the contract.
  *
  * @param points Any storage of points.
- * @returns The sum of their `x`.
+ * @returns The sum of their `bearing`.
  */
-const sumOfX = (points: Storage<Point>): number => {
+const sumOfX = (points: Storage<SensorContact>): number => {
 	let sum = 0;
 
 	for (let index = 0; index < points.length; index++) {
-		sum += points.get(index).x;
+		sum += points.get(index).bearing;
 	}
 
 	return sum;
@@ -73,27 +78,30 @@ describe.each(STRATEGIES)('%s, as a Storage<T>', (name, create) => {
 	});
 
 	it('should read back what was set, at that index only', () => {
-		const points: Storage<Point> = create(3);
+		const points: Storage<SensorContact> = create(3);
 
-		points.set(1, Point.from({ x: 2, y: 3 }));
+		points.set(1, SensorContact.from({ bearing: 2, range: 3 }));
 
-		expect(Point.equals(points.get(1), Point.from({ x: 2, y: 3 }))).toBe(true);
-		expect(Point.equals(points.get(0), origin)).toBe(true);
-		expect(Point.equals(points.get(2), origin)).toBe(true);
+		expect(SensorContact.equals(points.get(1), SensorContact.from({ bearing: 2, range: 3 }))).toBe(
+			true,
+		);
+
+		expect(SensorContact.equals(points.get(0), origin)).toBe(true);
+		expect(SensorContact.equals(points.get(2), origin)).toBe(true);
 	});
 
 	it('should run a consumer written against the contract', () => {
-		const points: Storage<Point> = create(4);
+		const points: Storage<SensorContact> = create(4);
 
 		for (let index = 0; index < points.length; index++) {
-			points.set(index, Point.from({ x: index, y: 0 }));
+			points.set(index, SensorContact.from({ bearing: index, range: 0 }));
 		}
 
 		expect(sumOfX(points)).toBe(0 + 1 + 2 + 3);
 	});
 
 	it('should be frozen', () => {
-		const points: Storage<Point> = create(1);
+		const points: Storage<SensorContact> = create(1);
 
 		expect(Object.isFrozen(points)).toBe(true);
 	});
@@ -101,9 +109,9 @@ describe.each(STRATEGIES)('%s, as a Storage<T>', (name, create) => {
 	it('should work with its methods taken off the object', () => {
 		const { get, set } = create(2);
 
-		set(1, Point.from({ x: 7, y: 0 }));
+		set(1, SensorContact.from({ bearing: 7, range: 0 }));
 
-		expect(get(1).x).toBe(7);
+		expect(get(1).bearing).toBe(7);
 	});
 
 	it.each([
@@ -122,10 +130,10 @@ describe.each(STRATEGIES)('%s, as a Storage<T>', (name, create) => {
 	});
 
 	it('should refuse to set outside, and leave every value as it was', () => {
-		const points: Storage<Point> = create(2);
+		const points: Storage<SensorContact> = create(2);
 
 		expect(() => {
-			points.set(2, Point.from({ x: 1, y: 1 }));
+			points.set(2, SensorContact.from({ bearing: 1, range: 1 }));
 		}).toThrow(
 			coded(new RangeError(`FULCRO7002: ${name}.set: index 2 is outside a storage of length 2.`), {
 				operation: `${name}.set`,
@@ -142,8 +150,8 @@ describe.each(STRATEGIES)('%s, as a Storage<T>', (name, create) => {
 	});
 
 	it('should infer the type of the values it holds', () => {
-		expectTypeOf(create(1)).toEqualTypeOf<Storage<Point>>();
-		expectTypeOf(create(1).get(0)).toEqualTypeOf<Point>();
+		expectTypeOf(create(1)).toEqualTypeOf<Storage<SensorContact>>();
+		expectTypeOf(create(1).get(0)).toEqualTypeOf<SensorContact>();
 	});
 });
 
@@ -152,11 +160,13 @@ describe('Storage<T> lengths', () => {
 		['createManagedStorage', (length: number): Storage<number> => createManagedStorage(length, 0)],
 		[
 			'createFixedBufferStorage',
-			(length: number): Storage<Point> => createFixedBufferStorage(Point, length),
+			(length: number): Storage<SensorContact> => createFixedBufferStorage(SensorContact, length),
 		],
 		[
 			'allocate',
-			(length: number): Storage<Point> => allocate(Point, length, createManagedAllocator()),
+			(length: number): Storage<SensorContact> => {
+				return allocate(SensorContact, length, createManagedAllocator());
+			},
 		],
 	] as const)('%s should refuse a length that is not a count', (name, create) => {
 		for (const [length, shown] of [
