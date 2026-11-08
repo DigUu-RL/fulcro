@@ -146,6 +146,28 @@ describe('SequenceCollection Performance', () => {
 			expect(visits).toBe(11);
 		});
 
+		it('should pull one element and close the source for any() with no condition', () => {
+			let closed = 0;
+
+			const source: Iterable<number> = {
+				[Symbol.iterator](): Iterator<number> {
+					const inner: Iterator<number> = instrumentedSource(VOLUME)[Symbol.iterator]();
+
+					return {
+						next: (): IteratorResult<number> => inner.next(),
+						return: (): IteratorResult<number> => {
+							closed++;
+							return inner.return?.() ?? { done: true, value: undefined };
+						},
+					};
+				},
+			};
+
+			expect(SequenceCollection.from(source).any()).toBe(true);
+			expect(visits).toBe(1);
+			expect(closed).toBe(1);
+		});
+
 		it('should keep a filtered chain lazy up to the element that is consumed', () => {
 			const numbers = SequenceCollection.from(instrumentedSource(VOLUME));
 
@@ -346,14 +368,14 @@ describe('SequenceCollection Performance', () => {
 
 			const startedAt = performance.now();
 
-			const total = numbers
+			const credits = numbers
 				.select((value) => value)
 				.take(500)
 				.count();
 
 			const elapsed = performance.now() - startedAt;
 
-			expect(total).toBe(500);
+			expect(credits).toBe(500);
 			expect(elapsed).toBeLessThan(50);
 		});
 

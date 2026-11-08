@@ -66,7 +66,7 @@ const advance = (offset: number, size: number, alignment: number): number => {
  *
  * ```ts
  * const allocator: ManagedAllocator = createManagedAllocator();
- * const samples = allocate(Sample, 44_100, allocator);
+ * const contacts = allocate(SensorContact, 1_000, allocator);
  * ```
  *
  * The strategy to pass when nothing about the situation calls for another:
@@ -80,9 +80,9 @@ const advance = (offset: number, size: number, alignment: number): number => {
  * ```ts
  * const step = (): void => {
  * 	using frame = allocator.enter();
- * 	const particles = allocate(Particle, 10_000, frame);
+ * 	const bolts = allocate(BlasterBolt, 10_000, frame);
  * 	// …
- * }; // the particles are released here, and the next step reuses their bytes
+ * }; // the bolts are released here, and the next step reuses their bytes
  * ```
  *
  * The frames share one region, made when the outermost frame is left and

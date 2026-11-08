@@ -25,8 +25,8 @@ export interface ArenaAllocator extends AllocationDomain {
  * ```ts
  * const arena: ArenaAllocator = createArenaAllocator(64 * 1024);
  *
- * for (const request of requests) {
- * 	const scratch = allocate(Sample, request.length, arena);
+ * for (const sortie of sorties) {
+ * 	const scratch = allocate(BlasterBolt, sortie.shots, arena);
  * 	// …
  * 	arena.reset();
  * }

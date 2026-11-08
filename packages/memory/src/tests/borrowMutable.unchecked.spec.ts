@@ -45,7 +45,7 @@ describe('borrowMutable, unchecked', () => {
 		expect(second.get(0)).toBe(2);
 	});
 
-	it('should end when the owner is lent for reading', () => {
+	it('should end when the owner is lent for scan', () => {
 		const owner: Owned<number> = own(() => createManagedStorage(2, 0));
 		const writing = borrowMutable(owner);
 

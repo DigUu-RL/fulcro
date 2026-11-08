@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { SequenceCollection } from '@/src/collections/sequence';
 
 describe('SequenceCollection Unit Tests', () => {
-	it('should allow accessing items by index (Proxy)', () => {
+	it('should allow accessing cargo by index (Proxy)', () => {
 		const numbers = SequenceCollection.from([10, 20, 30]);
 		expect(numbers[0]).toBe(10);
 		expect(numbers[1]).toBe(20);
@@ -11,7 +11,7 @@ describe('SequenceCollection Unit Tests', () => {
 		expect(numbers[3]).toBeUndefined();
 	});
 
-	it('should filter items with where() and maintain lazy evaluation', () => {
+	it('should filter cargo with where() and maintain lazy evaluation', () => {
 		const source = [1, 2, 3, 4, 5];
 		const numbers = SequenceCollection.from(source);
 
@@ -19,7 +19,7 @@ describe('SequenceCollection Unit Tests', () => {
 		expect(filtered.toArray()).toEqual([2, 4]);
 	});
 
-	it('should project items with select()', () => {
+	it('should project cargo with select()', () => {
 		const numbers = SequenceCollection.from([1, 2, 3]);
 		const doubled = numbers.select((value) => value * 2);
 
@@ -27,9 +27,12 @@ describe('SequenceCollection Unit Tests', () => {
 	});
 
 	it('should flatten collections with selectMany()', () => {
-		const orders = SequenceCollection.from([{ items: ['apple', 'banana'] }, { items: ['orange'] }]);
+		const arrivals = SequenceCollection.from([
+			{ cargo: ['apple', 'banana'] },
+			{ cargo: ['orange'] },
+		]);
 
-		const allItems = orders.selectMany((order) => order.items);
+		const allItems = arrivals.selectMany((arrival) => arrival.cargo);
 		expect(allItems.toArray()).toEqual(['apple', 'banana', 'orange']);
 	});
 
@@ -161,14 +164,38 @@ describe('SequenceCollection Unit Tests', () => {
 		expect(SequenceCollection.empty().any()).toBe(false);
 	});
 
+	it('should close the source any() opened, with and without a condition', () => {
+		// A generator holding something open — the Death Star's hangar bay doors,
+		// here — only releases it from its finally block, which runs only when
+		// the consumer finishes or returns.
+		let baysOpen = 0;
+
+		const hangarBays = function* (): Generator<string> {
+			baysOpen++;
+
+			try {
+				yield 'Bay 327';
+				yield 'Bay 2187';
+			} finally {
+				baysOpen--;
+			}
+		};
+
+		expect(SequenceCollection.from(hangarBays()).any()).toBe(true);
+		expect(baysOpen).toBe(0);
+
+		expect(SequenceCollection.from(hangarBays()).any((bay) => bay === 'Bay 327')).toBe(true);
+		expect(baysOpen).toBe(0);
+	});
+
 	it('should group elements by key using groupBy()', () => {
-		const items = SequenceCollection.from([
+		const cargo = SequenceCollection.from([
 			{ category: 'A', val: 1 },
 			{ category: 'B', val: 2 },
 			{ category: 'A', val: 3 },
 		]);
 
-		const grouped = items.groupBy((item) => item.category).toArray();
+		const grouped = cargo.groupBy((item) => item.category).toArray();
 
 		expect(grouped.length).toBe(2);
 		expect(grouped[0]?.key).toBe('A');
@@ -189,13 +216,13 @@ describe('SequenceCollection Unit Tests', () => {
 	});
 
 	it('should sort elements with orderBy() and secondary thenBy()', () => {
-		const items = SequenceCollection.from([
+		const cargo = SequenceCollection.from([
 			{ name: 'John', age: 25 },
 			{ name: 'Anna', age: 30 },
 			{ name: 'Anna', age: 20 },
 		]);
 
-		const sorted = items
+		const sorted = cargo
 			.orderBy((item) => item.name)
 			.thenBy((item) => item.age)
 			.toArray();
@@ -228,12 +255,12 @@ describe('SequenceCollection Unit Tests', () => {
 	});
 
 	it('should convert collection toMap()', () => {
-		const items = SequenceCollection.from([
+		const cargo = SequenceCollection.from([
 			{ id: 'x', val: 100 },
 			{ id: 'y', val: 200 },
 		]);
 
-		const map = items.toMap(
+		const map = cargo.toMap(
 			(item) => item.id,
 			(item) => item.val,
 		);
@@ -241,7 +268,7 @@ describe('SequenceCollection Unit Tests', () => {
 		expect(map.get('x')).toBe(100);
 		expect(map.get('y')).toBe(200);
 
-		expect(() => items.toMap(() => 'same-key')).toThrow(
+		expect(() => cargo.toMap(() => 'same-key')).toThrow(
 			'An item with the same key has already been added.',
 		);
 	});
@@ -282,7 +309,7 @@ describe('SequenceCollection Unit Tests', () => {
 		expect(joined[1]).toEqual({ name: 'A', score: 90 });
 	});
 
-	it('should reduce items via aggregate() with custom seed types', () => {
+	it('should reduce cargo via aggregate() with custom seed types', () => {
 		const words = SequenceCollection.from(['A', 'B', 'C']);
 		const concatenated = words.aggregate('Start:', (acc, item) => `${acc} ${item}`);
 

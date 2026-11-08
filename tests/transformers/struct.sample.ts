@@ -45,22 +45,22 @@ export const Outer = struct('Outer', {
 export type Outer = Struct<typeof Outer>;
 
 /** Methods are not fields: they take no room and are not listed. */
-export const Account = struct(
-	'Account',
-	{ owner: UnsignedInteger(32), balance: SignedInteger(64) },
+export const BountyLedger = struct(
+	'BountyLedger',
+	{ hunterId: UnsignedInteger(32), credits: SignedInteger(64) },
 	{
-		isOverdrawn() {
-			return this.balance < 0n;
+		isInDebt() {
+			return this.credits < 0n;
 		},
 	},
 );
-export type Account = Struct<typeof Account>;
+export type BountyLedger = Struct<typeof BountyLedger>;
 
 export const layouts = {
 	Mixed: layoutOf<Mixed>(),
 	Reversed: layoutOf<Reversed>(),
 	Outer: layoutOf<Outer>(),
-	Account: layoutOf<Account>(),
+	BountyLedger: layoutOf<BountyLedger>(),
 	Shipped: layoutOf<Shipped>(),
 	SinglePrecisionFloat: layoutOf<SinglePrecisionFloat>(),
 };
@@ -81,9 +81,9 @@ export const offsets = {
 		inner: offsetOf<Outer>('inner'),
 		ratio: offsetOf<Outer>('ratio'),
 	},
-	Account: {
-		owner: offsetOf<Account>('owner'),
-		balance: offsetOf<Account>('balance'),
+	BountyLedger: {
+		hunterId: offsetOf<BountyLedger>('hunterId'),
+		credits: offsetOf<BountyLedger>('credits'),
 	},
 	Shipped: {
 		small: offsetOf<Shipped>('small'),

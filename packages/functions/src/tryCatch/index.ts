@@ -26,11 +26,11 @@ const asStorableError = (error: unknown): NonNullish => {
  * Runs an operation and returns its outcome instead of throwing.
  *
  * ```ts
- * const result = await tryCatch(() => fetch(url));
+ * const transmission = await tryCatch(() => fetch(holonetRelay));
  *
- * if (result.isFailure()) return fallback;
+ * if (transmission.isFailure()) return lastKnownPosition;
  *
- * use(result.value);
+ * plotCourse(transmission.value);
  * ```
  *
  * **Prefer the callback form.** Passing a promise that already exists cannot

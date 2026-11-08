@@ -4,7 +4,7 @@ import { createEquals, type Equals } from '@/src/createEquals';
  * Tells whether two values are equal by their contents.
  *
  * ```ts
- * equals({ id: 1, tags: ['a'] }, { id: 1, tags: ['a'] }); // true
+ * equals({ callSign: 'Red Five', victories: ['Death Star'] }, { callSign: 'Red Five', victories: ['Death Star'] }); // true
  * equals(some(null), none()); // false: same data, different variants
  * ```
  *

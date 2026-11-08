@@ -31,7 +31,7 @@ import { assert, beforeAll, describe, expect, it } from 'vitest';
  * something that cannot be changed later without breaking them.
  */
 
-/** Resolves package entry points the way a consumer's runtime would. */
+/** Resolves package entry contacts the way a consumer's runtime would. */
 const resolve = createRequire(import.meta.url).resolve;
 
 /** Packages published from this repository. */
@@ -173,7 +173,7 @@ const asPackedPath = (declared: string): string => {
 };
 
 /**
- * Collects every relative path an exports map points at.
+ * Collects every relative path an exports map contacts at.
  *
  * The map nests conditions freely — `types`, `default`, and whatever else gets
  * added later — so the values are gathered by walking it rather than by
@@ -374,7 +374,7 @@ describe.each(PACKAGE_NAMES)('%s, as a consumer sees it', (name) => {
 		expect(manifest.name).toBe(name);
 	});
 
-	it('should publish every file its exports map points at', () => {
+	it('should publish every file its exports map contacts at', () => {
 		const paths: string[] = exportedPaths(manifest.exports);
 
 		// A guard on the guard: an exports map that resolved to nothing would
@@ -430,9 +430,10 @@ describe.each(PACKAGE_NAMES)('%s, as a consumer sees it', (name) => {
 			};
 
 			for (const source of sources) {
-				expect(shipped, `${map} points at ${source}, which the tarball does not contain`).toContain(
-					path.posix.join(path.posix.dirname(map), source),
-				);
+				expect(
+					shipped,
+					`${map} contacts at ${source}, which the tarball does not contain`,
+				).toContain(path.posix.join(path.posix.dirname(map), source));
 			}
 
 			maps += 1;
@@ -592,8 +593,8 @@ describe('@fulcro/reflect', () => {
 		expect(() => alignOf()).toThrow('only exists at compile time');
 		expect(() => layoutOf()).toThrow('only exists at compile time');
 
-		expect(() => offsetOf('x')).toThrow(expect.objectContaining({ code: 'FULCRO4009' }));
-		expect(() => offsetOf('x')).toThrow('offsetOf<T>("x")');
+		expect(() => offsetOf('shields')).toThrow(expect.objectContaining({ code: 'FULCRO4009' }));
+		expect(() => offsetOf('shields')).toThrow('offsetOf<T>("shields")');
 	});
 });
 
@@ -688,14 +689,14 @@ describe('@fulcro/types', () => {
 		} = await import('@fulcro/types');
 
 		const Transform = Matrix(DoublePrecisionFloat, 2, 3);
-		const Point = Vector(DoublePrecisionFloat, 3, 1);
+		const Heading = Vector(DoublePrecisionFloat, 3, 1);
 
 		const moved = Transform.multiply(
 			Transform.from([
 				[1, 0, 5],
 				[0, 1, 7],
 			]),
-			Point.from([2, 3, 1]),
+			Heading.from([2, 3, 1]),
 		);
 
 		expect([...moved]).toEqual([7, 10]);
@@ -725,38 +726,38 @@ describe('@fulcro/types', () => {
 	it('should give the values of a struct its methods through the published entry point', async () => {
 		const { SinglePrecisionFloat, struct } = await import('@fulcro/types');
 
-		const Point = struct(
-			'Point',
-			{ x: SinglePrecisionFloat, y: SinglePrecisionFloat },
+		const SensorContact = struct(
+			'SensorContact',
+			{ bearing: SinglePrecisionFloat, range: SinglePrecisionFloat },
 			{
 				length() {
-					return Math.hypot(this.x, this.y);
+					return Math.hypot(this.bearing, this.range);
 				},
 			},
 		);
 
-		const view = new DataView(new ArrayBuffer(Point.layout.size));
+		const view = new DataView(new ArrayBuffer(SensorContact.layout.size));
 
-		Point.write(view, 0, Point.from({ x: 3, y: 4 }));
+		SensorContact.write(view, 0, SensorContact.from({ bearing: 3, range: 4 }));
 
-		expect(Point.read(view, 0).length()).toBe(5);
-		expect(Point.is(Object.freeze({ x: 3, y: 4 }))).toBe(false);
+		expect(SensorContact.read(view, 0).length()).toBe(5);
+		expect(SensorContact.is(Object.freeze({ bearing: 3, range: 4 }))).toBe(false);
 	});
 
 	it('should declare, store and read back a struct through the published entry point', async () => {
 		const { SinglePrecisionFloat, UnsignedInteger, struct } = await import('@fulcro/types');
 
-		const Particle = struct('Particle', {
+		const BlasterBolt = struct('BlasterBolt', {
 			mass: SinglePrecisionFloat,
 			charge: UnsignedInteger(8),
 		});
 
-		const view = new DataView(new ArrayBuffer(Particle.layout.size));
-		const value = Particle.from({ mass: 0.5, charge: 3 });
+		const view = new DataView(new ArrayBuffer(BlasterBolt.layout.size));
+		const value = BlasterBolt.from({ mass: 0.5, charge: 3 });
 
-		Particle.write(view, 0, value);
+		BlasterBolt.write(view, 0, value);
 
-		expect(Particle.layout).toEqual({
+		expect(BlasterBolt.layout).toEqual({
 			size: 8,
 			alignment: 4,
 			fields: {
@@ -765,7 +766,7 @@ describe('@fulcro/types', () => {
 			},
 		});
 
-		expect(Particle.equals(Particle.read(view, 0), value)).toBe(true);
+		expect(BlasterBolt.equals(BlasterBolt.read(view, 0), value)).toBe(true);
 	});
 
 	it('should work end to end through the published entry point', async () => {
@@ -802,7 +803,7 @@ describe('@fulcro/types', () => {
 
 	it('should publish no compiler plugin', () => {
 		// The operators were once rewritten by a plugin behind these entry
-		// points. Nothing is configured now, and nothing is published for it.
+		// contacts. Nothing is configured now, and nothing is published for it.
 		const require = createRequire(import.meta.url);
 
 		for (const entry of [
@@ -879,15 +880,15 @@ describe('@fulcro/errors', () => {
 		const { createError, FulcroError, isFulcroError } = await import('@fulcro/errors');
 
 		const error = createError('FULCRO6021', {
-			operation: 'Vector3.from',
-			field: 'x',
+			operation: 'Starfighter.from',
+			field: 'speed',
 		});
 
 		expect(error).toBeInstanceOf(TypeError);
 		expect(error).toBeInstanceOf(FulcroError);
 		expect(error.code).toBe('FULCRO6021');
-		expect(error.details).toEqual({ operation: 'Vector3.from', field: 'x' });
-		expect(error.message).toBe("FULCRO6021: Vector3.from: missing field 'x'.");
+		expect(error.details).toEqual({ operation: 'Starfighter.from', field: 'speed' });
+		expect(error.message).toBe("FULCRO6021: Starfighter.from: missing field 'speed'.");
 		expect(isFulcroError(error, 'FULCRO6021')).toBe(true);
 	});
 
@@ -1087,12 +1088,24 @@ describe('@fulcro/functions', () => {
 		const { Decimal, DoublePrecisionFloat, Matrix, SinglePrecisionFloat, struct } =
 			await import('@fulcro/types');
 
-		const Point = struct('Point', { x: SinglePrecisionFloat, y: SinglePrecisionFloat });
-		const samePoint = createEquals([Point]);
+		const SensorContact = struct('SensorContact', {
+			bearing: SinglePrecisionFloat,
+			range: SinglePrecisionFloat,
+		});
 
-		expect(samePoint([Point.from({ x: 1, y: 2 })], [Point.from({ x: 1, y: 2 })])).toBe(true);
+		const sameContact = createEquals([SensorContact]);
+
+		expect(
+			sameContact(
+				[SensorContact.from({ bearing: 1, range: 2 })],
+				[SensorContact.from({ bearing: 1, range: 2 })],
+			),
+		).toBe(true);
+
 		// A plain object with the same fields is not a point.
-		expect(samePoint<unknown>(Point.from({ x: 1, y: 2 }), { x: 1, y: 2 })).toBe(false);
+		expect(
+			sameContact<unknown>(SensorContact.from({ bearing: 1, range: 2 }), { bearing: 1, range: 2 }),
+		).toBe(false);
 
 		const Wide = Matrix(DoublePrecisionFloat, 2, 3);
 		const Tall = Matrix(DoublePrecisionFloat, 3, 2);
@@ -1233,20 +1246,24 @@ describe('@fulcro/memory', () => {
 
 		const { SinglePrecisionFloat, struct } = await import('@fulcro/types');
 
-		const Point = struct('Point', {
-			x: SinglePrecisionFloat,
-			y: SinglePrecisionFloat,
+		const SensorContact = struct('SensorContact', {
+			bearing: SinglePrecisionFloat,
+			range: SinglePrecisionFloat,
 		});
 
-		const Particle = struct('Particle', { position: Point, velocity: Point });
+		const BlasterBolt = struct('BlasterBolt', { position: SensorContact, velocity: SensorContact });
 
 		// Without the transformers, the velocity still sits at bytes 8–15 of a
-		// particle, and the pointer writes exactly those.
+		// bolt, and the pointer writes exactly those.
 		const buffer = new ArrayBuffer(32);
 		const raw = new DataView(buffer);
-		const velocity = nativePointerTo(createLinearMemory(buffer), 8, Particle).at(8, Point);
 
-		velocity.set(Point.from({ x: 3, y: -4 }));
+		const velocity = nativePointerTo(createLinearMemory(buffer), 8, BlasterBolt).at(
+			8,
+			SensorContact,
+		);
+
+		velocity.set(SensorContact.from({ bearing: 3, range: -4 }));
 
 		expect([raw.getFloat32(16, true), raw.getFloat32(20, true)]).toEqual([3, -4]);
 
@@ -1255,7 +1272,7 @@ describe('@fulcro/memory', () => {
 		).toEqual([18, 19, 22, 23]);
 
 		const arena = createArenaAllocator(64);
-		const pointer = nativePointerTo(arena.allocate(16, 8), Particle);
+		const pointer = nativePointerTo(arena.allocate(16, 8), BlasterBolt);
 
 		arena.reset();
 
@@ -1271,22 +1288,22 @@ describe('@fulcro/memory', () => {
 		const { allocate, createStackAllocator } = await import('@fulcro/memory');
 		const { SinglePrecisionFloat, struct } = await import('@fulcro/types');
 
-		const Particle = struct('Particle', {
-			x: SinglePrecisionFloat,
-			y: SinglePrecisionFloat,
+		const BlasterBolt = struct('BlasterBolt', {
+			bearing: SinglePrecisionFloat,
+			range: SinglePrecisionFloat,
 		});
 
 		const stack = createStackAllocator(64);
 		const frame = stack.enter();
-		const particles = allocate(Particle, 2, frame);
+		const bolts = allocate(BlasterBolt, 2, frame);
 
-		particles.set(1, Particle.from({ x: 1, y: 2 }));
+		bolts.set(1, BlasterBolt.from({ bearing: 1, range: 2 }));
 
-		expect(particles.get(1)).toEqual({ x: 1, y: 2 });
+		expect(bolts.get(1)).toEqual({ bearing: 1, range: 2 });
 
 		frame[Symbol.dispose]();
 
-		expect(() => particles.get(1)).toThrow(
+		expect(() => bolts.get(1)).toThrow(
 			expect.objectContaining({
 				code: 'FULCRO7009',
 				details: { operation: 'Storage.get' },
@@ -1378,18 +1395,18 @@ describe('@fulcro/memory', () => {
 		const { createFixedBufferStorage, createManagedStorage } = await import('@fulcro/memory');
 		const { SinglePrecisionFloat, struct } = await import('@fulcro/types');
 
-		const Point = struct('Point', {
-			x: SinglePrecisionFloat,
-			y: SinglePrecisionFloat,
+		const SensorContact = struct('SensorContact', {
+			bearing: SinglePrecisionFloat,
+			range: SinglePrecisionFloat,
 		});
 
-		const points = createFixedBufferStorage(Point, 2);
+		const contacts = createFixedBufferStorage(SensorContact, 2);
 		const names = createManagedStorage(2, '');
 
-		points.set(1, Point.from({ x: 1, y: 2 }));
+		contacts.set(1, SensorContact.from({ bearing: 1, range: 2 }));
 		names.set(1, 'b');
 
-		expect(points.get(1)).toEqual({ x: 1, y: 2 });
+		expect(contacts.get(1)).toEqual({ bearing: 1, range: 2 });
 		expect(names.get(1)).toBe('b');
 	});
 

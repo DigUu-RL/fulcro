@@ -76,17 +76,18 @@ forma genérica, `<T>(storage: Storage<T>)`, e não como `Storage<unknown>`.
 Escreva o código contra isso, e ele roda sem mudança sobre qualquer estratégia:
 
 ```ts
-const total = (prices: Storage<number>): number => {
+const totalCredits = (bounties: Storage<number>): number => {
 	let sum = 0;
 
-	for (let index = 0; index < prices.length; index++) sum += prices.get(index);
+	for (let index = 0; index < bounties.length; index++) sum += bounties.get(index);
 
 	return sum;
 };
 ```
 
-`total` nunca fica sabendo se os preços estão num array comum ou num buffer de
-bytes, e uma estratégia acrescentada depois chega até ele sem que ele mude.
+`totalCredits` nunca fica sabendo se as recompensas estão num array comum ou
+num buffer de bytes, e uma estratégia acrescentada depois chega até ele sem que
+ele mude.
 
 O comprimento é fixado quando o storage é criado. Um índice é um inteiro de `0`
 a `length - 1`, e qualquer outra coisa — `-1`, `length`, `1.5`, `NaN` — lança um
@@ -98,6 +99,50 @@ ser passados adiante sozinhos:
 
 ```ts
 const { get } = createManagedStorage(3, 0);
+```
+
+Um `totalCredits` só, rodando sobre um storage de números comuns e sobre um de
+inteiros de 32 bits guardados em bytes — e o índice além do qual ele se recusa a
+ler:
+
+```ts
+import { createFixedBufferStorage, createManagedStorage, type Storage } from '@fulcro/memory';
+import { SignedInteger } from '@fulcro/types';
+
+// Genérico no elemento, como o contrato pede: um Storage<SignedInteger<32>>
+// não é um Storage<number>, embora todo valor que ele guarda seja um número.
+const totalCredits = <T extends number>(bounties: Storage<T>): number => {
+	let sum = 0;
+
+	for (let index = 0; index < bounties.length; index++) sum += bounties.get(index);
+
+	return sum;
+};
+
+const guildBoard = createManagedStorage(3, 0);
+
+guildBoard.set(0, 50_000);
+guildBoard.set(1, 15_000);
+guildBoard.set(2, 100_000);
+
+const Credits = SignedInteger(32);
+const huttLedger = createFixedBufferStorage(Credits, 2);
+
+huttLedger.set(0, Credits.from(10_000));
+huttLedger.set(1, Credits.from(7_500));
+
+console.log(totalCredits(guildBoard)); // 165000
+console.log(totalCredits(huttLedger)); // 17500 — a mesma função, sobre bytes
+
+const { get } = guildBoard;
+
+console.log(get(2)); // 100000 — tirada do objeto, continua funcionando
+
+try {
+	guildBoard.get(3);
+} catch (error) {
+	console.log((error as Error).message.startsWith('FULCRO7002')); // true — nunca lido como undefined
+}
 ```
 
 ## Escolhendo uma estratégia
@@ -112,10 +157,10 @@ const { get } = createManagedStorage(3, 0);
 Memória que o motor JavaScript gerencia: um array comum, por trás do contrato.
 
 ```ts
-const scores: Storage<number> = createManagedStorage(3, 0);
+const hangarBays: Storage<number> = createManagedStorage(3, 0);
 
-scores.set(1, 42);
-scores.get(1); // 42
+hangarBays.set(1, 42);
+hangarBays.get(1); // 42
 ```
 
 O segundo argumento é o valor que toda posição guarda até ser definida, e o tipo
@@ -123,7 +168,7 @@ O segundo argumento é o valor que toda posição guarda até ser definida, e o 
 mais do que o tipo do valor inicial:
 
 ```ts
-const users = createManagedStorage<User | null>(100, null);
+const roster = createManagedStorage<RebelPilot | null>(100, null);
 ```
 
 Os valores são guardados **como são**: `get` devolve o mesmo objeto que `set`
@@ -133,14 +178,48 @@ recebeu, não uma cópia, e nada dentro de um valor é lido.
 não um novo por posição. Com um objeto, toda posição começa como o mesmo objeto:
 
 ```ts
-const lists = createManagedStorage(3, [] as string[]);
+const cargoHolds = createManagedStorage(3, [] as string[]);
 
-lists.get(0).push('a');
-lists.get(2); // ['a'] — o mesmo array
+cargoHolds.get(0).push('spice');
+cargoHolds.get(2); // ['spice'] — o mesmo array
 ```
 
 Comece com `null` e defina cada posição com `set` quando cada uma precisar do
 seu próprio.
+
+A escala do Esquadrão Vermelho, guardando as fichas dos pilotos como são — e os
+porões de carga que, no fim, eram todos o mesmo porão:
+
+```ts
+import { createManagedStorage } from '@fulcro/memory';
+
+interface RebelPilot {
+	callSign: string;
+	name: string;
+}
+
+const roster = createManagedStorage<RebelPilot | null>(12, null);
+const luke: RebelPilot = { callSign: 'Red Five', name: 'Luke Skywalker' };
+
+roster.set(4, luke);
+
+console.log(roster.get(4) === luke); // true — guardado como é, não copiado
+console.log(roster.get(0)); // null — nunca definido
+
+const sharedHold = createManagedStorage(3, [] as string[]);
+
+sharedHold.get(0).push('spice');
+
+console.log(sharedHold.get(2)); // ['spice'] — um array só em todas as posições
+
+const ownHolds = createManagedStorage<string[] | null>(3, null);
+
+for (let hold = 0; hold < ownHolds.length; hold++) ownHolds.set(hold, []);
+
+ownHolds.get(0)?.push('coaxium');
+
+console.log(ownHolds.get(2)); // [] — cada porão com o seu
+```
 
 ## `createFixedBufferStorage`
 
@@ -151,35 +230,36 @@ dos seus tipos numéricos — veja abaixo:
 ```ts
 import { SinglePrecisionFloat, type Struct, struct } from '@fulcro/types';
 
-const Point = struct('Point', {
-	x: SinglePrecisionFloat,
-	y: SinglePrecisionFloat,
+const SensorContact = struct('SensorContact', {
+	bearing: SinglePrecisionFloat,
+	range: SinglePrecisionFloat,
 });
-type Point = Struct<typeof Point>;
+type SensorContact = Struct<typeof SensorContact>;
 
-const points: Storage<Point> = createFixedBufferStorage(Point, 1_000_000);
+const contacts: Storage<SensorContact> = createFixedBufferStorage(SensorContact, 1_000_000);
 
-points.set(0, Point.from({ x: 1, y: 2 }));
-points.get(0).x; // 1
+contacts.set(0, SensorContact.from({ bearing: 1, range: 2 }));
+contacts.get(0).bearing; // 1
 ```
 
-**O que custa.** O buffer é alocado uma vez, `length × Point.layout.size`
-bytes — oito milhões aqui — e mais nada. Nenhum objeto é criado na criação: um
-milhão de pontos custam os bytes, não um milhão de objetos.
+**O que custa.** O buffer é alocado uma vez,
+`length × SensorContact.layout.size` bytes — oito milhões aqui — e mais nada.
+Nenhum objeto é criado na criação: um milhão de contatos custam os bytes, não um
+milhão de objetos.
 
 **Toda posição começa em zero.** O buffer é zerado, então uma posição que
 ninguém definiu é lida como a struct com todos os campos em zero.
 
 **Uma leitura cria um valor novo.** `get` lê os bytes e monta um valor congelado
 a partir deles, um novo a cada chamada. Duas leituras do mesmo índice são iguais
-por `Point.equals`, mas não por `===`. E `set` guarda os bytes, não o objeto: o
-valor que você passou não é o que você recebe de volta.
+por `SensorContact.equals`, mas não por `===`. E `set` guarda os bytes, não o
+objeto: o valor que você passou não é o que você recebe de volta.
 
 **Um valor do tipo errado é recusado.** `set` pergunta à struct se o valor é um
 dos seus, e lança um `TypeError` com código
 [`FULCRO7004`](./errors/FULCRO7xxx.md#fulcro7004) antes de escrever qualquer
 byte quando não é. O compilador já recusa um objeto comum onde se espera um
-`Point`; isto é para o valor que chega de código sem tipos.
+`SensorContact`; isto é para o valor que chega de código sem tipos.
 
 **Um tipo numérico é guardado sozinho.** Todo tipo numérico de layout fixo —
 os inteiros de largura fixa, `HalfPrecisionFloat`, `SinglePrecisionFloat`,
@@ -187,12 +267,12 @@ os inteiros de largura fixa, `HalfPrecisionFloat`, `SinglePrecisionFloat`,
 precisa de uma struct em volta:
 
 ```ts
-const samples: Storage<SinglePrecisionFloat> = createFixedBufferStorage(
+const thermalReadings: Storage<SinglePrecisionFloat> = createFixedBufferStorage(
 	SinglePrecisionFloat,
 	44_100,
 );
 
-samples.set(0, SinglePrecisionFloat.from(0.5));
+thermalReadings.set(0, SinglePrecisionFloat.from(0.5));
 ```
 
 Os valores ficam um após o outro, quatro bytes cada aqui, na mesma codificação
@@ -204,6 +284,43 @@ número, ou um bigint a partir de 64 bits —, e não um objeto em volta dele.
 Os métodos de uma struct voltam com cada valor lido, e structs se aninham,
 campos `Decimal` inclusive — tudo o que uma struct pode guardar, um buffer fixo
 pode armazenar.
+
+O registro do sensor de longo alcance da Base Echo, um milhão de contatos
+guardados em bytes, com as leituras térmicas ao lado guardadas como floats
+soltos:
+
+```ts
+import { createFixedBufferStorage } from '@fulcro/memory';
+import { SinglePrecisionFloat, type Struct, struct } from '@fulcro/types';
+
+const SensorContact = struct('SensorContact', {
+	bearing: SinglePrecisionFloat,
+	range: SinglePrecisionFloat,
+});
+type SensorContact = Struct<typeof SensorContact>;
+
+const contacts = createFixedBufferStorage(SensorContact, 1_000_000);
+const probeDroid: SensorContact = SensorContact.from({ bearing: 1, range: 2 });
+
+contacts.set(0, probeDroid);
+
+console.log(contacts.get(0)); // { bearing: 1, range: 2 }
+console.log(contacts.get(0) === probeDroid); // false — um valor novo, lido dos bytes
+console.log(SensorContact.equals(contacts.get(0), probeDroid)); // true
+console.log(contacts.get(999_999)); // { bearing: 0, range: 0 } — zerado até ser definido
+
+try {
+	contacts.set(1, { bearing: 3, range: 4 } as unknown as SensorContact);
+} catch (error) {
+	console.log((error as Error).message.startsWith('FULCRO7004')); // true — não é um SensorContact
+}
+
+const thermalReadings = createFixedBufferStorage(SinglePrecisionFloat, 44_100);
+
+thermalReadings.set(0, SinglePrecisionFloat.from(0.5));
+
+console.log(thermalReadings.get(0)); // 0.5 — o próprio número, não um objeto
+```
 
 ### Guardado num typed array
 
@@ -246,16 +363,50 @@ o alocador:
 ```ts
 const step = (stack: StackAllocator): void => {
 	using frame = stack.enter();
-	const particles: Storage<Particle> = allocate(Particle, 10_000, frame);
+	const bolts: Storage<BlasterBolt> = allocate(BlasterBolt, 10_000, frame);
 
 	// …
-}; // todas as partículas são liberadas aqui, de uma vez
+}; // todos os disparos são liberados aqui, de uma vez
 ```
 
 `allocate(element, length, allocator)` devolve um `Storage<T>` exatamente como
 `createFixedBufferStorage` — os valores guardados como bytes, um depois do
 outro, começando em zero. Só a origem da memória muda, e o código que lê o
 storage não tem como saber.
+
+Uma simulação de treino com blasters avançando quadro a quadro, com os disparos
+de cada quadro liberados de uma vez quando o quadro termina:
+
+```ts
+import { allocate, createStackAllocator, type StackAllocator, type Storage } from '@fulcro/memory';
+import { SinglePrecisionFloat, type Struct, struct } from '@fulcro/types';
+
+const BlasterBolt = struct('BlasterBolt', {
+	heat: SinglePrecisionFloat,
+	speed: SinglePrecisionFloat,
+});
+type BlasterBolt = Struct<typeof BlasterBolt>;
+
+const step = (stack: StackAllocator, firing: number): number => {
+	using frame = stack.enter();
+	const bolts: Storage<BlasterBolt> = allocate(BlasterBolt, 10_000, frame);
+
+	for (let bolt = 0; bolt < firing; bolt++)
+		bolts.set(bolt, BlasterBolt.from({ heat: 1, speed: 0.5 }));
+
+	let heat = 0;
+
+	for (let bolt = 0; bolt < bolts.length; bolt++) heat += bolts.get(bolt).heat;
+
+	return heat;
+}; // todos os disparos são liberados aqui, de uma vez
+
+// Um buffer só, reaproveitado por todos os quadros: espaço para exatamente um quadro de disparos.
+const stack = createStackAllocator(10_000 * BlasterBolt.layout.size);
+
+console.log(step(stack, 3)); // 3
+console.log(step(stack, 5)); // 5 — os mesmos bytes, zerados de novo para o quadro seguinte
+```
 
 ### O contrato `Allocator`
 
@@ -289,8 +440,50 @@ O código que precisa de memória recebe um `Allocator` e deixa a escolha para
 quem o chama:
 
 ```ts
-const createParticles = (count: number, allocator: Allocator): Storage<Particle> =>
-	allocate(Particle, count, allocator);
+const createVolley = (count: number, allocator: Allocator): Storage<BlasterBolt> =>
+	allocate(BlasterBolt, count, allocator);
+```
+
+Um retransmissor de comunicações escrevendo o cabeçalho de uma transmissão em
+bytes crus, e uma rajada que não liga para qual alocador quem a chamou escolheu:
+
+```ts
+import {
+	type Allocation,
+	type Allocator,
+	allocate,
+	createArenaAllocator,
+	createManagedAllocator,
+	type Storage,
+} from '@fulcro/memory';
+import { SinglePrecisionFloat, type Struct, struct } from '@fulcro/types';
+
+const BlasterBolt = struct('BlasterBolt', {
+	heat: SinglePrecisionFloat,
+	speed: SinglePrecisionFloat,
+});
+type BlasterBolt = Struct<typeof BlasterBolt>;
+
+const arena = createArenaAllocator(1024);
+
+const header: Allocation = arena.allocate(16, 8);
+
+header.bytes.setFloat64(0, 1138);
+header.bytes.setUint16(8, 1977, true);
+
+console.log(header.bytes.byteLength, header.bytes.getFloat64(0)); // 16 1138
+console.log(header.isLive()); // true
+
+const createVolley = (count: number, allocator: Allocator): Storage<BlasterBolt> => {
+	return allocate(BlasterBolt, count, allocator);
+};
+
+console.log(createVolley(4, arena).length); // 4 — da arena
+console.log(createVolley(4, createManagedAllocator()).length); // 4 — do engine; a rajada não tem como saber
+
+arena.reset();
+
+console.log(header.isLive()); // false — a arena pegou os seus bytes de volta
 ```
 
 ### Escolhendo um alocador
@@ -317,9 +510,9 @@ const managed = createManagedAllocator();
 
 const step = (): void => {
 	using frame = managed.enter();
-	const particles = allocate(Particle, 10_000, frame);
+	const bolts = allocate(BlasterBolt, 10_000, frame);
 	// …
-}; // as partículas são liberadas aqui; o próximo step reaproveita os bytes
+}; // os disparos são liberados aqui; o próximo step reaproveita os bytes
 ```
 
 Diferente dos de uma pilha, esses quadros nunca recusam. A memória
@@ -343,8 +536,8 @@ requisição maior que um pedaço ganha um pedaço do seu próprio tamanho.
 ```ts
 const arena = createArenaAllocator(64 * 1024);
 
-for (const request of requests) {
-	const scratch = allocate(Sample, request.length, arena);
+for (const sweep of sensorSweeps) {
+	const scratch = allocate(SensorContact, sweep.length, arena);
 	// …
 	arena.reset();
 }
@@ -375,7 +568,7 @@ declarado com `using` volta quando o seu escopo termina:
 
 ```ts
 {
-	using message = pool.allocate(48, 8);
+	using holoMessage = pool.allocate(48, 8);
 	// …
 } // o bloco é do pool de novo
 ```
@@ -388,6 +581,76 @@ Cada factory devolve o seu alocador com um tipo próprio — `ManagedAllocator`,
 `ArenaAllocator`, `StackAllocator`, `FixedBufferAllocator`, `PoolAllocator` —,
 que é `Allocator` mais os métodos que devolvem memória. Use o tipo específico
 onde você chama esses métodos, e `Allocator` em todo o resto.
+
+Um dia na vida do conjunto de sensores da Estrela da Morte — uma arena por
+varredura, um orçamento fixo recortado de um buffer que a estação já tem, e um
+pool de espaços para holomensagens que vêm e vão em qualquer ordem:
+
+```ts
+import {
+	allocate,
+	createArenaAllocator,
+	createFixedBufferAllocator,
+	createManagedAllocator,
+	createPoolAllocator,
+} from '@fulcro/memory';
+import { SinglePrecisionFloat, type Struct, struct } from '@fulcro/types';
+
+const SensorContact = struct('SensorContact', {
+	bearing: SinglePrecisionFloat,
+	range: SinglePrecisionFloat,
+});
+type SensorContact = Struct<typeof SensorContact>;
+
+const sensorSweeps = [[1, 2, 3], [4, 5], [6]];
+const arena = createArenaAllocator(64 * 1024);
+const strongest: number[] = [];
+
+for (const sweep of sensorSweeps) {
+	const scratch = allocate(SensorContact, sweep.length, arena);
+
+	sweep.forEach((range, index) => scratch.set(index, SensorContact.from({ bearing: 0, range })));
+
+	let best = 0;
+
+	for (let index = 0; index < scratch.length; index++)
+		best = Math.max(best, scratch.get(index).range);
+
+	strongest.push(best);
+	arena.reset(); // a próxima varredura reaproveita o mesmo pedaço
+}
+
+console.log(strongest); // [3, 5, 6]
+
+// Um orçamento fixado de antemão: os 64 bytes da própria estação, e nem um a mais.
+const budget = createFixedBufferAllocator(new ArrayBuffer(64));
+
+console.log(allocate(SensorContact, 8, budget).length); // 8 — 64 bytes, exatamente o orçamento
+
+try {
+	allocate(SensorContact, 1, budget);
+} catch (error) {
+	console.log((error as Error).message.startsWith('FULCRO7007')); // true — não sobrou espaço
+}
+
+// Holomensagens de um tamanho só, enviadas e recebidas em qualquer ordem.
+const pool = createPoolAllocator(48, 2);
+
+{
+	using fromVader = pool.allocate(48, 8);
+	using fromTarkin = pool.allocate(48, 8);
+
+	console.log(fromVader.isLive() && fromTarkin.isLive()); // true
+} // os dois blocos são do pool de novo
+
+using fromMotti = pool.allocate(48, 8);
+
+console.log(fromMotti.isLive()); // true — um bloco que o escopo acima devolveu
+
+const managed = createManagedAllocator();
+
+console.log(allocate(SensorContact, 3, managed).length); // 3 — recuperado pelo garbage collector, nunca liberado
+```
 
 ### Domínios de alocação
 
@@ -412,11 +675,11 @@ alcança depois que o seu bloco termina é levado para um quadro desse alocador:
 const managed = createManagedAllocator();
 
 const step = (): number => {
-	const particles = allocate(Particle, 1_000, managed);
+	const bolts = allocate(BlasterBolt, 1_000, managed);
 
-	particles.set(0, start);
+	bolts.set(0, firstShot);
 
-	return particles.get(0).x;
+	return bolts.get(0).heat;
 };
 ```
 
@@ -425,11 +688,11 @@ compila como se estivesse escrito
 ```ts
 const step = (): number => {
 	using frame = managed.enter();
-	const particles = allocate(Particle, 1_000, frame);
+	const bolts = allocate(BlasterBolt, 1_000, frame);
 
-	particles.set(0, start);
+	bolts.set(0, firstShot);
 
-	return particles.get(0).x;
+	return bolts.get(0).heat;
 };
 ```
 
@@ -455,6 +718,49 @@ objeto ou array, dar-lhe outro nome, ou tirar `storage.get` dele. Um storage que
 escapa fica no alocador, vivo enquanto for alcançável. Sem o transformer, todo
 storage fica.
 
+Um estande de tiro que roda mil rodadas, escrito como se cada rodada pedisse um
+buffer novo — compilado com o transformer de memória, as rodadas compartilham
+um só, e o único storage que escapa fica com o seu:
+
+```ts
+import { allocate, createManagedAllocator, type Storage } from '@fulcro/memory';
+import { SinglePrecisionFloat, type Struct, struct } from '@fulcro/types';
+
+const BlasterBolt = struct('BlasterBolt', {
+	heat: SinglePrecisionFloat,
+	speed: SinglePrecisionFloat,
+});
+type BlasterBolt = Struct<typeof BlasterBolt>;
+
+const managed = createManagedAllocator();
+const firstShot = BlasterBolt.from({ heat: 0.75, speed: 1 });
+
+// Nunca escapa do seu bloco: alocado num quadro de `managed`.
+const round = (): number => {
+	const bolts = allocate(BlasterBolt, 1_000, managed);
+
+	bolts.set(0, firstShot);
+
+	return bolts.get(0).heat;
+};
+
+// Devolvido a quem chamou: escapa, e fica onde foi escrito.
+const keepForTheRecord = (): Storage<BlasterBolt> => {
+	const record = allocate(BlasterBolt, 1, managed);
+
+	record.set(0, firstShot);
+
+	return record;
+};
+
+let heat = 0;
+
+for (let shot = 0; shot < 1_000; shot++) heat += round();
+
+console.log(heat); // 750 — a mesma resposta, a partir de dois buffers em vez de mil
+console.log(keepForTheRecord().get(0).heat); // 0.75 — ainda vivo depois que a sua função retornou
+```
+
 ### Memória liberada é recusada, não lida
 
 Liberar não tira a memória de quem ainda a segura: os bytes continuam lá, e o
@@ -465,18 +771,49 @@ storage de `allocate` pergunta antes de cada `get` e `set`:
 
 ```ts
 const arena = createArenaAllocator(1024);
-const before = allocate(Particle, 1, arena);
+const firstSweep = allocate(SensorContact, 1, arena);
 
 arena.reset();
-const after = allocate(Particle, 1, arena); // os mesmos bytes
-after.set(0, Particle.from({ x: 7, y: 7 }));
+const secondSweep = allocate(SensorContact, 1, arena); // os mesmos bytes
+secondSweep.set(0, SensorContact.from({ bearing: 7, range: 7 }));
 
-before.get(0); // lança FULCRO7009 — nunca lê a partícula de after
+firstSweep.get(0); // lança FULCRO7009 — nunca lê o contato da segunda varredura
 ```
 
 Custa uma comparação por acesso. Não cobre os `bytes` de uma alocação que você
 pediu diretamente: confira `isLive()` você mesmo antes de lê-los quando uma
 liberação pode ter acontecido.
+
+As mesmas duas varreduras, com a recusa capturada e o contato da segunda
+varredura intacto:
+
+```ts
+import { allocate, createArenaAllocator } from '@fulcro/memory';
+import { SinglePrecisionFloat, type Struct, struct } from '@fulcro/types';
+
+const SensorContact = struct('SensorContact', {
+	bearing: SinglePrecisionFloat,
+	range: SinglePrecisionFloat,
+});
+type SensorContact = Struct<typeof SensorContact>;
+
+const arena = createArenaAllocator(1024);
+const firstSweep = allocate(SensorContact, 1, arena);
+
+arena.reset();
+
+const secondSweep = allocate(SensorContact, 1, arena);
+
+secondSweep.set(0, SensorContact.from({ bearing: 7, range: 7 }));
+
+try {
+	firstSweep.get(0);
+} catch (error) {
+	console.log((error as Error).message.startsWith('FULCRO7009')); // true — liberado, então recusado
+}
+
+console.log(secondSweep.get(0)); // { bearing: 7, range: 7 }
+```
 
 ### Escrevendo um alocador próprio
 
@@ -486,6 +823,31 @@ Qualquer coisa com um `allocate(size, alignment)` que devolve
 exatamente `size` bytes, zerados, começando num múltiplo de `alignment`, nunca
 compartilhados com outra alocação viva, e `isLive()` falso a partir do momento
 em que são liberados.
+
+Um alocador que conta o que os intendentes do Império pedem a ele, e entrega a
+cada pedido um buffer próprio:
+
+```ts
+import { type Allocation, type Allocator, allocate } from '@fulcro/memory';
+import { SinglePrecisionFloat } from '@fulcro/types';
+
+const requests: number[] = [];
+
+const quartermaster: Allocator = {
+	allocate: (size: number): Allocation => {
+		requests.push(size);
+
+		return { bytes: new DataView(new ArrayBuffer(size)), isLive: () => true };
+	},
+};
+
+const rations = allocate(SinglePrecisionFloat, 250, quartermaster);
+
+rations.set(0, SinglePrecisionFloat.from(1.5));
+
+console.log(rations.get(0)); // 1.5
+console.log(requests); // [1000] — 250 floats de quatro bytes, pedidos uma vez
+```
 
 ## Views, ponteiros e referências
 
@@ -521,12 +883,12 @@ interface View<T> extends ReadOnlyView<T> {
 view ou de um array:
 
 ```ts
-const scores: Storage<number> = createManagedStorage(100, 0);
-const firstTen: View<number> = asView(scores, 0, 10);
-const rest: View<number> = asView(scores, 10); // posições 10 a 99
+const shieldStrength: Storage<number> = createManagedStorage(100, 0);
+const firstTen: View<number> = asView(shieldStrength, 0, 10);
+const rest: View<number> = asView(shieldStrength, 10); // posições 10 a 99
 
 firstTen.set(3, 42);
-scores.get(3); // 42 — a view escreveu no storage
+shieldStrength.get(3); // 42 — a view escreveu no storage
 ```
 
 Nada é copiado, em nenhum comprimento. Uma view lembra a sua origem, onde a
@@ -545,7 +907,7 @@ Uma view tem a forma de um `Storage<T>`, então toda função escrita contra o
 contrato aceita uma:
 
 ```ts
-total(asView(prices, 10, 5)); // o `total` do contrato acima
+totalCredits(asView(bounties, 10, 5)); // o `totalCredits` do contrato acima
 ```
 
 **Somente leitura.** `asReadOnlyView(source, start?, length?)` e
@@ -566,18 +928,59 @@ ainda confere se o alocador liberou os bytes, e lança
 exatamente como o storage faria. Uma view não é dona de nada, então não tem
 nada a liberar.
 
+A grade de escudos da Estrela da Morte, dividida entre as equipes que cuidam
+dela — uma equipe escreve os seus setores, o painel dos oficiais só lê:
+
+```ts
+import { asReadOnlyView, asView, createManagedStorage, type Storage } from '@fulcro/memory';
+
+const totalStrength = (sectors: Storage<number>): number => {
+	let sum = 0;
+
+	for (let index = 0; index < sectors.length; index++) sum += sectors.get(index);
+
+	return sum;
+};
+
+const shieldGrid = createManagedStorage(100, 50);
+const northernCrew = asView(shieldGrid, 0, 10);
+const southernHemisphere = asView(shieldGrid, 50);
+
+northernCrew.set(3, 100);
+
+console.log(shieldGrid.get(3)); // 100 — a view escreveu na grade
+console.log(totalStrength(northernCrew)); // 550 — uma view vai aonde um storage vai
+console.log(southernHemisphere.length); // 50
+console.log(northernCrew.subview(2, 3).get(1)); // 100 — o mesmo setor, visto por uma subview
+
+const officersDisplay = asReadOnlyView(shieldGrid, 0, 10);
+
+console.log('set' in officersDisplay); // false — nenhum jeito de escrever de volta, com cast ou sem
+
+const exhaustPorts = [2, 0, 0];
+const portView = asView(exhaustPorts);
+
+exhaustPorts.length = 1;
+
+try {
+	portView.get(2);
+} catch (error) {
+	console.log((error as Error).message.startsWith('FULCRO7015')); // true — o array encolheu além dele
+}
+```
+
 ### `Pointer<T>`
 
 `pointerTo(source, index)` aponta para uma posição de um storage, de uma view
 ou de um array:
 
 ```ts
-const queue: Storage<string> = createManagedStorage(8, '');
-const head: Pointer<string> = pointerTo(queue, 0);
+const launchQueue: Storage<string> = createManagedStorage(8, '');
+const head: Pointer<string> = pointerTo(launchQueue, 0);
 
-head.set('first');
-head.offset(1).set('second');
-queue.get(1); // 'second'
+head.set('Red Leader');
+head.offset(1).set('Red Two');
+launchQueue.get(1); // 'Red Two'
 ```
 
 `offset(delta)` devolve um ponteiro novo, para frente ou para trás, e deixa o
@@ -585,7 +988,11 @@ original como estava. Um ponteiro pode ficar uma posição depois do último
 valor, para que um laço chegue ao fim e pare ali:
 
 ```ts
-for (let cursor = pointerTo(queue, 0); cursor.index < queue.length; cursor = cursor.offset(1)) {
+for (
+	let cursor = pointerTo(launchQueue, 0);
+	cursor.index < launchQueue.length;
+	cursor = cursor.offset(1)
+) {
 	cursor.get();
 }
 ```
@@ -595,26 +1002,81 @@ comprimento lança [`FULCRO7016`](./errors/FULCRO7xxx.md#fulcro7016).
 `asView(pointer, length)` observa a região que começa no ponteiro: um valor
 quando o comprimento é omitido.
 
+A fila de decolagem no convés do hangar de Yavin 4, chamada piloto por piloto:
+
+```ts
+import { asView, createManagedStorage, pointerTo } from '@fulcro/memory';
+
+const launchQueue = createManagedStorage(4, '');
+const head = pointerTo(launchQueue, 0);
+
+head.set('Red Leader');
+head.offset(1).set('Red Two');
+head.offset(2).set('Red Five');
+
+const calledOut: string[] = [];
+
+for (
+	let cursor = pointerTo(launchQueue, 0);
+	cursor.index < launchQueue.length;
+	cursor = cursor.offset(1)
+) {
+	if (cursor.get() !== '') calledOut.push(cursor.get());
+}
+
+console.log(calledOut); // ['Red Leader', 'Red Two', 'Red Five']
+console.log(head.index); // 0 — offset criou ponteiros novos e deixou este onde estava
+console.log(asView(head.offset(1), 2).get(1)); // 'Red Five' — a região que começa no ponteiro
+```
+
 ### `MemoryReference<T>`
 
 `referenceTo(value)` cria um valor que pode ser lido e substituído. Entregue-o
 a um código que precisa mudar um valor do qual não é dono:
 
 ```ts
-const increment = (counter: MemoryReference<number>): void => {
+const recordKill = (counter: MemoryReference<number>): void => {
 	counter.set(counter.get() + 1);
 };
 
-const hits = referenceTo(0);
+const kills = referenceTo(0);
 
-increment(hits);
-hits.get(); // 1
+recordKill(kills);
+kills.get(); // 1
 ```
 
 O valor é guardado como está, nunca copiado. Uma referência não tem posição
 nem aritmética. Isso é o que um ponteiro acrescenta, e todo `Pointer<T>` também
-é uma `MemoryReference<T>`, então `increment(pointerTo(queue, 3))` funciona.
-`asView(reference)` a observa como uma view de comprimento `1`.
+é uma `MemoryReference<T>`, então `recordKill(pointerTo(squadronKills, 3))`
+funciona. `asView(reference)` a observa como uma view de comprimento `1`.
+
+Os contadores de abates da Batalha de Yavin — um guardado sozinho, os outros
+dentro da contagem do esquadrão — todos incrementados pela mesma função:
+
+```ts
+import {
+	asView,
+	createManagedStorage,
+	type MemoryReference,
+	pointerTo,
+	referenceTo,
+} from '@fulcro/memory';
+
+const recordKill = (counter: MemoryReference<number>): void => {
+	counter.set(counter.get() + 1);
+};
+
+const hansKills = referenceTo(0);
+const squadronKills = createManagedStorage(6, 0);
+
+recordKill(hansKills);
+recordKill(pointerTo(squadronKills, 4)); // Red Five
+recordKill(pointerTo(squadronKills, 4));
+
+console.log(hansKills.get()); // 1 — "Grande tiro, garoto"
+console.log(squadronKills.get(4)); // 2
+console.log(asView(hansKills).length); // 1
+```
 
 ### O que pode ser uma origem
 
@@ -664,7 +1126,7 @@ interface NativePointer<T> extends MemoryReference<T> {
 `WebAssembly.Memory` que um módulo exporta:
 
 ```ts
-const { instance } = await WebAssembly.instantiate(bytes);
+const { instance } = await WebAssembly.instantiate(navicomputerWasm);
 const moduleExports = instance.exports as {
 	memory: WebAssembly.Memory;
 	latest: () => number;
@@ -693,10 +1155,14 @@ Aponta para um endereço em bytes de uma memória, para um valor do tipo do
 elemento — um struct ou um tipo numérico, como em `allocate`:
 
 ```ts
-const latest: NativePointer<Reading> = nativePointerTo(memory, moduleExports.latest(), Reading);
+const latest: NativePointer<ScannerReading> = nativePointerTo(
+	memory,
+	moduleExports.latest(),
+	ScannerReading,
+);
 
 latest.get(); // a leitura que o módulo escreveu, lida onde ele a escreveu
-latest.set(Reading.from({ value: 0 })); // e o módulo enxerga isto
+latest.set(ScannerReading.from({ strength: 0 })); // e o módulo enxerga isto
 ```
 
 `at(byteOffset)` move o ponteiro em bytes, para frente ou para trás, e deixa o
@@ -704,10 +1170,10 @@ original como estava. Entregue também um tipo, e ele lê os bytes dali como
 esse tipo. É assim que um ponteiro alcança um campo de um struct, no lugar:
 
 ```ts
-const particle: NativePointer<Particle> = nativePointerTo(memory, 64, Particle);
-const velocity: NativePointer<Point> = particle.at(Particle.layout.fields.velocity.offset, Point);
+const xWing: NativePointer<Starfighter> = nativePointerTo(memory, 64, Starfighter);
+const thrust: NativePointer<Thrust> = xWing.at(Starfighter.layout.fields.thrust.offset, Thrust);
 
-velocity.set(Point.from({ x: 0, y: -9.8 })); // escreve a velocidade da partícula
+thrust.set(Thrust.from({ forward: 0, lateral: -9.8 })); // escreve o empuxo do caça
 ```
 
 Um endereço é um inteiro de `0` até o comprimento da memória; o próprio
@@ -729,15 +1195,72 @@ qualquer byte dela, e confia que há ali um valor do seu tipo. É isso que um
 endereço entregue por um módulo é. Quando os bytes vieram de um alocador,
 aponte para a alocação.
 
+O computador de navegação da Falcon, um módulo WebAssembly, informando onde
+deixou a sua última leitura do scanner — lida onde o módulo a escreveu, e o
+empuxo de um caça alcançado no lugar, dentro de uma struct:
+
+```ts
+// Os tipos do WebAssembly vêm com a biblioteca DOM; um projeto Node sem ela a nomeia aqui.
+/// <reference lib="dom" />
+import { createLinearMemory, nativePointerTo } from '@fulcro/memory';
+import { SinglePrecisionFloat, struct } from '@fulcro/types';
+
+// Um módulo que exporta uma página de memória e `latest()`, que responde 64 — o
+// endereço em que escreveu a sua última leitura. Compilado a partir do código do
+// computador de navegação; os seus bytes estão escritos aqui para o exemplo rodar sozinho.
+const navicomputerWasm = new Uint8Array([
+	0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x01, 0x05, 0x01, 0x60, 0x00, 0x01, 0x7f, 0x03,
+	0x02, 0x01, 0x00, 0x05, 0x03, 0x01, 0x00, 0x01, 0x07, 0x13, 0x02, 0x06, 0x6d, 0x65, 0x6d, 0x6f,
+	0x72, 0x79, 0x02, 0x00, 0x06, 0x6c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x00, 0x00, 0x0a, 0x07, 0x01,
+	0x05, 0x00, 0x41, 0xc0, 0x00, 0x0b,
+]);
+
+const { instance } = await WebAssembly.instantiate(navicomputerWasm);
+const moduleExports = instance.exports as { memory: WebAssembly.Memory; latest: () => number };
+
+const memory = createLinearMemory(moduleExports.memory);
+
+console.log(memory.byteLength); // 65536 — uma página
+
+const ScannerReading = struct('ScannerReading', { strength: SinglePrecisionFloat });
+
+const latest = nativePointerTo(memory, moduleExports.latest(), ScannerReading);
+
+latest.set(ScannerReading.from({ strength: 0.75 }));
+
+console.log(new Float32Array(moduleExports.memory.buffer, 64, 1)[0]); // 0.75 — o módulo enxerga
+console.log(latest.get()); // { strength: 0.75 }
+
+const Thrust = struct('Thrust', { forward: SinglePrecisionFloat, lateral: SinglePrecisionFloat });
+const Starfighter = struct('Starfighter', { shields: SinglePrecisionFloat, thrust: Thrust });
+
+const xWing = nativePointerTo(memory, 128, Starfighter);
+const thrust = xWing.at(Starfighter.layout.fields.thrust.offset, Thrust);
+
+thrust.set(Thrust.from({ forward: 0, lateral: -9.75 }));
+
+console.log(xWing.get().thrust.lateral); // -9.75 — escrito por um ponteiro para o campo
+console.log(thrust.address - xWing.address); // 4 — o offset do campo, em bytes
+
+try {
+	nativePointerTo(memory, 66, Starfighter);
+} catch (error) {
+	console.log((error as Error).message.startsWith('FULCRO7020')); // true — não alinhado para o tipo
+}
+```
+
 ### `nativePointerTo(allocation, element)`
 
 Aponta para o primeiro byte de uma alocação:
 
 ```ts
-const allocation = arena.allocate(Header.layout.size, Header.layout.alignment);
-const header: NativePointer<Header> = nativePointerTo(allocation, Header);
+const allocation = arena.allocate(
+	TransmissionHeader.layout.size,
+	TransmissionHeader.layout.alignment,
+);
+const header: NativePointer<TransmissionHeader> = nativePointerTo(allocation, TransmissionHeader);
 
-header.set(Header.from({ version: 2, length: 0 }));
+header.set(TransmissionHeader.from({ channel: 2, length: 0 }));
 arena.reset();
 header.get(); // lança FULCRO7009 — os bytes voltaram para a arena
 ```
@@ -754,6 +1277,45 @@ escrita ele pergunta à alocação se ela ainda está viva, e lança
 liberou — uma comparação por acesso, como num storage de `allocate`. Peça ao
 alocador o alinhamento do tipo: uma alocação que começa onde o tipo não pode
 começar lança `FULCRO7020`.
+
+O cabeçalho de uma transmissão escrito por um ponteiro para a sua alocação, e
+recusado assim que a arena do retransmissor pega os bytes de volta:
+
+```ts
+import { createArenaAllocator, nativePointerTo } from '@fulcro/memory';
+import { struct, UnsignedInteger } from '@fulcro/types';
+
+const TransmissionHeader = struct('TransmissionHeader', {
+	channel: UnsignedInteger(16),
+	length: UnsignedInteger(32),
+});
+
+const arena = createArenaAllocator(1024);
+const allocation = arena.allocate(
+	TransmissionHeader.layout.size,
+	TransmissionHeader.layout.alignment,
+);
+const header = nativePointerTo(allocation, TransmissionHeader);
+
+header.set(TransmissionHeader.from({ channel: 2, length: 1138 }));
+
+console.log(header.get()); // { channel: 2, length: 1138 }
+
+try {
+	header.at(TransmissionHeader.layout.size);
+	header.at(TransmissionHeader.layout.size + 4);
+} catch (error) {
+	console.log((error as Error).message.startsWith('FULCRO7019')); // true — além dos bytes da alocação
+}
+
+arena.reset();
+
+try {
+	header.get();
+} catch (error) {
+	console.log((error as Error).message.startsWith('FULCRO7009')); // true — os bytes voltaram para a arena
+}
+```
 
 ## Ownership
 
@@ -785,8 +1347,8 @@ três é confundido com outra coisa — um objeto qualquer com `length` não é 
 Cria uma storage e o seu dono:
 
 ```ts
-const scores: Owned<number> = own(() => createManagedStorage(100, 0));
-const particles = own(() => allocate(Particle, 10_000, arena));
+const shieldStrength: Owned<number> = own(() => createManagedStorage(100, 0));
+const bolts = own(() => allocate(BlasterBolt, 10_000, arena));
 ```
 
 A storage é criada dentro da função de propósito: nada mais fica com ela, então
@@ -802,16 +1364,16 @@ nada. Os seus valores são alcançados por um empréstimo.
 ### `borrow(owner)` e `borrowMutable(owner)`
 
 ```ts
-const total = (values: ReadOnlyView<number>): number => {
+const totalStrength = (sectors: ReadOnlyView<number>): number => {
 	let sum = 0;
 
-	for (let index = 0; index < values.length; index++) sum += values.get(index);
+	for (let index = 0; index < sectors.length; index++) sum += sectors.get(index);
 
 	return sum;
 };
 
-borrowMutable(scores).set(3, 42);
-total(borrow(scores)); // 42
+borrowMutable(shieldStrength).set(3, 42);
+totalStrength(borrow(shieldStrength)); // 42
 ```
 
 `borrow` empresta os valores para leitura. Empréstimos compartilhados convivem:
@@ -835,19 +1397,85 @@ Um empréstimo dura até o seu último uso, não até o fim de um escopo. Tomar 
 empréstimo conflitante é sempre permitido; o que é recusado é usar o anterior
 depois dele.
 
+A grade de escudos da segunda Estrela da Morte, de posse da estação, lida por
+dois oficiais ao mesmo tempo e escrita só pelo engenheiro-chefe — e o painel do
+oficial que continuou lendo depois que o engenheiro assumiu:
+
+```ts
+import {
+	borrow,
+	borrowMutable,
+	createManagedStorage,
+	own,
+	type ReadOnlyView,
+} from '@fulcro/memory';
+
+const totalStrength = (sectors: ReadOnlyView<number>): number => {
+	let sum = 0;
+
+	for (let index = 0; index < sectors.length; index++) sum += sectors.get(index);
+
+	return sum;
+};
+
+const shieldGrid = own(() => createManagedStorage(10, 0));
+
+borrowMutable(shieldGrid).set(3, 42);
+
+const forMotti = borrow(shieldGrid);
+const forTagge = borrow(shieldGrid);
+
+console.log(totalStrength(forMotti), totalStrength(forTagge)); // 42 42 — empréstimos compartilhados convivem
+
+// O painel dos oficiais guarda o seu empréstimo num objeto de console, onde o
+// compilador não o segue — então quem recusa é o runtime.
+const officersConsole = { reading: borrow(shieldGrid) };
+
+borrowMutable(shieldGrid).set(4, 58); // o engenheiro-chefe assume a grade
+
+try {
+	officersConsole.reading.get(4);
+} catch (error) {
+	console.log((error as Error).message.startsWith('FULCRO7024')); // true — o empréstimo terminou
+}
+
+console.log(totalStrength(borrow(shieldGrid))); // 100 — um empréstimo novo vê o trabalho do engenheiro
+```
+
 ### `move(owner)`
 
 ```ts
-const queue = own(() => createManagedStorage(64, 0));
-const worker = move(queue);
+const launchQueue = own(() => createManagedStorage(64, 0));
+const hangarCrew = move(launchQueue);
 
-borrow(worker).get(0); // ok
-borrow(queue); // lança FULCRO7023: queue foi movido
+borrow(hangarCrew).get(0); // ok
+borrow(launchQueue); // lança FULCRO7023: launchQueue foi movido
 ```
 
 O novo dono possui exatamente os mesmos valores; nada é copiado. O dono antigo
 recusa tudo o que lhe pedem dali em diante, o seu `length` inclusive, com
 [`FULCRO7023`](./errors/FULCRO7xxx.md#fulcro7023).
+
+A fila de decolagem passada do controlador de voo para a equipe do hangar — e o
+console do controlador, que ainda guardava o dono antigo:
+
+```ts
+import { borrow, borrowMutable, createManagedStorage, move, own } from '@fulcro/memory';
+
+const flightControl = { queue: own(() => createManagedStorage(4, 0)) };
+
+borrowMutable(flightControl.queue).set(0, 5);
+
+const hangarCrew = move(flightControl.queue);
+
+console.log(borrow(hangarCrew).get(0)); // 5 — os mesmos valores, nada copiado
+
+try {
+	console.log(flightControl.queue.length);
+} catch (error) {
+	console.log((error as Error).message.startsWith('FULCRO7023')); // true — movido, e recusado, length inclusive
+}
+```
 
 ### Encerrando a posse com `using`
 
@@ -858,10 +1486,10 @@ pedem depois com [`FULCRO7030`](./errors/FULCRO7xxx.md#fulcro7030).
 ```ts
 {
 	using frame = stack.enter();
-	using particles = own(() => allocate(Particle, 10_000, frame));
+	using bolts = own(() => allocate(BlasterBolt, 10_000, frame));
 
-	borrowMutable(particles).set(0, Particle.from({ x: 1, y: 2 }));
-} // os empréstimos de particles terminam, e depois o quadro libera a memória deles
+	borrowMutable(bolts).set(0, BlasterBolt.from({ heat: 1, speed: 2 }));
+} // os empréstimos de bolts terminam, e depois o quadro libera a memória deles
 ```
 
 Descartar encerra a posse, não a memória: os bytes pertencem ao alocador, e
@@ -874,13 +1502,68 @@ que encerrar, e o dono que o `move` devolveu mantém os seus empréstimos:
 
 ```ts
 const handOver = (): Owned<number> => {
-	using scores = own(() => createManagedStorage(100, 0));
+	using shieldStrength = own(() => createManagedStorage(100, 0));
 
-	return move(scores); // sair descarta scores, o que não faz nada
+	return move(shieldStrength); // sair descarta shieldStrength, o que não faz nada
 };
 ```
 
 Descartar duas vezes é descartar uma.
+
+Uma rodada de treino cujos disparos terminam com o seu escopo, e uma escala de
+serviço passada adiante no fim de um turno — o escopo termina, a escala passada
+adiante continua viva:
+
+```ts
+import {
+	allocate,
+	borrow,
+	borrowMutable,
+	createManagedStorage,
+	createStackAllocator,
+	move,
+	own,
+	type Owned,
+} from '@fulcro/memory';
+import { SinglePrecisionFloat, type Struct, struct } from '@fulcro/types';
+
+const BlasterBolt = struct('BlasterBolt', {
+	heat: SinglePrecisionFloat,
+	speed: SinglePrecisionFloat,
+});
+type BlasterBolt = Struct<typeof BlasterBolt>;
+
+const stack = createStackAllocator(10_000 * BlasterBolt.layout.size);
+const range = { lastRun: undefined as Owned<BlasterBolt> | undefined };
+
+{
+	using frame = stack.enter();
+	using bolts = own(() => allocate(BlasterBolt, 10_000, frame));
+
+	borrowMutable(bolts).set(0, BlasterBolt.from({ heat: 1, speed: 2 }));
+	range.lastRun = bolts;
+
+	console.log(borrow(bolts).get(0).heat); // 1
+} // os empréstimos de bolts terminam, e depois o quadro libera a memória deles
+
+try {
+	console.log(range.lastRun?.length);
+} catch (error) {
+	console.log((error as Error).message.startsWith('FULCRO7030')); // true — descartado com o seu escopo
+}
+
+const handOver = (): Owned<number> => {
+	using dutyRoster = own(() => createManagedStorage(3, 0));
+
+	borrowMutable(dutyRoster).set(0, 7567); // o Capitão Rex no primeiro turno
+
+	return move(dutyRoster); // sair descarta dutyRoster, o que não faz nada
+};
+
+const nextShift = handOver();
+
+console.log(borrow(nextShift).get(0)); // 7567 — o dono movido manteve tudo
+```
 
 ### Recusado na compilação
 
@@ -889,9 +1572,9 @@ transformer do memory recusa os mesmos usos na compilação, no uso, e diz onde
 estava o move ou o empréstimo conflitante:
 
 ```text
-FULCRO7027: move: 'queue' is used after it was moved at line 2; use the owner move returned.
-FULCRO7028: borrow: the borrow 'reading' is used after borrowMutable(scores) at line 8 ended it.
-FULCRO7029: borrow: the borrow 'reading' is used after its owner 'scores' was moved at line 9.
+FULCRO7027: move: 'launchQueue' is used after it was moved at line 2; use the owner move returned.
+FULCRO7028: borrow: the borrow 'reading' is used after borrowMutable(shieldGrid) at line 8 ended it.
+FULCRO7029: borrow: the borrow 'reading' is used after its owner 'shieldGrid' was moved at line 9.
 ```
 
 Ele é opcional e não reescreve nenhuma chamada: a única coisa que reescreve é
@@ -926,6 +1609,34 @@ que o pega quando roda:
 - uma função criada antes do move, que pode rodar antes ou depois dele;
 - uma subview ou um ponteiro feito de um empréstimo e guardado numa variável
   própria.
+
+Este arquivo não compila com o transformer do memory — a fila de decolagem é
+usada depois de passada adiante, e o build diz isso nessa linha, antes de o
+programa poder rodar:
+
+```ts
+import { borrow, createManagedStorage, move, own } from '@fulcro/memory';
+
+const launchQueue = own(() => createManagedStorage(64, 0));
+const hangarCrew = move(launchQueue);
+
+console.log(borrow(hangarCrew).get(0));
+console.log(borrow(launchQueue).get(0)); // recusado pelo build: FULCRO7027
+```
+
+A configuração do Vite de um projeto que usa os três transformers:
+
+```ts
+// vite.config.ts dos sistemas da Estrela da Morte
+import { vite as fulcroCollections } from '@fulcro/collections/unplugin';
+import { vite as fulcroMemory } from '@fulcro/memory/unplugin';
+import { vite as fulcroReflect } from '@fulcro/reflect/unplugin';
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+	plugins: [fulcroReflect(), fulcroCollections(), fulcroMemory()],
+});
+```
 
 ### O que custa
 

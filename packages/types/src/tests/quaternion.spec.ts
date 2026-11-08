@@ -145,13 +145,17 @@ describe('Quaternion', () => {
 		});
 
 		it('should be stored by a struct in the order w, x, y, z', () => {
-			const Pose = struct('Pose', { orientation: Rotation });
-			const view = new DataView(new ArrayBuffer(Pose.layout.size));
+			const FlightAttitude = struct('FlightAttitude', { orientation: Rotation });
+			const view = new DataView(new ArrayBuffer(FlightAttitude.layout.size));
 
-			Pose.write(view, 0, Pose.from({ orientation: { w: 1, x: 2, y: 3, z: 4 } }));
+			FlightAttitude.write(
+				view,
+				0,
+				FlightAttitude.from({ orientation: { w: 1, x: 2, y: 3, z: 4 } }),
+			);
 
 			expect([0, 8, 16, 24].map((offset) => view.getFloat64(offset, true))).toEqual([1, 2, 3, 4]);
-			expect(Pose.read(view, 0).orientation).toEqual(quaternion);
+			expect(FlightAttitude.read(view, 0).orientation).toEqual(quaternion);
 		});
 	});
 

@@ -15,15 +15,15 @@ import { UnsignedInteger } from '@/src/unsignedInteger';
  * a write to a ratio against the same accesses written by hand.
  */
 
-const Vector3 = struct('Vector3', {
-	x: SinglePrecisionFloat,
-	y: SinglePrecisionFloat,
-	z: SinglePrecisionFloat,
+const Starfighter = struct('Starfighter', {
+	shields: SinglePrecisionFloat,
+	hull: SinglePrecisionFloat,
+	speed: SinglePrecisionFloat,
 });
 
 const Tagged = struct('Tagged', {
 	tag: UnsignedInteger(8),
-	position: Vector3,
+	position: Starfighter,
 	identifier: UnsignedInteger(128),
 });
 
@@ -36,14 +36,14 @@ afterEach(() => {
 
 describe('struct', () => {
 	it('should touch the bytes once per field to write and once to read', () => {
-		const { view, accesses } = countingView(Vector3.layout.size);
-		const value = Vector3.from({ x: 1, y: 2, z: 3 });
+		const { view, accesses } = countingView(Starfighter.layout.size);
+		const value = Starfighter.from({ shields: 1, hull: 2, speed: 3 });
 
-		Vector3.write(view, 0, value);
+		Starfighter.write(view, 0, value);
 
 		expect(accesses()).toBe(3);
 
-		Vector3.read(view, 0);
+		Starfighter.read(view, 0);
 
 		expect(accesses()).toBe(6);
 	});
@@ -53,7 +53,7 @@ describe('struct', () => {
 
 		const value = Tagged.from({
 			tag: 1,
-			position: { x: 1, y: 2, z: 3 },
+			position: { shields: 1, hull: 2, speed: 3 },
 			identifier: 2n ** 100n,
 		});
 
@@ -64,11 +64,11 @@ describe('struct', () => {
 	});
 
 	it('should write a hundred thousand values with exactly one access per field each', () => {
-		const { view, accesses } = countingView(Vector3.layout.size * VOLUME);
-		const value = Vector3.from({ x: 1, y: 2, z: 3 });
+		const { view, accesses } = countingView(Starfighter.layout.size * VOLUME);
+		const value = Starfighter.from({ shields: 1, hull: 2, speed: 3 });
 
 		for (let index = 0; index < VOLUME; index++) {
-			Vector3.write(view, index * Vector3.layout.size, value);
+			Starfighter.write(view, index * Starfighter.layout.size, value);
 		}
 
 		expect(accesses()).toBe(VOLUME * 3);
@@ -77,57 +77,57 @@ describe('struct', () => {
 	it('should convert each field once, with its own descriptor', () => {
 		const from = vi.spyOn(SinglePrecisionFloat, 'from');
 
-		Vector3.from({ x: 1, y: 2, z: 3 });
+		Starfighter.from({ shields: 1, hull: 2, speed: 3 });
 
 		expect(from).toHaveBeenCalledTimes(3);
 	});
 
 	it('should not convert anything to read or write', () => {
 		const from = vi.spyOn(SinglePrecisionFloat, 'from');
-		const value = Vector3.from({ x: 1, y: 2, z: 3 });
-		const view = new DataView(new ArrayBuffer(Vector3.layout.size));
+		const value = Starfighter.from({ shields: 1, hull: 2, speed: 3 });
+		const view = new DataView(new ArrayBuffer(Starfighter.layout.size));
 
 		from.mockClear();
-		Vector3.write(view, 0, value);
-		Vector3.read(view, 0);
+		Starfighter.write(view, 0, value);
+		Starfighter.read(view, 0);
 
 		expect(from).not.toHaveBeenCalled();
 	});
 
 	it('should stop comparing at the first field that differs', () => {
-		const left = Vector3.from({ x: 1, y: 2, z: 3 });
-		const right = Vector3.from({ x: 9, y: 2, z: 3 });
+		const left = Starfighter.from({ shields: 1, hull: 2, speed: 3 });
+		const right = Starfighter.from({ shields: 9, hull: 2, speed: 3 });
 		const equals = vi.spyOn(SinglePrecisionFloat, 'equals');
 
-		Vector3.equals(left, right);
+		Starfighter.equals(left, right);
 
 		expect(equals).toHaveBeenCalledTimes(1);
 
 		equals.mockClear();
-		Vector3.equals(left, left);
+		Starfighter.equals(left, left);
 
 		expect(equals).toHaveBeenCalledTimes(3);
 	});
 
 	it('should give a hundred thousand values their methods without a function object each', () => {
-		const Point = struct(
-			'Point',
-			{ x: SinglePrecisionFloat, y: SinglePrecisionFloat },
+		const Escort = struct(
+			'Escort',
+			{ shields: SinglePrecisionFloat, hull: SinglePrecisionFloat },
 			{
 				length() {
-					return Math.hypot(this.x, this.y);
+					return Math.hypot(this.shields, this.hull);
 				},
 			},
 		);
 
-		const view = new DataView(new ArrayBuffer(Point.layout.size));
+		const view = new DataView(new ArrayBuffer(Escort.layout.size));
 		const prototypes = new Set<object | null>();
 		let ownFunctions = 0;
 
-		Point.write(view, 0, Point.from({ x: 3, y: 4 }));
+		Escort.write(view, 0, Escort.from({ shields: 3, hull: 4 }));
 
 		for (let index = 0; index < VOLUME; index++) {
-			const value = index % 2 === 0 ? Point.from({ x: 3, y: 4 }) : Point.read(view, 0);
+			const value = index % 2 === 0 ? Escort.from({ shields: 3, hull: 4 }) : Escort.read(view, 0);
 
 			prototypes.add(Reflect.getPrototypeOf(value));
 
@@ -143,27 +143,27 @@ describe('struct', () => {
 	});
 
 	it('should touch the bytes as often with methods as without', () => {
-		const Point = struct(
-			'Point',
-			{ x: SinglePrecisionFloat, y: SinglePrecisionFloat },
+		const Escort = struct(
+			'Escort',
+			{ shields: SinglePrecisionFloat, hull: SinglePrecisionFloat },
 			{
 				length() {
-					return Math.hypot(this.x, this.y);
+					return Math.hypot(this.shields, this.hull);
 				},
 			},
 		);
 
-		const { view, accesses } = countingView(Point.layout.size);
+		const { view, accesses } = countingView(Escort.layout.size);
 
-		Point.write(view, 0, Point.from({ x: 3, y: 4 }));
-		Point.read(view, 0);
+		Escort.write(view, 0, Escort.from({ shields: 3, hull: 4 }));
+		Escort.read(view, 0);
 
 		expect(accesses()).toBe(4);
 	});
 
 	it('should cost a small multiple of writing the fields by hand', () => {
-		const view = new DataView(new ArrayBuffer(Vector3.layout.size * VOLUME));
-		const value = Vector3.from({ x: 1, y: 2, z: 3 });
+		const view = new DataView(new ArrayBuffer(Starfighter.layout.size * VOLUME));
+		const value = Starfighter.from({ shields: 1, hull: 2, speed: 3 });
 
 		/**
 		 * Times a loop of writes.
@@ -180,13 +180,13 @@ describe('struct', () => {
 		};
 
 		const byHand = (offset: number): void => {
-			view.setFloat32(offset, value.x, true);
-			view.setFloat32(offset + 4, value.y, true);
-			view.setFloat32(offset + 8, value.z, true);
+			view.setFloat32(offset, value.shields, true);
+			view.setFloat32(offset + 4, value.hull, true);
+			view.setFloat32(offset + 8, value.speed, true);
 		};
 
 		const described = (offset: number): void => {
-			Vector3.write(view, offset, value);
+			Starfighter.write(view, offset, value);
 		};
 
 		// Interleaved, with the fastest round of each side compared. These windows

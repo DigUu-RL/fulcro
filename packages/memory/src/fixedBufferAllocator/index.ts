@@ -26,11 +26,11 @@ export interface FixedBufferAllocator extends AllocationDomain {
  * engine for memory of its own.
  *
  * ```ts
- * const memory = new ArrayBuffer(4096);
- * const allocator: FixedBufferAllocator = createFixedBufferAllocator(memory);
+ * const cargoHold = new ArrayBuffer(4096);
+ * const allocator: FixedBufferAllocator = createFixedBufferAllocator(cargoHold);
  *
  * const header = allocator.allocate(16, 8);
- * const body = allocate(Sample, 128, allocator);
+ * const bolts = allocate(BlasterBolt, 128, allocator);
  * ```
  *
  * For a budget fixed in advance: every allocation comes out of the buffer, a

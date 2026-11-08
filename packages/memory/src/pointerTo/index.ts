@@ -68,12 +68,12 @@ const createPointer = <T>(source: Source<T>, index: number): Pointer<T> => {
  * Points at one position of a storage, a view or an array.
  *
  * ```ts
- * const queue = createManagedStorage(8, '');
- * const head: Pointer<string> = pointerTo(queue, 0);
+ * const launchQueue = createManagedStorage(8, '');
+ * const head: Pointer<string> = pointerTo(launchQueue, 0);
  *
- * head.set('first');
- * head.offset(1).set('second');
- * queue.get(1); // 'second'
+ * head.set('Red Leader');
+ * head.offset(1).set('Red Two');
+ * launchQueue.get(1); // 'Red Two'
  * ```
  *
  * The position may be the source's length, one past its last value, so a

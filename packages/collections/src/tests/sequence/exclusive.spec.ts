@@ -135,7 +135,7 @@ describe('scan', () => {
 	it('should yield every intermediate accumulation', () => {
 		expect(
 			SequenceCollection.from([1, 2, 3])
-				.scan(0, (total, value) => total + value)
+				.scan(0, (credits, value) => credits + value)
 				.toArray(),
 		).toEqual([1, 3, 6]);
 	});
@@ -144,14 +144,14 @@ describe('scan', () => {
 		// One value out per element in, which is what lets it be zipped with the
 		// source it came from.
 		const source = [1, 2, 3];
-		const running = SequenceCollection.from(source).scan(0, (total, value) => total + value);
+		const running = SequenceCollection.from(source).scan(0, (credits, value) => credits + value);
 
 		expect(running.count()).toBe(source.length);
 	});
 
 	it('should end on the same value aggregate returns', () => {
 		const values = [4, 7, 1];
-		const sum = (total: number, value: number): number => total + value;
+		const sum = (credits: number, value: number): number => credits + value;
 
 		expect(SequenceCollection.from(values).scan(0, sum).last()).toBe(
 			SequenceCollection.from(values).aggregate(0, sum),
@@ -159,7 +159,7 @@ describe('scan', () => {
 	});
 
 	it('should restart from the seed on a second traversal', () => {
-		const running = SequenceCollection.from([1, 2]).scan(0, (total, value) => total + value);
+		const running = SequenceCollection.from([1, 2]).scan(0, (credits, value) => credits + value);
 
 		expect(running.toArray()).toEqual([1, 3]);
 		expect(running.toArray()).toEqual([1, 3]);

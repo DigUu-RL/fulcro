@@ -6,15 +6,15 @@ import { type FieldOf, unresolvedLayout, type WithFieldLayout } from '@/src/func
  * ```ts
  * import { SinglePrecisionFloat, struct, type Struct } from '@fulcro/types';
  *
- * const Vector3 = struct('Vector3', {
- * 	x: SinglePrecisionFloat,
- * 	y: SinglePrecisionFloat,
- * 	z: SinglePrecisionFloat,
+ * const Starfighter = struct('Starfighter', {
+ * 	shields: SinglePrecisionFloat,
+ * 	hull: SinglePrecisionFloat,
+ * 	speed: SinglePrecisionFloat,
  * });
- * type Vector3 = Struct<typeof Vector3>;
+ * type Starfighter = Struct<typeof Starfighter>;
  *
- * offsetOf<Vector3>('y'); // 4
- * offsetOf<Vector3>('w'); // type error: not a field
+ * offsetOf<Starfighter>('hull'); // 4
+ * offsetOf<Starfighter>('hyperdrive'); // type error: not a field
  * ```
  *
  * Resolved entirely at compile time: the bundled transformer replaces the call

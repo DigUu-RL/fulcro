@@ -37,7 +37,7 @@ describe('equals', () => {
 			['0 and -0', 0, -0, true],
 			['a number and its bigint', 1, 1n, false],
 			['two equal bigints', 10n ** 30n, 10n ** 30n, true],
-			['two equal strings', 'fulcro', 'fulcro', true],
+			['two equal strings', 'Coruscant', 'Coruscant', true],
 			['a string and a number', '1', 1, false],
 			['null and undefined', null, undefined, false],
 			['undefined and undefined', undefined, undefined, true],
@@ -65,15 +65,15 @@ describe('equals', () => {
 
 	describe('on plain objects', () => {
 		it('should compare by contents, in any order of keys', () => {
-			expect(equals({ id: 1, name: 'ada' }, { name: 'ada', id: 1 })).toBe(true);
+			expect(equals({ id: 1, name: 'wedge' }, { name: 'wedge', id: 1 })).toBe(true);
 		});
 
 		it('should compare nested values by contents', () => {
-			const left = { id: 1, tags: ['a', 'b'], owner: { name: 'ada' } };
-			const right = { id: 1, tags: ['a', 'b'], owner: { name: 'ada' } };
+			const left = { id: 1, tags: ['Yavin', 'Hoth'], owner: { name: 'wedge' } };
+			const right = { id: 1, tags: ['Yavin', 'Hoth'], owner: { name: 'wedge' } };
 
 			expect(equals(left, right)).toBe(true);
-			expect(equals(left, { ...right, owner: { name: 'grace' } })).toBe(false);
+			expect(equals(left, { ...right, owner: { name: 'biggs' } })).toBe(false);
 		});
 
 		it('should refuse a key the other does not have, even holding undefined', () => {
@@ -139,7 +139,7 @@ describe('equals', () => {
 			expect(equals(some({ id: 1 }), some({ id: 1 }))).toBe(true);
 			expect(equals(some(1), some(2))).toBe(false);
 			expect(equals(success([1, 2]), success([1, 2]))).toBe(true);
-			expect(equals(failure('lost'), failure('lost'))).toBe(true);
+			expect(equals(failure('shot down'), failure('shot down'))).toBe(true);
 		});
 
 		it('should tell some(null) from none(), whose data is identical', () => {
@@ -151,10 +151,10 @@ describe('equals', () => {
 		});
 
 		it('should compare an error by identity, as any instance of a class', () => {
-			const lost = new Error('lost');
+			const shotDown = new Error('shot down');
 
-			expect(equals(failure(lost), failure(lost))).toBe(true);
-			expect(equals(failure(lost), failure(new Error('lost')))).toBe(false);
+			expect(equals(failure(shotDown), failure(shotDown))).toBe(true);
+			expect(equals(failure(shotDown), failure(new Error('shot down')))).toBe(false);
 		});
 	});
 
@@ -188,26 +188,26 @@ describe('equals', () => {
 			expect(
 				equals(
 					new Map([
-						['a', [1]],
-						['b', [2]],
+						['Tatooine', [1]],
+						['Hoth', [2]],
 					]),
 					new Map([
-						['b', [2]],
-						['a', [1]],
+						['Hoth', [2]],
+						['Tatooine', [1]],
 					]),
 				),
 			).toBe(true);
 
 			expect(equals(new Map([[key, 1]]), new Map([[key, 1]]))).toBe(true);
-			expect(equals(new Map([['a', 1]]), new Map([['a', 2]]))).toBe(false);
-			expect(equals(new Map([['a', 1]]), new Map([['b', 1]]))).toBe(false);
+			expect(equals(new Map([['Tatooine', 1]]), new Map([['Tatooine', 2]]))).toBe(false);
+			expect(equals(new Map([['Tatooine', 1]]), new Map([['Hoth', 1]]))).toBe(false);
 		});
 
 		it('should tell a key holding undefined from a missing key', () => {
 			expect(
 				equals(
-					new Map<string, undefined>([['a', undefined]]),
-					new Map<string, undefined>([['b', undefined]]),
+					new Map<string, undefined>([['Tatooine', undefined]]),
+					new Map<string, undefined>([['Hoth', undefined]]),
 				),
 			).toBe(false);
 		});
@@ -228,10 +228,10 @@ describe('equals', () => {
 		it('should compare a map subclass as a map', () => {
 			class Registry extends Map<string, number> {}
 
-			const registry: Map<string, number> = new Registry([['a', 1]]);
+			const registry: Map<string, number> = new Registry([['Tatooine', 1]]);
 
-			expect(equals(registry, new Registry([['a', 1]]))).toBe(true);
-			expect(equals(registry, new Map([['a', 1]]))).toBe(false);
+			expect(equals(registry, new Registry([['Tatooine', 1]]))).toBe(true);
+			expect(equals(registry, new Map([['Tatooine', 1]]))).toBe(false);
 		});
 
 		it('should compare buffers byte by byte', () => {
@@ -334,7 +334,7 @@ describe('equals', () => {
 		it('should propagate what a getter throws', () => {
 			const broken = {
 				get value(): number {
-					throw new RangeError('unreadable');
+					throw new RangeError('redacted by Imperial Intelligence');
 				},
 			};
 

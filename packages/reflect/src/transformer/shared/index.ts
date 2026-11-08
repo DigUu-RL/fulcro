@@ -8,8 +8,8 @@ import { buildStructuralTest, utilityModuleSegment } from '@fulcro/transform-cor
  *
  * ```ts
  * // written                  // emitted
- * is<Order>(payload)          is(payload, { name: 'Order', matches: … })
- * as<Order>(payload)          as(payload, { name: 'Order', matches: …, explain: … })
+ * is<DockingRecord>(payload)  is(payload, { name: 'DockingRecord', matches: … })
+ * as<DockingRecord>(payload)  as(payload, { name: 'DockingRecord', matches: …, explain: … })
  * ```
  *
  * A type argument is gone by the time the value arrives, so without this the

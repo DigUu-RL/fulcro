@@ -55,9 +55,9 @@ export interface OptionMethods<T> {
 	 * Handles both variants, as an expression.
 	 *
 	 * ```ts
-	 * const greeting = user.handle({
-	 * 	some: (found) => `Hello, ${found.name}`,
-	 * 	none: () => 'Hello, stranger',
+	 * const greeting = docked.handle({
+	 * 	some: (ship) => `Welcome to Cloud City, Captain ${ship.captain}`,
+	 * 	none: () => 'The landing pad is empty',
 	 * });
 	 * ```
 	 *
@@ -97,16 +97,16 @@ export interface None<T = never> extends OptionMethods<T> {
  * both are covered:
  *
  * ```ts
- * const name = optionOf(user).handle({
- * 	some: (found) => found.name,
- * 	none: () => 'anonymous',
+ * const captain = optionOf(landingPads.get('Pad 327')).handle({
+ * 	some: (ship) => ship.captain,
+ * 	none: () => 'nobody',
  * });
  * ```
  *
  * or narrow first, with `isSome()` or `isNone()`:
  *
  * ```ts
- * if (option.isSome()) use(option.value);
+ * if (docked.isSome()) refuel(docked.value);
  * ```
  *
  * Discriminate with the methods, never on `value`: `some(null)` is a present
@@ -145,7 +145,7 @@ const ABSENT: None = createVariant(NONE, { value: null });
  * Creates a present value.
  *
  * ```ts
- * const port: Option<number> = some(8080);
+ * const landingPad: Option<number> = some(327);
  * ```
  *
  * The value is kept as it is, `null` and `undefined` included — use
@@ -161,7 +161,7 @@ export const some = <T>(value: T): Some<T> => createVariant(SOME, { value });
  * Returns the absent value.
  *
  * ```ts
- * const port: Option<number> = none();
+ * const landingPad: Option<number> = none();
  * ```
  *
  * Always the same frozen object, so calling it allocates nothing.
@@ -177,7 +177,7 @@ export const none = <T = never>(): None<T> => ABSENT;
  * anything else is present.
  *
  * ```ts
- * const user: Option<User> = optionOf(users.get(id));
+ * const docked: Option<Starship> = optionOf(landingPads.get(pad));
  * ```
  *
  * Only nullish values are absent. `0`, `''` and `false` are present, since

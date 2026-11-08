@@ -42,12 +42,12 @@ describe('borrowMutable', () => {
 			};
 		});
 
-		const scores: MutableBorrow<number> = borrowMutable(owner);
+		const shieldGrid: MutableBorrow<number> = borrowMutable(owner);
 
-		scores.set(1, 42);
+		shieldGrid.set(1, 42);
 
 		expect(values).toEqual([0, 42, 0]);
-		expect(scores.get(1)).toBe(42);
+		expect(shieldGrid.get(1)).toBe(42);
 	});
 
 	it('should hand what it wrote to the borrow taken after it', () => {
@@ -55,21 +55,21 @@ describe('borrowMutable', () => {
 
 		borrowMutable(owner).set(0, 'written');
 
-		const reading: Borrowed<string> = borrow(owner);
+		const scan: Borrowed<string> = borrow(owner);
 
-		expect(reading.get(0)).toBe('written');
+		expect(scan.get(0)).toBe('written');
 	});
 
 	it('should write through a subview, a pointer and a view made from it', () => {
 		const owner: Owned<number> = own(() => createManagedStorage(6, 0));
-		const scores: MutableBorrow<number> = borrowMutable(owner);
+		const shieldGrid: MutableBorrow<number> = borrowMutable(owner);
 
-		scores.subview(2).set(0, 1);
-		pointerTo(scores, 3).set(2);
-		asView(scores, 4).set(0, 3);
+		shieldGrid.subview(2).set(0, 1);
+		pointerTo(shieldGrid, 3).set(2);
+		asView(shieldGrid, 4).set(0, 3);
 
-		expect([2, 3, 4].map((index) => scores.get(index))).toEqual([1, 2, 3]);
-		expect(scores.readOnly().get(4)).toBe(3);
+		expect([2, 3, 4].map((index) => shieldGrid.get(index))).toEqual([1, 2, 3]);
+		expect(shieldGrid.readOnly().get(4)).toBe(3);
 	});
 
 	it('should be frozen', () => {

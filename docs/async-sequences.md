@@ -20,9 +20,9 @@ sequence carries none of it.
 ## The thirty second version
 
 ```ts
-const recentAdmins = await AsyncSequenceCollection.from(fetchUserPages())
-	.where((user) => user.role === 'admin')
-	.select((user) => user.email)
+const officers = await AsyncSequenceCollection.from(fetchCrewPages())
+	.where((member) => member.rank === 'officer')
+	.select((member) => member.name)
 	.take(10)
 	.toArray();
 ```
@@ -38,29 +38,132 @@ covers the whole surface:**
 There is no `toArrayAsync`, no `whereAsync`. `await` is the only thing that
 changes at the call site.
 
+The same query against the Death Star's personnel registry, served a page at a
+time, with the pages it actually requested counted:
+
+```ts
+import { AsyncSequenceCollection } from '@fulcro/collections/async';
+
+interface CrewMember {
+	name: string;
+	rank: 'officer' | 'stormtrooper' | 'technician';
+	station: string;
+}
+
+interface CrewPage {
+	items: CrewMember[];
+	next?: string;
+}
+
+const registry: Record<string, CrewPage> = {
+	start: {
+		items: [
+			{ name: 'Grand Moff Tarkin', rank: 'officer', station: 'Overbridge' },
+			{ name: 'TK-421', rank: 'stormtrooper', station: 'Docking Bay 327' },
+		],
+		next: 'page-2',
+	},
+	'page-2': {
+		items: [
+			{ name: 'Admiral Motti', rank: 'officer', station: 'Conference room' },
+			{ name: 'General Tagge', rank: 'officer', station: 'Conference room' },
+		],
+		next: 'page-3',
+	},
+	'page-3': {
+		items: [{ name: 'Superlaser gunner', rank: 'technician', station: 'Superlaser' }],
+	},
+};
+
+let pagesRequested = 0;
+
+const imperialNet = {
+	crew: async ({ cursor }: { cursor?: string }): Promise<CrewPage> => {
+		pagesRequested++;
+
+		return registry[cursor ?? 'start'];
+	},
+};
+
+const fetchCrewPages = async function* (): AsyncGenerator<CrewMember> {
+	let cursor: string | undefined;
+
+	do {
+		const page = await imperialNet.crew({ cursor });
+
+		yield* page.items;
+
+		cursor = page.next;
+	} while (cursor !== undefined);
+};
+
+const officers = await AsyncSequenceCollection.from(fetchCrewPages())
+	.where((member) => member.rank === 'officer')
+	.select((member) => member.name)
+	.take(2)
+	.toArray();
+
+console.log(officers); // ['Grand Moff Tarkin', 'Admiral Motti']
+console.log(pagesRequested); // 2 — the third page was never requested
+```
+
 ## Where the elements come from
 
 `from` takes three shapes, and you rarely have to think about which:
 
 ```ts
 // Something that produces over time.
-AsyncSequenceCollection.from(streamRows());
+AsyncSequenceCollection.from(hyperspaceBeacons());
 
 // A plain array or generator, lifted into the async world.
-AsyncSequenceCollection.from([1, 2, 3]);
+AsyncSequenceCollection.from(['Sullust', 'Endor']);
 
-// An array of promises — the `ids.map(load)` shape.
-AsyncSequenceCollection.from(ids.map((id) => loadUser(id)));
+// An array of promises — the `names.map(load)` shape.
+AsyncSequenceCollection.from(names.map((name) => loadJediRecord(name)));
+```
+
+All three, feeding the rendezvous plan for the Battle of Endor:
+
+```ts
+import { AsyncSequenceCollection } from '@fulcro/collections/async';
+
+const wait = (milliseconds: number): Promise<void> => {
+	return new Promise((resolve) => setTimeout(resolve, milliseconds));
+};
+
+// Beacons answering one at a time, as their signal crosses the galaxy.
+const hyperspaceBeacons = async function* (): AsyncGenerator<string> {
+	for (const beacon of ['Corellia', 'Kuat', 'Fondor']) {
+		await wait(10);
+		yield beacon;
+	}
+};
+
+// A plan already in hand.
+const rendezvous = ['Sullust', 'Endor'];
+
+// Records loaded together, each resolving when it is ready.
+const loadJediRecord = async (name: string): Promise<string> => {
+	await wait(5);
+
+	return `Master ${name}`;
+};
+
+console.log(await AsyncSequenceCollection.from(hyperspaceBeacons()).toArray()); // ['Corellia', 'Kuat', 'Fondor']
+console.log(await AsyncSequenceCollection.from(rendezvous).toArray()); // ['Sullust', 'Endor']
+
+console.log(await AsyncSequenceCollection.from(['Yoda', 'Kenobi'].map(loadJediRecord)).toArray());
+// ['Master Yoda', 'Master Kenobi']
 ```
 
 An async generator is usually how the first one is written:
 
 ```ts
-async function* fetchUserPages(): AsyncGenerator<User> {
+async function* fetchCrewPages(): AsyncGenerator<CrewMember> {
 	let cursor: string | undefined;
 
 	do {
-		const page = await api.users({ cursor });
+		const page = await imperialNet.crew({ cursor });
 
 		yield* page.items;
 
@@ -72,16 +175,98 @@ async function* fetchUserPages(): AsyncGenerator<User> {
 Nothing in that function runs until something consumes the sequence, and it
 stops being called the moment the consumer stops asking.
 
+Bothan spies relaying intelligence through a cursor-paged network — the
+consumer stops at the first report about the second Death Star, and so does the
+network:
+
+```ts
+import { AsyncSequenceCollection } from '@fulcro/collections/async';
+
+interface IntelligenceReport {
+	source: string;
+	subject: string;
+}
+
+interface ReportPage {
+	items: IntelligenceReport[];
+	next?: number;
+}
+
+const relay: ReportPage[] = [
+	{ items: [{ source: 'Bothan cell 7', subject: 'Imperial supply convoy' }], next: 1 },
+	{ items: [{ source: 'Bothan cell 2', subject: 'Second Death Star, Endor system' }], next: 2 },
+	{ items: [{ source: 'Bothan cell 4', subject: 'The Emperor will oversee the final stages' }] },
+];
+
+const pagesRelayed: number[] = [];
+
+const bothanNetwork = {
+	reports: async ({ cursor }: { cursor?: number }): Promise<ReportPage> => {
+		const index = cursor ?? 0;
+
+		pagesRelayed.push(index);
+		await new Promise((resolve) => setTimeout(resolve, 5));
+
+		return relay[index];
+	},
+};
+
+async function* interceptReports(): AsyncGenerator<IntelligenceReport> {
+	let cursor: number | undefined;
+
+	do {
+		const page = await bothanNetwork.reports({ cursor });
+
+		yield* page.items;
+
+		cursor = page.next;
+	} while (cursor !== undefined);
+}
+
+const breakthrough = await AsyncSequenceCollection.from(interceptReports())
+	.where((report) => report.subject.includes('Death Star'))
+	.first();
+
+console.log(`${breakthrough.source}: ${breakthrough.subject}`); // 'Bothan cell 2: Second Death Star, Endor system'
+console.log(pagesRelayed); // [0, 1] — "Many Bothans died to bring us this information"; none had to for page 2
+```
+
 ## Your functions can be sync or async — both just work
 
 Every projection, predicate and action accepts either:
 
 ```ts
-.where((user) => user.active)          // fine
-.where(async (user) => isAllowed(user)) // also fine
+.where((trooper) => trooper.startsWith('TK'))           // fine
+.where(async (trooper) => hasClearance(trooper))        // also fine
 ```
 
 You never wrap anything, and there is no second operator name to remember.
+
+A boarding check on the Death Star, with one test answered on the spot and one
+that has to ask Imperial security:
+
+```ts
+import { AsyncSequenceCollection } from '@fulcro/collections/async';
+
+const securityClearance = new Map([
+	['TK-421', false],
+	['FN-2187', true],
+	['TK-9091', false],
+]);
+
+const hasClearance = async (designation: string): Promise<boolean> => {
+	await new Promise((resolve) => setTimeout(resolve, 5));
+
+	return securityClearance.get(designation) ?? false;
+};
+
+const cleared = await AsyncSequenceCollection.from(['TK-421', 'FN-2187', 'CT-7567', 'TK-9091'])
+	.where((designation) => designation.startsWith('TK') || designation.startsWith('FN'))
+	.where(async (designation) => hasClearance(designation))
+	.toArray();
+
+console.log(cleared); // ['FN-2187']
+```
 
 ## Nothing runs until you ask, and nothing runs ahead
 
@@ -91,9 +276,9 @@ large to hold.
 **Deferred.** Building a chain reads nothing:
 
 ```ts
-const query = AsyncSequenceCollection.from(rows()).select(parse); // no I/O yet
+const contacts = AsyncSequenceCollection.from(scannerFeed()).select(identify); // no I/O yet
 
-const parsed = await query.toArray(); // now it reads
+const identified = await contacts.toArray(); // now it reads
 ```
 
 **Back pressure.** One element is pulled, processed, and only then is the next
@@ -103,8 +288,44 @@ And an operator that has what it needs stops pulling — which is the difference
 between finishing and hanging on an endless source:
 
 ```ts
-// `liveEvents()` never ends. This still returns.
-const firstTen = await AsyncSequenceCollection.from(liveEvents()).take(10).toArray();
+// `scannerFeed()` never ends. This still returns.
+const firstThree = await AsyncSequenceCollection.from(scannerFeed()).take(3).toArray();
+```
+
+The Falcon's scanner on the way into the Hoth asteroid field: an endless feed,
+read only as far as the question needs:
+
+```ts
+import { AsyncSequenceCollection } from '@fulcro/collections/async';
+
+interface ScannerReading {
+	contact: string;
+	bearing: number;
+}
+
+let readingsTaken = 0;
+
+const scannerFeed = async function* (): AsyncGenerator<ScannerReading> {
+	const contacts = ['TIE fighter', 'TIE fighter', 'Star Destroyer', 'asteroid', 'TIE interceptor'];
+
+	for (let tick = 0; ; tick++) {
+		readingsTaken++;
+		await new Promise((resolve) => setTimeout(resolve, 1));
+
+		yield { contact: contacts[tick % contacts.length] ?? 'unknown', bearing: (tick * 37) % 360 };
+	}
+};
+
+const pursuers = AsyncSequenceCollection.from(scannerFeed())
+	.where((reading) => reading.contact.startsWith('TIE'))
+	.select((reading) => `${reading.contact} at ${String(reading.bearing)}°`);
+
+console.log(readingsTaken); // 0 — building the chain read nothing
+
+console.log(await pursuers.take(3).toArray());
+// ['TIE fighter at 0°', 'TIE fighter at 37°', 'TIE interceptor at 148°']
+
+console.log(readingsTaken); // 5 — and the feed was left where the answer was found
 ```
 
 ## Real scenarios
@@ -112,54 +333,192 @@ const firstTen = await AsyncSequenceCollection.from(liveEvents()).take(10).toArr
 ### Paging an API without holding every page
 
 ```ts
-const emails = await AsyncSequenceCollection.from(fetchUserPages())
-	.where((user) => user.active)
-	.select((user) => user.email)
+const ships = await AsyncSequenceCollection.from(fetchGuildPages())
+	.where((hunter) => hunter.active)
+	.select((hunter) => hunter.ship)
 	.toArray();
 ```
 
 One page is in memory at a time, however many there are.
 
+The Bounty Hunters' Guild directory, read to the end, one page at a time:
+
+```ts
+import { AsyncSequenceCollection } from '@fulcro/collections/async';
+
+interface BountyHunter {
+	name: string;
+	ship: string;
+	active: boolean;
+}
+
+const guildDirectory: BountyHunter[][] = [
+	[
+		{ name: 'Boba Fett', ship: 'Slave I', active: true },
+		{ name: 'Bossk', ship: "Hound's Tooth", active: true },
+	],
+	[
+		{ name: 'IG-88', ship: 'IG-2000', active: false },
+		{ name: 'Din Djarin', ship: 'Razor Crest', active: true },
+	],
+	[{ name: 'Cad Bane', ship: 'Justifier', active: false }],
+];
+
+let largestPageHeld = 0;
+
+const fetchGuildPages = async function* (): AsyncGenerator<BountyHunter> {
+	for (const page of guildDirectory) {
+		await new Promise((resolve) => setTimeout(resolve, 5));
+		largestPageHeld = Math.max(largestPageHeld, page.length);
+
+		yield* page;
+	}
+};
+
+const ships = await AsyncSequenceCollection.from(fetchGuildPages())
+	.where((hunter) => hunter.active)
+	.select((hunter) => hunter.ship)
+	.toArray();
+
+console.log(ships); // ['Slave I', "Hound's Tooth", 'Razor Crest']
+console.log(largestPageHeld); // 2 — never more than one page in hand
+```
+
 ### Reading a large file line by line
 
 ```ts
-import { createReadStream } from 'node:fs';
-import { createInterface } from 'node:readline';
-
 const lines = createInterface({
-	input: createReadStream('access.log'),
+	input: createReadStream('docking-bay-94.log'),
 	crlfDelay: Number.POSITIVE_INFINITY,
 });
 
-const errors = await AsyncSequenceCollection.from(lines)
-	.where((line) => line.includes(' 500 '))
+const refusals = await AsyncSequenceCollection.from(lines)
+	.where((line) => line.includes(' refused: '))
 	.take(100)
 	.toArray();
 ```
 
 `readline` is already an async iterable, so it drops straight in. Reading stops
-after the hundredth error rather than at the end of the file.
+after the hundredth refusal rather than at the end of the file.
+
+Mos Eisley's docking log, written and then read back the way a real one would
+be — streamed, not loaded:
+
+```ts
+import { createReadStream, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { createInterface } from 'node:readline';
+
+import { AsyncSequenceCollection } from '@fulcro/collections/async';
+
+const logPath = join(tmpdir(), 'docking-bay-94.log');
+
+writeFileSync(
+	logPath,
+	[
+		'0907 ARRIVAL Millennium Falcon cleared',
+		'0915 DEPARTURE Sandcrawler cleared',
+		'0921 INSPECTION Millennium Falcon refused: no Imperial permit',
+		'0930 ARRIVAL TIE patrol cleared',
+		'0942 INSPECTION Millennium Falcon refused: blaster fire in the bay',
+	].join('\n'),
+);
+
+const lines = createInterface({
+	input: createReadStream(logPath),
+	crlfDelay: Number.POSITIVE_INFINITY,
+});
+
+const refusals = await AsyncSequenceCollection.from(lines)
+	.where((line) => line.includes(' refused: '))
+	.select((line) => line.split(' refused: ')[1])
+	.take(100)
+	.toArray();
+
+console.log(refusals); // ['no Imperial permit', 'blaster fire in the bay']
+```
 
 ### Writing in batches
 
 ```ts
-await AsyncSequenceCollection.from(streamRows())
+await AsyncSequenceCollection.from(streamCensus())
 	.select(normalize)
 	.chunk(500)
-	.forEach((batch) => database.insertMany(batch));
+	.forEach((batch) => imperialArchive.insertMany(batch));
 ```
 
 `chunk` is how a stream becomes batches without collecting the stream first.
 
+The Empire's census of a stormtrooper legion, streamed into its archive in
+batches of five hundred:
+
+```ts
+import { AsyncSequenceCollection } from '@fulcro/collections/async';
+
+const imperialArchive = {
+	batches: [] as number[],
+	async insertMany(batch: readonly string[]): Promise<void> {
+		await new Promise((resolve) => setTimeout(resolve, 1));
+		this.batches.push(batch.length);
+	},
+};
+
+const streamCensus = async function* (): AsyncGenerator<string> {
+	for (let number = 1; number <= 1_250; number++) yield `tk-${String(number).padStart(4, '0')}`;
+};
+
+const normalize = (designation: string): string => designation.toUpperCase();
+
+await AsyncSequenceCollection.from(streamCensus())
+	.select(normalize)
+	.chunk(500)
+	.forEach((batch) => imperialArchive.insertMany(batch));
+
+console.log(imperialArchive.batches); // [500, 500, 250]
+```
+
 ### A running total as values arrive
 
 ```ts
-const balances = AsyncSequenceCollection.from(transactions()).scan(
+const balances = AsyncSequenceCollection.from(wagers()).scan(
 	0,
-	(balance, entry) => balance + entry.amount,
+	(balance, wager) => balance + wager.credits,
 );
 
 for await (const balance of balances) render(balance);
+```
+
+A night at the tables of Canto Bight, the balance shown after every hand:
+
+```ts
+import { AsyncSequenceCollection } from '@fulcro/collections/async';
+
+interface Wager {
+	table: string;
+	credits: number;
+}
+
+const wagers = async function* (): AsyncGenerator<Wager> {
+	yield { table: 'sabacc', credits: 500 };
+	yield { table: 'fathier race', credits: -1_200 };
+	yield { table: 'sabacc', credits: 2_000 };
+};
+
+const screen: string[] = [];
+
+const render = (balance: number): void => {
+	screen.push(`${String(balance)} credits`);
+};
+
+const balances = AsyncSequenceCollection.from(wagers()).scan(
+	0,
+	(balance, wager) => balance + wager.credits,
+);
+
+for await (const balance of balances) render(balance);
+
+console.log(screen); // ['500 credits', '-700 credits', '1300 credits']
 ```
 
 ## Cancelling
@@ -171,7 +530,7 @@ const controller = new AbortController();
 
 setTimeout(() => controller.abort(), 5_000);
 
-const users = await AsyncSequenceCollection.from(fetchUserPages()).toArray({
+const crew = await AsyncSequenceCollection.from(fetchCrewPages()).toArray({
 	signal: controller.signal,
 });
 ```
@@ -187,13 +546,67 @@ If you expected `abort()` to kill a request mid-flight, it does not — unless t
 work itself takes a signal, in which case hand it the same one and it does:
 
 ```ts
-.select((id) => fetch(`/users/${id}`, { signal: controller.signal }))
+.select((name) => fetch(`https://archives.jedi-temple.example/${name}`, { signal: controller.signal }))
 ```
 
 A signal belongs on the terminal rather than on `from`, which means the same
 sequence can be consumed twice under different signals.
 
 `AbortSignal.timeout(5_000)` is a shorthand for the controller above.
+
+Han giving up on an endless swarm of TIE fighters, and the archive download the
+Emperor cut short — the second hands the same signal to the work itself:
+
+```ts
+import { AsyncSequenceCollection } from '@fulcro/collections/async';
+
+const wait = (milliseconds: number): Promise<void> => {
+	return new Promise((resolve) => setTimeout(resolve, milliseconds));
+};
+
+const tieSwarm = async function* (): AsyncGenerator<string> {
+	for (let wave = 1; ; wave++) {
+		await wait(10);
+		yield `TIE wave ${String(wave)}`;
+	}
+};
+
+const retreat = new AbortController();
+
+setTimeout(() => retreat.abort(new Error('Never tell me the odds!')), 50);
+
+try {
+	await AsyncSequenceCollection.from(tieSwarm()).toArray({ signal: retreat.signal });
+} catch (reason) {
+	console.log((reason as Error).message); // 'Never tell me the odds!'
+}
+
+// Work that takes the signal stops with it, rather than finishing for nobody.
+const downloadArchive = (name: string, signal: AbortSignal): Promise<string> => {
+	return new Promise((resolve, reject) => {
+		const transfer = setTimeout(() => resolve(`${name}: archive restored`), 1_000);
+
+		signal.addEventListener(
+			'abort',
+			() => {
+				clearTimeout(transfer);
+				reject(signal.reason);
+			},
+			{ once: true },
+		);
+	});
+};
+
+const order66 = AbortSignal.timeout(20);
+
+try {
+	await AsyncSequenceCollection.from(['Yoda', 'Kenobi'])
+		.select((name) => downloadArchive(name, order66))
+		.toArray({ signal: order66 });
+} catch (reason) {
+	console.log((reason as Error).name); // 'TimeoutError'
+}
+```
 
 ## What is different from the synchronous sequence
 
@@ -249,11 +662,39 @@ production.
 When you want them, say so out loud:
 
 ```ts
-const sorted = SequenceCollection.from(await stream.toArray()).orderBy((row) => row.name);
+const sorted = SequenceCollection.from(await arrivals.toArray()).orderBy((row) => row.arrivedAt);
 ```
 
 `toArray()` is where holding everything becomes visible, which is exactly where
 it belongs.
+
+The Imperial fleet dropping out of hyperspace over Hoth, put in order once it
+has all arrived:
+
+```ts
+import { SequenceCollection } from '@fulcro/collections';
+import { AsyncSequenceCollection } from '@fulcro/collections/async';
+
+interface Arrival {
+	ship: string;
+	arrivedAt: number;
+}
+
+const hyperspaceExits = async function* (): AsyncGenerator<Arrival> {
+	yield { ship: 'Executor', arrivedAt: 3 };
+	yield { ship: 'Avenger', arrivedAt: 1 };
+	yield { ship: 'Tyrant', arrivedAt: 2 };
+};
+
+const arrivals = AsyncSequenceCollection.from(hyperspaceExits());
+
+const order = SequenceCollection.from(await arrivals.toArray())
+	.orderBy((row) => row.arrivedAt)
+	.select((row) => row.ship)
+	.toArray();
+
+console.log(order); // ['Avenger', 'Tyrant', 'Executor']
+```
 
 Two that do stream are worth knowing as the answers to the same questions:
 **`groupAdjacent`** groups consecutive elements and closes a run as soon as the
@@ -285,10 +726,10 @@ and the synchronous path would mean collecting all of it in memory first, which
 is the thing this type exists to avoid.
 
 ```ts
-const orders = AsyncSequenceCollection.from(paginatedOrders()).cast<Order>();
+const bounties = AsyncSequenceCollection.from(paginatedBounties()).cast<Bounty>();
 
-for await (const order of orders) {
-	// `order` is an `Order`, checked, one page at a time.
+for await (const bounty of bounties) {
+	// `bounty` is a `Bounty`, checked, one page at a time.
 }
 ```
 
@@ -296,7 +737,7 @@ It refuses **at the element that failed**, so a bad page is caught without the
 rest of the feed being fetched:
 
 ```text
-TypeError: FULCRO1015: cast('Order') found a string at index 2.
+TypeError: FULCRO1015: cast('Bounty') found a string at index 2.
 ```
 
 `ofType<T>()` is the same check used to filter rather than to refuse. Both take
@@ -306,6 +747,48 @@ covered and what is refused is in
 [sequences.md](./sequences.md#oftype-and-cast--the-same-question-two-answers); it
 behaves identically here.
 
+A Guild feed with a damaged transmitter in the middle of it, refused at the
+damage and not a record later:
+
+```ts
+// Needs @fulcro/collections/transformer.
+import { AsyncSequenceCollection } from '@fulcro/collections/async';
+
+interface Bounty {
+	target: string;
+	credits: number;
+}
+
+let recordsFetched = 0;
+
+const paginatedBounties = async function* (): AsyncGenerator<unknown> {
+	const feed: unknown[] = [
+		{ target: 'Han Solo', credits: 50_000 },
+		{ target: 'Grogu', credits: 100_000 },
+		'static from a damaged transmitter',
+		{ target: 'Mythrol', credits: 5_000 },
+	];
+
+	for (const record of feed) {
+		recordsFetched++;
+		yield record;
+	}
+};
+
+const accepted: string[] = [];
+
+try {
+	for await (const bounty of AsyncSequenceCollection.from(paginatedBounties()).cast<Bounty>()) {
+		accepted.push(bounty.target);
+	}
+} catch (error) {
+	console.log((error as Error).message); // "FULCRO1015: cast('Bounty') found a string at index 2."
+}
+
+console.log(accepted); // ['Han Solo', 'Grogu']
+console.log(recordsFetched); // 3 — Mythrol's record was never fetched
+```
+
 ## `topBy` on a stream
 
 Ranking normally means sorting, and sorting means having everything. `topBy`
@@ -313,14 +796,42 @@ keeps a window of the best `count` seen so far instead, so what it holds is
 bounded by `count` and not by the length of the stream:
 
 ```ts
-const busiest = await AsyncSequenceCollection.from(everyRequest())
-	.topBy((request) => request.duration, 10)
+const slowest = await AsyncSequenceCollection.from(everyJump())
+	.topBy((jump) => jump.seconds, 10)
 	.toArray();
 ```
 
 A hundred thousand elements for a top ten holds ten. It does have to reach the
 end before it can answer — nothing can know the top ten of a stream that has not
 finished — so put a `take` in front of an endless one.
+
+The navigation computer's log of a day's hyperspace jumps, ranked for the three
+that took longest:
+
+```ts
+import { AsyncSequenceCollection } from '@fulcro/collections/async';
+
+interface Jump {
+	ship: string;
+	seconds: number;
+}
+
+const everyJump = async function* (): AsyncGenerator<Jump> {
+	yield { ship: 'Millennium Falcon', seconds: 12 };
+	yield { ship: 'Ghost', seconds: 47 };
+	yield { ship: 'Razor Crest', seconds: 31 };
+	yield { ship: 'Slave I', seconds: 25 };
+	yield { ship: 'Home One', seconds: 90 };
+	yield { ship: 'Tantive IV', seconds: 18 };
+};
+
+const slowest = await AsyncSequenceCollection.from(everyJump())
+	.topBy((jump) => jump.seconds, 3)
+	.select((jump) => `${jump.ship} (${String(jump.seconds)} s)`)
+	.toArray();
+
+console.log(slowest); // ['Home One (90 s)', 'Ghost (47 s)', 'Razor Crest (31 s)']
+```
 
 `topByAwait` extracts several keys at once, for a key that has to be fetched
 rather than read. Ties still break on **arrival**, which is recorded before the

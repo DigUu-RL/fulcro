@@ -57,28 +57,76 @@ compiler, and keeping them here blurred what this package is for.
 Reads a name as it was written in the source.
 
 ```ts
-const email = 'a@b.c';
+const callSign = 'Red Five';
 
-nameOf(() => email); // 'email'
-nameOf(() => user.profile.theme); // 'theme'  (last segment of a path)
-nameOf(() => user['email']); // 'email'
-nameOf(() => user.save); // 'save'   (never calls it)
-nameOf(User); // 'User'
-nameOf(42); // 'Number'
+nameOf(() => callSign); // 'callSign'
+nameOf(() => pilot.starfighter.astromech); // 'astromech'  (last segment of a path)
+nameOf(() => pilot['callSign']); // 'callSign'
+nameOf(() => pilot.eject); // 'eject'      (never calls it)
+nameOf(Starfighter); // 'Starfighter'
+nameOf(1138); // 'Number'
 ```
 
 The accessor is never invoked — the name is read out of the source of the
-closure, so `nameOf(() => user.save)` costs nothing and is safe on a getter with
-side effects.
+closure, so `nameOf(() => pilot.eject)` costs nothing and is safe on a getter
+with side effects.
 
 **Two limits, both from the language rather than this implementation:**
 
 - Interfaces and type aliases have no runtime existence, so the runtime form
-  cannot name them. With the transformer, `nameOf<UserContract>()` can.
-- A minifier renames local variables, so `nameOf(() => email)` may report a
+  cannot name them. With the transformer, `nameOf<PilotRecord>()` can.
+- A minifier renames local variables, so `nameOf(() => callSign)` may report a
   mangled name in a bundled build. Property names, method names and the form
   taking a class normally survive. With the transformer the name is resolved
   before minification ever runs, so this stops being a concern.
+
+The Alliance's recruitment terminal on Yavin 4, whose form fields and
+validation messages follow the model's property names instead of repeating them
+as strings:
+
+```ts
+// Needs the @fulcro/reflect transformer for `nameOf<PilotRecord>()`.
+import { nameOf } from '@fulcro/reflect';
+
+interface PilotRecord {
+	callSign: string;
+	homeworld: string;
+	starfighter: { model: string; astromech: string };
+}
+
+class Starfighter {
+	constructor(readonly model: string) {}
+}
+
+const recruit: PilotRecord = {
+	callSign: 'Rogue Four',
+	homeworld: '',
+	starfighter: { model: 'T-47 airspeeder', astromech: 'none' },
+};
+
+let ejections = 0;
+
+const pilot = {
+	...recruit,
+	get eject(): string {
+		ejections++;
+		return 'ejected';
+	},
+};
+
+const validate = (candidate: PilotRecord): string[] => {
+	return candidate.homeworld === '' ? [`${nameOf(() => candidate.homeworld)} is required`] : [];
+};
+
+console.log(validate(recruit)); // ['homeworld is required']
+console.log(nameOf(() => pilot.starfighter.astromech)); // 'astromech'
+console.log(
+	nameOf(() => pilot.eject),
+	ejections,
+); // 'eject' 0 — the getter never ran
+console.log(nameOf(Starfighter)); // 'Starfighter'
+console.log(nameOf<PilotRecord>()); // 'PilotRecord'
+```
 
 ## `typeOf`
 
@@ -89,18 +137,18 @@ collapses most of what a program needs to tell apart.
 typeof null; // 'object'
 typeOf(null).typeId; // 'null'
 
-typeof [1, 2]; // 'object'
-typeOf([1, 2]).typeId; // 'array'
+typeof ['R2-D2', 'C-3PO']; // 'object'
+typeOf(['R2-D2', 'C-3PO']).typeId; // 'array'
 
 typeof NaN; // 'number'
 typeOf(NaN).typeId; // 'nan'
 
-typeOf(new Admin()); // { typeId: 'instance', name: 'Admin', … }
+typeOf(new Stormtrooper()); // { typeId: 'instance', name: 'Stormtrooper', … }
 ```
 
 The result carries `typeId` (a discriminant usable in a `switch`), `name`,
-`lineage` (the prototype chain, e.g. `['Admin', 'User', 'Object']`), and the
-flags `primitive`, `nullish` and `iterable`.
+`lineage` (the prototype chain, e.g. `['Stormtrooper', 'Trooper', 'Object']`),
+and the flags `primitive`, `nullish` and `iterable`.
 
 `lineage` is as close as runtime inspection gets to "where does this type come
 from". It is a chain of constructors, never a module path — the compiler keeps
@@ -112,9 +160,50 @@ type: its rendered text, its name, how it was declared (`interface`, `enum`,
 `declared` reads `null` and everything else keeps working.
 
 ```ts
-typeOf(user).declared;
-// { text: 'UserContract', name: 'UserContract', kind: 'interface',
-//   site: { path: 'src/models/user.ts', line: 12, column: 18 } }
+typeOf(pilot).declared;
+// { text: 'PilotRecord', name: 'PilotRecord', kind: 'interface',
+//   site: { path: 'src/models/pilot.ts', line: 12, column: 18 } }
+```
+
+A customs officer at Mos Eisley logging whatever arrives in a cargo hold, by
+what it really is:
+
+```ts
+// Needs the @fulcro/reflect transformer for `declared`.
+import { typeOf } from '@fulcro/reflect';
+
+class Trooper {}
+class Stormtrooper extends Trooper {}
+
+interface Manifest {
+	ship: string;
+}
+
+const describeCargo = (cargo: unknown): string => {
+	const description = typeOf(cargo);
+
+	switch (description.typeId) {
+		case 'array':
+			return `${String((cargo as unknown[]).length)} crates`;
+		case 'map':
+		case 'set':
+			return `a sealed shipment of ${String((cargo as Set<unknown>).size)}`;
+		case 'instance':
+			return `a ${description.name}, lineage ${description.lineage.join(' → ')}`;
+		default:
+			return description.typeId;
+	}
+};
+
+console.log(describeCargo(['spice', 'coaxium'])); // '2 crates'
+console.log(describeCargo(new Set(['kyber']))); // 'a sealed shipment of 1'
+console.log(describeCargo(new Stormtrooper())); // 'a Stormtrooper, lineage Stormtrooper → Trooper → Object'
+console.log(describeCargo(Number.NaN)); // 'nan'
+console.log(describeCargo(null)); // 'null'
+
+const manifest: Manifest = { ship: 'Millennium Falcon' };
+
+console.log(typeOf(manifest).declared?.kind); // 'interface' — the type as written, from the transformer
 ```
 
 ## `defaultOf`
@@ -122,18 +211,18 @@ typeOf(user).declared;
 Produces the emptiest value that still fully inhabits a type.
 
 ```ts
-interface Order {
-	id: number;
-	customer: { name: string; active: boolean };
-	items: string[];
+interface PreflightChecklist {
+	ship: string;
+	pilot: { callSign: string; cleared: boolean };
+	astromechs: string[];
 	note?: string;
 }
 
-defaultOf<Order>();
-// { id: 0, customer: { name: '', active: false }, items: [] }
+defaultOf<PreflightChecklist>();
+// { ship: '', pilot: { callSign: '', cleared: false }, astromechs: [] }
 
 defaultOf<string>(); // ''
-defaultOf<'dark' | 'light'>(); // 'dark'
+defaultOf<'light side' | 'dark side'>(); // 'light side'
 ```
 
 One rule covers every case: **the result is always a valid `T`**. Required
@@ -149,18 +238,48 @@ there is genuinely nothing for a plain function to inspect. Without the
 transformer the call throws, deliberately — a default it cannot compute would be
 a lie, and failing loudly at the call site beats handing back a wrong value.
 
-## `is` and `as`
-
-The language's `as` asserts without checking — `payload as Order` compiles
-whatever `payload` turns out to be, and the mistake surfaces later, somewhere
-else, as a property of `undefined`. These two do the check it cannot.
+The hangar deck's checklist terminal, starting each fighter from a blank form
+that always matches the model:
 
 ```ts
-if (is<Order>(payload)) {
-	payload.total; // narrowed, and actually verified
+// Needs the @fulcro/reflect transformer.
+import { defaultOf } from '@fulcro/reflect';
+
+interface PreflightChecklist {
+	ship: string;
+	pilot: { callSign: string; cleared: boolean };
+	astromechs: string[];
+	note?: string;
 }
 
-const order = as<Order>(await response.json());
+const blank = defaultOf<PreflightChecklist>();
+
+console.log(blank);
+// { ship: '', pilot: { callSign: '', cleared: false }, astromechs: [] }
+
+const redFive: PreflightChecklist = {
+	...blank,
+	ship: 'T-65B X-wing',
+	pilot: { callSign: 'Red Five', cleared: true },
+	astromechs: ['R2-D2'],
+};
+
+console.log(redFive.pilot.cleared, blank.pilot.cleared); // true false — the blank was not touched
+console.log(defaultOf<'light side' | 'dark side'>()); // 'light side'
+```
+
+## `is` and `as`
+
+The language's `as` asserts without checking — `payload as DockingRecord`
+compiles whatever `payload` turns out to be, and the mistake surfaces later,
+somewhere else, as a property of `undefined`. These two do the check it cannot.
+
+```ts
+if (is<DockingRecord>(payload)) {
+	payload.captain.name; // narrowed, and actually verified
+}
+
+const record = as<DockingRecord>(await response.json());
 ```
 
 `is` is a type guard, for branching. `as` returns the value unchanged — the same
@@ -171,7 +290,7 @@ objects, every element of an array. A failing `as` names **where** it stopped
 matching rather than only that it did:
 
 ```text
-TypeError: FULCRO4007: as<Order>() refused a value: customer.email: expected string, got number
+TypeError: FULCRO4007: as<DockingRecord>() refused a value: captain.name: expected string, got number
 ```
 
 That message comes from a second walker emitted beside the check, which runs
@@ -181,14 +300,53 @@ it, and `is` does not carry one at all.
 Index signatures and unresolved generics are refused, loudly. Write the test
 yourself and pass it in as a second argument for those.
 
+Mos Eisley's docking control, clearing the arrivals that match the record and
+stopping at the one that does not:
+
+```ts
+// Needs the @fulcro/reflect transformer.
+import { as, is } from '@fulcro/reflect';
+
+interface DockingRecord {
+	bay: number;
+	ship: string;
+	captain: { name: string };
+	cargo: string[];
+}
+
+const arrivals: unknown[] = JSON.parse(`[
+	{ "bay": 94, "ship": "Millennium Falcon", "captain": { "name": "Han Solo" }, "cargo": ["spice"] },
+	{ "bay": 86, "ship": "Slave I", "captain": { "name": 1 }, "cargo": ["carbonite"] }
+]`);
+
+const cleared = arrivals
+	.filter((arrival) => is<DockingRecord>(arrival))
+	.map((record) => record.ship);
+
+console.log(cleared); // ['Millennium Falcon']
+
+try {
+	as<DockingRecord>(arrivals[1]);
+} catch (error) {
+	console.log((error as Error).message);
+	// 'FULCRO4007: as<DockingRecord>() refused a value: captain.name: expected string, got number'
+}
+
+const record = as<DockingRecord>(arrivals[0]);
+
+console.log(record === arrivals[0]); // true — the same object, not a copy
+```
+
 ## `constantOf`
 
 A value computed once, while the program compiles, and written into the output
 as a literal:
 
 ```ts
-const SQUARES = constantOf(() => Array.from({ length: 256 }, (_, index) => index * index));
-// emitted: const SQUARES = Object.freeze([0, 1, 4, 9, …]);
+const ASTROMECH_CHECKSUM_TABLE = constantOf(() =>
+	Array.from({ length: 256 }, (_, byte) => checksumOf(byte)),
+);
+// emitted: const ASTROMECH_CHECKSUM_TABLE = Object.freeze([0, 1996959894, 3993919788, …]);
 ```
 
 The transformer runs the function only when it can prove it constant — every
@@ -197,18 +355,55 @@ source — and fails the build at the call otherwise, naming what it could not
 prove. Without the transformer the function runs at runtime, with the same
 result.
 
+R2-D2's data port, checking the Death Star plans it received against the
+checksum the Tantive IV sent with them — the table built once, at build time:
+
+```ts
+import { constantOf } from '@fulcro/reflect';
+
+const checksumOf = (byte: number): number => {
+	let crc = byte;
+
+	for (let bit = 0; bit < 8; bit++) {
+		crc = crc & 1 ? 0xedb88320 ^ (crc >>> 1) : crc >>> 1;
+	}
+
+	return crc >>> 0;
+};
+
+const ASTROMECH_CHECKSUM_TABLE = constantOf(() =>
+	Array.from({ length: 256 }, (_, byte) => checksumOf(byte)),
+);
+
+const checksum = (data: string): number => {
+	let crc = 0xffffffff;
+
+	for (const byte of new TextEncoder().encode(data)) {
+		crc = (crc >>> 8) ^ (ASTROMECH_CHECKSUM_TABLE[(crc ^ byte) & 0xff] ?? 0);
+	}
+
+	return (crc ^ 0xffffffff) >>> 0;
+};
+
+const plans = 'Death Star technical readout: thermal exhaust port, two metres wide';
+
+console.log(ASTROMECH_CHECKSUM_TABLE[1]); // 1996959894
+console.log(Object.isFrozen(ASTROMECH_CHECKSUM_TABLE)); // true
+console.log(checksum(plans) === checksum(plans)); // true
+```
+
 ## With and without the transformer
 
-|                               | Without                             | With the transformer                                          |
-| ----------------------------- | ----------------------------------- | ------------------------------------------------------------- |
-| `nameOf(() => user.email)`    | `'email'` — parsed from the closure | `'email'` — emitted as a literal, minifier-proof              |
-| `nameOf<UserContract>()`      | not available                       | `'UserContract'`                                              |
-| `typeOf(value)`               | runtime shape; `declared` is `null` | runtime shape **+** the declared type and its source location |
-| `defaultOf<T>()`              | throws                              | the built value, emitted inline                               |
-| `sizeOf<T>()`, `alignOf<T>()` | throws                              | the number of bytes the type declares, emitted inline         |
-| `offsetOf<T>('field')`        | throws                              | where the struct's field sits, in bytes, emitted inline       |
-| `layoutOf<T>()`               | throws                              | the whole layout, fields placed, as a frozen literal          |
-| `constantOf(() => …)`         | the function runs, at runtime       | its result, computed while compiling, as a frozen literal     |
+|                                | Without                                | With the transformer                                          |
+| ------------------------------ | -------------------------------------- | ------------------------------------------------------------- |
+| `nameOf(() => pilot.callSign)` | `'callSign'` — parsed from the closure | `'callSign'` — emitted as a literal, minifier-proof           |
+| `nameOf<PilotRecord>()`        | not available                          | `'PilotRecord'`                                               |
+| `typeOf(value)`                | runtime shape; `declared` is `null`    | runtime shape **+** the declared type and its source location |
+| `defaultOf<T>()`               | throws                                 | the built value, emitted inline                               |
+| `sizeOf<T>()`, `alignOf<T>()`  | throws                                 | the number of bytes the type declares, emitted inline         |
+| `offsetOf<T>('field')`         | throws                                 | where the struct's field sits, in bytes, emitted inline       |
+| `layoutOf<T>()`                | throws                                 | the whole layout, fields placed, as a frozen literal          |
+| `constantOf(() => …)`          | the function runs, at runtime          | its result, computed while compiling, as a frozen literal     |
 
 Wiring the transformer is a build time concern only; this package stays a plain
 runtime dependency either way, and nothing extra is installed to get it.

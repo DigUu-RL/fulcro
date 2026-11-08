@@ -30,3 +30,4 @@ scopes the rule to nothing and does it in silence.
 | `concurrency.md`             | `packages/parallel`, async sequences  | Cancellation, bounds and release under failure            |
 | `release.md`                 | what reaches `main`                   | The built output is what ships, and Claude never sends it |
 | `protected-operations.md`    | every session                         | Push, publish, merge and discard are a human's to run     |
+| `examples.md`                | every example, docs to evals          | Star Wars names and data, and every snippet shown whole   |

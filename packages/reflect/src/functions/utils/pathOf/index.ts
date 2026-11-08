@@ -68,8 +68,8 @@ const parsePath = (accessor: PathAccessor): string | null => {
  * Where `nameOf` answers with the last segment, this answers with all of them:
  *
  * ```ts
- * nameOf(() => user.profile.email); // 'email'
- * pathOf(() => user.profile.email); // 'profile.email'
+ * nameOf(() => pilot.starfighter.astromech); // 'astromech'
+ * pathOf(() => pilot.starfighter.astromech); // 'starfighter.astromech'
  * ```
  *
  * Which is what a form field, a database column, a sort key or a translation
@@ -80,9 +80,9 @@ const parsePath = (accessor: PathAccessor): string | null => {
  * local variable happened to be called would make the answer depend on that.
  *
  * ```ts
- * pathOf(() => order.customer.address.city); // 'customer.address.city'
- * pathOf(() => order.items[0].sku); // 'items[0].sku'
- * pathOf(() => order['customer'].email); // 'customer.email'
+ * pathOf(() => record.captain.homeworld.system); // 'captain.homeworld.system'
+ * pathOf(() => record.cargo[0].manifest); // 'cargo[0].manifest'
+ * pathOf(() => record['captain'].name); // 'captain.name'
  * ```
  *
  * The accessor is **never invoked**. The path is read out of the source of the

@@ -15,11 +15,11 @@ import type { Layout } from '@/src/layout';
  * function stores a numeric type of any width or format:
  *
  * ```ts
- * const zeroed = <T>(type: FixedLayoutType<T>, count: number): DataView => {
- * 	return new DataView(new ArrayBuffer(type.layout.size * count));
+ * const emptyHangar = <T>(type: FixedLayoutType<T>, berths: number): DataView => {
+ * 	return new DataView(new ArrayBuffer(type.layout.size * berths));
  * };
  *
- * zeroed(SignedInteger(32), 8); // 32 bytes
+ * emptyHangar(SignedInteger(32), 8); // 32 bytes
  * ```
  *
  * @template T Type of the values.

@@ -11,10 +11,10 @@ declare const borrowed: unique symbol;
  * knows when the loan is over.
  *
  * ```ts
- * const readings = borrow(owner);
- * const other = borrow(owner); // shared borrows coexist
+ * const bridge = borrow(shieldGrid);
+ * const engineering = borrow(shieldGrid); // shared borrows coexist
  *
- * readings.get(0) + other.get(0);
+ * bridge.get(0) + engineering.get(0);
  * ```
  *
  * Any number of shared borrows of one owner can be read at once. One ends

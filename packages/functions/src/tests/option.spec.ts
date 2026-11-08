@@ -8,9 +8,9 @@ import { compileFixture, COMPILERS, reportedLines } from '@/src/tests/compileFix
 
 describe('some', () => {
 	it('should carry the value', () => {
-		const option: Option<string> = some('here');
+		const option: Option<string> = some('Pad 327');
 
-		expect(option.value).toBe('here');
+		expect(option.value).toBe('Pad 327');
 		expect(option.isSome()).toBe(true);
 		expect(option.isNone()).toBe(false);
 	});
@@ -26,7 +26,7 @@ describe('some', () => {
 
 	it('should hand the value to the some branch', () => {
 		expect(
-			some('four').handle({
+			some('Ewok').handle({
 				some: (value) => value.length,
 				none: () => 0,
 			}),
@@ -69,9 +69,9 @@ describe('optionOf', () => {
 	});
 
 	it('should keep an object by reference', () => {
-		const user = { name: 'Ada' };
+		const falcon = { name: 'Millennium Falcon' };
 
-		expect(optionOf(user).value).toBe(user);
+		expect(optionOf(falcon).value).toBe(falcon);
 	});
 });
 

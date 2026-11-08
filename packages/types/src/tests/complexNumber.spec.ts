@@ -165,16 +165,16 @@ describe('ComplexNumber', () => {
 		});
 
 		it('should be stored by a struct as its two parts', () => {
-			const Signal = struct('Signal', { sample: Complex });
-			const view = new DataView(new ArrayBuffer(Signal.layout.size));
-			const written = Signal.from({ sample: { real: 3, imaginary: 4 } });
+			const Transmission = struct('Transmission', { sample: Complex });
+			const view = new DataView(new ArrayBuffer(Transmission.layout.size));
+			const written = Transmission.from({ sample: { real: 3, imaginary: 4 } });
 
-			Signal.write(view, 0, written);
+			Transmission.write(view, 0, written);
 
-			expect(Signal.layout.size).toBe(16);
+			expect(Transmission.layout.size).toBe(16);
 			expect(view.getFloat64(8, true)).toBe(4);
-			expect(Complex.is(Signal.read(view, 0).sample)).toBe(true);
-			expect(Signal.equals(Signal.read(view, 0), written)).toBe(true);
+			expect(Complex.is(Transmission.read(view, 0).sample)).toBe(true);
+			expect(Transmission.equals(Transmission.read(view, 0), written)).toBe(true);
 		});
 	});
 

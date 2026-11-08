@@ -238,6 +238,34 @@ describe('zip', () => {
 		expect(read()).toBe(3);
 	});
 
+	it('should close the longer side, and both when the consumer stops first', () => {
+		let openHangars = 0;
+
+		const hangar = function* (ships: readonly string[]): Generator<string> {
+			openHangars++;
+
+			try {
+				yield* ships;
+			} finally {
+				openHangars--;
+			}
+		};
+
+		const pairs = SequenceCollection.from(hangar(['X-wing', 'Y-wing', 'A-wing']))
+			.zip(hangar(['Red Five', 'Gold Leader']), (ship, pilot) => `${pilot}: ${ship}`)
+			.toArray();
+
+		expect(pairs).toEqual(['Red Five: X-wing', 'Gold Leader: Y-wing']);
+		expect(openHangars).toBe(0);
+
+		const first = SequenceCollection.from(hangar(['X-wing', 'Y-wing']))
+			.zip(hangar(['Red Five', 'Gold Leader']), (ship, pilot) => `${pilot}: ${ship}`)
+			.first();
+
+		expect(first).toBe('Red Five: X-wing');
+		expect(openHangars).toBe(0);
+	});
+
 	it('should report the shorter of two known counts', () => {
 		expect(
 			SequenceCollection.from([1, 2, 3, 4])

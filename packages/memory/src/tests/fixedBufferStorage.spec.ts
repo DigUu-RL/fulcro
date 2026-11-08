@@ -24,115 +24,119 @@ import { coded } from '@/src/tests/coded';
  * neighbours, and a value the element type does not recognise is refused.
  */
 
-const Point = struct('Point', {
-	x: SinglePrecisionFloat,
-	y: SinglePrecisionFloat,
+const SensorContact = struct('SensorContact', {
+	bearing: SinglePrecisionFloat,
+	range: SinglePrecisionFloat,
 });
 
-type Point = Struct<typeof Point>;
+type SensorContact = Struct<typeof SensorContact>;
 
 /** Sixteen bytes, seven of them padding: a neighbour written carelessly shows. */
-const Sample = struct('Sample', {
+const ScannerReading = struct('ScannerReading', {
 	value: DoublePrecisionFloat,
 	channel: UnsignedInteger(8),
 });
 
 describe('createFixedBufferStorage', () => {
 	it('should read every position as the zero value before it is set', () => {
-		const points: Storage<Point> = createFixedBufferStorage(Point, 3);
+		const points: Storage<SensorContact> = createFixedBufferStorage(SensorContact, 3);
 
-		expect(Point.equals(points.get(2), Point.from({ x: 0, y: 0 }))).toBe(true);
+		expect(SensorContact.equals(points.get(2), SensorContact.from({ bearing: 0, range: 0 }))).toBe(
+			true,
+		);
 	});
 
 	it('should make a new, frozen value on every read', () => {
-		const points: Storage<Point> = createFixedBufferStorage(Point, 1);
+		const points: Storage<SensorContact> = createFixedBufferStorage(SensorContact, 1);
 
-		points.set(0, Point.from({ x: 1, y: 2 }));
+		points.set(0, SensorContact.from({ bearing: 1, range: 2 }));
 
-		const first: Point = points.get(0);
-		const second: Point = points.get(0);
+		const first: SensorContact = points.get(0);
+		const second: SensorContact = points.get(0);
 
 		expect(first).not.toBe(second);
-		expect(Point.equals(first, second)).toBe(true);
+		expect(SensorContact.equals(first, second)).toBe(true);
 		expect(Object.isFrozen(first)).toBe(true);
 	});
 
 	it('should hold a copy in bytes, not the value it was given', () => {
-		const points: Storage<Point> = createFixedBufferStorage(Point, 1);
-		const written: Point = Point.from({ x: 3, y: 4 });
+		const points: Storage<SensorContact> = createFixedBufferStorage(SensorContact, 1);
+		const written: SensorContact = SensorContact.from({ bearing: 3, range: 4 });
 
 		points.set(0, written);
 
 		expect(points.get(0)).not.toBe(written);
-		expect(Point.equals(points.get(0), written)).toBe(true);
+		expect(SensorContact.equals(points.get(0), written)).toBe(true);
 	});
 
 	it('should leave both neighbours untouched when one value is written', () => {
-		const samples = createFixedBufferStorage(Sample, 3);
+		const scans = createFixedBufferStorage(ScannerReading, 3);
 
-		samples.set(0, Sample.from({ value: -1.5, channel: 255 }));
-		samples.set(2, Sample.from({ value: 2.25, channel: 7 }));
-		samples.set(1, Sample.from({ value: 1e300, channel: 128 }));
+		scans.set(0, ScannerReading.from({ value: -1.5, channel: 255 }));
+		scans.set(2, ScannerReading.from({ value: 2.25, channel: 7 }));
+		scans.set(1, ScannerReading.from({ value: 1e300, channel: 128 }));
 
-		expect(samples.get(0)).toEqual({ value: -1.5, channel: 255 });
-		expect(samples.get(1)).toEqual({ value: 1e300, channel: 128 });
-		expect(samples.get(2)).toEqual({ value: 2.25, channel: 7 });
+		expect(scans.get(0)).toEqual({ value: -1.5, channel: 255 });
+		expect(scans.get(1)).toEqual({ value: 1e300, channel: 128 });
+		expect(scans.get(2)).toEqual({ value: 2.25, channel: 7 });
 	});
 
 	it('should carry the methods of a struct that declares them', () => {
 		const Vector = struct(
 			'Vector',
-			{ x: DoublePrecisionFloat, y: DoublePrecisionFloat },
+			{ bearing: DoublePrecisionFloat, range: DoublePrecisionFloat },
 			{
 				length(): number {
-					return Math.hypot(this.x, this.y);
+					return Math.hypot(this.bearing, this.range);
 				},
 			},
 		);
 
 		const vectors = createFixedBufferStorage(Vector, 2);
 
-		vectors.set(1, Vector.from({ x: 3, y: 4 }));
+		vectors.set(1, Vector.from({ bearing: 3, range: 4 }));
 
 		expect(vectors.get(1).length()).toBe(5);
 		expect(vectors.get(0).length()).toBe(0);
 	});
 
 	it('should hold nested structs and decimals', () => {
-		const Price = struct('Price', { amount: Decimal, at: Point });
-		const prices = createFixedBufferStorage(Price, 2);
+		const Bounty = struct('Bounty', { credits: Decimal, at: SensorContact });
+		const bounties = createFixedBufferStorage(Bounty, 2);
 
-		const price = Price.from({
-			amount: Decimal.from('19.99'),
-			at: Point.from({ x: 1, y: 1 }),
+		const bounty = Bounty.from({
+			credits: Decimal.from('19.99'),
+			at: SensorContact.from({ bearing: 1, range: 1 }),
 		});
 
-		prices.set(1, price);
+		bounties.set(1, bounty);
 
-		expect(Price.equals(prices.get(1), price)).toBe(true);
+		expect(Bounty.equals(bounties.get(1), bounty)).toBe(true);
 	});
 
 	it('should refuse a value its element type does not recognise, writing nothing', () => {
-		const points: Storage<Point> = createFixedBufferStorage(Point, 1);
-		const impostor = Object.freeze({ x: 0.1, y: 0 }) as unknown as Point;
+		const points: Storage<SensorContact> = createFixedBufferStorage(SensorContact, 1);
+		const impostor = Object.freeze({ bearing: 0.1, range: 0 }) as unknown as SensorContact;
 
-		points.set(0, Point.from({ x: 5, y: 5 }));
+		points.set(0, SensorContact.from({ bearing: 5, range: 5 }));
 
 		expect(() => {
 			points.set(0, impostor);
 		}).toThrow(
 			coded(
-				new TypeError('FULCRO7004: FixedBufferStorage.set: the value is not a value of Point.'),
-				{ operation: 'FixedBufferStorage.set', element: 'Point' },
+				new TypeError(
+					'FULCRO7004: FixedBufferStorage.set: the value is not a value of SensorContact.',
+				),
+				{ operation: 'FixedBufferStorage.set', element: 'SensorContact' },
 			),
 		);
 
-		expect(points.get(0).x).toBe(5);
+		expect(points.get(0).bearing).toBe(5);
 	});
 
 	it.each([
 		['everything', null],
-		['everything', 'Point'],
+		['everything', 'SensorContact'],
 		// A class is read for its members, as `Decimal` is: one without a layout
 		// lacks that, not everything.
 		[
@@ -159,7 +163,7 @@ describe('createFixedBufferStorage', () => {
 			},
 		],
 	])('should refuse an element type missing %s', (missing, element) => {
-		expect(() => createFixedBufferStorage(element as unknown as typeof Point, 1)).toThrow(
+		expect(() => createFixedBufferStorage(element as unknown as typeof SensorContact, 1)).toThrow(
 			coded(
 				new TypeError(
 					`FULCRO7003: createFixedBufferStorage: expected an element type with a name, layout.size, read, write and is; ${missing} is missing.`,
@@ -193,7 +197,7 @@ describe('createFixedBufferStorage', () => {
 		['BigInteger', BigInteger],
 		['Fraction<SignedInteger<32>>', Fraction(SignedInteger(32))],
 	])('should refuse %s, whose values have no fixed size', (_name, type) => {
-		expect(() => createFixedBufferStorage(type as unknown as typeof Point, 1)).toThrow(
+		expect(() => createFixedBufferStorage(type as unknown as typeof SensorContact, 1)).toThrow(
 			coded(
 				new TypeError(
 					'FULCRO7003: createFixedBufferStorage: expected an element type with a name, layout.size, read, write and is; layout.size is missing.',
@@ -221,14 +225,16 @@ describe('createFixedBufferStorage', () => {
 	});
 
 	it('should infer the struct it stores', () => {
-		expectTypeOf(createFixedBufferStorage(Point, 1)).toEqualTypeOf<Storage<Point>>();
+		expectTypeOf(createFixedBufferStorage(SensorContact, 1)).toEqualTypeOf<
+			Storage<SensorContact>
+		>();
 
-		expectTypeOf(createFixedBufferStorage(Point, 1))
+		expectTypeOf(createFixedBufferStorage(SensorContact, 1))
 			.toHaveProperty('set')
 			.parameter(1)
-			.toEqualTypeOf<Point>();
+			.toEqualTypeOf<SensorContact>();
 
-		expectTypeOf<{ x: number; y: number }>().not.toExtend<Point>();
+		expectTypeOf<{ bearing: number; range: number }>().not.toExtend<SensorContact>();
 
 		expectTypeOf(createFixedBufferStorage(SinglePrecisionFloat, 1)).toEqualTypeOf<
 			Storage<SinglePrecisionFloat>

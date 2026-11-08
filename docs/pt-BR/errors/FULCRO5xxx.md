@@ -47,7 +47,7 @@ O `tsconfig.json` foi encontrado mas não pôde ser lido — JSON inválido, ou 
 
 ```text
 Error: FULCRO5003: The Fulcro transformer refused calls it could not answer at compile time:
-src/tables.ts(4,23): FULCRO4010: constantOf(…) cannot be evaluated at compile time: 'counter' is declared with let or var, so it can change. …
+src/tables.ts(4,23): FULCRO4010: constantOf(…) cannot be evaluated at compile time: 'jumpsPlotted' is declared with let or var, so it can change. …
 ```
 
 Detalhes:

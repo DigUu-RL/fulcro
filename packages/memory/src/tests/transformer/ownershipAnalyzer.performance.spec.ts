@@ -19,8 +19,8 @@ import transformer from '@/src/transformer';
 const UNIT = [
 	'export const unit{n} = (): number => {',
 	'\tconst owner = own(() => createManagedStorage(4, 0));',
-	'\tconst reading = borrow(owner);',
-	'\tconst total = reading.get(0);',
+	'\tconst scan = borrow(owner);',
+	'\tconst total = scan.get(0);',
 	'\tfor (let index = 0; index < 3; index++) borrowMutable(owner).set(index, total);',
 	'\treturn borrow(move(owner)).get(0);',
 	'};',

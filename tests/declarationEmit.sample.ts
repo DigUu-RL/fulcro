@@ -32,7 +32,10 @@ export const decimal = Decimal;
 export const decimalRead = Decimal.read;
 export const decimalLayout = Decimal.layout;
 export const bigInteger = BigInteger;
-export const point = struct('Point', { x: SinglePrecisionFloat, y: SinglePrecisionFloat });
+export const sensorContact = struct('SensorContact', {
+	bearing: SinglePrecisionFloat,
+	range: SinglePrecisionFloat,
+});
 export const matrix = Matrix(SinglePrecisionFloat, 2, 2);
 export const vector = Vector(DoublePrecisionFloat, 3, 1);
 export const fraction = Fraction(SignedInteger(32));

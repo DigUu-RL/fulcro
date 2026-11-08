@@ -7,10 +7,10 @@ import { requireLength } from '@/src/storage/requireLength';
  * array, behind the {@link Storage} contract.
  *
  * ```ts
- * const scores: Storage<number> = createManagedStorage(3, 0);
+ * const bounties: Storage<number> = createManagedStorage(3, 0);
  *
- * scores.set(1, 42);
- * scores.get(1); // 42
+ * bounties.set(1, 25_000); // Chewbacca
+ * bounties.get(1); // 25000
  * ```
  *
  * Any value can be held, of any type, and is held as it is: `get` returns the

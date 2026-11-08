@@ -35,15 +35,40 @@ JavaScript tem um único número, um float binário de 64 bits, e ele é o núme
 errado para a maioria dos valores que um programa guarda:
 
 ```ts
-0.1 + 0.2; // 0.30000000000000004 — um preço que deu errado
-2 ** 53 + 1; // 9007199254740992 — um identificador alterado em silêncio
-const port = 70_000; // nada diz que uma porta tem 16 bits
+0.1 + 0.2; // 0.30000000000000004 — uma recompensa em créditos que deu errado
+2 ** 53 + 1; // 9007199254740992 — o número de série de um clone alterado em silêncio
+const channel = 70_000; // nada diz que um canal de comunicação tem 16 bits
 ```
 
 O primeiro é uma fração decimal guardada em binário. O segundo é um inteiro
 além dos 53 bits que um double guarda com exatidão. O terceiro é uma faixa que
 ninguém escreveu, então nada a verifica. Este pacote dá a cada um desses números
 o nome do que ele é, e o verifica onde ele é criado.
+
+Os mesmos três números, cada um guardado pelo tipo que ele de fato é:
+
+```ts
+import { BigInteger, Decimal, UnsignedInteger } from '@fulcro/types';
+
+// Créditos são decimais por natureza.
+const bounty = Decimal.from('0.1').add(Decimal.from('0.2'));
+
+console.log(bounty.toString()); // '0.3'
+
+// Um número de série além de 2 ** 53 continua exato.
+const serial = BigInteger.add(BigInteger.from(2n ** 53n), BigInteger.from(1n));
+
+console.log(serial); // 9007199254740993n
+
+// Um canal de comunicação tem 16 bits, e diz isso onde é criado.
+const CommChannel = UnsignedInteger(16);
+
+try {
+	CommChannel.from(70_000);
+} catch (error) {
+	console.log((error as Error).message); // 'FULCRO6031: UnsignedInteger<16>.from: 70000 is outside [0, 65535].'
+}
+```
 
 ## Todo tipo tem um valor com o mesmo nome
 
@@ -54,7 +79,7 @@ converte, reconhece e calcula:
 ```ts
 const Int32 = SignedInteger(32);
 
-const port: UnsignedInteger<16> = UnsignedInteger(16).from(8080);
+const channel: UnsignedInteger<16> = UnsignedInteger(16).from(1138);
 const total: SignedInteger<32> = Int32.add(Int32.from(1), Int32.from(2));
 ```
 
@@ -88,15 +113,55 @@ valor **finito**. `minimum` é o valor mais negativo, e não o menor positivo, q
 O `BigInteger` não tem nenhum dos dois: seus valores são tão grandes quanto a
 memória permitir.
 
+Um `sum` só para qualquer tipo numérico — as tripulações de uma frota em
+inteiros de 32 bits, e as leituras de escudo dos seus caças em precisão simples:
+
+```ts
+import { type NumericType, SignedInteger, SinglePrecisionFloat } from '@fulcro/types';
+
+const sum = <T>(type: NumericType<T, unknown>, values: readonly T[], zero: T): T => {
+	return values.reduce((total, value) => type.add(total, value), zero);
+};
+
+const Crew = SignedInteger(32);
+
+const crews = [Crew.from(5_402), Crew.from(4), Crew.from(2)];
+const shields = [SinglePrecisionFloat.from(0.5), SinglePrecisionFloat.from(0.25)];
+
+console.log(sum(Crew, crews, Crew.from(0))); // 5408
+console.log(sum(SinglePrecisionFloat, shields, SinglePrecisionFloat.from(0))); // 0.75
+console.log(Crew.minimum, Crew.maximum); // -2147483648 2147483647
+```
+
 Se você quer só os tipos — para anotar uma interface, por exemplo — importe com
 `import type` e nenhum código é carregado:
 
 ```ts
 import type { SignedInteger } from '@fulcro/types';
 
-interface Packet {
+interface Transmission {
 	readonly length: SignedInteger<32>;
 }
+```
+
+O cabeçalho de mensagem de um retransmissor de comunicações, tipado com os tipos
+do pacote e sem levar nada do código dele:
+
+```ts
+import type { SignedInteger, UnsignedInteger } from '@fulcro/types';
+
+interface Transmission {
+	readonly channel: UnsignedInteger<16>;
+	readonly length: SignedInteger<32>;
+	readonly body: string;
+}
+
+// Os valores chegam já verificados, de onde quer que o retransmissor os tenha criado.
+const describe = (transmission: Transmission): string => {
+	return `channel ${String(transmission.channel)}, ${String(transmission.length)} characters`;
+};
+
+console.log(typeof describe); // 'function' — e nada do @fulcro/types foi carregado para defini-la
 ```
 
 ## Inteiros de largura fixa
@@ -160,6 +225,38 @@ operações de bits `bitwiseAnd`, `bitwiseOr`, `bitwiseXor`, `bitwiseNot`,
 Um `SignedInteger<8>` não é um `SignedInteger<32>`, mesmo que todo valor de um
 caiba no outro: alargar passa por `from`, onde fica visível.
 
+O contador de torpedos de um X-wing, que precisa se recusar a ficar abaixo de
+vazio, ao lado do registrador de checksum de um droide astromecânico, que deve
+dar a volta:
+
+```ts
+import { SignedInteger, UnsignedInteger } from '@fulcro/types';
+
+const Torpedoes = UnsignedInteger(8);
+
+let loaded = Torpedoes.from(2);
+
+loaded = Torpedoes.decrement(loaded);
+loaded = Torpedoes.decrement(loaded);
+
+try {
+	Torpedoes.decrement(loaded); // o Red Five atira uma terceira vez
+} catch (error) {
+	console.log((error as Error).message); // 'FULCRO6031: UnsignedInteger<8>.decrement: -1 is outside [0, 255].'
+}
+
+// O checksum da porta de dados do R2-D2: um registrador de 8 bits que deve dar a volta.
+const Register = UnsignedInteger(8);
+
+const checksum = [...new TextEncoder().encode('Help me, Obi-Wan Kenobi')].reduce(
+	(register, byte) => Register.wrap(register + byte),
+	Register.from(0),
+);
+
+console.log(checksum); // 172
+console.log(SignedInteger(8).wrap(200)); // -56
+```
+
 ## Floats
 
 | Tipo                   | Formato           | Bits significativos | Finito até    |
@@ -202,6 +299,24 @@ porque o próprio `Math.pow` não é corretamente arredondado.
 transformá-lo primeiro em double e depois no formato arredonda duas vezes, e o
 segundo arredondamento pode cair no vizinho errado.
 
+Um computador de mira que informa à cabine em precisão simples, exatamente como
+o seu hardware float32 informaria — e um sensor que satura além do que a meia
+precisão consegue guardar:
+
+```ts
+import { HalfPrecisionFloat, SinglePrecisionFloat } from '@fulcro/types';
+
+const rangeToTarget = SinglePrecisionFloat.from(0.1);
+const correction = SinglePrecisionFloat.from(0.2);
+
+console.log(SinglePrecisionFloat.add(rangeToTarget, correction)); // 0.30000001192092896
+console.log(rangeToTarget + correction); // 0.30000000447034836 — um double que ninguém arredondou
+
+// Um sensor térmico que registra em meia precisão.
+console.log(HalfPrecisionFloat.from(1_200)); // 1200
+console.log(HalfPrecisionFloat.from(65_520)); // Infinity — mais quente do que o formato consegue dizer
+```
+
 ## `BigInteger`
 
 Um inteiro de qualquer tamanho, carregado por um `bigint` — que já é exato em
@@ -221,9 +336,9 @@ Um número decimal de ponto flutuante, para dinheiro e para tudo o que é decima
 por natureza:
 
 ```ts
-const price = Decimal.from('19.99');
+const bounty = Decimal.from('19.99');
 
-price.multiply(Decimal.from(3)).toString(); // '59.97'
+bounty.multiply(Decimal.from(3)).toString(); // '59.97'
 Decimal.from('0.1').add(Decimal.from('0.2')).equals(Decimal.from('0.3')); // true
 ```
 
@@ -279,6 +394,32 @@ Decimal.from('2.345').round(2, 'halfAwayFromZero').toString(); // '2.35'
 Decimal.from('1250').round(-2).toString(); // '1200'
 ```
 
+A Guilda dos Caçadores de Recompensa acertando um contrato em créditos: a
+recompensa dividida em três, a parte da Guilda composta, e cada valor
+arredondado para o livro-caixa:
+
+```ts
+import { Decimal } from '@fulcro/types';
+
+const reward = Decimal.from('100000');
+const hunters = Decimal.from(3);
+
+const share = reward.divide(hunters);
+
+console.log(share.toString()); // '33333.33333333333333333333333333333'
+console.log(share.round(2).toString()); // '33333.33' — o que cada caçador recebe
+console.log(reward.remainder(Decimal.from(7)).toString()); // '5' — exato, sempre
+
+// A Guilda fica com 10 por cento, compostos ao longo de um contrato de dois anos.
+const guildRate = Decimal.from('1.1').power(Decimal.from(2));
+
+console.log(guildRate.toString()); // '1.21'
+console.log(reward.multiply(guildRate).toString()); // '121000'
+
+console.log(Decimal.from('2.345').round(2, 'halfAwayFromZero').toString()); // '2.35'
+console.log(Decimal.from('12345678901234567890').toString()); // '12345678901234567890' — nenhum dígito perdido
+```
+
 ### Modos de arredondamento
 
 | Modo                 | Resolve um valor entre dois vizinhos para       |
@@ -308,6 +449,26 @@ existe para guardar, então ela é recusada duas vezes: o TypeScript rejeita o
 operador em tempo de compilação, e onde os tipos são contornados — JavaScript
 sem tipos, um `any` — a conversão lança `TypeError` em runtime. Escreva
 `one.add(one)`.
+
+Um saldo em créditos entregue a um código que escapou dos tipos:
+
+```ts
+import { Decimal } from '@fulcro/types';
+
+const balance = Decimal.from('2000.50');
+
+// Imagine que isto chegou por um `any`, vindo do firmware sem tipos de um droide.
+const untyped = balance as unknown as number;
+
+try {
+	console.log(untyped + 1);
+} catch (error) {
+	console.log(error instanceof TypeError); // true — a conversão também é recusada em runtime
+}
+
+console.log(`Balance: ${balance} credits`); // 'Balance: 2000.5 credits'
+console.log(balance.add(Decimal.from(1)).toString()); // '2001.5'
+```
 
 ### Valores especiais
 
@@ -365,6 +526,33 @@ Decimal.from('0.1').add(Decimal.from('0.2')).equals(Decimal.from('0.3')); // tru
 Num `Decimal`, `===` compara os dois objetos, não os valores: compare com
 `equals`.
 
+O censo imperial somando os stormtroopers de dois setores — o operador estoura
+em silêncio, o método recusa:
+
+```ts
+import { Decimal, SignedInteger } from '@fulcro/types';
+
+const Census = SignedInteger(32);
+
+const outerRim = Census.from(2_000_000_000);
+const coreWorlds = Census.from(2_000_000_000);
+
+console.log(outerRim + coreWorlds); // 4000000000 — já não é um SignedInteger<32>, e ninguém percebeu
+
+try {
+	Census.add(outerRim, coreWorlds);
+} catch (error) {
+	console.log((error as Error).message);
+	// 'FULCRO6031: SignedInteger<32>.add: 4000000000 is outside [-2147483648, 2147483647].'
+}
+
+console.log(Census.lessThan(coreWorlds, outerRim)); // false
+
+const paid = Decimal.from('0.1').add(Decimal.from('0.2'));
+
+console.log(paid === Decimal.from('0.3'), paid.equals(Decimal.from('0.3'))); // false true
+```
+
 ## Layout
 
 Todo tipo, exceto `BigInteger`, declara seu tamanho e alinhamento em bytes, para
@@ -392,6 +580,17 @@ O layout mora no tipo, nunca num valor: um import só de tipo basta para o
 [Reflexão](./reflect.md#sizeoft-e-alignoft) para como os dois se
 encontram. O descritor também traz os mesmos números em runtime, como `layout`,
 para o código que guarda valores em bytes.
+
+Os mesmos tamanhos, lidos em tempo de compilação a partir dos tipos e em runtime
+a partir dos descritores, para um lançamento no livro da Guilda:
+
+```ts
+import { alignOf, sizeOf } from '@fulcro/reflect';
+import { Decimal, SignedInteger } from '@fulcro/types';
+
+console.log(sizeOf<SignedInteger<32>>(), SignedInteger(32).layout.size); // 4 4
+console.log(alignOf<Decimal>(), Decimal.layout.alignment); // 16 16
+```
 
 ### Guardado em bytes
 
@@ -449,6 +648,34 @@ zeroed(SignedInteger(32), 8); // 32 bytes
 zeroed(Decimal, 2); // 32 bytes
 ```
 
+O registro de lote da instalação de clonagem de Kamino — números de série e
+taxas de crescimento escritos em bytes e lidos de volta, por uma função que
+serve para qualquer tipo com layout fixo:
+
+```ts
+import { Decimal, type FixedLayoutType, SignedInteger } from '@fulcro/types';
+
+const zeroed = <T>(type: FixedLayoutType<T>, count: number): DataView => {
+	return new DataView(new ArrayBuffer(type.layout.size * count));
+};
+
+const Serial = SignedInteger(32);
+const serials = zeroed(Serial, 3);
+
+Serial.write(serials, Serial.layout.size * 2, Serial.from(7567)); // o número do Capitão Rex
+
+console.log(Serial.read(serials, Serial.layout.size * 2)); // 7567
+console.log(Serial.read(serials, 0)); // 0 — toda posição começa em zero
+console.log(serials.byteLength, Serial.layout.encoding); // 12 'Int32'
+
+const growthRates = zeroed(Decimal, 2);
+
+Decimal.write(growthRates, Decimal.layout.size, Decimal.from('2.0'));
+
+console.log(Decimal.read(growthRates, Decimal.layout.size).toString()); // '2' — os clones envelhecem duas vezes mais rápido
+console.log(growthRates.byteLength, Decimal.layout.encoding); // 32 'Decimal128'
+```
+
 ## Structs
 
 Um struct é um **tipo de valor** com layout fixo, construído a partir dos tipos
@@ -458,14 +685,14 @@ com o mesmo nome:
 ```ts
 import { SinglePrecisionFloat, struct, type Struct } from '@fulcro/types';
 
-export const Vector3 = struct('Vector3', {
-	x: SinglePrecisionFloat,
-	y: SinglePrecisionFloat,
-	z: SinglePrecisionFloat,
+export const Starfighter = struct('Starfighter', {
+	shields: SinglePrecisionFloat,
+	hull: SinglePrecisionFloat,
+	speed: SinglePrecisionFloat,
 });
-export type Vector3 = Struct<typeof Vector3>;
+export type Starfighter = Struct<typeof Starfighter>;
 
-const up: Vector3 = Vector3.from({ x: 0, y: 1, z: 0 });
+const fresh: Starfighter = Starfighter.from({ shields: 1, hull: 1, speed: 0.5 });
 ```
 
 O `from` converte cada campo com o `from` do próprio tipo, então `0.1` vira o
@@ -485,12 +712,40 @@ com qualquer struct, como o `NumericType` é para os tipos numéricos.
 | **Tipo de referência** | Aponta para um valor guardado em outro lugar           | `Pointer<T>` e `View<T>`, mais adiante |
 
 Por isso um valor de struct é congelado, e dois deles são comparados pelos
-campos — `Vector3.equals(a, b)` — nunca por `===`, que continua comparando os
-dois objetos. Cada campo compara como o próprio tipo compara: um campo `NaN`
+campos — `Starfighter.equals(a, b)` — nunca por `===`, que continua comparando
+os dois objetos. Cada campo compara como o próprio tipo compara: um campo `NaN`
 torna um valor diferente de si mesmo. Uma struct guardada dentro de outros
-dados — um array de pontos, um map de partículas — é comparada do mesmo jeito
+dados — um array de caças, um map de esquadrões — é comparada do mesmo jeito
 passando o descritor dela ao
 [`createEquals`](./functions.md#suas-próprias-regras-createequals) como regra.
+
+Dois relatórios de estado do Red Five, feitos separadamente e comparados como os
+valores que são:
+
+```ts
+import { SinglePrecisionFloat, type Struct, struct } from '@fulcro/types';
+
+const Starfighter = struct('Starfighter', {
+	shields: SinglePrecisionFloat,
+	hull: SinglePrecisionFloat,
+	speed: SinglePrecisionFloat,
+});
+type Starfighter = Struct<typeof Starfighter>;
+
+const fromR2: Starfighter = Starfighter.from({ shields: 0.6, hull: 1, speed: 0.5 });
+const fromBase: Starfighter = Starfighter.from({ shields: 0.6, hull: 1, speed: 0.5 });
+
+console.log(fromR2.shields); // 0.6000000238418579 — o valor de precisão simples mais próximo
+console.log(fromR2 === fromBase); // false — dois objetos
+console.log(Starfighter.equals(fromR2, fromBase)); // true — o mesmo valor
+console.log(Object.isFrozen(fromR2)); // true
+
+try {
+	(fromR2 as { shields: number }).shields = 1;
+} catch (error) {
+	console.log(error instanceof TypeError); // true — um valor não pode ser remendado no lugar
+}
+```
 
 ### Métodos
 
@@ -498,25 +753,25 @@ Um terceiro argumento dá a todo valor do struct os seus métodos, com `this`
 sendo o valor:
 
 ```ts
-export const Vector3 = struct(
-	'Vector3',
-	{ x: SinglePrecisionFloat, y: SinglePrecisionFloat, z: SinglePrecisionFloat },
+export const Starfighter = struct(
+	'Starfighter',
+	{ shields: SinglePrecisionFloat, hull: SinglePrecisionFloat, speed: SinglePrecisionFloat },
 	{
-		length() {
-			return Math.hypot(this.x, this.y, this.z);
+		integrity() {
+			return (this.shields + this.hull) / 2;
 		},
-		scale(factor: number) {
-			return Vector3.from({
-				x: this.x * factor,
-				y: this.y * factor,
-				z: this.z * factor,
+		hit(damage: number) {
+			return Starfighter.from({
+				shields: Math.max(0, this.shields - damage),
+				hull: this.shields > damage ? this.hull : Math.max(0, this.hull - (damage - this.shields)),
+				speed: this.speed,
 			});
 		},
 	},
 );
-export type Vector3 = Struct<typeof Vector3>; // inclui length() e scale()
+export type Starfighter = Struct<typeof Starfighter>; // inclui integrity() e hit()
 
-Vector3.from({ x: 3, y: 4, z: 0 }).length(); // 5
+Starfighter.from({ shields: 0.5, hull: 1, speed: 0.5 }).integrity(); // 0.75
 ```
 
 Os métodos ficam num único protótipo compartilhado por todos os valores, e não
@@ -526,7 +781,7 @@ seus métodos como um criado pelo `from`. Escreva-os como métodos, não como ar
 functions, para que `this` seja o valor.
 
 Um valor continua congelado, então um método não o altera: ele devolve um valor
-novo, como o `scale` faz. Um método com o nome de um campo, de um índice de
+novo, como o `hit` faz. Um método com o nome de um campo, de um índice de
 array ou `~layout`, ou que não seja uma função, é um `TypeError` na declaração
 do struct.
 
@@ -537,8 +792,46 @@ sempre.
 
 Um valor que atravessa a fronteira de um worker ou passa por JSON perde os
 métodos: o structured clone por trás do `postMessage` não preserva protótipos,
-então o que chega são só os campos. Recrie-o com `Vector3.from(value)` do outro
-lado.
+então o que chega são só os campos. Recrie-o com `Starfighter.from(value)` do
+outro lado.
+
+O Red Five levando tiros na trincheira, cada tiro um valor novo, e um relatório
+que atravessou o link de comunicação recriado como um valor:
+
+```ts
+import { SinglePrecisionFloat, type Struct, struct } from '@fulcro/types';
+
+const Starfighter = struct(
+	'Starfighter',
+	{ shields: SinglePrecisionFloat, hull: SinglePrecisionFloat, speed: SinglePrecisionFloat },
+	{
+		integrity() {
+			return (this.shields + this.hull) / 2;
+		},
+		hit(damage: number) {
+			return Starfighter.from({
+				shields: Math.max(0, this.shields - damage),
+				hull: this.shields > damage ? this.hull : Math.max(0, this.hull - (damage - this.shields)),
+				speed: this.speed,
+			});
+		},
+	},
+);
+type Starfighter = Struct<typeof Starfighter>;
+
+const redFive: Starfighter = Starfighter.from({ shields: 0.5, hull: 1, speed: 0.5 });
+const afterTheTurbolasers = redFive.hit(0.75);
+
+console.log(redFive.integrity()); // 0.75 — sem mudança pelo tiro
+console.log(afterTheTurbolasers.shields, afterTheTurbolasers.hull); // 0 0.75
+console.log(afterTheTurbolasers.integrity()); // 0.375
+
+// Enviado a Yavin como JSON, chega só como campos.
+const received: unknown = JSON.parse(JSON.stringify(afterTheTurbolasers));
+
+console.log(Starfighter.is(received)); // false — sem métodos, então não é um Starfighter
+console.log(Starfighter.from(received as Starfighter).integrity()); // 0.375 — recriado deste lado
+```
 
 ### Onde os campos ficam
 
@@ -548,14 +841,14 @@ então nenhum campo precisa de padding antes dele; só o fim do struct recebe
 padding, até o alinhamento dele, para que o próximo num array comece alinhado.
 
 ```ts
-const Sample = struct('Sample', {
-	flag: UnsignedInteger(8), // offset 10
-	weight: DoublePrecisionFloat, // offset 0
-	count: UnsignedInteger(16), // offset 8
+const SensorReading = struct('SensorReading', {
+	alert: UnsignedInteger(8), // offset 10
+	distance: DoublePrecisionFloat, // offset 0
+	contacts: UnsignedInteger(16), // offset 8
 });
 
-Sample.layout.size; // 16: onze bytes, com padding até o alinhamento 8
-sizeOf<Struct<typeof Sample>>(); // 16, em tempo de compilação
+SensorReading.layout.size; // 16: onze bytes, com padding até o alinhamento 8
+sizeOf<Struct<typeof SensorReading>>(); // 16, em tempo de compilação
 ```
 
 Os campos não ficam na ordem de declaração com padding entre eles. Esta ordem é
@@ -571,8 +864,8 @@ As mesmas respostas existem em tempo de compilação, pelo
 do tipo:
 
 ```ts
-offsetOf<Struct<typeof Sample>>('flag'); // 10
-layoutOf<Struct<typeof Sample>>(); // igual a Sample.layout
+offsetOf<Struct<typeof SensorReading>>('alert'); // 10
+layoutOf<Struct<typeof SensorReading>>(); // igual a SensorReading.layout
 ```
 
 O tipo de um valor de struct lista, no `'~layout'`, o tamanho e o alinhamento
@@ -580,18 +873,42 @@ de cada campo, na ordem de declaração, mas não o offset — um offset depende
 dessa ordem, que um tipo não promete. O transformer posiciona os campos pela
 regra acima, e um teste garante que a resposta dele é a mesma do `layout`.
 
+As leituras do sensor de longo alcance da Base Echo, com o layout calculado em
+runtime e em tempo de compilação, chegando à mesma resposta:
+
+```ts
+import { layoutOf, offsetOf, sizeOf } from '@fulcro/reflect';
+import { DoublePrecisionFloat, type Struct, struct, UnsignedInteger } from '@fulcro/types';
+
+const SensorReading = struct('SensorReading', {
+	alert: UnsignedInteger(8),
+	distance: DoublePrecisionFloat,
+	contacts: UnsignedInteger(16),
+});
+type SensorReading = Struct<typeof SensorReading>;
+
+console.log(SensorReading.layout.fields.distance.offset); // 0
+console.log(SensorReading.layout.fields.contacts.offset); // 8
+console.log(SensorReading.layout.fields.alert.offset); // 10
+console.log(SensorReading.layout.size); // 16
+
+console.log(sizeOf<SensorReading>()); // 16 — só a partir do tipo
+console.log(offsetOf<SensorReading>('alert')); // 10
+console.log(layoutOf<SensorReading>().size === SensorReading.layout.size); // true
+```
+
 ### Bytes
 
 Um valor pode ser escrito num `DataView` e lido de volta, que é como um struct
-é guardado sem um objeto por valor — um buffer de mil vetores ocupa doze mil
+é guardado sem um objeto por valor — um buffer de mil caças ocupa doze mil
 bytes:
 
 ```ts
-const buffer = new ArrayBuffer(Vector3.layout.size * 1000);
+const buffer = new ArrayBuffer(Starfighter.layout.size * 1000);
 const view = new DataView(buffer);
 
-Vector3.write(view, Vector3.layout.size * 7, up);
-Vector3.read(view, Vector3.layout.size * 7); // { x: 0, y: 1, z: 0 }
+Starfighter.write(view, Starfighter.layout.size * 7, fresh);
+Starfighter.read(view, Starfighter.layout.size * 7); // { shields: 1, hull: 1, speed: 0.5 }
 ```
 
 Todo valor é little-endian, em qualquer plataforma. Inteiros são complemento de
@@ -602,6 +919,41 @@ lançado antes de qualquer byte ser escrito.
 
 O `read` cria um objeto novo a cada chamada: guardar um valor não custa um
 objeto, segurar um ainda custa.
+
+O estado de todos os caças de uma frota de mil naves, guardado em bytes em vez
+de em mil objetos:
+
+```ts
+import { SinglePrecisionFloat, type Struct, struct } from '@fulcro/types';
+
+const Starfighter = struct('Starfighter', {
+	shields: SinglePrecisionFloat,
+	hull: SinglePrecisionFloat,
+	speed: SinglePrecisionFloat,
+});
+type Starfighter = Struct<typeof Starfighter>;
+
+const fleet = new DataView(new ArrayBuffer(Starfighter.layout.size * 1_000));
+
+Starfighter.write(
+	fleet,
+	Starfighter.layout.size * 7,
+	Starfighter.from({ shields: 1, hull: 1, speed: 0.5 }),
+);
+
+const seventh = Starfighter.read(fleet, Starfighter.layout.size * 7);
+const untouched = Starfighter.read(fleet, Starfighter.layout.size * 8);
+
+console.log(fleet.byteLength); // 12000
+console.log(seventh); // { shields: 1, hull: 1, speed: 0.5 }
+console.log(untouched); // { shields: 0, hull: 0, speed: 0 } — zerado até ser escrito
+
+try {
+	Starfighter.read(fleet, fleet.byteLength - 4);
+} catch (error) {
+	console.log(error instanceof RangeError); // true — recusado antes de qualquer byte ser lido
+}
+```
 
 ## Matemática
 
@@ -617,9 +969,9 @@ fazendo a aritmética pelo descritor desse tipo. Uma matriz de
 arredonda; uma de `Decimal` é exata onde um double não é:
 
 ```ts
-const Money = Matrix(Decimal, 1, 2);
+const Credits = Matrix(Decimal, 1, 2);
 
-Money.add(Money.from([[0.1, 0.2]]), Money.from([[0.2, 0.1]])).map(String);
+Credits.add(Credits.from([[0.1, 0.2]]), Credits.from([[0.2, 0.1]])).map(String);
 // ['0.3', '0.3']
 ```
 
@@ -631,20 +983,36 @@ construído sobre ele também declara, com os componentes em sequência; ele pod
 então ser campo de uma [struct](#structs), e o
 [`sizeOf`](./reflect.md#sizeoft-e-alignoft) o lê do tipo.
 
+O faturamento de duas cantinas, em créditos e num livro de decimais, somado sem
+perder uma fração de crédito:
+
+```ts
+import { Decimal, Matrix } from '@fulcro/types';
+
+// Uma linha: a mesa de sabacc e o bar.
+const Takings = Matrix(Decimal, 1, 2);
+
+const mosEisley = Takings.from([[0.1, 0.2]]);
+const cantoBight = Takings.from([[0.2, 0.1]]);
+
+console.log(Takings.add(mosEisley, cantoBight).map(String)); // ['0.3', '0.3']
+console.log([0.1 + 0.2, 0.2 + 0.1]); // [0.30000000000000004, 0.30000000000000004] — o que números comuns fazem disso
+```
+
 ### Matrizes e vetores
 
 ```ts
 const Transform = Matrix(SinglePrecisionFloat, 3, 4);
 const Point = Vector(SinglePrecisionFloat, 4, 1);
 
-const shift = Transform.from([
+const jump = Transform.from([
 	[1, 0, 0, 5],
 	[0, 1, 0, 0],
 	[0, 0, 1, 0],
 ]);
-const point = Point.from([1, 2, 3, 1]);
+const falcon = Point.from([1, 2, 3, 1]);
 
-Transform.multiply(shift, point); // [6, 2, 3] — uma Matrix<SinglePrecisionFloat, 3, 1>
+Transform.multiply(jump, falcon); // [6, 2, 3] — uma Matrix<SinglePrecisionFloat, 3, 1>
 ```
 
 As dimensões são parâmetros de tipo, nunca parte de um nome: não existe
@@ -655,7 +1023,7 @@ aonde a matriz da sua forma vai.
 As formas são checadas pelo compilador, sem plugin nenhum:
 
 ```ts
-Transform.multiply(shift, shift);
+Transform.multiply(jump, jump);
 // Cannot multiply Matrix<T, 3, 4> by Matrix<T, 3, 4>. Expected a matrix with 4 rows.
 
 Transform.identity(); // erro: só uma matriz quadrada tem identidade
@@ -671,9 +1039,9 @@ indexa, espalha e serializa como os números que contém; `rows` e `columns`
 ficam nele sem ser listados:
 
 ```ts
-shift[3]; // 5 — linha 0, coluna 3
-[shift.rows, shift.columns]; // [3, 4]
-JSON.stringify(point); // '[1,2,3,1]'
+jump[3]; // 5 — linha 0, coluna 3
+[jump.rows, jump.columns]; // [3, 4]
+JSON.stringify(falcon); // '[1,2,3,1]'
 ```
 
 | Operação                | O que faz                                                          |
@@ -692,15 +1060,47 @@ exatamente R·C·K multiplicações e R·(C−1)·K adições — nenhum zero co
 para começar uma soma, nada calculado duas vezes — e a suíte de performance as
 conta.
 
+O computador de navegação da Falcon movendo a nave cinco unidades ao longo da
+rota hiperespacial, e conferindo o quanto dois rumos concordam:
+
+```ts
+import { Matrix, SinglePrecisionFloat, Vector } from '@fulcro/types';
+
+// Uma translação de cinco unidades em x, escrita como uma transformação afim.
+const Transform = Matrix(SinglePrecisionFloat, 3, 4);
+const Position = Vector(SinglePrecisionFloat, 4, 1);
+const Heading = Vector(SinglePrecisionFloat, 3, 1);
+
+const jump = Transform.from([
+	[1, 0, 0, 5],
+	[0, 1, 0, 0],
+	[0, 0, 1, 0],
+]);
+
+const falcon = Position.from([1, 2, 3, 1]);
+
+const arrived = Transform.multiply(jump, falcon);
+
+console.log([...arrived]); // [6, 2, 3]
+console.log([arrived.rows, arrived.columns]); // [3, 1]
+console.log(jump[3], JSON.stringify(falcon)); // 5 '[1,2,3,1]'
+
+const toKessel = Heading.from([1, 0, 0]);
+const toTheMaw = Heading.from([0, 1, 0]);
+
+console.log(Heading.dot(toKessel, toTheMaw)); // 0 — os dois rumos estão em ângulo reto
+console.log([...Transform.transpose(jump)].length); // 12
+```
+
 ### Frações
 
 ```ts
-const Ratio = Fraction(SignedInteger(32));
-const third = Ratio.from({ numerator: 1, denominator: 3 });
+const Spoils = Fraction(SignedInteger(32));
+const third = Spoils.from({ numerator: 1, denominator: 3 });
 
-Ratio.add(third, third); // { numerator: 2, denominator: 3 }
-Ratio.from({ numerator: 6, denominator: -4 }); // { numerator: -3, denominator: 2 }
-Ratio.lessThan(third, Ratio.from(0)); // false
+Spoils.add(third, third); // { numerator: 2, denominator: 3 }
+Spoils.from({ numerator: 6, denominator: -4 }); // { numerator: -3, denominator: 2 }
+Spoils.lessThan(third, Spoils.from(0)); // false
 ```
 
 Um racional exato sobre um tipo inteiro: `SignedInteger(n)`,
@@ -716,6 +1116,24 @@ pequeno quanto o resultado permite, mas um que saia da faixa do inteiro ainda
 lança o `RangeError` dele. Sobre `BigInteger` nada estoura. `power` recebe um
 expoente inteiro, já que uma potência fracionária de um racional raramente é
 racional.
+
+Uma tripulação de contrabandistas dividindo um carregamento de coaxium — partes
+exatas, sejam quais forem os denominadores:
+
+```ts
+import { Fraction, SignedInteger } from '@fulcro/types';
+
+const Share = Fraction(SignedInteger(32));
+
+const han = Share.from({ numerator: 1, denominator: 2 });
+const chewie = Share.from({ numerator: 1, denominator: 3 });
+const lando = Share.subtract(Share.subtract(Share.from(1), han), chewie);
+
+console.log(lando); // { numerator: 1, denominator: 6 }
+console.log(Share.add(han, chewie)); // { numerator: 5, denominator: 6 }
+console.log(Share.from({ numerator: 6, denominator: -4 })); // { numerator: -3, denominator: 2 }
+console.log(Share.greaterThan(han, chewie)); // true — o Han fica com a parte maior, como sempre
+```
 
 ### Números complexos e quatérnios
 
@@ -740,3 +1158,27 @@ multiplica pelo conjugado do divisor sobre o quadrado da sua norma. Não há
 `lessThan`: nenhum dos dois tem uma ordem que concorde com a sua aritmética.
 Dividir por zero faz o que a divisão do tipo dos componentes faz — `NaN` para
 um float, um erro para um inteiro.
+
+Um X-wing girando para entrar na trincheira: duas manobras em eixos diferentes,
+aplicadas em qualquer ordem, e a fase de um escudo defletor como número
+complexo:
+
+```ts
+import { ComplexNumber, DoublePrecisionFloat, Quaternion } from '@fulcro/types';
+
+const Rotation = Quaternion(DoublePrecisionFloat);
+
+// Os quatérnios unitários i e j: meias-voltas nos eixos x e y.
+const roll = Rotation.from({ w: 0, x: 1, y: 0, z: 0 });
+const pitch = Rotation.from({ w: 0, x: 0, y: 1, z: 0 });
+
+console.log(Rotation.multiply(roll, pitch)); // { w: 0, x: 0, y: 0, z: 1 }
+console.log(Rotation.multiply(pitch, roll)); // { w: 0, x: 0, y: 0, z: -1 } — a ordem das manobras importa
+console.log(Rotation.conjugate(roll)); // { w: 0, x: -1, y: -0, z: -0 }
+
+const Phase = ComplexNumber(DoublePrecisionFloat);
+const quarterTurn = Phase.from({ real: 0, imaginary: 1 });
+
+console.log(Phase.multiply(quarterTurn, quarterTurn)); // { real: -1, imaginary: 0 } — dois quartos de volta invertem o escudo
+console.log(Phase.from(2)); // { real: 2, imaginary: 0 }
+```

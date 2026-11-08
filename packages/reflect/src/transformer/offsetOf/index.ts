@@ -12,7 +12,7 @@ import { type PlacedField, readLayout } from '@/src/transformer/layout';
  *
  * ```ts
  * // written                        // emitted
- * offsetOf<Vector3>('y')            4
+ * offsetOf<Starfighter>('hull')     4
  * ```
  *
  * Declines — leaving the call to throw — when the field is not written as a

@@ -328,7 +328,7 @@ The report is verified when each row survives all four:
   `npm run typecheck` or a named Vitest project this run. A check that did not
   run appears under `Not audited` with its reason, never with an inferred
   result.
-- **The consequence is concrete.** "A consumer calling `defaultOf<Order>()`
+- **The consequence is concrete.** "A consumer calling `defaultOf<PreflightChecklist>()`
   reaches the runtime fallback, which throws, because the transformer no longer
   traces the call across the package boundary" — not "recognition may be
   affected".

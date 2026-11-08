@@ -40,18 +40,18 @@ describe('Owned[Symbol.dispose], counted', () => {
 
 	it('should refuse every access afterwards without reaching the storage', () => {
 		const { storage, counts } = countedStorage(VOLUME);
-		let reading: Borrowed<number> | undefined;
+		let scan: Borrowed<number> | undefined;
 		let refused = 0;
 
 		{
 			using owner = own(() => storage);
 
-			reading = borrow(owner);
+			scan = borrow(owner);
 		}
 
 		for (let index = 0; index < REFUSALS; index++) {
 			try {
-				reading.get(index);
+				scan.get(index);
 			} catch (error) {
 				if ((error as { code?: unknown }).code === 'FULCRO7024') refused++;
 			}
@@ -66,9 +66,9 @@ describe('Owned[Symbol.dispose], counted', () => {
 
 		{
 			using owner = own(() => storage);
-			const reading: Borrowed<number> = borrow(owner);
+			const scan: Borrowed<number> = borrow(owner);
 
-			for (let index = 0; index < VOLUME; index++) reading.get(index);
+			for (let index = 0; index < VOLUME; index++) scan.get(index);
 		}
 
 		expect(counts).toEqual({ reads: VOLUME, writes: 0 });

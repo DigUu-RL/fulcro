@@ -4,8 +4,9 @@ import { createError } from '@fulcro/errors';
  * The value {@link defaultOf} builds for T: a T itself.
  *
  * Spelled as a conditional rather than as T so that the type the value is
- * going to is still where T is inferred from — const order: Order =
- * defaultOf() reads Order — while the signature says what the call returns
+ * going to is still where T is inferred from — const checklist:
+ * PreflightChecklist = defaultOf() reads PreflightChecklist — while the
+ * signature says what the call returns
  * in terms of what it was asked for.
  *
  * @template T Type whose default value is produced.
@@ -18,19 +19,19 @@ export type Defaulted<T> = T extends unknown ? T : never;
  * placeholder such as `null`.
  *
  * ```ts
- * interface Order {
- * 	id: number;
- * 	customer: { name: string; active: boolean };
- * 	items: string[];
+ * interface PreflightChecklist {
+ * 	torpedoes: number;
+ * 	pilot: { callSign: string; cleared: boolean };
+ * 	astromechs: string[];
  * 	note?: string;
  * }
  *
- * defaultOf<Order>();
- * // { id: 0, customer: { name: '', active: false }, items: [] }
+ * defaultOf<PreflightChecklist>();
+ * // { torpedoes: 0, pilot: { callSign: '', cleared: false }, astromechs: [] }
  *
  * defaultOf<string>(); // ''
  * defaultOf<number>(); // 0
- * defaultOf<'dark' | 'light'>(); // 'dark'
+ * defaultOf<'light side' | 'dark side'>(); // 'light side'
  * ```
  *
  * The rule behind every case is a single one: **the result is always a valid

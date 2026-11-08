@@ -153,7 +153,35 @@ The proposal is ordered by default, because it is the one that composes: a
 `pairwise` further down are pairing. Completion order is available explicitly:
 
 ```ts
-selectAwait(fetchUser, { concurrency: 8, ordered: false });
+selectAwait(fetchPilotRecord, { concurrency: 8, ordered: false });
+```
+
+As built, with three jumps of different lengths listed both ways:
+
+```ts
+import { AsyncSequenceCollection } from '@fulcro/collections/async';
+
+const jumpMilliseconds = new Map([
+	['Millennium Falcon', 10],
+	['Ghost', 60],
+	['Razor Crest', 30],
+]);
+
+const jumpToLightspeed = async (ship: string): Promise<string> => {
+	await new Promise((resolve) => setTimeout(resolve, jumpMilliseconds.get(ship)));
+
+	return ship;
+};
+
+const fleet = AsyncSequenceCollection.from([...jumpMilliseconds.keys()]);
+
+console.log(await fleet.selectAwait(jumpToLightspeed, { concurrency: 3 }).toArray());
+// ['Millennium Falcon', 'Ghost', 'Razor Crest'] — ordered, the default
+
+console.log(
+	await fleet.selectAwait(jumpToLightspeed, { concurrency: 3, ordered: false }).toArray(),
+);
+// ['Millennium Falcon', 'Razor Crest', 'Ghost'] — by completion
 ```
 
 ### Failure stops the sequence
@@ -167,8 +195,8 @@ Collecting failures instead of stopping is already expressible without a second
 mode, by composing with the `Result` type from `@fulcro/functions`:
 
 ```ts
-const outcomes = await source
-	.selectAwait((id) => tryCatch(() => load(id)), { concurrency: 8 })
+const outcomes = await callSigns
+	.selectAwait((callSign) => tryCatch(() => loadPilot(callSign)), { concurrency: 8 })
 	.toArray();
 
 const [loaded, failed] = SequenceCollection.from(outcomes).partition(
@@ -178,6 +206,43 @@ const [loaded, failed] = SequenceCollection.from(outcomes).partition(
 
 That is a good sign about both designs, and it is worth documenting as the
 intended path rather than adding a `settled: true` flag that would duplicate it.
+
+As built — a roster where one call sign is not on file, and the rest load
+anyway:
+
+```ts
+import { SequenceCollection } from '@fulcro/collections';
+import { AsyncSequenceCollection } from '@fulcro/collections/async';
+import { tryCatch } from '@fulcro/functions';
+
+const pilots = new Map([
+	['Red Two', 'Wedge Antilles'],
+	['Red Five', 'Luke Skywalker'],
+]);
+
+const loadPilot = async (callSign: string): Promise<string> => {
+	await new Promise((resolve) => setTimeout(resolve, 5));
+
+	const name = pilots.get(callSign);
+
+	if (name === undefined) throw new Error(`${callSign} is not on file`);
+
+	return name;
+};
+
+const callSigns = AsyncSequenceCollection.from(['Red Two', 'Red Six', 'Red Five']);
+
+const outcomes = await callSigns
+	.selectAwait((callSign) => tryCatch(() => loadPilot(callSign)), { concurrency: 8 })
+	.toArray();
+
+const [loaded, failed] = SequenceCollection.from(outcomes).partition(
+	(outcome) => outcome.error === null,
+);
+
+console.log(loaded.select((outcome) => outcome.value).toArray()); // ['Wedge Antilles', 'Luke Skywalker']
+console.log(failed.count()); // 1
+```
 
 ### Cancellation
 
@@ -189,9 +254,33 @@ const controller = new AbortController();
 
 setTimeout(() => controller.abort(), 5_000);
 
-const users = await source
-	.selectAwait(load, { concurrency: 8 })
+const roster = await callSigns
+	.selectAwait(loadPilot, { concurrency: 8 })
 	.toArray({ signal: controller.signal });
+```
+
+As built — a roster too slow to wait for, abandoned at the deadline:
+
+```ts
+import { AsyncSequenceCollection } from '@fulcro/collections/async';
+
+const loadPilot = async (callSign: string): Promise<string> => {
+	await new Promise((resolve) => setTimeout(resolve, 1_000));
+
+	return `${callSign}: on file`;
+};
+
+const controller = new AbortController();
+
+setTimeout(() => controller.abort(new Error('The fleet jumps without them')), 20);
+
+try {
+	await AsyncSequenceCollection.from(['Gold Leader', 'Green Leader'])
+		.selectAwait(loadPilot, { concurrency: 8 })
+		.toArray({ signal: controller.signal });
+} catch (reason) {
+	console.log((reason as Error).message); // 'The fleet jumps without them'
+}
 ```
 
 **What abort actually does, and what it cannot.** A promise has no cancel — the
@@ -212,11 +301,53 @@ with the controller they built:
 ```ts
 const controller = new AbortController();
 
-await source
-	.selectAwait((id) => fetch(`/users/${id}`, { signal: controller.signal }), {
-		concurrency: 8,
-	})
+await callSigns
+	.selectAwait(
+		(callSign) =>
+			fetch(`https://archives.rebellion.example/pilots/${callSign}`, { signal: controller.signal }),
+		{
+			concurrency: 8,
+		},
+	)
 	.toArray({ signal: controller.signal });
+```
+
+As built — work that takes the controller's signal, and stops with it:
+
+```ts
+import { AsyncSequenceCollection } from '@fulcro/collections/async';
+
+const requestsStopped: string[] = [];
+
+const requestPilotFile = (callSign: string, signal: AbortSignal): Promise<string> => {
+	return new Promise((resolve, reject) => {
+		const transfer = setTimeout(() => resolve(`${callSign}: on file`), 1_000);
+
+		signal.addEventListener(
+			'abort',
+			() => {
+				clearTimeout(transfer);
+				requestsStopped.push(callSign);
+				reject(signal.reason);
+			},
+			{ once: true },
+		);
+	});
+};
+
+const controller = new AbortController();
+
+setTimeout(() => controller.abort(new Error('Recalled to Home One')), 20);
+
+try {
+	await AsyncSequenceCollection.from(['Gold Leader', 'Green Leader'])
+		.selectAwait((callSign) => requestPilotFile(callSign, controller.signal), { concurrency: 8 })
+		.toArray({ signal: controller.signal });
+} catch (reason) {
+	console.log((reason as Error).message); // 'Recalled to Home One'
+}
+
+console.log(requestsStopped); // ['Gold Leader', 'Green Leader'] — both requests stopped mid-flight
 ```
 
 **It goes on the terminal**, not on the operators and not on `from`. Cancelling
@@ -252,13 +383,42 @@ are read:
 
 ```ts
 // browser
-const worker = new Worker(url, { type: 'module' });
-worker.addEventListener('message', handler);
+const worker = new Worker(relayUrl, { type: 'module' });
+worker.addEventListener('message', receiveTransmission);
 
 // node
 import { Worker } from 'node:worker_threads';
-const worker = new Worker(url);
-worker.on('message', handler);
+const worker = new Worker(relayUrl);
+worker.on('message', receiveTransmission);
+```
+
+The Node half on its own — a relay thread that answers one transmission and
+exits:
+
+```js
+// echo-base-relay.mjs
+import { parentPort } from 'node:worker_threads';
+
+parentPort.on('message', (transmission) => {
+	parentPort.postMessage(`Echo Base acknowledges: ${transmission}`);
+	parentPort.close();
+});
+```
+
+```ts
+import { Worker } from 'node:worker_threads';
+
+const relayUrl = new URL('./echo-base-relay.mjs', import.meta.url);
+const worker = new Worker(relayUrl);
+
+const reply = await new Promise<string>((resolve) => {
+	worker.on('message', (message: string) => resolve(message));
+	worker.postMessage('Imperial walkers on the north ridge');
+});
+
+console.log(reply); // 'Echo Base acknowledges: Imperial walkers on the north ridge'
+
+await worker.terminate();
 ```
 
 That is a thin adapter behind one interface — spawn, post, receive, terminate —
@@ -272,12 +432,13 @@ The obvious API is the one that cannot work:
 
 ```ts
 // Not possible.
-sequence.selectParallel((row) => expensiveParse(row), { workers: 4 });
+sequence.selectParallel((transmission) => crackImperialCipher(transmission), { workers: 4 });
 ```
 
 A worker is a separate JavaScript realm. A function passed to it has to be
-serialised, and a closure's captured scope is not serialisable — `expensiveParse`
-and everything it refers to exist only in the calling realm. Libraries that
+serialised, and a closure's captured scope is not serialisable —
+`crackImperialCipher` and everything it refers to exist only in the calling
+realm. Libraries that
 appear to support this either stringify the function and lose its scope silently,
 or spawn a worker that re-imports the whole calling module and hope it has no
 side effects.
@@ -286,7 +447,7 @@ The honest API names the work instead of capturing it:
 
 ```ts
 sequence.selectParallel(
-	{ module: new URL('./parse.js', import.meta.url), export: 'parseRow' },
+	{ module: new URL('./decrypt-task.mjs', import.meta.url), export: 'decryptTransmission' },
 	{ workers: 4 },
 );
 ```
@@ -294,6 +455,43 @@ sequence.selectParallel(
 The worker imports that module and calls that export. The function is a module
 boundary, which is a thing that genuinely crosses realms, and nothing is
 pretending otherwise.
+
+`selectParallel` itself was never built: the same design shipped as
+[a worker pool](./parallelism.md), which names the work exactly this way. The
+task module the workers load, and the pool that runs it:
+
+```js
+// decrypt-task.mjs
+export const decryptTransmission = ({ from, cipher }) => {
+	let key = 0;
+
+	for (let round = 0; round < 2_000_000; round++) key = (key * 31 + round) % 1_000_003;
+
+	return `${from}: ${[...cipher].reverse().join('')} (key ${key})`;
+};
+```
+
+```ts
+import { createWorkerPool } from '@fulcro/parallel';
+
+interface Transmission {
+	from: string;
+	cipher: string;
+}
+
+await using pool = createWorkerPool<Transmission, string>({
+	module: new URL('./decrypt-task.mjs', import.meta.url),
+	export: 'decryptTransmission',
+	workers: 4,
+});
+
+const decrypted = await pool.map([
+	{ from: 'Scarif', cipher: 'trop tsuahxe' },
+	{ from: 'Eadu', cipher: 'osrE nelaG' },
+]);
+
+console.log(decrypted); // ['Scarif: exhaust port (key 235197)', 'Eadu: Galen Erso (key 235197)']
+```
 
 `new URL(…, import.meta.url)` is also the form that survives bundling: it is the
 shape Vite, Rollup, webpack and esbuild all recognise as a worker entry and

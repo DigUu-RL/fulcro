@@ -34,7 +34,7 @@
 		{
 			"id": "what-does-it-cost",
 			"kind": "negative",
-			"prompt": "How much does groupBy cost over a hundred thousand orders?",
+			"prompt": "How much does groupBy cost over a hundred thousand docking records?",
 			"expect": {
 				"invokes": false,
 				"output": "The benchmark skill, which measures a behaviour against a comparator inside one run. There is no earlier version in this question, and a comparison needs two points in the history."

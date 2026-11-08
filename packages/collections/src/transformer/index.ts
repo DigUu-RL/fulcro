@@ -17,8 +17,8 @@ export type { TransformerOptions } from '@fulcro/transform-core';
  * type instead:
  *
  * ```ts
- * values.ofType<string>(); // filters and narrows to Sequence<string>
- * values.cast<Admin>(); // throws on the first element that is not one
+ * fragments.ofType<string>(); // filters and narrows to Sequence<string>
+ * hangar.cast<Starship>(); // throws on the first element that is not one
  * ```
  *
  * It is **optional**, and differs from `@fulcro/reflect`'s in that respect:

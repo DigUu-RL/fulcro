@@ -7,10 +7,10 @@
  * reaches it without that code being touched.
  *
  * ```ts
- * const total = (prices: Storage<number>): number => {
+ * const totalCredits = (bounties: Storage<number>): number => {
  * 	let sum = 0;
  *
- * 	for (let index = 0; index < prices.length; index++) sum += prices.get(index);
+ * 	for (let index = 0; index < bounties.length; index++) sum += bounties.get(index);
  *
  * 	return sum;
  * };

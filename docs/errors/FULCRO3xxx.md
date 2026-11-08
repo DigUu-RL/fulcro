@@ -13,7 +13,7 @@ text under a code that says where it happened.
 ## FULCRO3001
 
 ```text
-Error: FULCRO3001: file:///app/work.mjs has no callable export named "resize".
+Error: FULCRO3001: file:///app/decrypt-task.mjs has no callable export named "crackCipher".
 ```
 
 Details:
@@ -76,7 +76,7 @@ word, after the code.
 
 Check the `module` URL — it is resolved inside the worker, so a relative path
 is resolved against the worker script, not against your file. Build it with
-`new URL('./work.mjs', import.meta.url)`.
+`new URL('./decrypt-task.mjs', import.meta.url)`.
 
 ## FULCRO3005
 

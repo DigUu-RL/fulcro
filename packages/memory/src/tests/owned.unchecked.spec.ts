@@ -17,11 +17,11 @@ describe('Owned[Symbol.dispose], unchecked', () => {
 	it('should do nothing to an owner already moved from', () => {
 		const first: Owned<number> = own(() => createManagedStorage(1, 3));
 		const second: Owned<number> = move(first);
-		const reading = borrow(second);
+		const scan = borrow(second);
 
 		first[Symbol.dispose]();
 
-		expect(reading.get(0)).toBe(3);
+		expect(scan.get(0)).toBe(3);
 		expect(borrow(second).get(0)).toBe(3);
 	});
 

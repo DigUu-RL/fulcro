@@ -51,7 +51,7 @@ describe.each(COMPILERS)('switchFor exhaustiveness, on %s', (_label, packageName
 		// 5.x names the member, 7.x names the key it compiles to. Either
 		// locates the gap; neither is the vague assignability complaint that
 		// appears when the overloads are ordered the other way.
-		expect(reported).toMatch(/Status\.Archived|Property '2'/);
+		expect(reported).toMatch(/HyperdriveStatus\.Offline|Property '2'/);
 		expect(reported).toContain('is missing');
 	});
 

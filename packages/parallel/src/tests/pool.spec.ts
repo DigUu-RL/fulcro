@@ -294,7 +294,7 @@ describe('spreading across workers', () => {
 
 describe('when things go wrong', () => {
 	it('should reject with the message the task threw', async () => {
-		await expect(poolFor<number, number>('explode').map([1])).rejects.toThrow('the task refused');
+		await expect(poolFor<number, number>('explode').map([1])).rejects.toThrow('the droid refused');
 	});
 
 	it('should reject when the export does not exist', async () => {
@@ -360,7 +360,7 @@ describe('the codes a failure carries', () => {
 
 		expect(failure).toMatchObject({
 			code: 'FULCRO3005',
-			message: 'FULCRO3005: the task refused',
+			message: 'FULCRO3005: the droid refused',
 		});
 	});
 
@@ -387,7 +387,7 @@ describe('the codes a failure carries', () => {
 		const failure = await failureOf(poolFor<number, number>('explode').map([1]));
 
 		expect(failure).toMatchObject({
-			details: { operation: 'run', reason: 'the task refused' },
+			details: { operation: 'run', reason: 'the droid refused' },
 		});
 	});
 
@@ -409,7 +409,7 @@ describe('the codes a failure carries', () => {
 describe('cancelling', () => {
 	it('should reject with the reason the signal carries', async () => {
 		const controller = new AbortController();
-		const reason = new Error('called off');
+		const reason = new Error('the mission is scrubbed');
 
 		controller.abort(reason);
 
@@ -494,7 +494,7 @@ describe('await using', () => {
 
 	it('should terminate every worker when the scope is left by a throw', async () => {
 		const fake = createFakeWorkers();
-		const failure = new RangeError('left early');
+		const failure = new RangeError('jumped to lightspeed early');
 
 		const leave = async (): Promise<void> => {
 			await using pool = drivenPool<number, number>(fake, 2);
@@ -652,7 +652,7 @@ describe('cancelling, in order', () => {
 		const fake = createFakeWorkers();
 		const pool = drivenPool<number, number>(fake, 2);
 		const controller = new AbortController();
-		const reason = new Error('called off');
+		const reason = new Error('the mission is scrubbed');
 
 		controller.abort(reason);
 
@@ -669,7 +669,7 @@ describe('cancelling, in order', () => {
 		const fake = createFakeWorkers();
 		const pool = drivenPool<number, number>(fake, 2);
 		const controller = new AbortController();
-		const reason = new Error('called off');
+		const reason = new Error('the mission is scrubbed');
 
 		const work = pool.map([1, 2, 3, 4], { signal: controller.signal });
 
@@ -687,7 +687,7 @@ describe('cancelling, in order', () => {
 		const fake = createFakeWorkers({ unstoppable: [0, 1] });
 		const pool = drivenPool<number, number>(fake, 2);
 		const controller = new AbortController();
-		const reason = new Error('called off');
+		const reason = new Error('the mission is scrubbed');
 
 		const work = pool.map([1, 2, 3, 4], { signal: controller.signal });
 
@@ -702,7 +702,7 @@ describe('cancelling, in order', () => {
 		const fake = createFakeWorkers();
 		const pool = drivenPool<number, number>(fake, 2);
 		const controller = new AbortController();
-		const reason = new Error('called off');
+		const reason = new Error('the mission is scrubbed');
 
 		const first = pool.map([1, 2]);
 		const second = watch(pool.map([10, 20], { signal: controller.signal }));
@@ -742,7 +742,7 @@ describe('cancelling, in order', () => {
 		const fake = createFakeWorkers();
 		const pool = drivenPool<number, number>(fake, 2);
 		const controller = new AbortController();
-		const reason = new Error('called off');
+		const reason = new Error('the mission is scrubbed');
 
 		const stream = pool.stream([1, 2, 3, 4], { signal: controller.signal });
 		const iterator = stream[Symbol.asyncIterator]();
@@ -772,11 +772,11 @@ describe('a task that fails', () => {
 
 		await until(() => fake.inFlight() === 3, 'every worker to be busy');
 
-		fake.fail(0, 'the first one broke');
+		fake.fail(0, 'Red Leader went down');
 
 		await expect(work).rejects.toMatchObject({
 			code: 'FULCRO3005',
-			details: { reason: 'the first one broke' },
+			details: { reason: 'Red Leader went down' },
 		});
 
 		expect(fake.posted()).toEqual([1, 2, 3]);
@@ -800,10 +800,10 @@ describe('a task that fails', () => {
 
 		await until(() => fake.inFlight() === 2, 'both workers to be busy');
 
-		fake.fail(1, 'first');
-		fake.fail(0, 'second');
+		fake.fail(1, 'Red Leader');
+		fake.fail(0, 'Red Two');
 
-		await expect(work).rejects.toMatchObject({ details: { reason: 'first' } });
+		await expect(work).rejects.toMatchObject({ details: { reason: 'Red Leader' } });
 	});
 });
 
@@ -889,7 +889,7 @@ describe('closing', () => {
 		const fake = createFakeWorkers({ slowToStop: true });
 		const pool = drivenPool<number, number>(fake, 2);
 		const controller = new AbortController();
-		const reason = new Error('called off');
+		const reason = new Error('the mission is scrubbed');
 
 		const work = watch(pool.map([1, 2, 3], { signal: controller.signal }));
 

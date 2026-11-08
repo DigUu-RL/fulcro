@@ -3,8 +3,8 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 import { type TypeMetadata, typeOf } from '@/src/functions/utils/typeOf';
 
 /** Class instance, which the native `typeof` reports as a plain object. */
-class User {
-	email = 'a@b.c';
+class Trooper {
+	callSign = 'Red Five';
 	profile = { theme: 'dark' };
 
 	save(): void {
@@ -12,27 +12,27 @@ class User {
 	}
 
 	get displayName(): string {
-		return this.email;
+		return this.callSign;
 	}
 }
 
 /** Derived class, to check the ancestry reported through the prototypes. */
-class Admin extends User {
+class Stormtrooper extends Trooper {
 	level = 1;
 }
 
 /** A shape with one of everything the generic form has a rule for. */
-interface Order {
+interface DockingRecord {
 	readonly id: number;
 	note?: string;
-	readonly customer: {
-		readonly email: string;
-		readonly city: { name: string };
+	readonly captain: {
+		readonly callSign: string;
+		readonly system: { name: string };
 	};
-	readonly items: readonly { readonly sku: string; readonly qty: number }[];
-	readonly status: 'pending' | 'paid';
-	readonly placedAt: Date;
-	readonly parent?: Order;
+	readonly cargo: readonly { readonly manifest: string; readonly qty: number }[];
+	readonly status: 'docked' | 'departed';
+	readonly arrivedAt: Date;
+	readonly parent?: DockingRecord;
 }
 
 /**
@@ -82,8 +82,8 @@ describe('typeOf', () => {
 	});
 
 	it('should split every case the native typeof collapses into function', () => {
-		expect(typeof User).toBe('function');
-		expect(typeOf(User).typeId).toBe('class');
+		expect(typeof Trooper).toBe('function');
+		expect(typeOf(Trooper).typeId).toBe('class');
 
 		expect(typeOf(() => 1).typeId).toBe('function');
 
@@ -108,7 +108,7 @@ describe('typeOf', () => {
 
 	it('should tell a plain object apart from a class instance', () => {
 		expect(typeOf({}).typeId).toBe('plain-object');
-		expect(typeOf(new User()).typeId).toBe('instance');
+		expect(typeOf(new Trooper()).typeId).toBe('instance');
 		expect(typeOf(Object.create(null)).typeId).toBe('null-prototype-object');
 	});
 
@@ -126,9 +126,9 @@ describe('typeOf', () => {
 	});
 
 	it('should report the concrete name of the type', () => {
-		expect(typeOf(new User()).name).toBe('User');
-		expect(typeOf(new Admin()).name).toBe('Admin');
-		expect(typeOf(User).name).toBe('User');
+		expect(typeOf(new Trooper()).name).toBe('Trooper');
+		expect(typeOf(new Stormtrooper()).name).toBe('Stormtrooper');
+		expect(typeOf(Trooper).name).toBe('Trooper');
 		expect(typeOf([]).name).toBe('Array');
 		expect(typeOf(42).name).toBe('Number');
 		expect(typeOf(NaN).name).toBe('Number');
@@ -140,8 +140,8 @@ describe('typeOf', () => {
 	});
 
 	it('should report the ancestry of a value through its prototype chain', () => {
-		expect(typeOf(new Admin()).lineage).toEqual(['Admin', 'User', 'Object']);
-		expect(typeOf(new User()).lineage).toEqual(['User', 'Object']);
+		expect(typeOf(new Stormtrooper()).lineage).toEqual(['Stormtrooper', 'Trooper', 'Object']);
+		expect(typeOf(new Trooper()).lineage).toEqual(['Trooper', 'Object']);
 		expect(typeOf([]).lineage).toEqual(['Array', 'Object']);
 		expect(typeOf(42).lineage).toEqual(['Number', 'Object']);
 		expect(typeOf(null).lineage).toEqual([]);
@@ -187,15 +187,15 @@ describe('typeOf', () => {
  */
 describe('typeOf<T>()', () => {
 	it('should name the type and how it was declared', () => {
-		const described = typeOf<Order>();
+		const described = typeOf<DockingRecord>();
 
-		expect(described.name).toBe('Order');
+		expect(described.name).toBe('DockingRecord');
 		expect(described.kind).toBe('interface');
-		expect(described.text).toBe('Order');
+		expect(described.text).toBe('DockingRecord');
 	});
 
 	it('should point at where the type was declared', () => {
-		const site = typeOf<Order>().site;
+		const site = typeOf<DockingRecord>().site;
 
 		expect(site).not.toBeNull();
 		expect(site?.path).toContain('typeOf.spec.ts');
@@ -203,15 +203,15 @@ describe('typeOf<T>()', () => {
 	});
 
 	it('should list the members with their types', () => {
-		const members = typeOf<Order>().members;
+		const members = typeOf<DockingRecord>().members;
 
 		expect(members.map((member) => member.name)).toEqual([
 			'id',
 			'note',
-			'customer',
-			'items',
+			'captain',
+			'cargo',
 			'status',
-			'placedAt',
+			'arrivedAt',
 			'parent',
 		]);
 
@@ -221,7 +221,7 @@ describe('typeOf<T>()', () => {
 	it('should say which members are optional and which are readonly', () => {
 		// The two things a value can never report about itself: an object cannot
 		// tell you a property it happens to carry was declared optional.
-		const members = typeOf<Order>().members;
+		const members = typeOf<DockingRecord>().members;
 
 		const byName = (name: string): (typeof members)[number] | undefined => {
 			return members.find((member) => member.name === name);
@@ -234,9 +234,9 @@ describe('typeOf<T>()', () => {
 	});
 
 	it('should report the branches of a union', () => {
-		const described = typeOf<'pending' | 'paid'>();
+		const described = typeOf<'docked' | 'departed'>();
 
-		expect(described.union).toEqual(['"pending"', '"paid"']);
+		expect(described.union).toEqual(['"docked"', '"departed"']);
 		expect(described.members).toEqual([]);
 	});
 
@@ -245,7 +245,7 @@ describe('typeOf<T>()', () => {
 	});
 
 	it('should leave union and element null for an ordinary shape', () => {
-		const described = typeOf<Order>();
+		const described = typeOf<DockingRecord>();
 
 		expect(described.union).toBeNull();
 		expect(described.element).toBeNull();
@@ -264,8 +264,8 @@ describe('typeOf<T>()', () => {
 
 describe('what typeOf declares for a type', () => {
 	it('should return metadata of the type it was asked about', () => {
-		expectTypeOf(typeOf<Order>).returns.toEqualTypeOf<TypeMetadata<Order>>();
-		expectTypeOf<TypeMetadata<Order>>().toExtend<TypeMetadata>();
-		expectTypeOf<TypeMetadata<Order>>().not.toExtend<TypeMetadata<User>>();
+		expectTypeOf(typeOf<DockingRecord>).returns.toEqualTypeOf<TypeMetadata<DockingRecord>>();
+		expectTypeOf<TypeMetadata<DockingRecord>>().toExtend<TypeMetadata>();
+		expectTypeOf<TypeMetadata<DockingRecord>>().not.toExtend<TypeMetadata<Trooper>>();
 	});
 });

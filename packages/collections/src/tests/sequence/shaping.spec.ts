@@ -22,22 +22,22 @@ import type { Sequence } from '@/src/@types/collections/sequence';
  */
 
 /** A record, so the assertions are not all about bare numbers. */
-interface Player {
+interface Pilot {
 	readonly name: string;
 	readonly score: number;
 }
 
 /**
- * Builds players whose scores collide on purpose.
+ * Builds pilots whose scores collide on purpose.
  *
  * @param count How many to build.
  * @param distinctScores How many different scores to spread them across.
- * @returns The players, in a fixed order.
+ * @returns The pilots, in a fixed order.
  */
-const playersWithTies = (count: number, distinctScores: number): readonly Player[] => {
+const pilotsWithTies = (count: number, distinctScores: number): readonly Pilot[] => {
 	return Array.from({ length: count }, (_, index) => {
 		return {
-			name: `player-${String(index)}`,
+			name: `pilot-${String(index)}`,
 			score: index % distinctScores,
 		};
 	});
@@ -46,10 +46,10 @@ const playersWithTies = (count: number, distinctScores: number): readonly Player
 describe('choose', () => {
 	it('should keep what the projection produced and drop what it did not', () => {
 		const emails = SequenceCollection.from([
-			{ name: 'a', email: 'a@b.c' },
-			{ name: 'b', email: null },
-			{ name: 'c', email: 'c@d.e' },
-		]).choose((user) => user.email);
+			{ name: 'a', callSign: 'a@b.c' },
+			{ name: 'b', callSign: null },
+			{ name: 'c', callSign: 'c@d.e' },
+		]).choose((pilot) => pilot.callSign);
 
 		expect(emails.toArray()).toEqual(['a@b.c', 'c@d.e']);
 	});
@@ -112,14 +112,14 @@ describe('ofType', () => {
 	});
 
 	it('should keep only the instances of a class', () => {
-		class Admin {
+		class Jedi {
 			constructor(public readonly name: string) {}
 		}
 
-		const mixed: (Admin | string)[] = [new Admin('root'), 'nobody'];
-		const admins = SequenceCollection.from(mixed).ofType(Admin);
+		const mixed: (Jedi | string)[] = [new Jedi('Yoda'), 'nobody'];
+		const jedi = SequenceCollection.from(mixed).ofType(Jedi);
 
-		expect(admins.toArray()).toEqual([new Admin('root')]);
+		expect(jedi.toArray()).toEqual([new Jedi('Yoda')]);
 	});
 
 	it('should recognise a subclass as an instance of its base', () => {
@@ -207,17 +207,17 @@ describe('cast', () => {
 	});
 
 	it('should accept instances of a class', () => {
-		class Admin {
+		class Jedi {
 			constructor(public readonly name: string) {}
 		}
 
-		const values: unknown[] = [new Admin('root'), new Admin('other')];
+		const values: unknown[] = [new Jedi('Yoda'), new Jedi('other')];
 
 		const names = SequenceCollection.from(values)
-			.cast(Admin)
+			.cast(Jedi)
 			.select((admin) => admin.name);
 
-		expect(names.toArray()).toEqual(['root', 'other']);
+		expect(names.toArray()).toEqual(['Yoda', 'other']);
 	});
 
 	it('should skip nothing, unlike ofType', () => {
@@ -259,11 +259,11 @@ describe('ofType and cast, written as a type', () => {
 	 * consumer who wired it up gets, not a simulation of it.
 	 */
 
-	class Admin {
+	class Jedi {
 		constructor(public readonly name: string) {}
 	}
 
-	interface Account {
+	interface RebelCell {
 		readonly id: number;
 	}
 
@@ -280,27 +280,27 @@ describe('ofType and cast, written as a type', () => {
 	});
 
 	it('should resolve a class type argument', () => {
-		const mixed: unknown[] = [new Admin('root'), 'nobody'];
+		const mixed: unknown[] = [new Jedi('Yoda'), 'nobody'];
 
 		const names = SequenceCollection.from(mixed)
-			.ofType<Admin>()
+			.ofType<Jedi>()
 			.select((admin) => admin.name);
 
-		expect(names.toArray()).toEqual(['root']);
+		expect(names.toArray()).toEqual(['Yoda']);
 	});
 
 	it('should resolve the same two forms through cast', () => {
 		const strings: unknown[] = ['a', 'b'];
-		const admins: unknown[] = [new Admin('root')];
+		const jedi: unknown[] = [new Jedi('Yoda')];
 
 		expect(SequenceCollection.from(strings).cast<string>().toArray()).toEqual(['a', 'b']);
 
 		expect(
-			SequenceCollection.from(admins)
-				.cast<Admin>()
+			SequenceCollection.from(jedi)
+				.cast<Jedi>()
 				.select((admin) => admin.name)
 				.toArray(),
-		).toEqual(['root']);
+		).toEqual(['Yoda']);
 	});
 
 	it('should accept an interface, checked by its shape', () => {
@@ -308,21 +308,21 @@ describe('ofType and cast, written as a type', () => {
 		// checks its properties imply instead.
 		const values: unknown[] = [{ id: 1 }, 'not an account', { id: 'wrong' }];
 
-		const accounts = SequenceCollection.from(values)
-			.ofType<Account>()
+		const rebelCells = SequenceCollection.from(values)
+			.ofType<RebelCell>()
 			.select((account) => account.id);
 
-		expect(accounts.toArray()).toEqual([1]);
+		expect(rebelCells.toArray()).toEqual([1]);
 	});
 
 	it('should refuse an index signature', () => {
-		type Settings = Readonly<Record<string, string>>;
+		type Garrison = Readonly<Record<string, string>>;
 
 		// Arbitrary keys leave no fixed set of properties to check, and a check
 		// over no properties would accept any object at all.
 		const values: unknown[] = [{ theme: 'dark' }];
 
-		expect(() => SequenceCollection.from(values).ofType<Settings>()).toThrow(
+		expect(() => SequenceCollection.from(values).ofType<Garrison>()).toThrow(
 			/cannot be checked at runtime|was not resolved at compile time/,
 		);
 	});
@@ -330,7 +330,7 @@ describe('ofType and cast, written as a type', () => {
 	it('should refuse before reading anything', () => {
 		// A wiring error, not a data error: there is nothing to gain by letting
 		// the chain be built and failing on the first read instead.
-		type Settings = Readonly<Record<string, string>>;
+		type Garrison = Readonly<Record<string, string>>;
 
 		let pulled = 0;
 
@@ -341,28 +341,28 @@ describe('ofType and cast, written as a type', () => {
 			},
 		};
 
-		expect(() => SequenceCollection.from(source).ofType<Settings>()).toThrow();
+		expect(() => SequenceCollection.from(source).ofType<Garrison>()).toThrow();
 		expect(pulled).toBe(0);
 	});
 });
 
 describe('a type that contains itself', () => {
 	/** A comment tree, which is the shape this exists for. */
-	interface Comment {
+	interface Transmission {
 		readonly id: number;
 		readonly text: string;
-		readonly replies: Comment[];
+		readonly replies: Transmission[];
 	}
 
 	/** Mutually recursive: the cycle runs through a second type. */
-	interface Author {
+	interface Senator {
 		readonly name: string;
-		readonly posts: Post[];
+		readonly posts: Decree[];
 	}
 
-	interface Post {
+	interface Decree {
 		readonly title: string;
-		readonly author: Author;
+		readonly author: Senator;
 	}
 
 	/**
@@ -372,7 +372,7 @@ describe('a type that contains itself', () => {
 	 * @returns Whether the check kept it.
 	 */
 	const accepts = (value: unknown): boolean => {
-		return SequenceCollection.from([value]).ofType<Comment>().count() === 1;
+		return SequenceCollection.from([value]).ofType<Transmission>().count() === 1;
 	};
 
 	it('should accept a tree that is valid all the way down', () => {
@@ -452,7 +452,7 @@ describe('a type that contains itself', () => {
 		};
 
 		const kept = (value: unknown): number => {
-			return SequenceCollection.from([value]).ofType<Author>().count();
+			return SequenceCollection.from([value]).ofType<Senator>().count();
 		};
 
 		expect(kept(author)).toBe(1);
@@ -462,7 +462,7 @@ describe('a type that contains itself', () => {
 	it('should handle a tree deep enough to rule out an unrolled check', () => {
 		// A check written out to a fixed depth rather than as a function would
 		// either refuse this or quietly stop looking partway down.
-		let deepest: Comment = { id: 100, text: 'bottom', replies: [] };
+		let deepest: Transmission = { id: 100, text: 'bottom', replies: [] };
 
 		for (let level = 99; level >= 0; level--) {
 			deepest = { id: level, text: `level ${String(level)}`, replies: [deepest] };
@@ -484,9 +484,9 @@ describe('a type that contains itself', () => {
 	it('should name the type in the error cast throws', () => {
 		expect(() => {
 			return SequenceCollection.from([{ id: 1, text: 'a', replies: [] }, 'wrong'])
-				.cast<Comment>()
+				.cast<Transmission>()
 				.toArray();
-		}).toThrow(/cast\('Comment'\)/);
+		}).toThrow(/cast\('Transmission'\)/);
 	});
 });
 
@@ -495,13 +495,13 @@ describe('the shape check the transformer writes', () => {
 	 * A record with one of everything worth checking: a required primitive, an
 	 * optional one, an array, a nested object, a union of literals and a class.
 	 */
-	interface Order {
+	interface DockingRecord {
 		readonly id: number;
 		readonly note?: string;
 		readonly tags: string[];
-		readonly customer: { readonly email: string };
-		readonly status: 'pending' | 'paid';
-		readonly placedAt: Date;
+		readonly captain: { readonly callSign: string };
+		readonly status: 'docked' | 'refuelled';
+		readonly arrivedAt: Date;
 	}
 
 	/** A value that satisfies every clause, for the cases below to spoil. */
@@ -509,9 +509,9 @@ describe('the shape check the transformer writes', () => {
 		return {
 			id: 1,
 			tags: ['a'],
-			customer: { email: 'a@b.c' },
-			status: 'pending',
-			placedAt: new Date(),
+			captain: { callSign: 'a@b.c' },
+			status: 'docked',
+			arrivedAt: new Date(),
 		};
 	};
 
@@ -522,7 +522,7 @@ describe('the shape check the transformer writes', () => {
 	 * @returns Whether the check kept it.
 	 */
 	const accepts = (value: unknown): boolean => {
-		return SequenceCollection.from([value]).ofType<Order>().count() === 1;
+		return SequenceCollection.from([value]).ofType<DockingRecord>().count() === 1;
 	};
 
 	it('should accept a value that satisfies every clause', () => {
@@ -536,7 +536,7 @@ describe('the shape check the transformer writes', () => {
 
 	it('should accept extra properties, as structural typing does', () => {
 		// Rejecting them would make this disagree with the compiler that produced
-		// it: an object with more than `Order` requires is still an `Order`.
+		// it: an object with more tha `DockingRecord` requires is still a `DockingRecord`.
 		expect(accepts({ ...valid(), somethingElse: 42 })).toBe(true);
 	});
 
@@ -554,19 +554,19 @@ describe('the shape check the transformer writes', () => {
 		],
 		[
 			'a nested object missing its field',
-			(): { customer: Record<string, never> } => ({ ...valid(), customer: {} }),
+			(): { captain: Record<string, never> } => ({ ...valid(), captain: {} }),
 		],
 		[
 			'a nested object of the wrong type',
-			(): { customer: string } => ({ ...valid(), customer: 'a@b.c' }),
+			(): { captain: string } => ({ ...valid(), captain: 'a@b.c' }),
 		],
-		['a value outside the union', (): { status: string } => ({ ...valid(), status: 'shipped' })],
+		['a value outside the union', (): { status: string } => ({ ...valid(), status: 'departed' })],
 		[
 			'a class field that is not an instance',
-			(): { placedAt: string } => {
+			(): { arrivedAt: string } => {
 				return {
 					...valid(),
-					placedAt: '2020-01-01',
+					arrivedAt: '2020-01-01',
 				};
 			},
 		],
@@ -586,8 +586,8 @@ describe('the shape check the transformer writes', () => {
 
 	it('should name the type in the error cast throws', () => {
 		expect(() => {
-			return SequenceCollection.from([valid(), 'not an order']).cast<Order>().toArray();
-		}).toThrow(/cast\('Order'\)/);
+			return SequenceCollection.from([valid(), 'not an order']).cast<DockingRecord>().toArray();
+		}).toThrow(/cast\('DockingRecord'\)/);
 	});
 
 	it('should check every element of an array, not just the first', () => {
@@ -597,16 +597,16 @@ describe('the shape check the transformer writes', () => {
 
 describe('topBy', () => {
 	it('should return the largest keys, largest first', () => {
-		const players: readonly Player[] = [
+		const pilots: readonly Pilot[] = [
 			{ name: 'a', score: 10 },
 			{ name: 'b', score: 50 },
 			{ name: 'c', score: 30 },
 			{ name: 'd', score: 40 },
 		];
 
-		const best = SequenceCollection.from(players).topBy((player) => player.score, 2);
+		const best = SequenceCollection.from(pilots).topBy((pilot) => pilot.score, 2);
 
-		expect(best.toArray().map((player) => player.name)).toEqual(['b', 'd']);
+		expect(best.toArray().map((pilot) => pilot.name)).toEqual(['b', 'd']);
 	});
 
 	it.each([
@@ -615,15 +615,15 @@ describe('topBy', () => {
 		['far more than asked for', 1_000, 7],
 		['a single element', 1, 1],
 	])('should agree with a full sort when given %s', (_label, size, count) => {
-		const players = playersWithTies(size, Math.max(1, Math.floor(size / 3)));
+		const pilots = pilotsWithTies(size, Math.max(1, Math.floor(size / 3)));
 
-		const sorted = SequenceCollection.from(players)
-			.orderByDescending((player) => player.score)
+		const sorted = SequenceCollection.from(pilots)
+			.orderByDescending((pilot) => pilot.score)
 			.take(count)
 			.toArray();
 
-		const ranked = SequenceCollection.from(players)
-			.topBy((player) => player.score, count)
+		const ranked = SequenceCollection.from(pilots)
+			.topBy((pilot) => pilot.score, count)
 			.toArray();
 
 		expect(ranked).toEqual(sorted);
@@ -632,13 +632,13 @@ describe('topBy', () => {
 	it('should break ties the way a stable sort does', () => {
 		// Every score identical, so the answer is decided entirely by arrival
 		// order. An unstable heap would return an arbitrary three of these.
-		const players = playersWithTies(100, 1);
+		const pilots = pilotsWithTies(100, 1);
 
-		const ranked = SequenceCollection.from(players)
-			.topBy((player) => player.score, 3)
+		const ranked = SequenceCollection.from(pilots)
+			.topBy((pilot) => pilot.score, 3)
 			.toArray();
 
-		expect(ranked.map((player) => player.name)).toEqual(['player-0', 'player-1', 'player-2']);
+		expect(ranked.map((pilot) => pilot.name)).toEqual(['pilot-0', 'pilot-1', 'pilot-2']);
 	});
 
 	it('should extract each key exactly once', () => {
@@ -647,10 +647,10 @@ describe('topBy', () => {
 		// operator gets slower than the sort it replaces.
 		let extracted = 0;
 
-		SequenceCollection.from(playersWithTies(1_000, 50))
-			.topBy((player) => {
+		SequenceCollection.from(pilotsWithTies(1_000, 50))
+			.topBy((pilot) => {
 				extracted++;
-				return player.score;
+				return pilot.score;
 			}, 10)
 			.toArray();
 
@@ -658,8 +658,8 @@ describe('topBy', () => {
 	});
 
 	it.each([0, -1, -100])('should return nothing for a count of %s', (count) => {
-		const ranked = SequenceCollection.from(playersWithTies(10, 5)).topBy(
-			(player) => player.score,
+		const ranked = SequenceCollection.from(pilotsWithTies(10, 5)).topBy(
+			(pilot) => pilot.score,
 			count,
 		);
 
@@ -667,7 +667,7 @@ describe('topBy', () => {
 	});
 
 	it('should handle an empty sequence', () => {
-		const ranked = SequenceCollection.empty<Player>().topBy((player) => player.score, 5);
+		const ranked = SequenceCollection.empty<Pilot>().topBy((pilot) => pilot.score, 5);
 
 		expect(ranked.toArray()).toEqual([]);
 	});
@@ -683,17 +683,17 @@ describe('topBy', () => {
 	it('should stay deferred until something reads it', () => {
 		let extracted = 0;
 
-		SequenceCollection.from(playersWithTies(10, 5)).topBy((player) => {
+		SequenceCollection.from(pilotsWithTies(10, 5)).topBy((pilot) => {
 			extracted++;
-			return player.score;
+			return pilot.score;
 		}, 3);
 
 		expect(extracted).toBe(0);
 	});
 
 	it('should be readable twice, giving the same answer', () => {
-		const ranked = SequenceCollection.from(playersWithTies(100, 10)).topBy(
-			(player) => player.score,
+		const ranked = SequenceCollection.from(pilotsWithTies(100, 10)).topBy(
+			(pilot) => pilot.score,
 			5,
 		);
 
@@ -701,8 +701,8 @@ describe('topBy', () => {
 	});
 
 	it('should count without traversing when the source count is known', () => {
-		const ranked = SequenceCollection.from(playersWithTies(1_000, 10)).topBy(
-			(player) => player.score,
+		const ranked = SequenceCollection.from(pilotsWithTies(1_000, 10)).topBy(
+			(pilot) => pilot.score,
 			10,
 		);
 
@@ -710,10 +710,7 @@ describe('topBy', () => {
 	});
 
 	it('should not claim more elements than the source holds', () => {
-		const ranked = SequenceCollection.from(playersWithTies(4, 2)).topBy(
-			(player) => player.score,
-			10,
-		);
+		const ranked = SequenceCollection.from(pilotsWithTies(4, 2)).topBy((pilot) => pilot.score, 10);
 
 		expect(ranked.count()).toBe(4);
 	});
@@ -778,32 +775,32 @@ describe('tap', () => {
 });
 
 describe('what ofType and cast infer', () => {
-	class Admin {
+	class Jedi {
 		constructor(public readonly name: string) {}
 	}
 
-	interface Account {
+	interface RebelCell {
 		readonly id: number;
 	}
 
-	const accountTest: TypeTest<Account> = {
+	const rebelCellTest: TypeTest<RebelCell> = {
 		matches: (value) => typeof value === 'object' && value !== null && 'id' in value,
 	};
 
-	const mixed = SequenceCollection.from<Admin | Account | string | number>([]);
+	const mixed = SequenceCollection.from<Jedi | RebelCell | string | number>([]);
 
 	it('should narrow ofType to the type each of its four forms names', () => {
 		expectTypeOf(mixed.ofType('string')).toEqualTypeOf<Sequence<string>>();
-		expectTypeOf(mixed.ofType(Admin)).toEqualTypeOf<Sequence<Admin>>();
-		expectTypeOf(mixed.ofType<Admin>()).toEqualTypeOf<Sequence<Admin>>();
-		expectTypeOf(mixed.ofType(accountTest)).toEqualTypeOf<Sequence<Account>>();
-		expectTypeOf<TypeTest<Account>>().not.toExtend<TypeTest<Admin>>();
+		expectTypeOf(mixed.ofType(Jedi)).toEqualTypeOf<Sequence<Jedi>>();
+		expectTypeOf(mixed.ofType<Jedi>()).toEqualTypeOf<Sequence<Jedi>>();
+		expectTypeOf(mixed.ofType(rebelCellTest)).toEqualTypeOf<Sequence<RebelCell>>();
+		expectTypeOf<TypeTest<RebelCell>>().not.toExtend<TypeTest<Jedi>>();
 	});
 
 	it('should re-type cast to the type each of its four forms names', () => {
 		expectTypeOf(mixed.cast('number')).toEqualTypeOf<Sequence<number>>();
-		expectTypeOf(mixed.cast(Admin)).toEqualTypeOf<Sequence<Admin>>();
-		expectTypeOf(mixed.cast<Admin>()).toEqualTypeOf<Sequence<Admin>>();
-		expectTypeOf(mixed.cast(accountTest)).toEqualTypeOf<Sequence<Account>>();
+		expectTypeOf(mixed.cast(Jedi)).toEqualTypeOf<Sequence<Jedi>>();
+		expectTypeOf(mixed.cast<Jedi>()).toEqualTypeOf<Sequence<Jedi>>();
+		expectTypeOf(mixed.cast(rebelCellTest)).toEqualTypeOf<Sequence<RebelCell>>();
 	});
 });

@@ -16,7 +16,7 @@ export interface TypePath<T = unknown> {
 	 * The path, in the notation a person writes.
 	 *
 	 * Nested properties are dotted and arrays carry `[]`, so
-	 * `items[].sku` reads as "the `sku` of each item".
+	 * `cargo[].manifest` reads as "the `manifest` of each crate".
 	 */
 	readonly path: string;
 
@@ -31,14 +31,14 @@ export interface TypePath<T = unknown> {
  * Lists every leaf a type can be walked to.
  *
  * ```ts
- * pathsOf<Order>();
+ * pathsOf<DockingRecord>();
  * // [
- * //   { path: 'id',                    type: 'number',   optional: false },
- * //   { path: 'customer.email',        type: 'string',   optional: false },
- * //   { path: 'customer.address.city', type: 'string',   optional: false },
- * //   { path: 'items[].sku',           type: 'string',   optional: false },
- * //   { path: 'status',    type: '"pending" | "paid"',   optional: false },
- * //   { path: 'placedAt',              type: 'Date',     optional: false },
+ * //   { path: 'bay',                     type: 'number',   optional: false },
+ * //   { path: 'captain.name',            type: 'string',   optional: false },
+ * //   { path: 'captain.homeworld.system', type: 'string',  optional: false },
+ * //   { path: 'cargo[].manifest',        type: 'string',   optional: false },
+ * //   { path: 'status',  type: '"docked" | "departed"',    optional: false },
+ * //   { path: 'arrivedAt',               type: 'Date',     optional: false },
  * // ]
  * ```
  *
@@ -50,10 +50,10 @@ export interface TypePath<T = unknown> {
  * version without it produces nonsense.
  *
  * A **primitive is a leaf**. Descending into one yields the whole of
- * `String.prototype` — `customer.email.trimLeft` is a real property path and
+ * `String.prototype` — `captain.name.trimLeft` is a real property path and
  * useless as a data path.
  *
- * A **known class is a leaf**. `placedAt` reports `Date`, not the fifty methods
+ * A **known class is a leaf**. `arrivedAt` reports `Date`, not the fifty methods
  * a `Date` carries.
  *
  * **Recursion stops** at the repeat, reporting the path with the type at the

@@ -41,9 +41,12 @@ export const narrowedByData = (): number | Error =>
 
 /** Each constructor fits a result of the wider type. Must compile. */
 export const fromSuccess: Result<number, Error> = success(1);
-export const fromFailure: Result<number, Error> = failure(new Error('x'));
-export const fromStringFailure: Result<number> = failure('x');
-export const variants: [Success<number>, Failure<number, string>] = [success(1), failure('x')];
+export const fromFailure: Result<number, Error> = failure(new Error('Red Five'));
+export const fromStringFailure: Result<number> = failure('Red Five');
+export const variants: [Success<number>, Failure<number, string>] = [
+	success(1),
+	failure('Red Five'),
+];
 
 /** Keeps the produced type through tryCatch. Must compile. */
 export const caught = async (): Promise<Result<number>> => tryCatch(async () => 1);

@@ -5,11 +5,11 @@ import { createOwned, endBorrows, type Ownership, requireOwnership } from '@/src
  * Hands the ownership of a storage on, and spends the owner it came from.
  *
  * ```ts
- * const queue = own(() => createManagedStorage(64, 0));
- * const worker = move(queue);
+ * const launchQueue = own(() => createManagedStorage(64, 0));
+ * const hangarCrew = move(launchQueue);
  *
- * borrow(worker).get(0); // fine
- * borrow(queue); // throws: queue was moved
+ * borrow(hangarCrew).get(0); // fine
+ * borrow(launchQueue); // throws: launchQueue was moved
  * ```
  *
  * The storage is not copied: the new owner owns the very same values. Every

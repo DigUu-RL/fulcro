@@ -20,9 +20,9 @@ export const sharedBorrowsCoexist = (): number => {
 
 export const borrowEndsAtItsLastUse = (): void => {
 	const owner = create();
-	const reading = borrow(owner);
+	const scan = borrow(owner);
 
-	reading.get(0);
+	scan.get(0);
 	borrowMutable(owner).set(0, 1);
 };
 

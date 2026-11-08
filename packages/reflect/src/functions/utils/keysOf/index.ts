@@ -4,18 +4,19 @@ import { createError } from '@fulcro/errors';
  * Reads the keys a type declares.
  *
  * ```ts
- * interface Order {
- * 	id: number;
- * 	customer: Customer;
- * 	total: number;
+ * interface Bounty {
+ * 	target: string;
+ * 	client: HuttCartel;
+ * 	credits: number;
  * }
  *
- * keysOf<Order>(); // ['id', 'customer', 'total']
+ * keysOf<Bounty>(); // ['target', 'client', 'credits']
  * ```
  *
  * For the lists a program keeps writing out by hand and forgetting to update:
- * the columns of a table, the fields of a form, the properties to copy, the
- * headers of a CSV. Add a property to `Order` and every one of those follows.
+ * the columns of the Guild's bounty board, the fields of a form, the
+ * properties to copy, the headers of a CSV. Add a property to `Bounty` and
+ * every one of those follows.
  *
  * **This is deliberately not `Object.keys`.** The keys of a *value* and the keys
  * of a *type* are different questions with different answers: structural typing

@@ -153,7 +153,7 @@ describe('tryCatch', () => {
 
 		await tryCatch(() => {
 			calls++;
-			return Promise.reject(new Error('once'));
+			return Promise.reject(new Error('the hyperdrive failed once'));
 		});
 
 		expect(calls).toBe(1);
@@ -164,7 +164,7 @@ describe('tryCatch', () => {
 		// are inherited, not carried by every outcome.
 		const succeeded = await tryCatch(() => Promise.resolve(1));
 
-		const failed = await tryCatch(() => Promise.reject(new Error('x')));
+		const failed = await tryCatch(() => Promise.reject(new Error('Red Five')));
 
 		expect(Reflect.ownKeys(succeeded).sort()).toEqual(['error', 'value']);
 		expect(Reflect.ownKeys(failed).sort()).toEqual(['error', 'value']);
@@ -177,9 +177,9 @@ describe('wall clock ceilings', () => {
 
 		for (let call = 0; call < CALLS; call++) {
 			switchFor(call % 3, {
-				0: () => 'a',
-				1: () => 'b',
-				2: () => 'c',
+				0: () => 'Online',
+				1: () => 'Damaged',
+				2: () => 'Offline',
 			});
 		}
 

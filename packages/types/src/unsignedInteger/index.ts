@@ -12,7 +12,7 @@ import type { Layout } from '@/src/layout';
  * An integer of `N` bits with no sign: from 0 to 2^N - 1.
  *
  * ```ts
- * const count: UnsignedInteger<16> = UnsignedInteger(16).from(65_535);
+ * const commChannel: UnsignedInteger<16> = UnsignedInteger(16).from(65_535);
  * ```
  *
  * Carried by a `number` up to 32 bits and by a `bigint` from 64. Widths are a

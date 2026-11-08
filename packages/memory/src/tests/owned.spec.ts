@@ -45,9 +45,9 @@ const ended = (operation: string): Error => {
 	);
 };
 
-const Particle = struct('Particle', {
-	x: SinglePrecisionFloat,
-	y: SinglePrecisionFloat,
+const BlasterBolt = struct('BlasterBolt', {
+	bearing: SinglePrecisionFloat,
+	range: SinglePrecisionFloat,
 });
 
 describe('Owned[Symbol.dispose]', () => {
@@ -55,9 +55,9 @@ describe('Owned[Symbol.dispose]', () => {
 		let writing: MutableBorrow<number> | undefined;
 
 		{
-			using scores = own(() => createManagedStorage(3, 0));
+			using shieldGrid = own(() => createManagedStorage(3, 0));
 
-			writing = borrowMutable(scores);
+			writing = borrowMutable(shieldGrid);
 			writing.set(0, 7);
 
 			expect(writing.get(0)).toBe(7);
@@ -71,13 +71,13 @@ describe('Owned[Symbol.dispose]', () => {
 	});
 
 	it('should end what was cut from a borrow as well', () => {
-		const scores: Owned<number> = own(() => createManagedStorage(4, 1));
-		const writing: MutableBorrow<number> = borrowMutable(scores);
+		const shieldGrid: Owned<number> = own(() => createManagedStorage(4, 1));
+		const writing: MutableBorrow<number> = borrowMutable(shieldGrid);
 		const subview = writing.subview(1, 2);
 		const readOnly = writing.readOnly();
 		const pointer = pointerTo(writing, 2);
 
-		scores[Symbol.dispose]();
+		shieldGrid[Symbol.dispose]();
 
 		expect(() => subview.get(0)).toThrow(ended('View.get'));
 		expect(() => readOnly.get(0)).toThrow(ended('ReadOnlyView.get'));
@@ -85,96 +85,96 @@ describe('Owned[Symbol.dispose]', () => {
 	});
 
 	it('should end every shared borrow too', () => {
-		const scores: Owned<number> = own(() => createManagedStorage(1, 0));
-		const first: Borrowed<number> = borrow(scores);
-		const second: Borrowed<number> = borrow(scores);
+		const shieldGrid: Owned<number> = own(() => createManagedStorage(1, 0));
+		const first: Borrowed<number> = borrow(shieldGrid);
+		const second: Borrowed<number> = borrow(shieldGrid);
 
-		scores[Symbol.dispose]();
+		shieldGrid[Symbol.dispose]();
 
 		expect(() => first.get(0)).toThrow(ended('ReadOnlyView.get'));
 		expect(() => second.get(0)).toThrow(ended('ReadOnlyView.get'));
 	});
 
 	it('should end the borrows when the scope is left by a throw', () => {
-		let reading: Borrowed<number> | undefined;
+		let scan: Borrowed<number> | undefined;
 
 		const fail = (): void => {
-			using scores = own(() => createManagedStorage(1, 5));
+			using shieldGrid = own(() => createManagedStorage(1, 5));
 
-			reading = borrow(scores);
+			scan = borrow(shieldGrid);
 
 			throw new RangeError('left early');
 		};
 
 		expect(fail).toThrow(RangeError);
-		expect(() => reading?.get(0)).toThrow(ended('ReadOnlyView.get'));
+		expect(() => scan?.get(0)).toThrow(ended('ReadOnlyView.get'));
 	});
 
 	it('should refuse everything asked of the owner afterwards', () => {
-		const scores: Owned<number> = own(() => createManagedStorage(2, 0));
+		const shieldGrid: Owned<number> = own(() => createManagedStorage(2, 0));
 
-		scores[Symbol.dispose]();
+		shieldGrid[Symbol.dispose]();
 
-		expect(() => borrow(scores)).toThrow(disposed('borrow'));
-		expect(() => borrowMutable(scores)).toThrow(disposed('borrowMutable'));
-		expect(() => move(scores)).toThrow(disposed('move'));
-		expect(() => scores.length).toThrow(disposed('Owned.length'));
+		expect(() => borrow(shieldGrid)).toThrow(disposed('borrow'));
+		expect(() => borrowMutable(shieldGrid)).toThrow(disposed('borrowMutable'));
+		expect(() => move(shieldGrid)).toThrow(disposed('move'));
+		expect(() => shieldGrid.length).toThrow(disposed('Owned.length'));
 	});
 
 	it('should do nothing when disposed twice', () => {
-		const scores: Owned<number> = own(() => createManagedStorage(1, 0));
+		const shieldGrid: Owned<number> = own(() => createManagedStorage(1, 0));
 
-		scores[Symbol.dispose]();
+		shieldGrid[Symbol.dispose]();
 
 		expect(() => {
-			scores[Symbol.dispose]();
+			shieldGrid[Symbol.dispose]();
 		}).not.toThrow();
 
-		expect(() => borrow(scores)).toThrow(disposed('borrow'));
+		expect(() => borrow(shieldGrid)).toThrow(disposed('borrow'));
 	});
 
 	it('should leave the owner a move returned untouched, borrows included', () => {
 		let second: Owned<number> | undefined;
-		let reading: Borrowed<number> | undefined;
+		let scan: Borrowed<number> | undefined;
 
 		{
 			using first = own(() => createManagedStorage(2, 4));
 
 			second = move(first);
-			reading = borrow(second);
+			scan = borrow(second);
 		}
 
-		expect(reading.get(1)).toBe(4);
+		expect(scan.get(1)).toBe(4);
 		expect(second.length).toBe(2);
 		expect(borrow(second).get(0)).toBe(4);
 	});
 
 	it('should end the ownership a move handed to a using declaration', () => {
 		const first: Owned<number> = own(() => createManagedStorage(1, 0));
-		let reading: Borrowed<number> | undefined;
+		let scan: Borrowed<number> | undefined;
 		let kept: Owned<number> | undefined;
 
 		{
 			using second = move(first);
 
-			reading = borrow(second);
+			scan = borrow(second);
 			kept = second;
 		}
 
-		expect(() => reading.get(0)).toThrow(ended('ReadOnlyView.get'));
+		expect(() => scan.get(0)).toThrow(ended('ReadOnlyView.get'));
 		expect(() => borrow(kept)).toThrow(disposed('borrow'));
 	});
 
 	it('should end with the frame its memory came from, in one scope', () => {
 		const stack = createStackAllocator(1024);
-		let writing: MutableBorrow<Struct<typeof Particle>> | undefined;
+		let writing: MutableBorrow<Struct<typeof BlasterBolt>> | undefined;
 
 		{
 			using frame = stack.enter();
-			using particles = own(() => allocate(Particle, 4, frame));
+			using bolts = own(() => allocate(BlasterBolt, 4, frame));
 
-			writing = borrowMutable(particles);
-			writing.set(0, Particle.from({ x: 1, y: 2 }));
+			writing = borrowMutable(bolts);
+			writing.set(0, BlasterBolt.from({ bearing: 1, range: 2 }));
 		}
 
 		// The borrow ended with its owner, and the frame gave back everything it

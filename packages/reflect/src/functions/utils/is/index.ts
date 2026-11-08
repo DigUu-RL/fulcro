@@ -77,8 +77,8 @@ export const refuseUnresolved: (operator: string) => never = (operator: string):
  * check out — every property, nested objects, every element of an array.
  *
  * ```ts
- * if (is<Order>(payload)) {
- * 	payload.total; // narrowed, and actually verified
+ * if (is<DockingRecord>(payload)) {
+ * 	payload.captain.name; // narrowed, and actually verified
  * }
  * ```
  *

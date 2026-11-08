@@ -146,15 +146,15 @@ export const openLinearMemory = (
  * `WebAssembly.Memory` — anything whose `buffer` is replaced as it grows.
  *
  * ```ts
- * const { instance } = await WebAssembly.instantiate(module);
+ * const { instance } = await WebAssembly.instantiate(navicomputerWasm);
  * const moduleExports = instance.exports as {
  * 	memory: WebAssembly.Memory;
  * 	latest: () => number;
  * };
  * const memory: LinearMemory = createLinearMemory(moduleExports.memory);
  *
- * const reading = nativePointerTo(memory, moduleExports.latest(), Reading);
- * reading.get(); // read where the module wrote it, with no copy
+ * const latest = nativePointerTo(memory, moduleExports.latest(), ScannerReading);
+ * latest.get(); // read where the module wrote it, with no copy
  * ```
  *
  * Nothing is copied: a pointer into the memory reads and writes the very bytes

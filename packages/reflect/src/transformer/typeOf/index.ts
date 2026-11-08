@@ -15,8 +15,8 @@ import { membersOfType } from '@/src/transformer/describe';
  * its argument, which is the half a runtime inspection can never recover:
  *
  * ```ts
- * // written        // emitted
- * typeOf(user)      typeOf(user, { text: 'User', kind: 'interface', site: { ... } })
+ * // written         // emitted
+ * typeOf(pilot)      typeOf(pilot, { text: 'PilotRecord', kind: 'interface', site: { ... } })
  * ```
  *
  * The injected literal lands in the `declared` field of the result. A project

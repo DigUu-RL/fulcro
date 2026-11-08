@@ -11,18 +11,18 @@ import { as } from '@/src/functions/utils/as';
  *
  * That second half is most of the suite, and deliberately. The language's own
  * `as` asserts without checking; if the replacement only managed "not an
- * Order", it would trade a silent lie for a useless complaint. Each case below
+ * DockingRecord", it would trade a silent lie for a useless complaint. Each case below
  * breaks the record in exactly one place and the error has to name that place.
  */
 
 /** A record with one of everything worth checking. */
-interface Order {
+interface DockingRecord {
 	readonly id: number;
 	readonly note?: string;
 	readonly tags: string[];
-	readonly customer: { readonly email: string };
-	readonly status: 'pending' | 'paid';
-	readonly placedAt: Date;
+	readonly captain: { readonly callSign: string };
+	readonly status: 'docked' | 'departed';
+	readonly arrivedAt: Date;
 }
 
 /** A value satisfying every clause, for the cases below to spoil. */
@@ -30,9 +30,9 @@ const valid = (): Record<string, unknown> => {
 	return {
 		id: 1,
 		tags: ['a'],
-		customer: { email: 'a@b.c' },
-		status: 'pending',
-		placedAt: new Date(),
+		captain: { callSign: 'Red Five' },
+		status: 'docked',
+		arrivedAt: new Date(),
 	};
 };
 
@@ -41,14 +41,14 @@ describe('what it lets through', () => {
 		// Nothing is rebuilt on the way through, so identity survives and a large
 		// payload is not duplicated to be checked.
 		const payload: unknown = valid();
-		const order = as<Order>(payload);
+		const order = as<DockingRecord>(payload);
 
 		expect(order).toBe(payload);
-		expect(order.customer.email).toBe('a@b.c');
+		expect(order.captain.callSign).toBe('Red Five');
 	});
 
 	it('should narrow the value it returns', () => {
-		const order = as<Order>(valid());
+		const order = as<DockingRecord>(valid());
 
 		// Would not compile if the type argument were not honoured.
 		expect(order.tags).toHaveLength(1);
@@ -57,8 +57,8 @@ describe('what it lets through', () => {
 
 describe('what it refuses, and what it says', () => {
 	it('should throw a TypeError naming the type', () => {
-		expect(() => as<Order>({ ...valid(), id: 'wrong' })).toThrow(TypeError);
-		expect(() => as<Order>({ ...valid(), id: 'wrong' })).toThrow(/as<Order>\(\)/);
+		expect(() => as<DockingRecord>({ ...valid(), id: 'wrong' })).toThrow(TypeError);
+		expect(() => as<DockingRecord>({ ...valid(), id: 'wrong' })).toThrow(/as<DockingRecord>\(\)/);
 	});
 
 	it.each([
@@ -69,8 +69,8 @@ describe('what it refuses, and what it says', () => {
 		],
 		[
 			'a nested property',
-			(): { customer: { email: number } } => ({ ...valid(), customer: { email: 7 } }),
-			/customer\.email: expected string, got number/,
+			(): { captain: { callSign: number } } => ({ ...valid(), captain: { callSign: 7 } }),
+			/captain\.callSign: expected string, got number/,
 		],
 		[
 			'an element of an array',
@@ -87,18 +87,18 @@ describe('what it refuses, and what it says', () => {
 			/id: expected number, got undefined/,
 		],
 	])('should say where it stopped matching: %s', (_label, build, expected) => {
-		// The whole reason a second walker is emitted. Told only "not an Order"
+		// The whole reason a second walker is emitted. Told only "not a DockingRecord"
 		// about a record with six fields, you are no better off than before.
-		expect(() => as<Order>(build())).toThrow(expected);
+		expect(() => as<DockingRecord>(build())).toThrow(expected);
 	});
 
 	it('should describe the value itself when the root is wrong', () => {
-		expect(() => as<Order>('a string')).toThrow(/expected Order, got string/);
+		expect(() => as<DockingRecord>('a string')).toThrow(/expected DockingRecord, got string/);
 	});
 
 	it('should not leave a stray colon when the failure is at the root', () => {
 		// The path is empty there, and prefixing it would read `(): : expected`.
-		expect(() => as<Order>(42)).not.toThrow(/: : expected/);
+		expect(() => as<DockingRecord>(42)).not.toThrow(/: : expected/);
 	});
 
 	it('should point at the first failure, not every one', () => {
@@ -106,7 +106,7 @@ describe('what it refuses, and what it says', () => {
 		// that is usually the cause.
 		const broken = { ...valid(), id: 'x', tags: 7 };
 
-		expect(() => as<Order>(broken)).toThrow(/id: expected number/);
+		expect(() => as<DockingRecord>(broken)).toThrow(/id: expected number/);
 	});
 });
 

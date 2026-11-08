@@ -13,15 +13,15 @@ import { createReadOnlyView } from '@/src/region';
  * Lends the values of an owner for reading.
  *
  * ```ts
- * const total = (values: ReadOnlyView<number>): number => {
+ * const totalStrength = (generators: ReadOnlyView<number>): number => {
  * 	let sum = 0;
  *
- * 	for (let index = 0; index < values.length; index++) sum += values.get(index);
+ * 	for (let index = 0; index < generators.length; index++) sum += generators.get(index);
  *
  * 	return sum;
  * };
  *
- * total(borrow(scores));
+ * totalStrength(borrow(shieldGrid));
  * ```
  *
  * Shared: any number of these can be read at once, and taking one ends no

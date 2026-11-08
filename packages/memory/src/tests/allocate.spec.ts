@@ -30,15 +30,15 @@ import { coded } from '@/src/tests/coded';
  * storage stops working the moment its memory is released.
  */
 
-const Particle = struct('Particle', {
-	x: SinglePrecisionFloat,
-	y: SinglePrecisionFloat,
+const BlasterBolt = struct('BlasterBolt', {
+	bearing: SinglePrecisionFloat,
+	range: SinglePrecisionFloat,
 });
 
-type Particle = Struct<typeof Particle>;
+type BlasterBolt = Struct<typeof BlasterBolt>;
 
 /** Sixteen bytes aligned to eight: misplacing it shows. */
-const Sample = struct('Sample', {
+const ScannerReading = struct('ScannerReading', {
 	value: DoublePrecisionFloat,
 	channel: UnsignedInteger(8),
 });
@@ -83,36 +83,36 @@ describe('allocate', () => {
 	it('should ask the allocator for length × size bytes, aligned to the element', () => {
 		const { allocator, requests } = createLedgerAllocator();
 
-		allocate(Sample, 10, allocator);
+		allocate(ScannerReading, 10, allocator);
 
 		expect(requests).toEqual([[160, 8]]);
 	});
 
 	it('should take its bytes from an allocator written outside the package', () => {
 		const { allocator } = createLedgerAllocator();
-		const particles: Storage<Particle> = allocate(Particle, 3, allocator);
+		const bolts: Storage<BlasterBolt> = allocate(BlasterBolt, 3, allocator);
 
-		particles.set(2, Particle.from({ x: 1, y: 2 }));
+		bolts.set(2, BlasterBolt.from({ bearing: 1, range: 2 }));
 
-		expect(particles.get(2)).toEqual({ x: 1, y: 2 });
-		expect(particles.length).toBe(3);
+		expect(bolts.get(2)).toEqual({ bearing: 1, range: 2 });
+		expect(bolts.length).toBe(3);
 	});
 
 	it('should read every position as the zero value before it is set', () => {
-		const particles = allocate(Particle, 2, createArenaAllocator(64));
+		const bolts = allocate(BlasterBolt, 2, createArenaAllocator(64));
 
-		expect(particles.get(1)).toEqual({ x: 0, y: 0 });
+		expect(bolts.get(1)).toEqual({ bearing: 0, range: 0 });
 	});
 
 	it('should keep values apart from what else the allocator handed out', () => {
 		const arena = createArenaAllocator(256);
-		const first = allocate(Sample, 2, arena);
+		const first = allocate(ScannerReading, 2, arena);
 		const raw: Allocation = arena.allocate(3, 1);
-		const second = allocate(Sample, 2, arena);
+		const second = allocate(ScannerReading, 2, arena);
 
-		first.set(1, Sample.from({ value: 1.5, channel: 9 }));
+		first.set(1, ScannerReading.from({ value: 1.5, channel: 9 }));
 		new Uint8Array(raw.bytes.buffer, raw.bytes.byteOffset, 3).fill(0xff);
-		second.set(0, Sample.from({ value: -2, channel: 4 }));
+		second.set(0, ScannerReading.from({ value: -2, channel: 4 }));
 
 		expect(first.get(1)).toEqual({ value: 1.5, channel: 9 });
 		expect(second.get(0)).toEqual({ value: -2, channel: 4 });
@@ -138,11 +138,11 @@ describe('allocate', () => {
 			},
 		};
 
-		const released: Storage<Particle>[] = [
-			allocate(Particle, 1, arena),
-			allocate(Particle, 1, fixed),
-			allocate(Particle, 1, frame),
-			allocate(Particle, 1, recordingPool),
+		const released: Storage<BlasterBolt>[] = [
+			allocate(BlasterBolt, 1, arena),
+			allocate(BlasterBolt, 1, fixed),
+			allocate(BlasterBolt, 1, frame),
+			allocate(BlasterBolt, 1, recordingPool),
 		];
 
 		arena.reset();
@@ -154,8 +154,8 @@ describe('allocate', () => {
 		assert.isDefined(lease);
 		pool.deallocate(lease);
 
-		for (const particles of released) {
-			expect(() => particles.get(0)).toThrow(
+		for (const bolts of released) {
+			expect(() => bolts.get(0)).toThrow(
 				coded(
 					new Error(
 						'FULCRO7009: Storage.get: the memory was released by its allocator, and may already hold other values.',
@@ -165,7 +165,7 @@ describe('allocate', () => {
 			);
 
 			expect(() => {
-				particles.set(0, Particle.from({ x: 1, y: 1 }));
+				bolts.set(0, BlasterBolt.from({ bearing: 1, range: 1 }));
 			}).toThrow(
 				coded(
 					new Error(
@@ -179,41 +179,41 @@ describe('allocate', () => {
 
 	it('should not read what was written into its memory after it was released', () => {
 		const arena = createArenaAllocator(64);
-		const before = allocate(Particle, 1, arena);
+		const before = allocate(BlasterBolt, 1, arena);
 
 		arena.reset();
 
-		const after = allocate(Particle, 1, arena);
+		const after = allocate(BlasterBolt, 1, arena);
 
-		after.set(0, Particle.from({ x: 7, y: 7 }));
+		after.set(0, BlasterBolt.from({ bearing: 7, range: 7 }));
 
 		expect(() => before.get(0)).toThrow(Error);
-		expect(after.get(0)).toEqual({ x: 7, y: 7 });
+		expect(after.get(0)).toEqual({ bearing: 7, range: 7 });
 	});
 
 	it('should keep working under the managed allocator for as long as it is held', () => {
-		const samples = allocate(Sample, 4, createManagedAllocator());
+		const scans = allocate(ScannerReading, 4, createManagedAllocator());
 
-		samples.set(3, Sample.from({ value: 0.5, channel: 1 }));
+		scans.set(3, ScannerReading.from({ value: 0.5, channel: 1 }));
 
-		expect(samples.get(3)).toEqual({ value: 0.5, channel: 1 });
+		expect(scans.get(3)).toEqual({ value: 0.5, channel: 1 });
 	});
 
 	it('should refuse a value its element type does not recognise', () => {
-		const particles = allocate(Particle, 1, createManagedAllocator());
+		const bolts = allocate(BlasterBolt, 1, createManagedAllocator());
 
 		expect(() => {
-			particles.set(0, { x: 1, y: 1 } as unknown as Particle);
+			bolts.set(0, { bearing: 1, range: 1 } as unknown as BlasterBolt);
 		}).toThrow(
-			coded(new TypeError('FULCRO7004: Storage.set: the value is not a value of Particle.'), {
+			coded(new TypeError('FULCRO7004: Storage.set: the value is not a value of BlasterBolt.'), {
 				operation: 'Storage.set',
-				element: 'Particle',
+				element: 'BlasterBolt',
 			}),
 		);
 	});
 
 	it('should refuse an index outside it', () => {
-		expect(() => allocate(Particle, 2, createManagedAllocator()).get(2)).toThrow(
+		expect(() => allocate(BlasterBolt, 2, createManagedAllocator()).get(2)).toThrow(
 			coded(new RangeError('FULCRO7002: Storage.get: index 2 is outside a storage of length 2.'), {
 				operation: 'Storage.get',
 				index: 2,
@@ -230,7 +230,7 @@ describe('allocate', () => {
 				{
 					name: 'T',
 					layout: { size: 4, alignment: 4 },
-				} as unknown as typeof Particle,
+				} as unknown as typeof BlasterBolt,
 				1,
 				allocator,
 			);
@@ -256,9 +256,9 @@ describe('allocate', () => {
 			const { allocator, requests } = createLedgerAllocator();
 
 			const element = {
-				...Particle,
-				layout: { size: Particle.layout.size, alignment },
-			} as unknown as typeof Particle;
+				...BlasterBolt,
+				layout: { size: BlasterBolt.layout.size, alignment },
+			} as unknown as typeof BlasterBolt;
 
 			expect(() => allocate(element, 1, allocator)).toThrow(
 				coded(
@@ -279,7 +279,7 @@ describe('allocate', () => {
 	it('should refuse a length that is not a count, before asking for memory', () => {
 		const { allocator, requests } = createLedgerAllocator();
 
-		expect(() => allocate(Particle, -1, allocator)).toThrow(
+		expect(() => allocate(BlasterBolt, -1, allocator)).toThrow(
 			coded(
 				new RangeError(
 					'FULCRO7001: allocate: expected a length that is a non-negative safe integer, received -1.',
@@ -292,7 +292,7 @@ describe('allocate', () => {
 	});
 
 	it('should pass on the allocator’s refusal when it has no room', () => {
-		expect(() => allocate(Particle, 3, createStackAllocator(16))).toThrow(
+		expect(() => allocate(BlasterBolt, 3, createStackAllocator(16))).toThrow(
 			coded(
 				new RangeError(
 					'FULCRO7007: StackAllocator.allocate: 24 bytes aligned to 4 were requested, but only 16 of 16 bytes remain.',
@@ -332,7 +332,7 @@ describe('allocate', () => {
 		['DoublePrecisionFloat', DoublePrecisionFloat, Number.MIN_VALUE],
 	] as const)('should hold %s and give back the value it was handed', (_name, type, source) => {
 		const { allocator, requests } = createLedgerAllocator();
-		const element = type as unknown as typeof Particle;
+		const element = type as unknown as typeof BlasterBolt;
 		const value = (type.from as (value: number | bigint) => unknown)(source);
 		const values = allocate(element, 3, allocator) as unknown as Storage<unknown>;
 
@@ -373,14 +373,14 @@ describe('allocate', () => {
 	});
 
 	it('should infer the struct it stores', () => {
-		expectTypeOf(allocate(Particle, 1, createManagedAllocator())).toEqualTypeOf<
-			Storage<Particle>
+		expectTypeOf(allocate(BlasterBolt, 1, createManagedAllocator())).toEqualTypeOf<
+			Storage<BlasterBolt>
 		>();
 
-		expectTypeOf(allocate(Particle, 1, createManagedAllocator()))
+		expectTypeOf(allocate(BlasterBolt, 1, createManagedAllocator()))
 			.toHaveProperty('set')
 			.parameter(1)
-			.toEqualTypeOf<Particle>();
+			.toEqualTypeOf<BlasterBolt>();
 
 		expectTypeOf(createStackAllocator(8).enter()).toExtend<Parameters<typeof allocate>[2]>();
 	});

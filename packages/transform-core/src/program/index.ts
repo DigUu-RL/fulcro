@@ -14,9 +14,9 @@ import { createTransformer } from '@/src/transformer';
  *
  * The transformer needs a type checker, and no bundler has one: esbuild and swc
  * reach TypeScript by erasing its types, never by resolving them, so a plugin
- * cannot simply hand them a transformer and expect `defaultOf<Order>()` to mean
- * anything. This module therefore builds and keeps its own program, and
- * transforms each file itself.
+ * cannot simply hand them a transformer and expect
+ * `defaultOf<PreflightChecklist>()` to mean anything. This module therefore
+ * builds and keeps its own program, and transforms each file itself.
  *
  * Nothing here knows about any bundler: the adapters built on top only have to
  * call {@link createFileTransformer} and hand back what it returns.

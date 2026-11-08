@@ -9,20 +9,20 @@ import { requireLength } from '@/src/storage/requireLength';
  * Allocates a storage of values from the allocator the caller chose.
  *
  * ```ts
- * const Particle = struct('Particle', {
- * 	x: SinglePrecisionFloat,
- * 	y: SinglePrecisionFloat,
+ * const BlasterBolt = struct('BlasterBolt', {
+ * 	heat: SinglePrecisionFloat,
+ * 	speed: SinglePrecisionFloat,
  * });
  *
  * {
  * 	using frame = stack.enter();
- * 	const particles: Storage<Struct<typeof Particle>> = allocate(
- * 		Particle,
+ * 	const bolts: Storage<Struct<typeof BlasterBolt>> = allocate(
+ * 		BlasterBolt,
  * 		10_000,
  * 		frame,
  * 	);
  *
- * 	particles.set(0, Particle.from({ x: 1, y: 2 }));
+ * 	bolts.set(0, BlasterBolt.from({ heat: 1, speed: 0.5 }));
  * }
  * ```
  *

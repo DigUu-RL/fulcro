@@ -166,17 +166,17 @@ describe('Fraction', () => {
 		});
 
 		it('should be stored by a struct as its two parts', () => {
-			const Scale = struct('Scale', {
+			const ShieldRatio = struct('ShieldRatio', {
 				factor: FractionOf(UnsignedInteger(16)),
 			});
 
-			const view = new DataView(new ArrayBuffer(Scale.layout.size));
-			const value = Scale.from({ factor: { numerator: 3, denominator: 4 } });
+			const view = new DataView(new ArrayBuffer(ShieldRatio.layout.size));
+			const value = ShieldRatio.from({ factor: { numerator: 3, denominator: 4 } });
 
-			Scale.write(view, 0, value);
+			ShieldRatio.write(view, 0, value);
 
 			expect([view.getUint16(0, true), view.getUint16(2, true)]).toEqual([3, 4]);
-			expect(Scale.equals(Scale.read(view, 0), value)).toBe(true);
+			expect(ShieldRatio.equals(ShieldRatio.read(view, 0), value)).toBe(true);
 		});
 	});
 

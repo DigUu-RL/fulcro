@@ -14,9 +14,9 @@ import { createView } from '@/src/region';
  * time.
  *
  * ```ts
- * const scores = borrowMutable(owner);
+ * const generators = borrowMutable(shieldGrid);
  *
- * scores.set(0, 10);
+ * generators.set(0, 10);
  * ```
  *
  * Exclusive: taking it ends every borrow of the owner taken before, shared or

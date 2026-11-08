@@ -213,4 +213,30 @@ describe('sequenceEqual', () => {
 
 		expect(read()).toBe(2);
 	});
+
+	it('should close both sides when it stops before either ends', () => {
+		// Each roster is a generator holding a comlink open until its finally
+		// block runs, which happens only when it ends or is returned.
+		let openComlinks = 0;
+
+		const roster = function* (pilots: readonly string[]): Generator<string> {
+			openComlinks++;
+
+			try {
+				yield* pilots;
+			} finally {
+				openComlinks--;
+			}
+		};
+
+		const red = SequenceCollection.from(roster(['Red Leader', 'Red Two', 'Red Five']));
+
+		expect(red.sequenceEqual(roster(['Red Leader', 'Gold Leader', 'Red Five']))).toBe(false);
+		expect(openComlinks).toBe(0);
+
+		const gold = SequenceCollection.from(roster(['Gold Leader']));
+
+		expect(gold.sequenceEqual(roster(['Gold Leader', 'Gold Two']))).toBe(false);
+		expect(openComlinks).toBe(0);
+	});
 });

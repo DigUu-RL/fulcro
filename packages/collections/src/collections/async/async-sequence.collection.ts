@@ -116,7 +116,7 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 	 * wanted.
 	 *
 	 * Elements of a synchronous source that are promises are awaited on the way
-	 * through, which covers the common `ids.map(load)` shape.
+	 * through, which covers the common `callSigns.map(loadPilot)` shape.
 	 *
 	 * @template T Type of the elements contained in the sequence.
 	 * @param source Asynchronous iterable, or iterable of values and promises,
@@ -1167,15 +1167,27 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 				? (second as AsyncIterable<T>)[Symbol.asyncIterator]()
 				: (second as Iterable<T>)[Symbol.iterator]();
 
-		for await (const item of this.source) {
-			AsyncSequenceCollection.checkAborted(options);
+		// The loop closes this sequence's own source when it stops early; the
+		// other side is opened by hand, so it is closed by hand, unless it ran out.
+		let otherDone = false;
 
-			const next = await other.next();
+		try {
+			for await (const item of this.source) {
+				AsyncSequenceCollection.checkAborted(options);
 
-			if (next.done === true || next.value !== item) return false;
+				const next = await other.next();
+
+				otherDone = next.done === true;
+
+				if (otherDone || next.value !== item) return false;
+			}
+
+			otherDone = (await other.next()).done === true;
+
+			return otherDone;
+		} finally {
+			if (!otherDone) await other.return?.();
 		}
-
-		return (await other.next()).done === true;
 	}
 
 	/**
@@ -1773,12 +1785,23 @@ export class AsyncSequenceCollection<T> implements AsyncSequence<T> {
 						? (second as AsyncIterable<S>)[Symbol.asyncIterator]()
 						: (second as Iterable<S>)[Symbol.iterator]();
 
-				for await (const item of source) {
-					const next = await other.next();
+				let otherDone = false;
 
-					if (next.done === true) return;
+				try {
+					for await (const item of source) {
+						const next = await other.next();
 
-					yield await resultSelector(item, next.value);
+						if (next.done === true) {
+							otherDone = true;
+							return;
+						}
+
+						yield await resultSelector(item, next.value);
+					}
+				} finally {
+					// The loop closes `source`; the other side is opened by hand,
+					// so it is closed by hand when it did not run out first.
+					if (!otherDone) await other.return?.();
 				}
 			},
 		});

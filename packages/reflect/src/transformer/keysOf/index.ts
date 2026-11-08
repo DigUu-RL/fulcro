@@ -10,7 +10,7 @@ import { keysOfType } from '@/src/transformer/describe';
  *
  * ```ts
  * // written              // emitted
- * keysOf<Order>()         keysOf(["id", "customer", "total"])
+ * keysOf<Bounty>()        keysOf(["target", "client", "credits"])
  * ```
  *
  * The keys of a type, which a runtime cannot read because the type is gone by

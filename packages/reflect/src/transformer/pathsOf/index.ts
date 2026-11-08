@@ -10,12 +10,12 @@ import { pathsOfType } from '@/src/transformer/describe';
  * Rewriter of `pathsOf`.
  *
  * ```ts
- * // written              // emitted
- * pathsOf<Order>()        pathsOf([
- *                           { path: "id", type: "number", optional: false },
- *                           { path: "customer.email", type: "string", … },
- *                           { path: "items[].sku", type: "string", … },
- *                         ])
+ * // written                  // emitted
+ * pathsOf<DockingRecord>()    pathsOf([
+ *                               { path: "bay", type: "number", optional: false },
+ *                               { path: "captain.name", type: "string", … },
+ *                               { path: "cargo[].manifest", type: "string", … },
+ *                             ])
  * ```
  *
  * Every leaf the type can be walked to, listed once at build time rather than

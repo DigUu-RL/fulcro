@@ -11,28 +11,28 @@ import { keysOf } from '@/src/functions/utils/keysOf';
  */
 
 /** A shape with one of everything the walk has a rule for. */
-interface Order {
+interface DockingRecord {
 	readonly id: number;
 	note?: string;
-	readonly customer: {
-		readonly email: string;
-		readonly city: { name: string };
+	readonly captain: {
+		readonly callSign: string;
+		readonly system: { name: string };
 	};
-	readonly items: readonly { readonly sku: string; readonly qty: number }[];
-	readonly status: 'pending' | 'paid';
-	readonly placedAt: Date;
-	readonly parent?: Order;
+	readonly items: readonly { readonly manifest: string; readonly qty: number }[];
+	readonly status: 'docked' | 'departed';
+	readonly arrivedAt: Date;
+	readonly parent?: DockingRecord;
 }
 
 describe('keysOf', () => {
 	it('should list the keys the type declares, in order', () => {
-		expect(keysOf<Order>()).toEqual([
+		expect(keysOf<DockingRecord>()).toEqual([
 			'id',
 			'note',
-			'customer',
+			'captain',
 			'items',
 			'status',
-			'placedAt',
+			'arrivedAt',
 			'parent',
 		]);
 	});
@@ -40,7 +40,7 @@ describe('keysOf', () => {
 	it('should include an optional key', () => {
 		// It is declared, so it is a key. Whether a value carries it is a
 		// different question, and one `keysOf` deliberately does not answer.
-		expect(keysOf<Order>()).toContain('note');
+		expect(keysOf<DockingRecord>()).toContain('note');
 	});
 
 	it('should report an anonymous shape too', () => {

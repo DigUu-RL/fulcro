@@ -7,8 +7,8 @@ import { describe, expect, it } from 'vitest';
 import { createEquals, type EqualityRule, type Equals } from '@/src/createEquals';
 import { compileFixture, COMPILERS, reportedLines } from '@/src/tests/compileFixture';
 
-/** A value whose identity carries nothing: two with one key are the same user. */
-class User {
+/** A value whose identity carries nothing: two with one service number are the same pilot. */
+class Pilot {
 	readonly id: number;
 	readonly name: string;
 
@@ -20,30 +20,30 @@ class User {
 
 /**
  * @param value Value to inspect.
- * @returns `true` for a user.
+ * @returns `true` for a pilot.
  */
-const isUser = (value: unknown): value is User => value instanceof User;
+const isPilot = (value: unknown): value is Pilot => value instanceof Pilot;
 
-/** Users compared by their key alone. */
-const byId: EqualityRule<User> = {
-	is: isUser,
+/** Pilots compared by their key alone. */
+const byId: EqualityRule<Pilot> = {
+	is: isPilot,
 	equals: (left, right) => left.id === right.id,
 };
 
-/** A tree whose children are compared by the variant they belong to. */
-class Tree {
-	readonly label: string;
-	readonly children: Tree[] = [];
+/** A Jedi lineage whose padawans are compared by the variant they belong to. */
+class Lineage {
+	readonly name: string;
+	readonly padawans: Lineage[] = [];
 
-	constructor(label: string) {
-		this.label = label;
+	constructor(name: string) {
+		this.name = name;
 	}
 }
 
-const byLabelAndChildren: EqualityRule<Tree> = {
-	is: (value): value is Tree => value instanceof Tree,
+const byNameAndPadawans: EqualityRule<Lineage> = {
+	is: (value): value is Lineage => value instanceof Lineage,
 	equals: (left, right, nested) => {
-		return left.label === right.label && nested(left.children, right.children);
+		return left.name === right.name && nested(left.padawans, right.padawans);
 	},
 };
 
@@ -65,41 +65,48 @@ const refusal = (rules: unknown): unknown => {
 
 describe('createEquals', () => {
 	describe('with a rule', () => {
-		const sameUser: Equals = createEquals([byId]);
+		const samePilot: Equals = createEquals([byId]);
 
 		it('should compare the values it recognises by the rule', () => {
-			expect(sameUser(new User(1, 'ada'), new User(1, 'Ada Lovelace'))).toBe(true);
-			expect(sameUser(new User(1, 'ada'), new User(2, 'ada'))).toBe(false);
+			expect(samePilot(new Pilot(1, 'wedge'), new Pilot(1, 'Wedge Antilles'))).toBe(true);
+			expect(samePilot(new Pilot(1, 'wedge'), new Pilot(2, 'wedge'))).toBe(false);
 		});
 
 		it('should compare everything else as equals does', () => {
-			expect(sameUser([new User(1, 'ada')], [new User(1, 'Ada')])).toBe(true);
-			expect(sameUser({ owner: new User(1, 'ada') }, { owner: new User(1, 'Ada') })).toBe(true);
-			expect(sameUser([1, 2], [1, 2])).toBe(true);
+			expect(samePilot([new Pilot(1, 'wedge')], [new Pilot(1, 'Wedge')])).toBe(true);
+
+			expect(samePilot({ owner: new Pilot(1, 'wedge') }, { owner: new Pilot(1, 'Wedge') })).toBe(
+				true,
+			);
+
+			expect(samePilot([1, 2], [1, 2])).toBe(true);
 		});
 
 		it('should refuse a value it recognises against one it does not', () => {
-			expect(sameUser<unknown>(new User(1, 'ada'), { id: 1, name: 'ada' })).toBe(false);
-			expect(sameUser<unknown>({ id: 1, name: 'ada' }, new User(1, 'ada'))).toBe(false);
+			expect(samePilot<unknown>(new Pilot(1, 'wedge'), { id: 1, name: 'wedge' })).toBe(false);
+			expect(samePilot<unknown>({ id: 1, name: 'wedge' }, new Pilot(1, 'wedge'))).toBe(false);
 		});
 
 		it('should never ask the rule about a value and itself', () => {
-			const never: EqualityRule<User> = { is: isUser, equals: () => false };
-			const ada = new User(1, 'ada');
+			const never: EqualityRule<Pilot> = { is: isPilot, equals: () => false };
+			const wedge = new Pilot(1, 'wedge');
 
-			expect(createEquals([never])(ada, ada)).toBe(true);
+			expect(createEquals([never])(wedge, wedge)).toBe(true);
 		});
 	});
 
 	describe('with several rules', () => {
 		it('should let the first rule that recognises a value decide', () => {
-			const byName: EqualityRule<User> = {
-				is: isUser,
+			const byName: EqualityRule<Pilot> = {
+				is: isPilot,
 				equals: (left, right) => left.name === right.name,
 			};
 
-			expect(createEquals([byId, byName])(new User(1, 'ada'), new User(1, 'grace'))).toBe(true);
-			expect(createEquals([byName, byId])(new User(1, 'ada'), new User(1, 'grace'))).toBe(false);
+			expect(createEquals([byId, byName])(new Pilot(1, 'wedge'), new Pilot(1, 'biggs'))).toBe(true);
+
+			expect(createEquals([byName, byId])(new Pilot(1, 'wedge'), new Pilot(1, 'biggs'))).toBe(
+				false,
+			);
 		});
 
 		it('should take over a kind equals already compares', () => {
@@ -120,46 +127,46 @@ describe('createEquals', () => {
 				equals: (left, right) => left.toLowerCase() === right.toLowerCase(),
 			};
 
-			expect(createEquals([ignoringCase])({ name: 'Ada' }, { name: 'ADA' })).toBe(true);
+			expect(createEquals([ignoringCase])({ name: 'Wedge' }, { name: 'WEDGE' })).toBe(true);
 		});
 	});
 
 	describe('with a rule that compares what its values hold', () => {
-		const sameTree: Equals = createEquals([byLabelAndChildren]);
+		const sameLineage: Equals = createEquals([byNameAndPadawans]);
 
 		/**
-		 * @returns A root with two children, the second holding a grandchild.
+		 * @returns Yoda with two padawans, the second training one of his own.
 		 */
-		const sample = (): Tree => {
-			const root = new Tree('root');
-			const second = new Tree('second');
+		const templeArchive = (): Lineage => {
+			const yoda = new Lineage('Yoda');
+			const dooku = new Lineage('Count Dooku');
 
-			second.children.push(new Tree('grandchild'));
-			root.children.push(new Tree('first'), second);
+			dooku.padawans.push(new Lineage('Qui-Gon Jinn'));
+			yoda.padawans.push(new Lineage('Ki-Adi-Mundi'), dooku);
 
-			return root;
+			return yoda;
 		};
 
 		it('should compare the values inside through the variant', () => {
-			expect(sameTree(sample(), sample())).toBe(true);
+			expect(sameLineage(templeArchive(), templeArchive())).toBe(true);
 		});
 
 		it('should find a difference deep inside', () => {
-			const changed: Tree = sample();
+			const changed: Lineage = templeArchive();
 
-			changed.children.at(-1)?.children.push(new Tree('extra'));
+			changed.padawans.at(-1)?.padawans.push(new Lineage('Obi-Wan Kenobi'));
 
-			expect(sameTree(sample(), changed)).toBe(false);
+			expect(sameLineage(templeArchive(), changed)).toBe(false);
 		});
 
-		it('should compare trees that hold themselves', () => {
-			const left = new Tree('loop');
-			const right = new Tree('loop');
+		it('should compare lineages that hold themselves', () => {
+			const left = new Lineage('Darth Plagueis');
+			const right = new Lineage('Darth Plagueis');
 
-			left.children.push(left);
-			right.children.push(right);
+			left.padawans.push(left);
+			right.padawans.push(right);
 
-			expect(sameTree(left, right)).toBe(true);
+			expect(sameLineage(left, right)).toBe(true);
 		});
 	});
 
@@ -187,14 +194,14 @@ describe('createEquals', () => {
 
 	describe('when a rule throws', () => {
 		it('should propagate the error', () => {
-			const broken: EqualityRule<User> = {
-				is: isUser,
+			const broken: EqualityRule<Pilot> = {
+				is: isPilot,
 				equals: () => {
-					throw new RangeError('broken rule');
+					throw new RangeError('a rule with a restraining bolt');
 				},
 			};
 
-			expect(() => createEquals([broken])(new User(1, 'ada'), new User(1, 'ada'))).toThrow(
+			expect(() => createEquals([broken])(new Pilot(1, 'wedge'), new Pilot(1, 'wedge'))).toThrow(
 				RangeError,
 			);
 		});
@@ -203,24 +210,24 @@ describe('createEquals', () => {
 	describe('after it was made', () => {
 		it('should keep the rules it was given, whatever happens to the list', () => {
 			const rules: EqualityRule<unknown>[] = [byId];
-			const sameUser: Equals = createEquals(rules);
+			const samePilot: Equals = createEquals(rules);
 
 			rules.length = 0;
 
-			expect(sameUser(new User(1, 'ada'), new User(1, 'grace'))).toBe(true);
+			expect(samePilot(new Pilot(1, 'wedge'), new Pilot(1, 'biggs'))).toBe(true);
 		});
 
 		it('should keep the members it read, whatever happens to the rule', () => {
-			const rule: { is: (value: unknown) => value is User; equals: () => boolean } = {
-				is: isUser,
+			const rule: { is: (value: unknown) => value is Pilot; equals: () => boolean } = {
+				is: isPilot,
 				equals: (): boolean => true,
 			};
 
-			const sameUser: Equals = createEquals([rule]);
+			const samePilot: Equals = createEquals([rule]);
 
 			rule.equals = (): boolean => false;
 
-			expect(sameUser(new User(1, 'ada'), new User(2, 'grace'))).toBe(true);
+			expect(samePilot(new Pilot(1, 'wedge'), new Pilot(2, 'biggs'))).toBe(true);
 		});
 	});
 

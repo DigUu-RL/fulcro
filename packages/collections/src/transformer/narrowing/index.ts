@@ -16,8 +16,8 @@ import { resolveTypeToken } from '@/src/transformer/resolve';
  *
  * ```ts
  * // written                    // emitted
- * values.ofType<string>()       values.ofType('string')
- * values.cast<Admin>()          values.cast(Admin)
+ * fragments.ofType<string>()    fragments.ofType('string')
+ * hangar.cast<Starship>()       hangar.cast(Starship)
  * ```
  *
  * A type argument is erased before the code runs, so without this the call

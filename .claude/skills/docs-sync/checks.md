@@ -65,8 +65,9 @@ the page reads.
 
 **A finding** is a fence that does not compile, with the compiler's own message
 quoted. A fence that compiles only with the transformers applied is reported as
-such and is not a finding — `as<Order>()` and `.cast<Order>()` are the
-transformer's forms, and the page that shows them says the plugin is needed. A
+such and is not a finding — `as<DockingRecord>()` and
+`.cast<DockingRecord>()` are the transformer's forms, and the page that shows
+them says the plugin is needed. A
 fence that needs the transformer and sits on a page that never says so **is** a
 finding, because a consumer copying it gets the runtime fallback and no
 diagnostic.

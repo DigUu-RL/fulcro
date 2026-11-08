@@ -24,12 +24,12 @@ import type { ReadOnlyView, View } from '@/src/view';
  * copying them, without owning them, and without outliving their memory.
  */
 
-const Point = struct('Point', {
-	x: SinglePrecisionFloat,
-	y: SinglePrecisionFloat,
+const SensorContact = struct('SensorContact', {
+	bearing: SinglePrecisionFloat,
+	range: SinglePrecisionFloat,
 });
 
-type Point = Struct<typeof Point>;
+type SensorContact = Struct<typeof SensorContact>;
 
 /**
  * A storage of `length` numbers holding `0, 1, 2, …`.
@@ -89,12 +89,14 @@ describe('asView over a storage', () => {
 	});
 
 	it('should observe a struct storage, its values read from the bytes', () => {
-		const points = createFixedBufferStorage(Point, 3);
-		const tail: View<Point> = asView(points, 1);
+		const points = createFixedBufferStorage(SensorContact, 3);
+		const tail: View<SensorContact> = asView(points, 1);
 
-		tail.set(1, Point.from({ x: 4, y: 5 }));
+		tail.set(1, SensorContact.from({ bearing: 4, range: 5 }));
 
-		expect(Point.equals(points.get(2), Point.from({ x: 4, y: 5 }))).toBe(true);
+		expect(SensorContact.equals(points.get(2), SensorContact.from({ bearing: 4, range: 5 }))).toBe(
+			true,
+		);
 	});
 
 	it('should allow an empty region, at the end too', () => {
@@ -341,12 +343,12 @@ describe('View<T>', () => {
 
 	it('should refuse every access once the allocator released its memory', () => {
 		const arena = createArenaAllocator(256);
-		const points = allocate(Point, 4, arena);
-		const view: View<Point> = asView(points, 1, 2);
+		const points = allocate(SensorContact, 4, arena);
+		const view: View<SensorContact> = asView(points, 1, 2);
 
-		view.set(0, Point.from({ x: 1, y: 1 }));
+		view.set(0, SensorContact.from({ bearing: 1, range: 1 }));
 		arena.reset();
-		allocate(Point, 4, arena).set(1, Point.from({ x: 9, y: 9 }));
+		allocate(SensorContact, 4, arena).set(1, SensorContact.from({ bearing: 9, range: 9 }));
 
 		expect(() => view.get(0)).toThrow(
 			coded(
@@ -358,7 +360,7 @@ describe('View<T>', () => {
 		);
 
 		expect(() => {
-			view.set(0, Point.from({ x: 2, y: 2 }));
+			view.set(0, SensorContact.from({ bearing: 2, range: 2 }));
 		}).toThrow(
 			coded(
 				new Error(
@@ -432,7 +434,11 @@ describe('asView types', () => {
 	it('should infer the type of the values from its source', () => {
 		expectTypeOf(asView(counting(1))).toEqualTypeOf<View<number>>();
 		expectTypeOf(asView(['a'])).toEqualTypeOf<View<string>>();
-		expectTypeOf(asView(createFixedBufferStorage(Point, 1))).toEqualTypeOf<View<Point>>();
+
+		expectTypeOf(asView(createFixedBufferStorage(SensorContact, 1))).toEqualTypeOf<
+			View<SensorContact>
+		>();
+
 		expectTypeOf(asView(pointerTo([true], 0), 1)).toEqualTypeOf<View<boolean>>();
 		expectTypeOf(asView(referenceTo(1n))).toEqualTypeOf<View<bigint>>();
 	});

@@ -7,17 +7,17 @@ is at the start of the message and on the error itself; the details are the
 values the message was written from, by name:
 
 ```text
-TypeError: FULCRO6021: Vector3.from: missing field 'x'.
+TypeError: FULCRO6021: NavigationFix.from: missing field 'parsecsFromCoruscant'.
 ```
 
 ```ts
 import { isFulcroError } from '@fulcro/errors';
 
 try {
-	Vector3.from(payload);
+	NavigationFix.from(transmission);
 } catch (error) {
 	if (isFulcroError(error, 'FULCRO6021')) {
-		error.details.field; // 'x' — ask for it again
+		error.details.field; // 'parsecsFromCoruscant' — ask for it again
 	}
 }
 ```
@@ -29,6 +29,44 @@ details keeps its name.
 
 The class does not change either. An error that was a `RangeError` before it
 had a code is still a `RangeError`, so `instanceof` checks keep working.
+
+R2-D2 relaying a navigation fix whose transmission was cut short — the code
+says what went wrong, and the details say which field to ask for again:
+
+```ts
+import { isFulcroError } from '@fulcro/errors';
+import { SinglePrecisionFloat, struct, UnsignedInteger } from '@fulcro/types';
+
+const NavigationFix = struct('NavigationFix', {
+	parsecsFromCoruscant: SinglePrecisionFloat,
+	hyperspaceLane: UnsignedInteger(8),
+});
+
+const receiveFix = (transmission: string, retransmit: (field: string) => void): void => {
+	try {
+		const fix = NavigationFix.from(JSON.parse(transmission));
+
+		console.log(
+			`Lane ${String(fix.hyperspaceLane)}, ${String(fix.parsecsFromCoruscant)} parsecs out`,
+		);
+	} catch (error) {
+		if (isFulcroError(error, 'FULCRO6021')) {
+			retransmit(error.details.field);
+
+			return;
+		}
+
+		throw error;
+	}
+};
+
+receiveFix('{ "hyperspaceLane": 3 }', (field) => {
+	console.log(`R2-D2, transmit '${field}' again`); // "R2-D2, transmit 'parsecsFromCoruscant' again"
+});
+
+receiveFix('{ "hyperspaceLane": 3, "parsecsFromCoruscant": 12 }', () => {});
+// 'Lane 3, 12 parsecs out'
+```
 
 ## Reading what went wrong
 
@@ -48,6 +86,26 @@ called it. The other fields are the code's own, and each code's section lists
 them. A number stays a number; a value of any other kind arrives described as
 text, so an error never carries your objects with it into a log. The details
 are frozen.
+
+A Star Destroyer's hangar control, asked for a bay it does not have:
+
+```ts
+import { isFulcroError } from '@fulcro/errors';
+import { createManagedStorage } from '@fulcro/memory';
+
+const hangarBays = createManagedStorage<string | null>(10, null);
+
+hangarBays.set(3, 'Lambda-class shuttle Tydirium');
+
+try {
+	hangarBays.get(12);
+} catch (error) {
+	if (isFulcroError(error, 'FULCRO7002')) {
+		console.log(error.details); // { operation: 'ManagedStorage.get', index: 12, length: 10 }
+		console.log(error instanceof RangeError); // true
+	}
+}
+```
 
 Three ways to recognise an error of this library, from `@fulcro/errors`:
 
@@ -71,6 +129,36 @@ import type { DetailsOf } from '@fulcro/errors';
 
 const describe = (details: DetailsOf<'FULCRO7002'>): string =>
 	`asked for ${details.index}, there were ${details.length}`;
+```
+
+The deck officer's console, turning any error of the library into a line for the
+crew and keeping the bay number as a number:
+
+```ts
+import { FulcroError, isFulcroError } from '@fulcro/errors';
+import type { DetailsOf } from '@fulcro/errors';
+import { createManagedStorage } from '@fulcro/memory';
+
+const describeBay = (details: DetailsOf<'FULCRO7002'>): string => {
+	return `Bay ${String(details.index)} requested; this hangar has ${String(details.length)} bays`;
+};
+
+const forTheCrew = (error: unknown): string => {
+	if (isFulcroError(error, 'FULCRO7002')) return describeBay(error.details);
+	if (error instanceof FulcroError) return `${error.code} in ${error.details.operation}`;
+
+	return 'Unknown malfunction — send for the Chief Engineer';
+};
+
+const hangarBays = createManagedStorage<string | null>(10, null);
+
+try {
+	hangarBays.get(12);
+} catch (error) {
+	console.log(forTheCrew(error)); // 'Bay 12 requested; this hangar has 10 bays'
+}
+
+console.log(forTheCrew(new Error('Rebel sabotage'))); // 'Unknown malfunction — send for the Chief Engineer'
 ```
 
 ## Where a code comes from
@@ -99,11 +187,35 @@ whole struct. The error keeps the field's code and its class, and gains the
 place it was found:
 
 ```text
-RangeError: FULCRO6031: Particle.from: field 'charge': UnsignedInteger<8>.from: 300 is outside [0, 255].
+RangeError: FULCRO6031: Starfighter.from: field 'crew': UnsignedInteger<8>.from: 300 is outside [0, 255].
 ```
 
 The original error, as the field raised it, is the `cause`. The details are the
 field's, unchanged: the context is in the message only.
+
+A starfighter registered with a crew no cockpit could hold:
+
+```ts
+import { isFulcroError } from '@fulcro/errors';
+import { SinglePrecisionFloat, struct, UnsignedInteger } from '@fulcro/types';
+
+const Starfighter = struct('Starfighter', {
+	crew: UnsignedInteger(8),
+	shields: SinglePrecisionFloat,
+});
+
+try {
+	Starfighter.from({ crew: 300, shields: 1 });
+} catch (error) {
+	if (isFulcroError(error, 'FULCRO6031')) {
+		console.log(error.message);
+		// "FULCRO6031: Starfighter.from: field 'crew': UnsignedInteger<8>.from: 300 is outside [0, 255]."
+
+		console.log((error.cause as Error).message); // 'FULCRO6031: UnsignedInteger<8>.from: 300 is outside [0, 255].'
+		console.log(error.details.operation); // 'UnsignedInteger<8>.from' — the field's details, unchanged
+	}
+}
+```
 
 ## Across a worker
 

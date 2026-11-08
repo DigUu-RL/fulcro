@@ -1,5 +1,36 @@
 # @fulcro/collections
 
+## 2.1.3
+
+### Patch Changes
+
+- c30ca3d: `any()` with no condition, `sequenceEqual` and `zip` now close the iterators they
+  open by hand when they stop before the end, in both the synchronous and the
+  asynchronous sequence. A generator behind one of them — a file being read, a
+  connection, a lock — used to be left suspended with its `finally` block never
+  run; it is now returned, as every other operator already did. Nothing about the
+  results, the number of elements read or the order of the calls changes.
+- @fulcro/transform-core@2.1.3
+
+## 2.1.2
+
+### Patch Changes
+
+- 29c5fb1: The examples in the doc comments your editor shows now use Star Wars names and
+  data, the same as the guides. Two of them had drifted from the code and are
+  fixed: `prefixError` quoted a message format the types no longer produce, and
+  `defaultOf` and the transformer tables now show what the calls actually return.
+- Updated dependencies [29c5fb1]
+  - @fulcro/errors@3.1.1
+  - @fulcro/transform-core@2.1.2
+
+## 2.1.1
+
+### Patch Changes
+
+- bd3e25f: Adjacent `where` and `select` stages of a sequence are now traversed by one loop instead of one generator per stage; results, call order and early termination are unchanged.
+- @fulcro/transform-core@2.1.1
+
 ## 2.1.0
 
 ### Patch Changes

@@ -109,8 +109,8 @@ describe('createError', () => {
 describe('prefixError', () => {
 	it('should run no template at all', () => {
 		const inner = createError('FULCRO6021', {
-			operation: 'Point.from',
-			field: 'y',
+			operation: 'SensorContact.from',
+			field: 'range',
 		});
 
 		const templates = spyOnEveryTemplate();
@@ -118,7 +118,7 @@ describe('prefixError', () => {
 		let located = inner;
 
 		for (let level = 0; level < ERRORS; level++) {
-			located = prefixError(located, `Level${String(level)}.from: field 'x'`);
+			located = prefixError(located, `Deck${String(level)}.from: field 'speed'`);
 		}
 
 		expect(templates()).toBe(0);

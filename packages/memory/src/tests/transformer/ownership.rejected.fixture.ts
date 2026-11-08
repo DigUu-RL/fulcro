@@ -35,11 +35,11 @@ export const movedTwice = (): void => {
 
 export const readAfterBorrowedForWriting = (): number => {
 	const owner = create();
-	const reading = borrow(owner);
+	const scan = borrow(owner);
 
 	borrowMutable(owner);
 
-	return reading.get(0); // FULCRO7028
+	return scan.get(0); // FULCRO7028
 };
 
 export const writtenAfterBorrowedForReading = (): void => {
@@ -62,11 +62,11 @@ export const writtenAfterBorrowedForWritingAgain = (): number => {
 
 export const borrowUsedAfterItsOwnerMoved = (): number => {
 	const owner = create();
-	const reading = borrow(owner);
+	const scan = borrow(owner);
 
 	move(owner);
 
-	return reading.get(0); // FULCRO7029
+	return scan.get(0); // FULCRO7029
 };
 
 export const usingOwnerBorrowedAfterMove = (): void => {
@@ -78,11 +78,11 @@ export const usingOwnerBorrowedAfterMove = (): void => {
 
 export const borrowOfAUsingOwnerUsedAfterItMoved = (): number => {
 	using owner = create();
-	const reading = borrow(owner);
+	const scan = borrow(owner);
 
 	move(owner);
 
-	return reading.get(0); // FULCRO7029
+	return scan.get(0); // FULCRO7029
 };
 
 export const maybeMoved = (): void => {

@@ -434,7 +434,7 @@ other projects are load on the machine the comparison is taken on.
 
 **Do not use this skill when:**
 
-- "How much does `groupBy` cost over a hundred thousand orders?" That is
+- "How much does `groupBy` cost over a hundred thousand docking records?" That is
   `/benchmark`, which has no earlier version to compare against.
 - "Is the tree green?" That is `/verify`.
 - "The regression is real — why?" That is `/diagnose`, and this report is what

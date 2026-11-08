@@ -10,8 +10,8 @@ import type { ReadOnlyView } from '@/src/view';
  * write it, copying nothing.
  *
  * ```ts
- * const settings: readonly number[] = [1, 2, 3, 4];
- * const tail: ReadOnlyView<number> = asReadOnlyView(settings, 2);
+ * const deflectorSettings: readonly number[] = [1, 2, 3, 4];
+ * const tail: ReadOnlyView<number> = asReadOnlyView(deflectorSettings, 2);
  *
  * tail.get(0); // 3
  * ```

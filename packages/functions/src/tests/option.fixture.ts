@@ -29,7 +29,7 @@ export const narrowedByNone = (): null | string =>
 	option.isNone() ? option.value : option.value.toUpperCase();
 
 /** Each constructor fits an option of the wider type. Must compile. */
-export const present: Option<string> = some('a');
+export const present: Option<string> = some('Tatooine');
 export const absent: Option<string> = none();
 export const converted: Option<string> = optionOf(nullable);
 export const inferred: Option<number> = optionOf(3);

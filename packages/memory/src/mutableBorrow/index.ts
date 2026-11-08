@@ -11,10 +11,10 @@ declare const mutableBorrow: unique symbol;
  * access to them while it lasts.
  *
  * ```ts
- * const scores = borrowMutable(owner);
+ * const generators = borrowMutable(shieldGrid);
  *
- * scores.set(0, 10);
- * scores.get(0); // 10
+ * generators.set(0, 10);
+ * generators.get(0); // 10
  * ```
  *
  * Exclusive: it ends as soon as its owner is moved or lent again, for reading

@@ -7,7 +7,8 @@ import type { RangeCatalog } from '@/src/definition';
  * the order is not by theme.
  *
  * `call` is the call as it was written, type arguments included —
- * `offsetOf<Point>('x')` — and `operation` the function's name alone.
+ * `offsetOf<Starfighter>('shields')` — and `operation` the function's name
+ * alone.
  */
 export const reflectCatalog = {
 	FULCRO4001: {

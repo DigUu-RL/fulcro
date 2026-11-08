@@ -28,7 +28,7 @@ describe('a fresh source', () => {
 describe('cancel', () => {
 	it('should report the reason it was given, on the token and on its signal', () => {
 		const source = createCancellationSource();
-		const reason = new Error('no longer wanted');
+		const reason = new Error('the plans are already aboard');
 
 		source.cancel(reason);
 
@@ -50,15 +50,15 @@ describe('cancel', () => {
 	it('should keep the first reason when called again', () => {
 		const source = createCancellationSource();
 
-		source.cancel('first');
-		source.cancel('second');
+		source.cancel('Red Leader');
+		source.cancel('Red Two');
 
-		expect(source.token.reason).toBe('first');
+		expect(source.token.reason).toBe('Red Leader');
 	});
 
 	it('should make throwIfCancelled throw the reason', () => {
 		const source = createCancellationSource();
-		const reason = new Error('stop');
+		const reason = new Error('abort the run');
 
 		source.cancel(reason);
 
@@ -74,21 +74,21 @@ describe('onCancelled', () => {
 		const handler = vi.fn();
 
 		source.token.onCancelled(handler);
-		source.cancel('why');
-		source.cancel('again');
+		source.cancel('the trench is too narrow');
+		source.cancel('stay on target');
 
 		expect(handler).toHaveBeenCalledTimes(1);
-		expect(handler).toHaveBeenCalledWith('why');
+		expect(handler).toHaveBeenCalledWith('the trench is too narrow');
 	});
 
 	it('should call a handler registered after the cancellation at once', () => {
 		const source = createCancellationSource();
 		const handler = vi.fn();
 
-		source.cancel('already');
+		source.cancel('the shield gate is closed');
 		source.token.onCancelled(handler);
 
-		expect(handler).toHaveBeenCalledExactlyOnceWith('already');
+		expect(handler).toHaveBeenCalledExactlyOnceWith('the shield gate is closed');
 	});
 
 	it('should not call a handler whose registration was disposed', () => {
@@ -118,7 +118,7 @@ describe('onCancelled', () => {
 
 	it('should report a throw from a late handler as a listener throw is reported, not to the caller', () => {
 		const source = createCancellationSource();
-		const error = new Error('from the handler');
+		const error = new Error('a droid with a restraining bolt');
 		const deferred: (() => void)[] = [];
 
 		const spy = vi.spyOn(globalThis, 'queueMicrotask').mockImplementation((callback) => {
@@ -158,10 +158,10 @@ describe('a parent token', () => {
 		const parent = createCancellationSource();
 		const child = createCancellationSource(parent.token);
 
-		parent.cancel('shutdown');
+		parent.cancel('evacuate Echo Base');
 
 		expect(child.token.isCancelled).toBe(true);
-		expect(child.token.reason).toBe('shutdown');
+		expect(child.token.reason).toBe('evacuate Echo Base');
 	});
 
 	it('should leave the parent alone when the child is cancelled', () => {
@@ -176,12 +176,12 @@ describe('a parent token', () => {
 	it('should start the child cancelled when the parent already is', () => {
 		const parent = createCancellationSource();
 
-		parent.cancel('earlier');
+		parent.cancel('Alderaan is gone');
 
 		const child = createCancellationSource(parent.token);
 
 		expect(child.token.isCancelled).toBe(true);
-		expect(child.token.reason).toBe('earlier');
+		expect(child.token.reason).toBe('Alderaan is gone');
 	});
 
 	it('should stop following the parent once the child is disposed', () => {
@@ -199,9 +199,9 @@ describe('a parent token', () => {
 		const child = createCancellationSource(parent.token);
 
 		child[Symbol.dispose]();
-		child.cancel('still works');
+		child.cancel('the hyperdrive is fixed');
 
-		expect(child.token.reason).toBe('still works');
+		expect(child.token.reason).toBe('the hyperdrive is fixed');
 	});
 
 	it('should follow through every generation', () => {
@@ -209,9 +209,9 @@ describe('a parent token', () => {
 		const middle = createCancellationSource(root.token);
 		const leaf = createCancellationSource(middle.token);
 
-		root.cancel('all of it');
+		root.cancel('the whole fleet jumps');
 
-		expect(leaf.token.reason).toBe('all of it');
+		expect(leaf.token.reason).toBe('the whole fleet jumps');
 	});
 });
 
@@ -222,13 +222,13 @@ describe('values taken off their object', () => {
 		const handler = vi.fn();
 
 		onCancelled(handler);
-		cancel('detached');
+		cancel('cut off from the Rebellion');
 
 		expect(() => {
 			throwIfCancelled();
 		}).toThrow();
 
-		expect(handler).toHaveBeenCalledWith('detached');
+		expect(handler).toHaveBeenCalledWith('cut off from the Rebellion');
 	});
 
 	it('should be frozen, so a consumer cannot replace what the work reads', () => {

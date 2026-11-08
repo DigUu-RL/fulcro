@@ -32,15 +32,15 @@ describe('isFulcroError', () => {
 	});
 
 	it('should accept an error placed in a wider context', () => {
-		const located = prefixError(outside(), 'Particles.update');
+		const located = prefixError(outside(), 'BlasterBolts.update');
 
 		expect(isFulcroError(located, 'FULCRO7002')).toBe(true);
 	});
 
 	it('should refuse an error carrying a code nobody registered', () => {
-		const foreign = Object.assign(new Error('ERR_SOMETHING: text'), {
-			code: 'ERR_SOMETHING',
-			details: { operation: 'something' },
+		const foreign = Object.assign(new Error('ERR_RESTRAINING_BOLT: text'), {
+			code: 'ERR_RESTRAINING_BOLT',
+			details: { operation: 'a droid with a restraining bolt' },
 		});
 
 		expect(isFulcroError(foreign)).toBe(false);
@@ -58,7 +58,7 @@ describe('isFulcroError', () => {
 	it('should refuse an error whose message has lost its code', () => {
 		const altered = outside();
 
-		altered.message = 'reworded by somebody';
+		altered.message = 'reworded by a protocol droid';
 
 		expect(isFulcroError(altered)).toBe(false);
 	});
@@ -77,7 +77,7 @@ describe('isFulcroError', () => {
 		expect(isFulcroError(null)).toBe(false);
 		expect(isFulcroError(undefined)).toBe(false);
 		expect(isFulcroError('FULCRO7002: text')).toBe(false);
-		expect(isFulcroError(new RangeError('plain'))).toBe(false);
+		expect(isFulcroError(new RangeError('Help me, Obi-Wan Kenobi'))).toBe(false);
 	});
 
 	it("should narrow the details to the code's fields", () => {

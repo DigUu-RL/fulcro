@@ -16,13 +16,13 @@ import { is, type TypeTest } from '@/src/functions/utils/is';
  */
 
 /** A record with one of everything worth checking. */
-interface Order {
+interface DockingRecord {
 	readonly id: number;
 	readonly note?: string;
 	readonly tags: string[];
-	readonly customer: { readonly email: string };
-	readonly status: 'pending' | 'paid';
-	readonly placedAt: Date;
+	readonly captain: { readonly callSign: string };
+	readonly status: 'docked' | 'departed';
+	readonly arrivedAt: Date;
 }
 
 /** A value satisfying every clause, for the cases below to spoil. */
@@ -30,24 +30,24 @@ const valid = (): Record<string, unknown> => {
 	return {
 		id: 1,
 		tags: ['a'],
-		customer: { email: 'a@b.c' },
-		status: 'pending',
-		placedAt: new Date(),
+		captain: { callSign: 'Red Five' },
+		status: 'docked',
+		arrivedAt: new Date(),
 	};
 };
 
 describe('what it accepts', () => {
 	it('should accept a value that satisfies every clause', () => {
-		expect(is<Order>(valid())).toBe(true);
+		expect(is<DockingRecord>(valid())).toBe(true);
 	});
 
 	it('should narrow the value it accepts', () => {
 		const payload: unknown = valid();
 
-		if (is<Order>(payload)) {
+		if (is<DockingRecord>(payload)) {
 			// Would not compile if the guard were lost: `payload` is `unknown`
 			// outside this branch.
-			expect(typeof payload.customer.email).toBe('string');
+			expect(typeof payload.captain.callSign).toBe('string');
 			return;
 		}
 
@@ -55,14 +55,14 @@ describe('what it accepts', () => {
 	});
 
 	it('should accept an optional property being absent', () => {
-		expect(is<Order>({ ...valid(), note: undefined })).toBe(true);
-		expect(is<Order>({ ...valid(), note: 'a note' })).toBe(true);
+		expect(is<DockingRecord>({ ...valid(), note: undefined })).toBe(true);
+		expect(is<DockingRecord>({ ...valid(), note: 'a note' })).toBe(true);
 	});
 
 	it('should accept extra properties, as structural typing does', () => {
 		// Rejecting them would make this disagree with the compiler that produced
-		// the check: an object carrying more than `Order` requires is an `Order`.
-		expect(is<Order>({ ...valid(), extra: 42 })).toBe(true);
+		// the check: an object carrying more tha `DockingRecord` requires is a DockingRecord`.
+		expect(is<DockingRecord>({ ...valid(), extra: 42 })).toBe(true);
 	});
 });
 
@@ -78,23 +78,23 @@ describe('what it refuses', () => {
 		],
 		[
 			'a nested object missing its field',
-			(): { customer: Record<string, never> } => ({ ...valid(), customer: {} }),
+			(): { captain: Record<string, never> } => ({ ...valid(), captain: {} }),
 		],
 		['a value outside the union', (): { status: string } => ({ ...valid(), status: 'shipped' })],
 		[
 			'a class field that is not an instance',
-			(): { placedAt: string } => ({ ...valid(), placedAt: '2020-01-01' }),
+			(): { arrivedAt: string } => ({ ...valid(), arrivedAt: '2020-01-01' }),
 		],
 		['null', (): null => null],
 		['a primitive', (): string => 'an order'],
 	])('should reject %s', (_label, build) => {
-		expect(is<Order>(build())).toBe(false);
+		expect(is<DockingRecord>(build())).toBe(false);
 	});
 
 	it('should not throw while rejecting null', () => {
 		// `typeof null` is `'object'`, so a check testing the type before ruling
 		// out null would read a property of null and crash rather than answering.
-		expect(() => is<Order>(null)).not.toThrow();
+		expect(() => is<DockingRecord>(null)).not.toThrow();
 	});
 });
 
@@ -128,7 +128,7 @@ describe('the escape hatch', () => {
 
 describe('what a type test declares', () => {
 	it('should not let a test for one type pass for a test of another', () => {
-		expectTypeOf<TypeTest<Order>>().not.toExtend<TypeTest<string>>();
-		expectTypeOf<TypeTest<Order>>().toExtend<TypeTest<Order>>();
+		expectTypeOf<TypeTest<DockingRecord>>().not.toExtend<TypeTest<string>>();
+		expectTypeOf<TypeTest<DockingRecord>>().toExtend<TypeTest<DockingRecord>>();
 	});
 });

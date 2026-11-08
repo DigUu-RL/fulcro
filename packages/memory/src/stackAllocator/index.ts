@@ -46,9 +46,9 @@ interface Frame {
  *
  * const step = (): void => {
  * 	using frame = stack.enter();
- * 	const particles = allocate(Particle, 10_000, frame);
+ * 	const bolts = allocate(BlasterBolt, 10_000, frame);
  * 	// …
- * }; // the particles are released here
+ * }; // the bolts are released here
  * ```
  *
  * For work that nests — a call that allocates, calling one that allocates —

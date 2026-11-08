@@ -12,7 +12,7 @@ import type { Layout } from '@/src/layout';
  * A two's complement integer of `N` bits: from -2^(N-1) to 2^(N-1) - 1.
  *
  * ```ts
- * const index: SignedInteger<32> = SignedInteger(32).from(42);
+ * const garrison: SignedInteger<32> = SignedInteger(32).from(9_700);
  * ```
  *
  * Carried by a `number` up to 32 bits and by a `bigint` from 64, so the type of

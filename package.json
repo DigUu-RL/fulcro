@@ -36,6 +36,10 @@
 		"typescript7": "npm:typescript@^7.0.2",
 		"vitest": "^5.0.0"
 	},
+	"//overrides": "minimatch below 11.0.1 carries GHSA-g3hv-75wg-m249, and eslint 10 and typescript-eslint 8 still ask for the 10 line. Only the lint tooling reaches it, nothing published does; remove this once they ask for ^11.0.1 themselves.",
+	"overrides": {
+		"minimatch": "^11.0.1"
+	},
 	"engines": {
 		"node": ">=22.18"
 	},

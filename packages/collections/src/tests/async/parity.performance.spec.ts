@@ -21,36 +21,38 @@ import { asyncSourceOf } from '@/src/tests/async/asyncSourceOf';
 const SIZE = 50_000;
 
 /** A line on an order, so the records are not flat. */
-interface LineItem {
-	readonly sku: string;
+interface Crate {
+	readonly manifest: string;
 	readonly quantity: number;
 }
 
 /** The record every assertion below works on. */
-interface Order {
+interface DockingRecord {
 	readonly id: number;
 	readonly region: string;
-	readonly total: number;
-	readonly items: readonly LineItem[];
+	readonly credits: number;
+	readonly cargo: readonly Crate[];
 }
 
-let orders: readonly Order[] = [];
+let arrivals: readonly DockingRecord[] = [];
 
 beforeAll(() => {
 	// Built once. A dataset rebuilt per test would make every count below a
 	// measurement of the builder.
-	orders = Array.from({ length: SIZE }, (_, index) => {
-		const region: string | undefined = ['north', 'south', 'east', 'west'][index % 4];
+	arrivals = Array.from({ length: SIZE }, (_, index) => {
+		const region: string | undefined = ['Core Worlds', 'Mid Rim', 'Outer Rim', 'Unknown Regions'][
+			index % 4
+		];
 
 		assert.isDefined(region);
 
 		return {
 			id: index,
 			region,
-			total: (index * 7919) % 50_000,
-			items: [
-				{ sku: `sku-${String(index % 97)}`, quantity: (index % 5) + 1 },
-				{ sku: `sku-${String(index % 89)}`, quantity: (index % 3) + 1 },
+			credits: (index * 7919) % 50_000,
+			cargo: [
+				{ manifest: `manifest-${String(index % 97)}`, quantity: (index % 5) + 1 },
+				{ manifest: `manifest-${String(index % 89)}`, quantity: (index % 3) + 1 },
 			],
 		};
 	});
@@ -91,42 +93,48 @@ describe('the terminals read the source once', () => {
 	it.each([
 		[
 			'sum',
-			(sequence: AsyncSequenceOf<Order>): Promise<number> => sequence.sum((order) => order.total),
+			(sequence: AsyncSequenceOf<DockingRecord>): Promise<number> => {
+				return sequence.sum((arrival) => arrival.credits);
+			},
 		],
 		[
 			'average',
-			(sequence: AsyncSequenceOf<Order>): Promise<number> => {
-				return sequence.average((order) => order.total);
+			(sequence: AsyncSequenceOf<DockingRecord>): Promise<number> => {
+				return sequence.average((arrival) => arrival.credits);
 			},
 		],
 		[
 			'min',
-			(sequence: AsyncSequenceOf<Order>): Promise<number> => sequence.min((order) => order.total),
+			(sequence: AsyncSequenceOf<DockingRecord>): Promise<number> => {
+				return sequence.min((arrival) => arrival.credits);
+			},
 		],
 		[
 			'maxBy',
-			(sequence: AsyncSequenceOf<Order>): Promise<Order> => sequence.maxBy((order) => order.total),
+			(sequence: AsyncSequenceOf<DockingRecord>): Promise<DockingRecord> => {
+				return sequence.maxBy((arrival) => arrival.credits);
+			},
 		],
 		[
 			'countBy',
-			(sequence: AsyncSequenceOf<Order>): Promise<Map<string, number>> => {
-				return sequence.countBy((order) => order.region);
+			(sequence: AsyncSequenceOf<DockingRecord>): Promise<Map<string, number>> => {
+				return sequence.countBy((arrival) => arrival.region);
 			},
 		],
 		[
 			'toLookup',
-			(sequence: AsyncSequenceOf<Order>): Promise<Map<string, Order[]>> => {
-				return sequence.toLookup((order) => order.region);
+			(sequence: AsyncSequenceOf<DockingRecord>): Promise<Map<string, DockingRecord[]>> => {
+				return sequence.toLookup((arrival) => arrival.region);
 			},
 		],
 		[
 			'standardDeviation',
-			(sequence: AsyncSequenceOf<Order>): Promise<number> => {
-				return sequence.standardDeviation((order) => order.total);
+			(sequence: AsyncSequenceOf<DockingRecord>): Promise<number> => {
+				return sequence.standardDeviation((arrival) => arrival.credits);
 			},
 		],
 	])('should pull %s elements exactly once each', async (_label, run) => {
-		const { source, pulled } = counted(orders);
+		const { source, pulled } = counted(arrivals);
 
 		await run(AsyncSequenceCollection.from(source));
 
@@ -139,8 +147,8 @@ describe('the terminals read the source once', () => {
 
 describe('the terminals that can stop, stop', () => {
 	it('should leave contains where it found the value', async () => {
-		const { source, pulled } = counted(orders);
-		const third: Order | undefined = orders[2];
+		const { source, pulled } = counted(arrivals);
+		const third: DockingRecord | undefined = arrivals[2];
 
 		assert.isDefined(third);
 
@@ -150,7 +158,7 @@ describe('the terminals that can stop, stop', () => {
 	});
 
 	it('should leave single at the second element', async () => {
-		const { source, pulled } = counted(orders);
+		const { source, pulled } = counted(arrivals);
 
 		await expect(AsyncSequenceCollection.from(source).single()).rejects.toThrow();
 
@@ -158,13 +166,17 @@ describe('the terminals that can stop, stop', () => {
 	});
 
 	it('should leave sequenceEqual at the first difference', async () => {
-		const { source, pulled } = counted(orders);
-		const [first, second] = orders;
+		const { source, pulled } = counted(arrivals);
+		const [first, second] = arrivals;
 
 		assert.isDefined(first);
 		assert.isDefined(second);
 
-		const different: readonly Order[] = [first, { ...second, id: -1 }, ...orders.slice(2)];
+		const different: readonly DockingRecord[] = [
+			first,
+			{ ...second, id: -1 },
+			...arrivals.slice(2),
+		];
 
 		await AsyncSequenceCollection.from(source).sequenceEqual(different);
 
@@ -172,7 +184,7 @@ describe('the terminals that can stop, stop', () => {
 	});
 
 	it('should leave elementAt at the position asked for', async () => {
-		const { source, pulled } = counted(orders);
+		const { source, pulled } = counted(arrivals);
 
 		await AsyncSequenceCollection.from(source).elementAt(9);
 
@@ -227,7 +239,7 @@ describe('the windows hold a window, not the stream', () => {
 	it('should hold only the window skipLast was given', async () => {
 		// Released once `count` more have arrived behind it, so what is pulled
 		// stays a step ahead of what is yielded rather than a stream ahead.
-		const { source, pulled } = counted(orders);
+		const { source, pulled } = counted(arrivals);
 
 		const first = await AsyncSequenceCollection.from(source).skipLast(5).take(1).toArray();
 
@@ -243,7 +255,7 @@ describe('takeLast is the one that cannot stream, and says so', () => {
 	it('should read the whole source before yielding anything', async () => {
 		// Nothing can know the last five of something still arriving. What it
 		// does keep bounded is memory: five elements, not fifty thousand.
-		const { source, pulled } = counted(orders);
+		const { source, pulled } = counted(arrivals);
 
 		const iterator = AsyncSequenceCollection.from(source).takeLast(5)[Symbol.asyncIterator]();
 
@@ -258,7 +270,7 @@ describe('the second side is read once', () => {
 	it('should index the inner side of a join a single time', async () => {
 		let innerReads = 0;
 
-		const regions = ['north', 'south', 'east', 'west'].map((name) => {
+		const regions = ['Core Worlds', 'Mid Rim', 'Outer Rim', 'Unknown Regions'].map((name) => {
 			return {
 				name,
 			};
@@ -273,12 +285,12 @@ describe('the second side is read once', () => {
 			},
 		};
 
-		await AsyncSequenceCollection.from(orders)
+		await AsyncSequenceCollection.from(arrivals)
 			.join(
 				inner,
-				(order) => order.region,
+				(arrival) => arrival.region,
 				(region) => region.name,
-				(order) => order.id,
+				(arrival) => arrival.id,
 			)
 			.toArray();
 
@@ -300,8 +312,8 @@ describe('the second side is read once', () => {
 			},
 		};
 
-		await AsyncSequenceCollection.from(orders)
-			.exceptBy(second, (order) => order.id)
+		await AsyncSequenceCollection.from(arrivals)
+			.exceptBy(second, (arrival) => arrival.id)
 			.toArray();
 
 		expect(secondReads).toBe(3);
@@ -312,16 +324,18 @@ describe('smoke ceilings', () => {
 	it('should aggregate fifty thousand records within a generous ceiling', async () => {
 		const started: number = performance.now();
 
-		const total: number = await AsyncSequenceCollection.from(orders).sum((order) => order.total);
+		const credits: number = await AsyncSequenceCollection.from(arrivals).sum(
+			(arrival) => arrival.credits,
+		);
 
 		// A smoke ceiling, not a budget: it exists to catch the regression that
 		// turns seconds into minutes.
 		expect(performance.now() - started).toBeLessThan(3_000);
-		expect(total).toBeGreaterThan(0);
+		expect(credits).toBeGreaterThan(0);
 	});
 
 	it('should group and join fifty thousand records within a generous ceiling', async () => {
-		const regions = ['north', 'south', 'east', 'west'].map((name) => {
+		const regions = ['Core Worlds', 'Mid Rim', 'Outer Rim', 'Unknown Regions'].map((name) => {
 			return {
 				name,
 			};
@@ -329,12 +343,12 @@ describe('smoke ceilings', () => {
 
 		const started: number = performance.now();
 
-		const joined: number = await AsyncSequenceCollection.from(orders)
+		const joined: number = await AsyncSequenceCollection.from(arrivals)
 			.join(
 				regions,
-				(order) => order.region,
+				(arrival) => arrival.region,
 				(region) => region.name,
-				(order) => order.id,
+				(arrival) => arrival.id,
 			)
 			.count();
 

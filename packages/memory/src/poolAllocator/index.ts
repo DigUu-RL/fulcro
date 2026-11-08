@@ -14,7 +14,7 @@ export interface PoolAllocator extends Allocator {
 	 *
 	 * ```ts
 	 * {
-	 * 	using message = pool.allocate(48, 8);
+	 * 	using transmission = pool.allocate(48, 8);
 	 * 	// …
 	 * } // the block is the pool's again
 	 * ```
@@ -53,9 +53,9 @@ interface Lease {
  * ```ts
  * const pool: PoolAllocator = createPoolAllocator(64, 1024);
  *
- * const message = pool.allocate(48, 8);
+ * const transmission = pool.allocate(48, 8);
  * // …
- * pool.deallocate(message);
+ * pool.deallocate(transmission);
  * ```
  *
  * For many objects of one size whose lifetimes do not nest — connections,

@@ -197,8 +197,8 @@ describe('operators', () => {
 				{ id: 1, name: 'b' },
 				{ id: 2, name: 'c' },
 			])
-				.distinctBy((user) => user.id)
-				.select((user) => user.name)
+				.distinctBy((pilot) => pilot.id)
+				.select((pilot) => pilot.name)
 				.toArray(),
 		).toEqual(['a', 'c']);
 	});
@@ -224,7 +224,7 @@ describe('operators', () => {
 	it('should yield the running accumulation', async () => {
 		expect(
 			await AsyncSequenceCollection.from([1, 2, 3])
-				.scan(0, (total, value) => total + value)
+				.scan(0, (credits, value) => credits + value)
 				.toArray(),
 		).toEqual([1, 3, 6]);
 	});
@@ -242,7 +242,7 @@ describe('terminals', () => {
 		expect(await convert().all((value) => value > 1)).toBe(false);
 		expect(await convert().first()).toBe(1);
 		expect(await convert().last()).toBe(3);
-		expect(await convert().aggregate(0, (total, value) => total + value)).toBe(6);
+		expect(await convert().aggregate(0, (credits, value) => credits + value)).toBe(6);
 	});
 
 	it('should report absence rather than throwing, where asked to', async () => {
@@ -369,5 +369,71 @@ describe('what from infers', () => {
 		};
 
 		expectTypeOf(AsyncSequenceCollection.from(produce())).toEqualTypeOf<AsyncSequence<string>>();
+	});
+});
+
+describe('closing the other side', () => {
+	/**
+	 * A roster read over a comlink that stays open until the generator's
+	 * finally block runs, which happens only when it ends or is returned.
+	 *
+	 * @param pilots Call signs the roster yields, one per tick.
+	 * @param open Counter of the comlinks currently open.
+	 * @param open.count How many are open now.
+	 * @returns The roster.
+	 */
+	const roster = async function* (
+		pilots: readonly string[],
+		open: { count: number },
+	): AsyncGenerator<string> {
+		open.count++;
+
+		try {
+			for (const pilot of pilots) yield await Promise.resolve(pilot);
+		} finally {
+			open.count--;
+		}
+	};
+
+	it('should close the other sequence when sequenceEqual stops at a difference', async () => {
+		const open = { count: 0 };
+
+		const red = AsyncSequenceCollection.from(roster(['Red Leader', 'Red Two', 'Red Five'], open));
+
+		await expect(
+			red.sequenceEqual(roster(['Red Leader', 'Gold Leader', 'Red Five'], open)),
+		).resolves.toBe(false);
+
+		expect(open.count).toBe(0);
+	});
+
+	it('should close the other sequence when sequenceEqual finds this one shorter', async () => {
+		const open = { count: 0 };
+
+		const gold = AsyncSequenceCollection.from(roster(['Gold Leader'], open));
+
+		await expect(gold.sequenceEqual(roster(['Gold Leader', 'Gold Two'], open))).resolves.toBe(
+			false,
+		);
+
+		expect(open.count).toBe(0);
+	});
+
+	it('should close the longer side of a zip, and both when the consumer stops first', async () => {
+		const open = { count: 0 };
+
+		const pairs = await AsyncSequenceCollection.from(roster(['X-wing', 'Y-wing', 'A-wing'], open))
+			.zip(roster(['Red Five', 'Gold Leader'], open), (ship, pilot) => `${pilot}: ${ship}`)
+			.toArray();
+
+		expect(pairs).toEqual(['Red Five: X-wing', 'Gold Leader: Y-wing']);
+		expect(open.count).toBe(0);
+
+		const first = await AsyncSequenceCollection.from(roster(['X-wing', 'Y-wing'], open))
+			.zip(roster(['Red Five', 'Gold Leader'], open), (ship, pilot) => `${pilot}: ${ship}`)
+			.first();
+
+		expect(first).toBe('Red Five: X-wing');
+		expect(open.count).toBe(0);
 	});
 });

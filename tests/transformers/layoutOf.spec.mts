@@ -33,7 +33,7 @@ interface Described {
 }
 
 describe('layoutOf over the structs of @fulcro/types', () => {
-	it.each(['Mixed', 'Reversed', 'Outer', 'Account'])(
+	it.each(['Mixed', 'Reversed', 'Outer', 'BountyLedger'])(
 		'should emit for %s the layout its descriptor computes',
 		(name) => {
 			const layouts = compiled.exports.layouts as Record<string, unknown>;

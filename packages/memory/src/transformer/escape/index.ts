@@ -18,21 +18,21 @@ import {
  * const managed = createManagedAllocator();
  *
  * const step = (): number => {
- * 	const particles = allocate(Particle, 1_000, managed);
+ * 	const bolts = allocate(BlasterBolt, 1_000, managed);
  *
- * 	particles.set(0, start);
+ * 	bolts.set(0, firstBolt);
  *
- * 	return particles.get(0).x;
+ * 	return bolts.get(0).heat;
  * };
  * ```
  *
- * `particles` is only ever reached through its own methods, inside the block
+ * `bolts` is only ever reached through its own methods, inside the block
  * that declares it, so nothing can hold it once the block ends. The
  * declaration becomes:
  *
  * ```ts
  * using frame = managed.enter();
- * const particles = allocate(Particle, 1_000, frame);
+ * const bolts = allocate(BlasterBolt, 1_000, frame);
  * ```
  *
  * and the next call to `step` reuses its bytes instead of asking the engine

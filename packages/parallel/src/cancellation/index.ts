@@ -74,9 +74,9 @@ const callLate = (handler: (reason: unknown) => void, reason: unknown): void => 
  * ```ts
  * const source = createCancellationSource();
  *
- * const loading = load(url, source.token);
+ * const transfer = downloadPlans(scarifArchive, source.token);
  *
- * cancelButton.onclick = () => source.cancel();
+ * shieldGateClosing.onclick = () => source.cancel();
  * ```
  *
  * Built on the platform's `AbortController`, so `source.token.signal` is an

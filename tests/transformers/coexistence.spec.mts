@@ -99,26 +99,50 @@ const compileFixture = (): string => {
 	return output;
 };
 
+/** Fixture memory's plugin must refuse, compiled beside the other two. */
+const REJECTED = path.resolve(
+	path.dirname(fileURLToPath(import.meta.url)),
+	'coexistence.rejected.sample.ts',
+);
+
+/**
+ * Program over the rejected fixture, built and type-checked here rather than in
+ * the test that emits it: that is the expensive part, and only a hook has the
+ * ceiling `vitest.config.mts` gives these suites. A test body has the default
+ * five seconds, which a full run once crossed.
+ */
+let rejectedProgram: typescript.Program;
+
 beforeAll(() => {
 	emitted = compileFixture();
+
+	rejectedProgram = typescript.createProgram([REJECTED], {
+		target: typescript.ScriptTarget.ES2022,
+		module: typescript.ModuleKind.ESNext,
+		moduleResolution: typescript.ModuleResolutionKind.Bundler,
+		strict: true,
+		skipLibCheck: true,
+	});
+
+	typescript.getPreEmitDiagnostics(rejectedProgram, rejectedProgram.getSourceFile(REJECTED));
 });
 
 describe('the plugins on one file', () => {
 	it('should resolve the calls @fulcro/reflect owns', () => {
-		expect(emitted).toMatch(/is\(payload, \{ name: "Order"/);
-		expect(emitted).toMatch(/as\(payload, \{ name: "Order"/);
+		expect(emitted).toMatch(/is\(payload, \{ name: "DockingRecord"/);
+		expect(emitted).toMatch(/as\(payload, \{ name: "DockingRecord"/);
 	});
 
 	it('should resolve the calls @fulcro/collections owns', () => {
-		expect(emitted).toMatch(/\.ofType\(\{ name: "Order"/);
-		expect(emitted).toMatch(/\.cast\(\{ name: "Order"/);
+		expect(emitted).toMatch(/\.ofType\(\{ name: "DockingRecord"/);
+		expect(emitted).toMatch(/\.cast\(\{ name: "DockingRecord"/);
 	});
 
 	it('should still replace the calls that are replaced outright', () => {
 		// `defaultOf` and `nameOf` are substituted rather than given an argument,
 		// so they exercise a different path through the same walk.
 		expect(emitted).toContain('id: 0');
-		expect(emitted).toContain('"Order"');
+		expect(emitted).toContain('"DockingRecord"');
 	});
 
 	it('should resolve both inside one expression', () => {
@@ -134,8 +158,8 @@ describe('the plugins on one file', () => {
 
 		const block: string = emitted.slice(start);
 
-		expect(block).toMatch(/\.ofType\(\{ name: "Order"/);
-		expect(block).toMatch(/is\(order, \{ name: "Order"/);
+		expect(block).toMatch(/\.ofType\(\{ name: "DockingRecord"/);
+		expect(block).toMatch(/is\(arrival, \{ name: "DockingRecord"/);
 	});
 
 	it("should leave @fulcro/memory's calls as written, and rewrite the others inside them", () => {
@@ -143,9 +167,9 @@ describe('the plugins on one file', () => {
 		const block: string = emitted.slice(start);
 
 		expect(start).toBeGreaterThan(-1);
-		expect(block).toContain('borrow(move(orders))');
-		expect(block).toMatch(/is\(first, \{ name: "Order"/);
-		expect(block).toMatch(/\.ofType\(\{ name: "Order"/);
+		expect(block).toContain('borrow(move(arrivals))');
+		expect(block).toMatch(/is\(first, \{ name: "DockingRecord"/);
+		expect(block).toMatch(/\.ofType\(\{ name: "DockingRecord"/);
 	});
 
 	it("should move @fulcro/memory's storage into a frame, and rewrite the others' calls in the same block", () => {
@@ -164,18 +188,16 @@ describe('the plugins on one file', () => {
 		expect(frame).toBeDefined();
 
 		// The length argument kept by the statement rewrite was still rewritten by
-		// reflect, which ran first: `nameOf<Order>()` is replaced by the name.
-		expect(block).toMatch(new RegExp(`allocate\\(Integer, "Order"\\.length, ${String(frame)}\\)`));
-		expect(block).toMatch(/\.ofType\(\{ name: "Order"/);
-		expect(block).toMatch(/is\(payload, \{ name: "Order"/);
+		// reflect, which ran first: `nameOf<DockingRecord>()` is replaced by the name.
+		expect(block).toMatch(
+			new RegExp(`allocate\\(Integer, "DockingRecord"\\.length, ${String(frame)}\\)`),
+		);
+
+		expect(block).toMatch(/\.ofType\(\{ name: "DockingRecord"/);
+		expect(block).toMatch(/is\(payload, \{ name: "DockingRecord"/);
 	});
 
 	it('should still refuse a use after move among calls the others rewrite', () => {
-		const rejected: string = path.resolve(
-			path.dirname(fileURLToPath(import.meta.url)),
-			'coexistence.rejected.sample.ts',
-		);
-
 		const reflect = (
 			require('@fulcro/reflect/transformer') as {
 				readonly default: (
@@ -187,20 +209,14 @@ describe('the plugins on one file', () => {
 		const memory = (require('@fulcro/memory/transformer') as { readonly default: typeof reflect })
 			.default;
 
-		const program: typescript.Program = typescript.createProgram([rejected], {
-			target: typescript.ScriptTarget.ES2022,
-			module: typescript.ModuleKind.ESNext,
-			moduleResolution: typescript.ModuleResolutionKind.Bundler,
-			strict: true,
-			skipLibCheck: true,
-		});
+		const program: typescript.Program = rejectedProgram;
 
 		expect(() => {
-			return program.emit(program.getSourceFile(rejected), () => undefined, undefined, false, {
+			return program.emit(program.getSourceFile(REJECTED), () => undefined, undefined, false, {
 				before: [reflect(program), memory(program)],
 			});
 		}).toThrow(
-			/coexistence\.rejected\.sample\.ts\(19,26\): FULCRO7027: move: 'orders' is used after it was moved at line 17/,
+			/coexistence\.rejected\.sample\.ts\(19,34\): FULCRO7027: move: 'arrivals' is used after it was moved at line 17/,
 		);
 	});
 

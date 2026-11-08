@@ -30,25 +30,27 @@ from a closed set.
 Pass one branch per member, and the compiler enforces that every member has one.
 
 ```ts
-enum Status {
-	Draft,
-	Published,
-	Archived,
+enum HyperdriveStatus {
+	Online,
+	Damaged,
+	Offline,
 }
 
 const label = switchFor(status, {
-	[Status.Draft]: () => 'draft',
-	[Status.Published]: () => 'published',
-	[Status.Archived]: () => 'archived',
+	[HyperdriveStatus.Online]: () => 'ready to jump',
+	[HyperdriveStatus.Damaged]: () => 'jump at your own risk',
+	[HyperdriveStatus.Offline]: () => "it's not my fault",
 });
 ```
 
 Leave a member out and it does not compile:
 
 ```text
-error TS2345: Property '[Status.Archived]' is missing in type
-'{ 0: () => string; 1: () => string; }' but required in type
-'ExhaustiveCases<Status, string>'.
+error TS2769: No overload matches this call.
+  …
+      Property '[HyperdriveStatus.Offline]' is missing in type
+      '{ 0: () => string; 1: () => string; }' but required in type
+      'ExhaustiveCases<HyperdriveStatus, string>'.
 ```
 
 **That error is the whole point.** When a member is added to the enum later,
@@ -65,9 +67,9 @@ Each branch receives the single member it handles, already narrowed:
 
 ```ts
 switchFor(status, {
-	[Status.Draft]: (value) => {
-		const draft: Status.Draft = value; // not Status
-		return render(draft);
+	[HyperdriveStatus.Damaged]: (value) => {
+		const damaged: HyperdriveStatus.Damaged = value; // not HyperdriveStatus
+		return scheduleRepair(damaged);
 	},
 	// …
 });
@@ -77,6 +79,50 @@ Works with numeric enums, string enums, and unions of string or number
 literals. A member whose value is `0` is dispatched like any other — the branch
 is found by key, never by testing the value for truthiness.
 
+The hangar at Echo Base, every ship's hyperdrive read out before the evacuation,
+and the damaged one booked into Chewbacca's repair bay:
+
+```ts
+import { switchFor } from '@fulcro/functions';
+
+enum HyperdriveStatus {
+	Online,
+	Damaged,
+	Offline,
+}
+
+interface Ship {
+	name: string;
+	hyperdrive: HyperdriveStatus;
+}
+
+const hangar: Ship[] = [
+	{ name: 'Millennium Falcon', hyperdrive: HyperdriveStatus.Offline },
+	{ name: 'Ghost', hyperdrive: HyperdriveStatus.Online },
+	{ name: 'Razor Crest', hyperdrive: HyperdriveStatus.Damaged },
+];
+
+// Only a damaged hyperdrive can be booked into the repair bay.
+const scheduleRepair = (status: HyperdriveStatus.Damaged): string => {
+	return `repair bay booked (status ${String(status)})`;
+};
+
+const readiness = (ship: Ship): string => {
+	return switchFor(ship.hyperdrive, {
+		[HyperdriveStatus.Online]: () => `${ship.name}: ready to jump`,
+		[HyperdriveStatus.Damaged]: (value) => {
+			const damaged: HyperdriveStatus.Damaged = value;
+
+			return `${ship.name}: ${scheduleRepair(damaged)}`;
+		},
+		[HyperdriveStatus.Offline]: () => `${ship.name}: it's not my fault`,
+	});
+};
+
+console.log(hangar.map(readiness));
+// ["Millennium Falcon: it's not my fault", 'Ghost: ready to jump', 'Razor Crest: repair bay booked (status 1)']
+```
+
 ### Running it for its effects
 
 There is no separate void-returning function, and none is needed. Where the
@@ -85,27 +131,70 @@ own as a statement:
 
 ```ts
 switchFor(status, {
-	[Status.Draft]: () => saveDraft(),
-	[Status.Published]: () => publish(),
-	[Status.Archived]: () => archive(),
+	[HyperdriveStatus.Online]: () => punchIt(),
+	[HyperdriveStatus.Damaged]: () => callChewie(),
+	[HyperdriveStatus.Offline]: () => kickThePanel(),
 });
 ```
 
 The exhaustiveness check applies there exactly as it does to a call whose result
 is read — leave a member out and this fails to compile too.
 
+The Falcon's cockpit, escaping Hoth with a hyperdrive that will not engage, the
+log written by the branches themselves:
+
+```ts
+import { switchFor } from '@fulcro/functions';
+
+enum HyperdriveStatus {
+	Online,
+	Damaged,
+	Offline,
+}
+
+const cockpitLog: string[] = [];
+
+const punchIt = (): void => {
+	cockpitLog.push('Punch it!');
+};
+
+const callChewie = (): void => {
+	cockpitLog.push('Chewie, take the professor in the back and plug him into the hyperdrive.');
+};
+
+const kickThePanel = (): void => {
+	cockpitLog.push('*thump*');
+};
+
+const attemptJump = (status: HyperdriveStatus): void => {
+	switchFor(status, {
+		[HyperdriveStatus.Online]: () => punchIt(),
+		[HyperdriveStatus.Damaged]: () => callChewie(),
+		[HyperdriveStatus.Offline]: () => kickThePanel(),
+	});
+};
+
+attemptJump(HyperdriveStatus.Offline);
+attemptJump(HyperdriveStatus.Damaged);
+attemptJump(HyperdriveStatus.Online);
+
+console.log(cockpitLog.length); // 3
+console.log(cockpitLog[0]); // '*thump*'
+console.log(cockpitLog[2]); // 'Punch it!'
+```
+
 ### Predicate form — everything else
 
 Where branches are conditions rather than values:
 
 ```ts
-const size = switchFor(
-	order,
+const threat = switchFor(
+	contact,
 	[
-		{ when: (o) => o.total > 1000, then: () => 'large' },
-		{ when: (o) => o.items.length === 0, then: () => 'empty' },
+		{ when: (ship) => ship.turbolasers > 50, then: () => 'capital ship' },
+		{ when: (ship) => ship.crew === 0, then: () => 'derelict' },
 	],
-	() => 'standard',
+	() => 'fighter',
 );
 ```
 
@@ -116,8 +205,8 @@ evaluated — neither their conditions nor their bodies.
 being hidden:
 
 ```ts
-const a = switchFor(n, cases); // R | undefined
-const b = switchFor(n, cases, () => fallback); // R
+const unclassified = switchFor(contact, threats); // R | undefined
+const classified = switchFor(contact, threats, () => 'unknown contact'); // R
 ```
 
 Without a fallback, an unmatched value evaluates to `undefined` and the compiler
@@ -129,6 +218,48 @@ the compiler cannot reason about which values it accepts — which is why it tak
 a fallback and the exhaustive form does not. It also decides a branch without
 narrowing the value inside `then`.
 
+The Home One's sensors at Endor, classifying what comes out of hyperspace:
+
+```ts
+import { type SwitchCase, switchFor } from '@fulcro/functions';
+
+interface Contact {
+	name: string;
+	turbolasers: number;
+	crew: number;
+}
+
+let conditionsTested = 0;
+
+const threats: SwitchCase<Contact, string>[] = [
+	{
+		when: (ship) => {
+			conditionsTested++;
+			return ship.turbolasers > 50;
+		},
+		then: () => 'capital ship',
+	},
+	{
+		when: (ship) => {
+			conditionsTested++;
+			return ship.crew === 0;
+		},
+		then: () => 'derelict',
+	},
+];
+
+const executor: Contact = { name: 'Executor', turbolasers: 5_000, crew: 279_144 };
+const tieFighter: Contact = { name: 'TIE/ln', turbolasers: 0, crew: 1 };
+
+console.log(switchFor(executor, threats)); // 'capital ship'
+console.log(conditionsTested); // 1 — the second condition never ran
+
+const unclassified: string | undefined = switchFor(tieFighter, threats);
+const classified: string = switchFor(tieFighter, threats, () => 'fighter');
+
+console.log(unclassified, classified); // undefined fighter
+```
+
 ## `Result`
 
 The outcome of an operation, as a value: a success carrying `value`, or a
@@ -136,9 +267,9 @@ failure carrying `error`. Build one with `success(value)` or `failure(error)`,
 or let `tryCatch` build it for you.
 
 ```ts
-const message = result.handle({
-	success: (value) => `got ${value}`,
-	failure: (error) => `failed: ${String(error)}`,
+const report = jump.handle({
+	success: (parsecs) => `made it in ${String(parsecs)} parsecs`,
+	failure: (error) => `jump failed: ${String(error)}`,
 });
 ```
 
@@ -148,8 +279,8 @@ not compile. Only the branch for the variant at hand runs.
 **Or narrow first**, with `isSuccess()` or `isFailure()`:
 
 ```ts
-if (result.isSuccess()) {
-	result.value; // T, not T | null
+if (jump.isSuccess()) {
+	jump.value; // T, not T | null
 }
 ```
 
@@ -162,16 +293,48 @@ failure.
 A failure's error is never `null` or `undefined`; `failure(null)` does not
 compile, since the failure would then read as a success.
 
+Two attempts at the Kessel Run, one with the hyperdrive working, and a copy of
+the second carried across `structuredClone`:
+
+```ts
+import { failure, type Result, success } from '@fulcro/functions';
+
+const kesselRun = (hyperdriveOnline: boolean): Result<number, string> => {
+	return hyperdriveOnline ? success(12) : failure("it's not my fault");
+};
+
+const describe = (jump: Result<number, string>): string => {
+	return jump.handle({
+		success: (parsecs) => `made it in ${String(parsecs)} parsecs`,
+		failure: (error) => `jump failed: ${error}`,
+	});
+};
+
+const firstAttempt = kesselRun(true);
+const secondAttempt = kesselRun(false);
+
+console.log(describe(firstAttempt)); // 'made it in 12 parsecs'
+console.log(describe(secondAttempt)); // "jump failed: it's not my fault"
+
+if (firstAttempt.isSuccess()) {
+	console.log(firstAttempt.value + 0); // 12 — a number here, not number | null
+}
+
+const copied = structuredClone(secondAttempt);
+
+console.log(copied.error === null); // false — still a failure, without its methods
+```
+
 ## `tryCatch`
 
 Runs an operation and returns its outcome as a `Result`, instead of throwing.
 
 ```ts
-const result = await tryCatch(() => fetch(url));
+const transmission = await tryCatch(() => fetch(holonetRelay));
 
-if (result.isFailure()) return fallback;
+if (transmission.isFailure()) return lastKnownPosition;
 
-use(result.value);
+plotCourse(transmission.value);
 ```
 
 **Prefer the callback form.** Passing a promise that already exists cannot catch
@@ -189,7 +352,7 @@ string. Narrow it at the use site, or pass the type explicitly when you own
 every throw site:
 
 ```ts
-const result = await tryCatch<User, ApiError>(() => api.load(id));
+const pilot = await tryCatch<Pilot, ArchiveError>(() => rebelArchive.load(callSign));
 ```
 
 A thrown `null` or `undefined` — legal, however pathological — is wrapped in an
@@ -199,16 +362,68 @@ came would make the failure indistinguishable from a success.
 `tryCatch` always returns a promise, including for a fully synchronous
 operation.
 
+The Rebel archive on Yavin 4, asked for a pilot it has, one it does not, and one
+lookup that throws something that is not an `Error` at all:
+
+```ts
+import { tryCatch } from '@fulcro/functions';
+
+interface Pilot {
+	callSign: string;
+	name: string;
+}
+
+class ArchiveError extends Error {
+	constructor(readonly callSign: string) {
+		super(`No record of ${callSign}`);
+	}
+}
+
+const records = new Map<string, Pilot>([
+	['Red Five', { callSign: 'Red Five', name: 'Luke Skywalker' }],
+]);
+
+const rebelArchive = {
+	load: async (callSign: string): Promise<Pilot> => {
+		const pilot = records.get(callSign);
+
+		if (pilot === undefined) throw new ArchiveError(callSign);
+
+		return Promise.resolve(pilot);
+	},
+};
+
+const found = await tryCatch(() => rebelArchive.load('Red Five'));
+
+if (found.isSuccess()) {
+	console.log(found.value.name); // 'Luke Skywalker'
+}
+
+const missing = await tryCatch<Pilot, ArchiveError>(() => rebelArchive.load('Red Six'));
+
+if (missing.isFailure()) {
+	console.log(missing.error.callSign); // 'Red Six' — typed, because every throw site is ours
+}
+
+const sabotaged = await tryCatch(() => {
+	throw 'the Bothans were wrong';
+});
+
+if (sabotaged.isFailure()) {
+	console.log(typeof sabotaged.error); // 'string' — `E` is `unknown` for exactly this
+}
+```
+
 ## `Option`
 
 A value that may be absent, as a value of its own rather than as `null`.
 
 ```ts
-const user: Option<User> = optionOf(users.get(id));
+const docked: Option<Starship> = optionOf(landingPads.get(pad));
 
-const greeting = user.handle({
-	some: (found) => `Hello, ${found.name}`,
-	none: () => 'Hello, stranger',
+const greeting = docked.handle({
+	some: (ship) => `Welcome to Cloud City, Captain ${ship.captain}`,
+	none: () => `${pad} is empty`,
 });
 ```
 
@@ -218,13 +433,50 @@ given, and `none()` is always the same frozen object. Narrow with `isSome()` or
 `isNone()`: `some(null)` and `none()` hold the same data, and only the variant
 tells them apart.
 
+Lando's landing pads at Cloud City, greeting whoever is on them:
+
+```ts
+import { none, type Option, optionOf, some } from '@fulcro/functions';
+
+interface Starship {
+	name: string;
+	captain: string;
+	passengers: number;
+}
+
+const landingPads = new Map<string, Starship>([
+	['Pad 9', { name: 'Slave I', captain: 'Boba Fett', passengers: 0 }],
+	['Pad 327', { name: 'Millennium Falcon', captain: 'Han Solo', passengers: 3 }],
+]);
+
+const greet = (pad: string): string => {
+	const docked: Option<Starship> = optionOf(landingPads.get(pad));
+
+	return docked.handle({
+		some: (ship) => `Welcome to Cloud City, Captain ${ship.captain}`,
+		none: () => `${pad} is empty`,
+	});
+};
+
+console.log(greet('Pad 327')); // 'Welcome to Cloud City, Captain Han Solo'
+console.log(greet('Pad 1')); // 'Pad 1 is empty'
+
+const bountyHunterPassengers = optionOf(landingPads.get('Pad 9')?.passengers);
+
+console.log(bountyHunterPassengers.isSome()); // true — 0 is an answer, not an absence
+console.log(some(null).isSome(), none().isNone()); // true true
+```
+
 ## `equals`
 
 Tells whether two values hold the same thing, where `===` only tells whether
 they are the same object.
 
 ```ts
-equals({ id: 1, tags: ['a'] }, { id: 1, tags: ['a'] }); // true
+equals(
+	{ callSign: 'Red Five', victories: ['Death Star'] },
+	{ callSign: 'Red Five', victories: ['Death Star'] },
+); // true
 equals(some(null), none()); // false: same data, different variants
 ```
 
@@ -235,13 +487,59 @@ that compares some kinds of value by rules of your own — and the descriptor of
 every type of `@fulcro/types` already is one:
 
 ```ts
-const byId: EqualityRule<User> = {
-	is: (value): value is User => value instanceof User,
-	equals: (left, right) => left.id === right.id,
+const byCallSign: EqualityRule<Pilot> = {
+	is: (value): value is Pilot => value instanceof Pilot,
+	equals: (left, right) => left.callSign === right.callSign,
 };
 
-const sameUsers = createEquals([byId]);
-const samePoints = createEquals([Point]); // a struct, compared field by field
+const sameRoster = createEquals([byCallSign]);
+const sameFighters = createEquals([Starfighter]); // a struct, compared field by field
+```
+
+Red Squadron's roster before and after Hoth, where a promotion changes a rank
+but not a pilot, and two X-wings read off the same sensor sweep:
+
+```ts
+import { createEquals, type EqualityRule, equals, none, some } from '@fulcro/functions';
+import { SinglePrecisionFloat, struct } from '@fulcro/types';
+
+class Pilot {
+	constructor(
+		readonly callSign: string,
+		readonly rank: string,
+	) {}
+}
+
+const byCallSign: EqualityRule<Pilot> = {
+	is: (value): value is Pilot => value instanceof Pilot,
+	equals: (left, right) => left.callSign === right.callSign,
+};
+
+const sameRoster = createEquals([byCallSign]);
+
+const beforeHoth = [new Pilot('Red Two', 'Lieutenant'), new Pilot('Red Five', 'Commander')];
+const afterHoth = [new Pilot('Red Two', 'Commander'), new Pilot('Red Five', 'Commander')];
+
+console.log(equals(beforeHoth, afterHoth)); // false — instances of a class equal only themselves
+console.log(sameRoster(beforeHoth, afterHoth)); // true — the same pilots, by call sign
+
+const debrief = { callSign: 'Red Five', victories: ['Death Star'] };
+
+console.log(equals(debrief, { callSign: 'Red Five', victories: ['Death Star'] })); // true
+console.log(equals(some(null), none())); // false
+
+const Starfighter = struct('Starfighter', {
+	shields: SinglePrecisionFloat,
+	hull: SinglePrecisionFloat,
+	speed: SinglePrecisionFloat,
+});
+
+const sameFighters = createEquals([Starfighter]);
+
+const redFive = Starfighter.from({ shields: 100, hull: 80, speed: 1050 });
+const redTwo = Starfighter.from({ shields: 100, hull: 80, speed: 1050 });
+
+console.log(redFive === redTwo, sameFighters(redFive, redTwo)); // false true
 ```
 
 ---

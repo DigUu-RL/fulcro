@@ -4,8 +4,8 @@ import type { MemoryReference } from '@/src/memoryReference';
  * One position inside a storage or an array: where a single value is.
  *
  * ```ts
- * const readings = createManagedStorage(4, 0);
- * let cursor: Pointer<number> = pointerTo(readings, 0);
+ * const squadronKills = createManagedStorage(4, 0);
+ * let cursor: Pointer<number> = pointerTo(squadronKills, 0);
  *
  * cursor.set(7);
  * cursor = cursor.offset(1);

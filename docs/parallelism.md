@@ -34,30 +34,30 @@ This is the API's one constraint, and it is not arbitrary:
 
 ```ts
 // Cannot work, and no library can make it work.
-pool.map(rows, (row) => expensiveParse(row));
+pool.map(transmissions, (transmission) => crackImperialCipher(transmission));
 ```
 
 A worker is a separate JavaScript realm. A function passed to one has to be
 serialised, and **a closure's captured scope is not serialisable** —
-`expensiveParse` and everything it refers to exist only in the calling realm.
-Libraries that appear to accept this either stringify the function and lose its
-scope in silence, or re-import your whole module and hope it has no side
-effects.
+`crackImperialCipher` and everything it refers to exist only in the calling
+realm. Libraries that appear to accept this either stringify the function and
+lose its scope in silence, or re-import your whole module and hope it has no
+side effects.
 
 So you name a module export instead, which is a thing that genuinely crosses:
 
 ```ts
-// parse.js
-export const parseRow = (row) => JSON.parse(row.payload);
+// decrypt.js
+export const decryptTransmission = (transmission) => crackImperialCipher(transmission.cipher);
 ```
 
 ```ts
-const pool = createWorkerPool<Row, Parsed>({
-	module: new URL('./parse.js', import.meta.url),
-	export: 'parseRow',
+const pool = createWorkerPool<Transmission, string>({
+	module: new URL('./decrypt.js', import.meta.url),
+	export: 'decryptTransmission',
 });
 
-const parsed = await pool.map(rows);
+const decrypted = await pool.map(transmissions);
 
 await pool.close();
 ```
@@ -66,14 +66,63 @@ await pool.close();
 all recognise as a worker entry and rewrite to the emitted asset. A bare string
 path works on Node and breaks the moment a browser build moves a file.
 
+The whole of it — the task module the workers load, and the code that hands it
+the transmissions Rebel spies intercepted on the way to Scarif. The key schedule
+is deliberately heavy: that is the part worth a thread.
+
+```js
+// decrypt-task.mjs
+// Loaded inside each worker. Everything the task needs lives in this module;
+// nothing is captured from the code that starts the pool.
+export const decryptTransmission = ({ from, cipher }) => {
+	let key = 0;
+
+	for (let round = 0; round < 2_000_000; round++) key = (key * 31 + round) % 1_000_003;
+
+	return `${from}: ${[...cipher].reverse().join('')} (key ${key})`;
+};
+```
+
+```ts
+import { createWorkerPool } from '@fulcro/parallel';
+
+interface Transmission {
+	from: string;
+	cipher: string;
+}
+
+const intercepted: Transmission[] = [
+	{ from: 'Scarif', cipher: 'trop tsuahxe' },
+	{ from: 'Jedha', cipher: 'latsyrc rebyk' },
+	{ from: 'Eadu', cipher: 'osrE nelaG' },
+];
+
+const pool = createWorkerPool<Transmission, string>({
+	module: new URL('./decrypt-task.mjs', import.meta.url),
+	export: 'decryptTransmission',
+	workers: 2,
+});
+
+const decrypted = await pool.map(intercepted);
+
+await pool.close();
+
+console.log(decrypted);
+// [
+//   'Scarif: exhaust port (key 235197)',
+//   'Jedha: kyber crystal (key 235197)',
+//   'Eadu: Galen Erso (key 235197)',
+// ]
+```
+
 ## Reading the results
 
 ```ts
 // In input order, whatever order the workers finished in.
-const results = await pool.map(items);
+const results = await pool.map(transmissions);
 
 // As each one is done.
-for await (const result of pool.stream(items)) use(result);
+for await (const result of pool.stream(transmissions)) relayToHomeOne(result);
 ```
 
 `stream` is a plain `AsyncIterable`, so it drops straight into the sequences
@@ -82,9 +131,46 @@ without this package depending on them:
 ```ts
 import { AsyncSequenceCollection } from '@fulcro/collections/async';
 
-const total = await AsyncSequenceCollection.from(pool.stream(rows))
-	.where((row) => row.valid)
-	.aggregate(0, (sum, row) => sum + row.size);
+const aboutTheDeathStar = await AsyncSequenceCollection.from(pool.stream(transmissions))
+	.where((report) => report.includes('exhaust port'))
+	.count();
+```
+
+Both readings over the same intercepted traffic, with the `decrypt-task.mjs`
+module above — `map` for the briefing in order, `stream` into a sequence for
+the question the briefing needs answered:
+
+```ts
+import { AsyncSequenceCollection } from '@fulcro/collections/async';
+import { createWorkerPool } from '@fulcro/parallel';
+
+interface Transmission {
+	from: string;
+	cipher: string;
+}
+
+const intercepted: Transmission[] = [
+	{ from: 'Scarif', cipher: 'trop tsuahxe' },
+	{ from: 'Jedha', cipher: 'latsyrc rebyk' },
+	{ from: 'Eadu', cipher: 'osrE nelaG' },
+	{ from: 'Scarif', cipher: 'trop tsuahxe' },
+];
+
+await using pool = createWorkerPool<Transmission, string>({
+	module: new URL('./decrypt-task.mjs', import.meta.url),
+	export: 'decryptTransmission',
+	workers: 2,
+});
+
+const briefing = await pool.map(intercepted);
+
+console.log(briefing.map((line) => line.split(':')[0])); // ['Scarif', 'Jedha', 'Eadu', 'Scarif'] — input order
+
+const aboutTheExhaustPort = await AsyncSequenceCollection.from(pool.stream(intercepted))
+	.where((report) => report.includes('exhaust port'))
+	.count();
+
+console.log(aboutTheExhaustPort); // 2
 ```
 
 ## One batch at a time
@@ -93,9 +179,9 @@ A pool runs one batch at a time. Start a second `map` or `stream` while one is
 still going and it waits for it rather than sharing the workers:
 
 ```ts
-const [parsed, checked] = await Promise.all([
-	pool.map(rows), // runs now
-	pool.map(others), // runs when the first has finished
+const [rebel, imperial] = await Promise.all([
+	pool.map(rebelTraffic), // runs now
+	pool.map(imperialTraffic), // runs when the first has finished
 ]);
 ```
 
@@ -113,6 +199,32 @@ holds the pool for good.
 dispatching any, so a generator of ten million rows becomes ten million rows in
 memory. Batch it yourself if that matters.
 
+Rebel and Imperial traffic decrypted on one pool, the second batch queued behind
+the first, with the same `decrypt-task.mjs`:
+
+```ts
+import { createWorkerPool } from '@fulcro/parallel';
+
+interface Transmission {
+	from: string;
+	cipher: string;
+}
+
+const rebelTraffic: Transmission[] = [{ from: 'Yavin 4', cipher: 'selbmessa teelf lebeR' }];
+const imperialTraffic: Transmission[] = [{ from: 'Coruscant', cipher: '66 redrO' }];
+
+await using pool = createWorkerPool<Transmission, string>({
+	module: new URL('./decrypt-task.mjs', import.meta.url),
+	export: 'decryptTransmission',
+	workers: 2,
+});
+
+const [rebel, imperial] = await Promise.all([pool.map(rebelTraffic), pool.map(imperialTraffic)]);
+
+console.log(rebel); // ['Yavin 4: Rebel fleet assembles (key 235197)']
+console.log(imperial); // ['Coruscant: Order 66 (key 235197)']
+```
+
 ## Close what you open
 
 ```ts
@@ -129,12 +241,12 @@ scope is left — a throw included:
 
 ```ts
 {
-	await using pool = createWorkerPool<number, number>({
-		module: new URL('./work.mjs', import.meta.url),
-		export: 'square',
+	await using pool = createWorkerPool<Transmission, string>({
+		module: new URL('./decrypt-task.mjs', import.meta.url),
+		export: 'decryptTransmission',
 	});
 
-	const squares = await pool.map([1, 2, 3]);
+	const decrypted = await pool.map(transmissions);
 } // every worker is stopped here
 ```
 
@@ -149,6 +261,41 @@ shutdown handler that closes the pool cannot be undone by a request that
 arrived just before it. `close()` settles once every worker is gone, including
 those a run you called off is still stopping.
 
+A Rebel listening post shutting down as the Empire closes in — the pool is
+closed by its scope, and a late request after the shutdown is refused:
+
+```ts
+import { createWorkerPool, type WorkerPool } from '@fulcro/parallel';
+
+interface Transmission {
+	from: string;
+	cipher: string;
+}
+
+let listeningPost: WorkerPool<Transmission, string> | undefined;
+
+{
+	await using pool = createWorkerPool<Transmission, string>({
+		module: new URL('./decrypt-task.mjs', import.meta.url),
+		export: 'decryptTransmission',
+		workers: 1,
+	});
+
+	listeningPost = pool;
+
+	console.log(await pool.map([{ from: 'Hoth', cipher: 'gnimoc era sreklaw' }]));
+	// ['Hoth: walkers are coming (key 235197)']
+
+	await pool.close(); // harmless: the scope will close it again
+} // the workers are stopped here
+
+try {
+	await listeningPost.map([{ from: 'Hoth', cipher: 'etal oot' }]);
+} catch (error) {
+	console.log((error as Error).message); // 'FULCRO3010: The pool was closed, and a closed pool runs nothing.'
+}
+```
+
 ## What crossing a thread costs
 
 Every value is **structure-cloned** in both directions: a real copy,
@@ -160,12 +307,49 @@ An `ArrayBuffer` can be _transferred_ instead — ownership moves, nothing is
 copied, and the sending side can no longer read it:
 
 ```ts
-await pool.map(buffers, {
-	transfer: (buffer) => [buffer as ArrayBuffer],
+await pool.map(thermalScans, {
+	transfer: (scan) => [scan as ArrayBuffer],
 });
 ```
 
 For large binary payloads that is the difference between worthwhile and not.
+
+Thermal scans of Hoth's surface, handed to the workers without a copy — and the
+scan the base no longer holds once it has:
+
+```js
+// thermal-task.mjs
+// Counts the readings hot enough to be a living thing under the snow.
+export const countHotspots = (scan) => {
+	let hotspots = 0;
+
+	for (const reading of new Uint8Array(scan)) if (reading > 200) hotspots++;
+
+	return hotspots;
+};
+```
+
+```ts
+import { createWorkerPool } from '@fulcro/parallel';
+
+const scanOf = (readings: number[]): ArrayBuffer => new Uint8Array(readings).buffer;
+
+const northRidge = scanOf([12, 250, 201, 3, 255]); // a tauntaun, a wampa and Luke
+const shieldGenerator = scanOf([90, 110, 40]);
+
+await using pool = createWorkerPool<ArrayBuffer, number>({
+	module: new URL('./thermal-task.mjs', import.meta.url),
+	export: 'countHotspots',
+	workers: 2,
+});
+
+const hotspots = await pool.map([northRidge, shieldGenerator], {
+	transfer: (scan) => [scan as ArrayBuffer],
+});
+
+console.log(hotspots); // [3, 0]
+console.log(northRidge.byteLength); // 0 — transferred: the bytes now belong to the worker that read them
+```
 
 ### There is a threshold, and below it this is slower
 
@@ -185,19 +369,46 @@ Two practical consequences:
 ## Workers
 
 ```ts
-createWorkerPool({ module, export: 'parseRow', workers: 4 });
+createWorkerPool({ module, export: 'decryptTransmission', workers: 4 });
 ```
 
 Defaults to `navigator.hardwareConcurrency` — a web standard both the browser
 and Node report — and to `4` where neither does. More workers than cores does
 not help work that is already CPU-bound; it only adds scheduling.
 
+A cryptography console that leaves one core to the interface the officer is
+typing into, and gives the rest to the cipher:
+
+```ts
+import { createWorkerPool } from '@fulcro/parallel';
+
+interface Transmission {
+	from: string;
+	cipher: string;
+}
+
+const workers = Math.max(1, navigator.hardwareConcurrency - 1);
+
+await using pool = createWorkerPool<Transmission, string>({
+	module: new URL('./decrypt-task.mjs', import.meta.url),
+	export: 'decryptTransmission',
+	workers,
+});
+
+const decrypted = await pool.map([
+	{ from: 'Bespin', cipher: "part a s'tI" },
+	{ from: 'Endor', cipher: "part a s'tI" },
+]);
+
+console.log(decrypted.length); // 2 — on as many threads as the machine can spare
+```
+
 ## Cancelling
 
 ```ts
 const controller = new AbortController();
 
-await pool.map(items, { signal: controller.signal });
+await pool.map(transmissions, { signal: controller.signal });
 ```
 
 Unlike a promise, a worker genuinely **can** be stopped — but only by being
@@ -222,6 +433,46 @@ The same holds in the two places where nothing is waiting on the workers:
 
 A [task](./tasks.md) drives a pool the same way, with `token.signal`, so
 calling the task off stops the workers too.
+
+The siege of a shield wall that would take five seconds a section, called off
+a tenth of a second in — and the run rejects then, not when the workers would
+have finished:
+
+```js
+// siege-task.mjs
+// Five seconds of uninterruptible work per section of wall.
+export const besiege = (section) => {
+	const until = Date.now() + 5_000;
+
+	while (Date.now() < until);
+
+	return `${section} breached`;
+};
+```
+
+```ts
+import { createWorkerPool } from '@fulcro/parallel';
+
+await using pool = createWorkerPool<string, string>({
+	module: new URL('./siege-task.mjs', import.meta.url),
+	export: 'besiege',
+	workers: 2,
+});
+
+const retreat = new AbortController();
+
+setTimeout(() => retreat.abort(new Error('Fall back to the transports!')), 100);
+
+const startedAt = Date.now();
+
+try {
+	await pool.map(['north wall', 'east wall'], { signal: retreat.signal });
+} catch (reason) {
+	console.log((reason as Error).message); // 'Fall back to the transports!'
+}
+
+console.log(Date.now() - startedAt < 1_000); // true — the busy workers were terminated, not waited for
+```
 
 ## Failures
 

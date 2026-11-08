@@ -7,9 +7,9 @@ import { isFulcroError } from '@/src/isFulcroError';
  *
  * ```ts
  * // what a field's conversion threw
- * // RangeError: FULCRO6031: SignedInteger8.from: 300 is outside -128 to 127.
- * throw prefixError(error, "Vector3.from: field 'x'");
- * // RangeError: FULCRO6031: Vector3.from: field 'x': SignedInteger8.from: 300 is outside -128 to 127.
+ * // RangeError: FULCRO6031: UnsignedInteger<8>.from: 300 is outside [0, 255].
+ * throw prefixError(error, "Starfighter.from: field 'torpedoes'");
+ * // RangeError: FULCRO6031: Starfighter.from: field 'torpedoes': UnsignedInteger<8>.from: 300 is outside [0, 255].
  * ```
  *
  * The condition is still the one the code names, only found one level further

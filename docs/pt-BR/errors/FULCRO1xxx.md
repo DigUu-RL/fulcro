@@ -244,7 +244,7 @@ Detalhes:
 ## FULCRO1015
 
 ```text
-TypeError: FULCRO1015: cast('Order') found a string at index 4.
+TypeError: FULCRO1015: cast('DockingRecord') found a string at index 4.
 ```
 
 Detalhes:

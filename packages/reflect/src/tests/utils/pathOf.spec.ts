@@ -14,15 +14,15 @@ import { type PathAccessor, pathOf } from '@/src/functions/utils/pathOf';
  */
 
 /** A shape deep enough for a path to be worth asking about. */
-interface Order {
+interface DockingRecord {
 	readonly id: number;
-	readonly customer: { readonly address: { readonly city: string } };
+	readonly captain: { readonly address: { readonly system: string } };
 	// Never empty, so `items[0]` is an item: the accessors below are parsed from
 	// their source text, which an optional chain or a cast would change.
-	readonly items: readonly [{ readonly sku: string }, ...{ readonly sku: string }[]];
+	readonly items: readonly [{ readonly manifest: string }, ...{ readonly manifest: string }[]];
 }
 
-declare const order: Order;
+declare const order: DockingRecord;
 
 /**
  * The same function, reached through a name the transformer does not own.
@@ -33,7 +33,7 @@ const runtime: (accessor: PathAccessor) => string | null = pathOf;
 
 describe('resolved at compile time', () => {
 	it('should report every segment, where nameOf reports one', () => {
-		expect(pathOf(() => order.customer.address.city)).toBe('customer.address.city');
+		expect(pathOf(() => order.captain.address.system)).toBe('captain.address.system');
 	});
 
 	it('should drop the root', () => {
@@ -44,11 +44,11 @@ describe('resolved at compile time', () => {
 	});
 
 	it('should keep an array index in brackets', () => {
-		expect(pathOf(() => order.items[0].sku)).toBe('items[0].sku');
+		expect(pathOf(() => order.items[0].manifest)).toBe('items[0].manifest');
 	});
 
 	it('should read a quoted key as an ordinary segment', () => {
-		expect(pathOf(() => order.customer.address.city)).toBe('customer.address.city');
+		expect(pathOf(() => order.captain.address.system)).toBe('captain.address.system');
 	});
 
 	it('should never evaluate the accessor', () => {
@@ -69,10 +69,10 @@ describe('resolved at compile time', () => {
 
 describe('parsed at runtime, without the transformer', () => {
 	it.each([
-		['a nested path', (): string => order.customer.address.city, 'customer.address.city'],
+		['a nested path', (): string => order.captain.address.system, 'captain.address.system'],
 		['a single segment', (): number => order.id, 'id'],
-		['an indexed element', (): string => order.items[0].sku, 'items[0].sku'],
-		['a quoted key', (): string => order.customer.address.city, 'customer.address.city'],
+		['an indexed element', (): string => order.items[0].manifest, 'items[0].manifest'],
+		['a quoted key', (): string => order.captain.address.system, 'captain.address.system'],
 	])('should agree with the compiled form on %s', (_label, accessor, expected) => {
 		// The two implementations answering differently would be worse than
 		// either being wrong, since which one runs depends on the build.
@@ -85,6 +85,6 @@ describe('parsed at runtime, without the transformer', () => {
 	});
 
 	it('should refuse a call, which reads nothing', () => {
-		expect(runtime(() => order.items.map((item) => item.sku))).toBeNull();
+		expect(runtime(() => order.items.map((item) => item.manifest))).toBeNull();
 	});
 });

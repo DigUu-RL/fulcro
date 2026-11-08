@@ -17,8 +17,8 @@ import { nameOf } from '@/src/functions/utils/nameOf';
 const CALLS = 100_000;
 
 /** Shape whose name is already on the constructor, needing no parsing. */
-class Admin {
-	email = 'a@b.c';
+class Stormtrooper {
+	callSign = 'Red Five';
 	roles = ['admin'];
 }
 
@@ -44,16 +44,16 @@ const timed = (work: () => void): number => {
 
 describe('what the transformer leaves behind', () => {
 	it('should reduce a resolvable nameOf to a string', () => {
-		const user = { email: 'a@b.c' };
+		const pilot = { callSign: 'Red Five' };
 
 		const resolved: number = timed(() => {
-			if (nameOf(() => user.email) !== 'email') throw new Error('not resolved');
+			if (nameOf(() => pilot.callSign) !== 'callSign') throw new Error('not resolved');
 		});
 
 		// A property read and a comparison: slightly more than the constant the
 		// transformer leaves behind, which only makes the ceiling below kinder.
 		const baseline: number = timed(() => {
-			if (user.email === '') throw new Error('impossible');
+			if (pilot.callSign === '') throw new Error('impossible');
 		});
 
 		// Parsing the closure's source a hundred thousand times would be orders
@@ -68,11 +68,11 @@ describe('the fallback', () => {
 		// cheap: the name is already on the constructor, and the baseline is
 		// reading it directly.
 		const resolved: number = timed(() => {
-			if (nameOf(Admin) !== 'Admin') throw new Error('not named');
+			if (nameOf(Stormtrooper) !== 'Stormtrooper') throw new Error('not named');
 		});
 
 		const baseline: number = timed(() => {
-			if (Admin.name !== 'Admin') throw new Error('impossible');
+			if (Stormtrooper.name !== 'Stormtrooper') throw new Error('impossible');
 		});
 
 		expect(resolved).toBeLessThan(baseline * 25);

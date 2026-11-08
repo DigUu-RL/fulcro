@@ -9,9 +9,9 @@ import { utilityModuleSegment } from '@fulcro/transform-core';
  * Resolves two forms while the compiler still knows what they refer to:
  *
  * ```ts
- * // written                  // emitted
- * nameOf(() => user.email)    'email'
- * nameOf<UserContract>()      'UserContract'
+ * // written                        // emitted
+ * nameOf(() => pilot.callSign)      'callSign'
+ * nameOf<PilotRecord>()             'PilotRecord'
  * ```
  *
  * The second one is the reason this exists at all — an interface leaves nothing

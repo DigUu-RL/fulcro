@@ -7,9 +7,9 @@ import { utilityModuleSegment } from '@fulcro/transform-core';
  * Rewriter of `pathOf`.
  *
  * ```ts
- * // written                            // emitted
- * pathOf(() => user.profile.email)      "profile.email"
- * pathOf(() => order.items[0].sku)      "items[0].sku"
+ * // written                                    // emitted
+ * pathOf(() => pilot.starfighter.astromech)     "starfighter.astromech"
+ * pathOf(() => record.cargo[0].manifest)        "cargo[0].manifest"
  * ```
  *
  * The runtime can read this by parsing the source of the closure, which works

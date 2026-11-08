@@ -10,7 +10,7 @@ import type { RangeCatalog } from '../definition';
  */
 
 // A code that was never registered.
-export const unregistered = createError('FULCRO1999', { operation: 'x' });
+export const unregistered = createError('FULCRO1999', { operation: 'Starfighter.from' });
 
 // A registered code, handed a detail of the wrong type.
 export const wrongValue = createError('FULCRO1005', {
@@ -20,7 +20,7 @@ export const wrongValue = createError('FULCRO1005', {
 
 // A registered code, handed fewer details than its template takes.
 export const missingValue = createError('FULCRO6021', {
-	operation: 'Vector3.from',
+	operation: 'Starfighter.from',
 });
 
 // A code declared in the range of another package.

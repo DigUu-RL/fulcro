@@ -50,9 +50,44 @@ untrusted data derived from the type you already wrote.
 
 ```ts
 // `response.json()` hands back `any`. This is the last place it is unchecked.
-const orders = SequenceCollection.from(await response.json())
-	.cast<Order>()
+const arrivals = SequenceCollection.from(await response.json())
+	.cast<DockingRecord>()
 	.toArray();
+```
+
+Mos Eisley's docking control, checking a day of arrivals against the type it
+already had:
+
+```ts
+// Needs the @fulcro/collections transformer.
+import { SequenceCollection } from '@fulcro/collections';
+
+interface DockingRecord {
+	bay: number;
+	ship: string;
+	captain: { name: string };
+	cargo: string[];
+}
+
+const transmission = `[
+	{ "bay": 94, "ship": "Millennium Falcon", "captain": { "name": "Han Solo" }, "cargo": ["spice"] },
+	{ "bay": 86, "ship": "Slave I", "captain": { "name": "Boba Fett" }, "cargo": ["carbonite"] }
+]`;
+
+const arrivals = SequenceCollection.from(JSON.parse(transmission))
+	.cast<DockingRecord>()
+	.select((record) => `${record.ship} in bay ${String(record.bay)}`)
+	.toArray();
+
+console.log(arrivals); // ['Millennium Falcon in bay 94', 'Slave I in bay 86']
+
+const tampered = `[{ "bay": "86", "ship": "Slave I", "captain": {}, "cargo": [] }]`;
+
+try {
+	SequenceCollection.from(JSON.parse(tampered)).cast<DockingRecord>().toArray();
+} catch (error) {
+	console.log((error as Error).message); // "FULCRO1015: cast('DockingRecord') found a Object at index 0."
+}
 ```
 
 An interface has no runtime form to point at, so the transformer writes the
@@ -263,7 +298,7 @@ get` reports `two-factor auth` plainly. Switch it on under Account settings,
 with an authenticator app.
 
 With it on, npm asks for the one-time code during the publish, and
-`npx changeset publish --otp=123456` passes one directly if the prompt gets in
+`npx changeset publish --otp=002187` passes one directly if the prompt gets in
 the way. A code lasts about thirty seconds, so if four publishes outrun one
 code, publishing a package at a time with a fresh code finishes the job.
 

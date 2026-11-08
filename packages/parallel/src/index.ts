@@ -33,12 +33,12 @@ const WORKER_URL = new URL('./worker/entry.js', import.meta.url);
  * Creates a pool of workers over one named task.
  *
  * ```ts
- * const pool = createWorkerPool<Row, Parsed>({
- * 	module: new URL('./parse.js', import.meta.url),
- * 	export: 'parseRow',
+ * const pool = createWorkerPool<Transmission, string>({
+ * 	module: new URL('./decrypt-task.js', import.meta.url),
+ * 	export: 'decryptTransmission',
  * });
  *
- * const parsed = await pool.map(rows);
+ * const briefing = await pool.map(intercepted);
  *
  * await pool.close();
  * ```

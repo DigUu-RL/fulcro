@@ -123,7 +123,7 @@ const describeKind = (value: unknown): string => (value === null ? 'null' : type
  * literal.
  *
  * ```ts
- * const CRC_TABLE = constantOf(() =>
+ * const ASTROMECH_CHECKSUM_TABLE = constantOf(() =>
  * 	Array.from({ length: 256 }, (_, byte) => {
  * 		let crc = byte;
  *
@@ -134,7 +134,7 @@ const describeKind = (value: unknown): string => (value === null ? 'null' : type
  * 		return crc >>> 0;
  * 	}),
  * );
- * // emitted: const CRC_TABLE = Object.freeze([0, 1996959894, …]);
+ * // emitted: const ASTROMECH_CHECKSUM_TABLE = Object.freeze([0, 1996959894, …]);
  * ```
  *
  * Plain TypeScript as written: `tsc`, an editor and a linter read the call as

@@ -5,14 +5,14 @@ import { type TypeLayout, unresolvedLayout, type WithLayout } from '@/src/functi
  * each field sits.
  *
  * ```ts
- * layoutOf<Vector3>();
+ * layoutOf<Starfighter>();
  * // {
  * //   size: 12,
  * //   alignment: 4,
  * //   fields: {
- * //     x: { offset: 0, size: 4, alignment: 4 },
- * //     y: { offset: 4, size: 4, alignment: 4 },
- * //     z: { offset: 8, size: 4, alignment: 4 },
+ * //     shields: { offset: 0, size: 4, alignment: 4 },
+ * //     hull: { offset: 4, size: 4, alignment: 4 },
+ * //     speed: { offset: 8, size: 4, alignment: 4 },
  * //   },
  * // }
  *

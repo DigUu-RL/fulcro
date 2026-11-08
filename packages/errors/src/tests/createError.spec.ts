@@ -78,11 +78,11 @@ describe('createError', () => {
 
 	it('should build the text from the details it was given', () => {
 		const error = createError('FULCRO6021', {
-			operation: 'Vector3.from',
-			field: 'x',
+			operation: 'Starfighter.from',
+			field: 'speed',
 		});
 
-		expect(error.message).toBe("FULCRO6021: Vector3.from: missing field 'x'.");
+		expect(error.message).toBe("FULCRO6021: Starfighter.from: missing field 'speed'.");
 		expect(error).toBeInstanceOf(TypeError);
 		expect(error.code).toBe('FULCRO6021');
 	});
@@ -104,7 +104,7 @@ describe('createError', () => {
 	});
 
 	it('should keep the very object it was given as the details', () => {
-		const details = { operation: 'Point.from', field: 'y' };
+		const details = { operation: 'SensorContact.from', field: 'range' };
 		const error = createError('FULCRO6021', details);
 
 		expect(error.details).toBe(details);
@@ -153,14 +153,14 @@ describe('createError', () => {
 	});
 
 	it('should leave its own frame out of the stack', () => {
-		const thrower = (): never => {
+		const thermalDetonator = (): never => {
 			throw createError('FULCRO1001', { operation: 'first' });
 		};
 
 		let caught: Error | undefined;
 
 		try {
-			thrower();
+			thermalDetonator();
 		} catch (error) {
 			caught = error as Error;
 		}
@@ -171,7 +171,7 @@ describe('createError', () => {
 			.split('\n')
 			.filter((line) => line.trimStart().startsWith('at '));
 
-		expect(frames[0]).toContain('thrower');
+		expect(frames[0]).toContain('thermalDetonator');
 		expect(frames.some((frame) => /\bat createError\b/.test(frame))).toBe(false);
 	});
 });

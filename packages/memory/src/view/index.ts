@@ -7,12 +7,12 @@
  * that nothing it was handed will be written.
  *
  * ```ts
- * const average = (samples: ReadOnlyView<number>): number => {
+ * const average = (sector: ReadOnlyView<number>): number => {
  * 	let sum = 0;
  *
- * 	for (let index = 0; index < samples.length; index++) sum += samples.get(index);
+ * 	for (let index = 0; index < sector.length; index++) sum += sector.get(index);
  *
- * 	return sum / samples.length;
+ * 	return sum / sector.length;
  * };
  * ```
  *
@@ -57,11 +57,11 @@ export interface ReadOnlyView<T> {
  * copied into the view.
  *
  * ```ts
- * const scores = createManagedStorage(100, 0);
- * const firstTen: View<number> = asView(scores, 0, 10);
+ * const shieldStrength = createManagedStorage(100, 0);
+ * const firstTen: View<number> = asView(shieldStrength, 0, 10);
  *
  * firstTen.set(3, 42);
- * scores.get(3); // 42
+ * shieldStrength.get(3); // 42
  * ```
  *
  * A view owns nothing, so it has nothing to release. It lives no longer than

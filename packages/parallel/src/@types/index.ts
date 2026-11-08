@@ -16,8 +16,8 @@ export interface TaskSource {
 	/**
 	 * Module holding the function.
 	 *
-	 * Written as `new URL('./work.js', import.meta.url)`, which is the form
-	 * every major bundler recognises as a worker entry and rewrites to the
+	 * Written as `new URL('./decrypt-task.js', import.meta.url)`, which is the
+	 * form every major bundler recognises as a worker entry and rewrites to the
 	 * emitted asset. A bare string path works on Node and breaks the moment a
 	 * browser build moves a file.
 	 */
@@ -139,8 +139,8 @@ export type SpawnWorker = (url: URL) => WorkerHandle;
  *
  * ```ts
  * {
- * 	await using pool = createWorkerPool<number, number>({ module, export: 'square' });
- * 	const squares = await pool.map([1, 2, 3]);
+ * 	await using pool = createWorkerPool<Transmission, string>({ module, export: 'decryptTransmission' });
+ * 	const briefing = await pool.map(intercepted);
  * } // every worker is stopped here
  * ```
  */
@@ -258,7 +258,7 @@ export interface CancellationToken {
  *
  * ```ts
  * using child = createCancellationSource(parent);
- * await download(url, child.token);
+ * await downloadPlans(scarifArchive, child.token);
  * ```
  */
 export interface CancellationSource extends Disposable {
@@ -371,8 +371,8 @@ export interface TaskScopeOptions {
  * ```ts
  * await using scope = createTaskScope({ concurrency: 8 });
  *
- * const pages = urls.map((url) =>
- * 	scope.spawn((token) => fetch(url, { signal: token.signal })),
+ * const reports = outposts.map((outpost) =>
+ * 	scope.spawn((token) => pollOutpost(outpost, token.signal)),
  * );
  *
  * await scope.join();

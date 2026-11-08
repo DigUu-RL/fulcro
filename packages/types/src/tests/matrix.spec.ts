@@ -260,40 +260,40 @@ describe('Matrix', () => {
 		it('should be a field of a struct, laid out as its type declares', () => {
 			const Transform = MatrixOf(SinglePrecisionFloat, 3, 4);
 
-			const Placed = struct('Placed', {
+			const Turret = struct('Turret', {
 				tag: UnsignedInteger(8),
 				transform: Transform,
 			});
 
-			expect(Placed.layout.fields.transform).toEqual({
+			expect(Turret.layout.fields.transform).toEqual({
 				offset: 0,
 				size: 48,
 				alignment: 4,
 			});
 
-			expectTypeOf(Placed.layout.fields.transform.size).toEqualTypeOf<48>();
+			expectTypeOf(Turret.layout.fields.transform.size).toEqualTypeOf<48>();
 		});
 
 		it('should write its elements into bytes and read them back', () => {
-			const Placed = struct('Placed', { transform: Pair });
+			const Turret = struct('Turret', { transform: Pair });
 
-			const value = Placed.from({
+			const value = Turret.from({
 				transform: [
 					[1, 2, 3],
 					[4, 5, 6],
 				],
 			});
 
-			const view = new DataView(new ArrayBuffer(Placed.layout.size));
+			const view = new DataView(new ArrayBuffer(Turret.layout.size));
 
-			Placed.write(view, 0, value);
+			Turret.write(view, 0, value);
 
 			expect(view.getFloat64(8, true)).toBe(2);
 
-			const read = Placed.read(view, 0);
+			const read = Turret.read(view, 0);
 
 			expect(Pair.is(read.transform)).toBe(true);
-			expect(Placed.equals(read, value)).toBe(true);
+			expect(Turret.equals(read, value)).toBe(true);
 		});
 	});
 

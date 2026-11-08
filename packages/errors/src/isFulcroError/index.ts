@@ -8,7 +8,7 @@ import type { FulcroError } from '@/src/fulcroError';
  *
  * ```ts
  * try {
- * 	storage.get(12);
+ * 	squadron.get(12); // Red Squadron has twelve fighters, from 0 to 11
  * } catch (error) {
  * 	if (isFulcroError(error, 'FULCRO7002')) {
  * 		error.details.index; // what was asked for

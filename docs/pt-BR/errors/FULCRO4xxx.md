@@ -98,7 +98,7 @@ genérico que ainda não foi substituído.
 ## FULCRO4006
 
 ```text
-TypeError: FULCRO4006: as<Order>() refused a value of type string.
+TypeError: FULCRO4006: as<DockingRecord>() refused a value of type string.
 ```
 
 Detalhes:
@@ -115,7 +115,7 @@ Use `is<T>()` para ramificar a partir da resposta em vez de parar.
 ## FULCRO4007
 
 ```text
-TypeError: FULCRO4007: as<Order>() refused a value: customer.email: expected string, got number
+TypeError: FULCRO4007: as<DockingRecord>() refused a value: captain.name: expected string, got number
 ```
 
 Detalhes:
@@ -140,7 +140,7 @@ Detalhes:
 ```
 
 A forma de `nameOf` com argumento de tipo chegou ao runtime. As formas que
-recebem um valor ou um acessor, `nameOf(value)` e `nameOf(() => order.total)`,
+recebem um valor ou um acessor, `nameOf(value)` e `nameOf(() => bounty.credits)`,
 não precisam do transformer.
 
 ## FULCRO4009
@@ -165,7 +165,7 @@ uma string literal, por exemplo uma variável guardando o nome.
 ## FULCRO4010
 
 ```text
-FULCRO4010: constantOf(…) cannot be evaluated at compile time: 'counter' is declared with let or var, so it can change. …
+FULCRO4010: constantOf(…) cannot be evaluated at compile time: 'jumpsPlotted' is declared with let or var, so it can change. …
 ```
 
 Detalhes:

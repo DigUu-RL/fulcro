@@ -11,8 +11,8 @@ import { FulcroError } from '@/src/fulcroError';
 describe('FulcroError', () => {
 	it('should recognise an error a package created', () => {
 		const error = createError('FULCRO6021', {
-			operation: 'Vector3.from',
-			field: 'x',
+			operation: 'Starfighter.from',
+			field: 'speed',
 		});
 
 		expect(error instanceof FulcroError).toBe(true);

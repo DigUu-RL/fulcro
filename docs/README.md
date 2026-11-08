@@ -20,15 +20,48 @@ every name the synchronous one uses.
 the type you already wrote becomes the runtime check:
 
 ```ts
-const order = as<Order>(await response.json()); // throws, naming the bad field
-const orders = SequenceCollection.from(rows).cast<Order>(); // over many
+const record = as<DockingRecord>(JSON.parse(transmission)); // throws, naming the bad field
+const records = SequenceCollection.from(arrivals).cast<DockingRecord>(); // over many
 ```
 
-`response.json()` hands back `any`. That line is the last place the data is
+`JSON.parse` hands back `any`. That line is the last place the data is
 unchecked, and there is no schema to keep in step with the type, because it _is_
 the type. See [Reflection](./reflect.md) for a single value and
 [Sequences](./sequences.md#oftype-and-cast--the-same-question-two-answers) for a
 collection.
+
+Mos Eisley's docking control, checking one transmission and a whole day of
+arrivals against the type it already had:
+
+```ts
+// Needs the @fulcro/reflect and @fulcro/collections transformers.
+import { SequenceCollection } from '@fulcro/collections';
+import { as } from '@fulcro/reflect';
+
+interface DockingRecord {
+	bay: number;
+	ship: string;
+	captain: { name: string };
+}
+
+const transmission =
+	'{ "bay": 94, "ship": "Millennium Falcon", "captain": { "name": "Han Solo" } }';
+
+const record = as<DockingRecord>(JSON.parse(transmission));
+
+console.log(`${record.captain.name} in bay ${String(record.bay)}`); // 'Han Solo in bay 94'
+
+const arrivals: unknown[] = [
+	record,
+	{ bay: '86', ship: 'Slave I', captain: { name: 'Boba Fett' } },
+];
+
+try {
+	SequenceCollection.from(arrivals).cast<DockingRecord>().toArray();
+} catch (error) {
+	console.log((error as Error).message); // "FULCRO1015: cast('DockingRecord') found a Object at index 1."
+}
+```
 
 ## Guides
 

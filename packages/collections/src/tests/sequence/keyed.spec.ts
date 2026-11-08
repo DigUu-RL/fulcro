@@ -3,53 +3,53 @@ import { describe, expect, it } from 'vitest';
 import { SequenceCollection } from '@/src/collections/sequence';
 
 /** Shape with a key worth selecting on and a payload worth keeping. */
-interface User {
+interface Pilot {
 	readonly id: number;
 	readonly name: string;
 	readonly team: string;
 }
 
-/** Four users across two teams, with one duplicated identifier. */
-const users: readonly User[] = [
-	{ id: 1, name: 'ana', team: 'blue' },
-	{ id: 2, name: 'bo', team: 'red' },
-	{ id: 1, name: 'ana again', team: 'blue' },
-	{ id: 3, name: 'cy', team: 'red' },
+/** Four pilots across two teams, with one duplicated identifier. */
+const pilots: readonly Pilot[] = [
+	{ id: 1, name: 'Wedge', team: 'Gold' },
+	{ id: 2, name: 'Biggs', team: 'Red' },
+	{ id: 1, name: 'Wedge again', team: 'Gold' },
+	{ id: 3, name: 'Porkins', team: 'Red' },
 ];
 
 describe('distinctBy', () => {
 	it('should keep one element per distinct key', () => {
 		expect(
-			SequenceCollection.from(users)
-				.distinctBy((user) => user.id)
-				.select((user) => user.name)
+			SequenceCollection.from(pilots)
+				.distinctBy((pilot) => pilot.id)
+				.select((pilot) => pilot.name)
 				.toArray(),
-		).toEqual(['ana', 'bo', 'cy']);
+		).toEqual(['Wedge', 'Biggs', 'Porkins']);
 	});
 
 	it('should keep the first element seen for a key', () => {
 		// Which is what makes the result follow the order of the source.
 		expect(
-			SequenceCollection.from(users)
-				.distinctBy((user) => user.id)
+			SequenceCollection.from(pilots)
+				.distinctBy((pilot) => pilot.id)
 				.first().name,
-		).toBe('ana');
+		).toBe('Wedge');
 	});
 });
 
 describe('minBy and maxBy', () => {
 	it('should return the element rather than the key', () => {
 		// The difference from min and max, and the usual reason to want them.
-		expect(SequenceCollection.from(users).minBy((user) => user.id).name).toBe('ana');
-		expect(SequenceCollection.from(users).maxBy((user) => user.id).name).toBe('cy');
+		expect(SequenceCollection.from(pilots).minBy((pilot) => pilot.id).name).toBe('Wedge');
+		expect(SequenceCollection.from(pilots).maxBy((pilot) => pilot.id).name).toBe('Porkins');
 	});
 
 	it('should keep the first of several equal keys', () => {
 		expect(
-			SequenceCollection.from(users)
-				.where((user) => user.id === 1)
-				.minBy((user) => user.id).name,
-		).toBe('ana');
+			SequenceCollection.from(pilots)
+				.where((pilot) => pilot.id === 1)
+				.minBy((pilot) => pilot.id).name,
+		).toBe('Wedge');
 	});
 
 	it('should compare string keys', () => {
@@ -63,7 +63,7 @@ describe('minBy and maxBy', () => {
 	});
 
 	it.each(['minBy', 'maxBy'] as const)('should throw on empty for %s', (name) => {
-		expect(() => SequenceCollection.empty<User>()[name]((user) => user.id)).toThrow(
+		expect(() => SequenceCollection.empty<Pilot>()[name]((pilot) => pilot.id)).toThrow(
 			/empty sequence/i,
 		);
 	});
@@ -72,17 +72,17 @@ describe('minBy and maxBy', () => {
 describe('exceptBy', () => {
 	it('should drop the elements whose key is excluded', () => {
 		expect(
-			SequenceCollection.from(users)
-				.exceptBy([1], (user) => user.id)
-				.select((user) => user.id)
+			SequenceCollection.from(pilots)
+				.exceptBy([1], (pilot) => pilot.id)
+				.select((pilot) => pilot.id)
 				.toArray(),
 		).toEqual([2, 3]);
 	});
 
 	it('should return one element per remaining key', () => {
 		expect(
-			SequenceCollection.from(users)
-				.exceptBy([2], (user) => user.id)
+			SequenceCollection.from(pilots)
+				.exceptBy([2], (pilot) => pilot.id)
 				.count(),
 		).toBe(2);
 	});
@@ -90,15 +90,15 @@ describe('exceptBy', () => {
 
 describe('unionBy', () => {
 	it('should append the elements whose key was not already seen', () => {
-		const more: readonly User[] = [
-			{ id: 3, name: 'duplicate', team: 'red' },
-			{ id: 4, name: 'dee', team: 'blue' },
+		const more: readonly Pilot[] = [
+			{ id: 3, name: 'duplicate', team: 'Red' },
+			{ id: 4, name: 'dee', team: 'Gold' },
 		];
 
 		expect(
-			SequenceCollection.from(users)
-				.unionBy(more, (user) => user.id)
-				.select((user) => user.id)
+			SequenceCollection.from(pilots)
+				.unionBy(more, (pilot) => pilot.id)
+				.select((pilot) => pilot.id)
 				.toArray(),
 		).toEqual([1, 2, 3, 4]);
 	});
@@ -107,19 +107,19 @@ describe('unionBy', () => {
 describe('intersectBy', () => {
 	it('should keep only the elements whose key is wanted', () => {
 		expect(
-			SequenceCollection.from(users)
-				.intersectBy([1, 3], (user) => user.id)
-				.select((user) => user.name)
+			SequenceCollection.from(pilots)
+				.intersectBy([1, 3], (pilot) => pilot.id)
+				.select((pilot) => pilot.name)
 				.toArray(),
-		).toEqual(['ana', 'cy']);
+		).toEqual(['Wedge', 'Porkins']);
 	});
 });
 
 describe('countBy', () => {
 	it('should count the elements sharing each key', () => {
-		expect([...SequenceCollection.from(users).countBy((user) => user.team)]).toEqual([
-			['blue', 2],
-			['red', 2],
+		expect([...SequenceCollection.from(pilots).countBy((pilot) => pilot.team)]).toEqual([
+			['Gold', 2],
+			['Red', 2],
 		]);
 	});
 
@@ -131,25 +131,25 @@ describe('countBy', () => {
 	});
 
 	it('should return an empty map for an empty sequence', () => {
-		expect(SequenceCollection.empty<User>().countBy((user) => user.id).size).toBe(0);
+		expect(SequenceCollection.empty<Pilot>().countBy((pilot) => pilot.id).size).toBe(0);
 	});
 });
 
 describe('groupJoin', () => {
-	/** Teams the users above belong to, plus one nobody is in. */
-	const teams = ['blue', 'red', 'green'];
+	/** Teams the pilots above belong to, plus one nobody is in. */
+	const teams = ['Gold', 'Red', 'Green'];
 
 	it('should hand each element its matching group', () => {
 		const result = SequenceCollection.from(teams)
 			.groupJoin(
-				users,
+				pilots,
 				(team) => team,
-				(user) => user.team,
+				(pilot) => pilot.team,
 				(team, members) => `${team}:${String(members.count())}`,
 			)
 			.toArray();
 
-		expect(result).toEqual(['blue:2', 'red:2', 'green:0']);
+		expect(result).toEqual(['Gold:2', 'Red:2', 'Green:0']);
 	});
 
 	it('should keep an element with no match, unlike join', () => {
@@ -157,34 +157,34 @@ describe('groupJoin', () => {
 		// performs.
 		const grouped = SequenceCollection.from(teams)
 			.groupJoin(
-				users,
+				pilots,
 				(team) => team,
-				(user) => user.team,
+				(pilot) => pilot.team,
 				(team) => team,
 			)
 			.toArray();
 
 		const joined = SequenceCollection.from(teams)
 			.join(
-				users,
+				pilots,
 				(team) => team,
-				(user) => user.team,
+				(pilot) => pilot.team,
 				(team) => team,
 			)
 			.distinct()
 			.toArray();
 
-		expect(grouped).toContain('green');
-		expect(joined).not.toContain('green');
+		expect(grouped).toContain('Green');
+		expect(joined).not.toContain('Green');
 	});
 
 	it('should produce one result per element of this sequence', () => {
 		expect(
 			SequenceCollection.from(teams)
 				.groupJoin(
-					users,
+					pilots,
 					(team) => team,
-					(user) => user.team,
+					(pilot) => pilot.team,
 					(team) => team,
 				)
 				.count(),
@@ -194,29 +194,29 @@ describe('groupJoin', () => {
 
 describe('toLookup', () => {
 	it('should collect every element sharing a key', () => {
-		const lookup = SequenceCollection.from(users).toLookup((user) => user.team);
+		const lookup = SequenceCollection.from(pilots).toLookup((pilot) => pilot.team);
 
-		expect(lookup.get('blue')?.map((user) => user.name)).toEqual(['ana', 'ana again']);
-		expect(lookup.get('red')).toHaveLength(2);
+		expect(lookup.get('Gold')?.map((pilot) => pilot.name)).toEqual(['Wedge', 'Wedge again']);
+		expect(lookup.get('Red')).toHaveLength(2);
 	});
 
 	it('should apply the element projection when given one', () => {
-		const lookup = SequenceCollection.from(users).toLookup(
-			(user) => user.team,
-			(user) => user.name,
+		const lookup = SequenceCollection.from(pilots).toLookup(
+			(pilot) => pilot.team,
+			(pilot) => pilot.name,
 		);
 
-		expect(lookup.get('red')).toEqual(['bo', 'cy']);
+		expect(lookup.get('Red')).toEqual(['Biggs', 'Porkins']);
 	});
 
 	it('should collect a duplicate key rather than reject it, unlike toMap', () => {
 		expect(
-			SequenceCollection.from(users)
-				.toLookup((user) => user.id)
+			SequenceCollection.from(pilots)
+				.toLookup((pilot) => pilot.id)
 				.get(1),
 		).toHaveLength(2);
 
-		expect(() => SequenceCollection.from(users).toMap((user) => user.id)).toThrow();
+		expect(() => SequenceCollection.from(pilots).toMap((pilot) => pilot.id)).toThrow();
 	});
 });
 
