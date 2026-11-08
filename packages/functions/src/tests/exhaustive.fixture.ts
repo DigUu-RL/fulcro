@@ -2,7 +2,7 @@
  * Fixture compiled by the exhaustiveness suite.
  *
  * Never imported at runtime, and deliberately does not compile: the call at the
- * bottom leaves a member of `Status` unhandled, which is the whole thing being
+ * bottom leaves a member of `HyperdriveStatus` unhandled, which is the whole thing being
  * asserted. It is excluded from the tsconfig of this package for that reason —
  * see the `exclude` entry there — so `npm run typecheck` does not trip over an
  * error that is the point.
@@ -19,38 +19,38 @@
 import { switchFor } from '@fulcro/functions';
 
 /** Three members, so that leaving one out is unambiguous. */
-export enum Status {
-	Draft,
-	Published,
-	Archived,
+export enum HyperdriveStatus {
+	Online,
+	Damaged,
+	Offline,
 }
 
-declare const status: Status;
+declare const status: HyperdriveStatus;
 
 /** Handles every member. Must compile. */
 export const complete: string = switchFor(status, {
-	[Status.Draft]: () => 'draft',
-	[Status.Published]: () => 'published',
-	[Status.Archived]: () => 'archived',
+	[HyperdriveStatus.Online]: () => 'ready to jump',
+	[HyperdriveStatus.Damaged]: () => 'jump at your own risk',
+	[HyperdriveStatus.Offline]: () => "it's not my fault",
 });
 
 /** Runs for its effects, and still handles every member. Must compile. */
 export const asStatement = (): void =>
 	switchFor(status, {
-		[Status.Draft]: () => undefined,
-		[Status.Published]: () => undefined,
-		[Status.Archived]: () => undefined,
+		[HyperdriveStatus.Online]: () => undefined,
+		[HyperdriveStatus.Damaged]: () => undefined,
+		[HyperdriveStatus.Offline]: () => undefined,
 	});
 
 /** Predicate form, which has no exhaustiveness to check. Must compile. */
 export const byPredicate: string = switchFor(
 	7,
-	[{ when: (value) => value > 0, then: () => 'positive' }],
-	() => 'other',
+	[{ when: (turbolasers) => turbolasers > 0, then: () => 'armed' }],
+	() => 'unarmed',
 );
 
-/** Leaves `Status.Archived` unhandled. Must NOT compile. */
+/** Leaves `HyperdriveStatus.Offline` unhandled. Must NOT compile. */
 export const incomplete: string = switchFor(status, {
-	[Status.Draft]: () => 'draft',
-	[Status.Published]: () => 'published',
+	[HyperdriveStatus.Online]: () => 'ready to jump',
+	[HyperdriveStatus.Damaged]: () => 'jump at your own risk',
 });

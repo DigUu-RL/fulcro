@@ -46,7 +46,7 @@ describe('success', () => {
 
 describe('failure', () => {
 	it('should carry the error and a null value', () => {
-		const error = new Error('broken');
+		const error = new Error('hyperdrive offline');
 		const result: Result<number, Error> = failure(error);
 
 		expect(result.value).toBeNull();
@@ -54,26 +54,26 @@ describe('failure', () => {
 	});
 
 	it('should tell its variant by method', () => {
-		const result: Result<number, string> = failure('broken');
+		const result: Result<number, string> = failure('hyperdrive offline');
 
 		expect(result.isSuccess()).toBe(false);
 		expect(result.isFailure()).toBe(true);
 	});
 
 	it('should hand the error to the failure branch', () => {
-		const result: Result<number, string> = failure('broken');
+		const result: Result<number, string> = failure('hyperdrive offline');
 
 		expect(
 			result.handle({
-				success: () => 'fine',
+				success: () => 'punch it',
 				failure: (error) => `failed: ${error}`,
 			}),
-		).toBe('failed: broken');
+		).toBe('failed: hyperdrive offline');
 	});
 
 	it('should keep the error exactly as it was given', () => {
 		// Any value may be thrown, and a failure is where it is kept.
-		const thrown = { reason: 'custom' };
+		const thrown = { reason: 'a Hutt grudge' };
 
 		expect(failure(thrown).error).toBe(thrown);
 	});
@@ -89,7 +89,7 @@ describe('Result', () => {
 		};
 
 		success(1).handle(cases);
-		failure('x').handle(cases);
+		failure('Red Five').handle(cases);
 
 		expect(ran).toEqual(['success', 'failure']);
 	});
@@ -110,7 +110,7 @@ describe('Result', () => {
 	});
 
 	it('should narrow on isFailure', () => {
-		const result: Result<number, Error> = failure(new Error('x'));
+		const result: Result<number, Error> = failure(new Error('Red Five'));
 
 		if (!result.isFailure()) {
 			expect.unreachable('the result is a failure');
@@ -119,12 +119,12 @@ describe('Result', () => {
 
 		const error: Error = result.error;
 
-		expect(error.message).toBe('x');
+		expect(error.message).toBe('Red Five');
 	});
 
 	it('should be frozen', () => {
 		expect(Object.isFrozen(success(1))).toBe(true);
-		expect(Object.isFrozen(failure('x'))).toBe(true);
+		expect(Object.isFrozen(failure('Red Five'))).toBe(true);
 	});
 
 	it('should show its data and nothing else', () => {
@@ -145,7 +145,7 @@ describe('Result', () => {
 		// the methods; `error === null` is the check that survives it.
 		const copies = [
 			structuredClone(success(1)),
-			JSON.parse(JSON.stringify(failure('x'))) as unknown,
+			JSON.parse(JSON.stringify(failure('Red Five'))) as unknown,
 		] as { value: unknown; error: unknown }[];
 
 		expect(copies.map((copy) => copy.error === null)).toEqual([true, false]);

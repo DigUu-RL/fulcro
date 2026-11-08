@@ -13,7 +13,7 @@ describe('tryCatch', () => {
 	});
 
 	it('should report a rejection as a failure', async () => {
-		const failure = new Error('rejected');
+		const failure = new Error('intercepted by the Empire');
 		const result: Result<number> = await tryCatch(Promise.reject(failure));
 
 		expect(result.value).toBeNull();
@@ -32,17 +32,17 @@ describe('tryCatch', () => {
 	});
 
 	it('should run a callback that resolves asynchronously', async () => {
-		const result = await tryCatch(() => Promise.resolve('value'));
+		const result = await tryCatch(() => Promise.resolve('Help me, Obi-Wan Kenobi'));
 
 		expect(result.error).toBeNull();
-		expect(result.value).toBe('value');
+		expect(result.value).toBe('Help me, Obi-Wan Kenobi');
 	});
 
 	it('should keep a thrown non-error exactly as it was thrown', async () => {
-		const result: Result<number> = await tryCatch<number>(rejectedWith('a bare string'));
+		const result: Result<number> = await tryCatch<number>(rejectedWith("it's a trap"));
 
 		expect(result.value).toBeNull();
-		expect(result.error).toBe('a bare string');
+		expect(result.error).toBe("it's a trap");
 	});
 
 	it.each([null, undefined])('should keep %s from defeating the discriminant', async (thrown) => {
@@ -74,7 +74,7 @@ describe('tryCatch', () => {
 	it('should return a result that tells its variant by method', async () => {
 		const succeeded = await tryCatch(() => Promise.resolve(1));
 
-		const failed = await tryCatch(() => Promise.reject(new Error('x')));
+		const failed = await tryCatch(() => Promise.reject(new Error('Red Five')));
 
 		expect(succeeded.isSuccess()).toBe(true);
 		expect(failed.isFailure()).toBe(true);

@@ -12,7 +12,7 @@
  */
 import { createEquals, type EqualityRule, type Equals, equals } from '@fulcro/functions';
 
-interface User {
+interface Pilot {
 	readonly id: number;
 	readonly name: string;
 }
@@ -23,30 +23,30 @@ interface Descriptor<T> {
 	equals(left: T, right: T): boolean;
 }
 
-declare const users: readonly User[];
-declare const others: readonly User[];
-declare const Point: Descriptor<{ readonly x: number }>;
+declare const redSquadron: readonly Pilot[];
+declare const goldSquadron: readonly Pilot[];
+declare const SensorContact: Descriptor<{ readonly bearing: number }>;
 
 /** Two numbers. Must compile. */
 export const numbers: boolean = equals(1, 2);
 
 /** Two values of one declared type. Must compile. */
-export const sameType: boolean = equals(users, others);
+export const sameType: boolean = equals(redSquadron, goldSquadron);
 
 /** A rule over one type, its parameters inferred from it. Must compile. */
-export const byId: EqualityRule<User> = {
-	is: (value): value is User => typeof value === 'object' && value !== null && 'id' in value,
+export const byId: EqualityRule<Pilot> = {
+	is: (value): value is Pilot => typeof value === 'object' && value !== null && 'id' in value,
 	equals: (left, right) => left.id === right.id,
 };
 
 /** Rules over different types, a descriptor among them. Must compile. */
-export const variant: Equals = createEquals([byId, Point]);
+export const variant: Equals = createEquals([byId, SensorContact]);
 
 /** A variant takes the place of `equals`. Must compile. */
-export const fromVariant: boolean = variant(users, others);
+export const fromVariant: boolean = variant(redSquadron, goldSquadron);
 
 /** A number and a string can never be equal. */
-export const mixed: boolean = equals(1, 'one'); // refused
+export const mixed: boolean = equals(1, 'Red One'); // refused
 
 /** A rule needs `equals`. */
 export const missing: Equals = createEquals([{ is: (value) => value === 1 }]); // refused
