@@ -25,7 +25,7 @@ import { SignedInteger } from '@fulcro/types';
  */
 
 /** The type every call below is resolved against. */
-export interface Order {
+export interface DockingRecord {
 	readonly id: number;
 	readonly region: string;
 }
@@ -34,26 +34,28 @@ declare const payload: unknown;
 declare const rows: unknown[];
 
 /** Claimed by `@fulcro/reflect`, as a free function. */
-export const guarded = (): boolean => is<Order>(payload);
+export const guarded = (): boolean => is<DockingRecord>(payload);
 
-export const asserted = (): Order => as<Order>(payload);
+export const asserted = (): DockingRecord => as<DockingRecord>(payload);
 
-export const empty = (): Order => defaultOf<Order>();
+export const empty = (): DockingRecord => defaultOf<DockingRecord>();
 
-export const named = (): string => nameOf<Order>();
+export const named = (): string => nameOf<DockingRecord>();
 
 export const described = (): unknown => typeOf(payload).declared;
 
 /** Claimed by `@fulcro/collections`, as methods on a sequence. */
-export const filtered = (): Order[] => SequenceCollection.from(rows).ofType<Order>().toArray();
+export const filtered = (): DockingRecord[] =>
+	SequenceCollection.from(rows).ofType<DockingRecord>().toArray();
 
-export const checked = (): Order[] => SequenceCollection.from(rows).cast<Order>().toArray();
+export const checked = (): DockingRecord[] =>
+	SequenceCollection.from(rows).cast<DockingRecord>().toArray();
 
 /** Both in one expression, which is where interference would show. */
-export const together = (): Order[] =>
+export const together = (): DockingRecord[] =>
 	SequenceCollection.from(rows)
-		.ofType<Order>()
-		.where((order) => is<Order>(order))
+		.ofType<DockingRecord>()
+		.where((arrival) => is<DockingRecord>(arrival))
 		.toArray();
 
 /**
@@ -61,15 +63,16 @@ export const together = (): Order[] =>
  * inside the borrows — so the analysis and both rewriters meet the same nodes.
  */
 export const owned = (): boolean => {
-	const orders = own(() => createManagedStorage<unknown>(1, payload));
+	const arrivals = own(() => createManagedStorage<unknown>(1, payload));
 
-	borrowMutable(orders).set(0, defaultOf<Order>());
+	borrowMutable(arrivals).set(0, defaultOf<DockingRecord>());
 
-	const reading = borrow(move(orders));
+	const reading = borrow(move(arrivals));
 	const first: unknown = reading.get(0);
 
 	return (
-		is<Order>(first) && SequenceCollection.from([first]).ofType<Order>().toArray().length === 1
+		is<DockingRecord>(first) &&
+		SequenceCollection.from([first]).ofType<DockingRecord>().toArray().length === 1
 	);
 };
 
@@ -82,9 +85,12 @@ const managed = createManagedAllocator();
  * one of them inside the very declaration it moves.
  */
 export const scoped = (): number => {
-	const counts = allocate(Integer, nameOf<Order>().length, managed);
+	const counts = allocate(Integer, nameOf<DockingRecord>().length, managed);
 
-	counts.set(0, Integer.from(SequenceCollection.from(rows).ofType<Order>().toArray().length));
+	counts.set(
+		0,
+		Integer.from(SequenceCollection.from(rows).ofType<DockingRecord>().toArray().length),
+	);
 
-	return is<Order>(payload) ? counts.get(0) : counts.length;
+	return is<DockingRecord>(payload) ? counts.get(0) : counts.length;
 };

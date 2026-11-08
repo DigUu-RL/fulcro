@@ -16,7 +16,7 @@ import type {
  * `import type`, so the struct's layout, like the numeric ones, needs no code
  * of `@fulcro/types` loaded to be measured.
  */
-type Particle = Struct<
+type BlasterBolt = Struct<
 	StructType<{
 		mass: typeof SinglePrecisionFloat;
 		charge: IntegerType<UnsignedInteger<8>>;
@@ -45,5 +45,5 @@ export const single = sizeOf<SinglePrecisionFloat>();
 export const double = alignOf<DoublePrecisionFloat>();
 export const decimalSize = sizeOf<Decimal>();
 export const decimalAlignment = alignOf<Decimal>();
-export const structSize = sizeOf<Particle>();
-export const structAlignment = alignOf<Particle>();
+export const structSize = sizeOf<BlasterBolt>();
+export const structAlignment = alignOf<BlasterBolt>();

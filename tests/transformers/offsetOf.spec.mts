@@ -42,7 +42,7 @@ const offsetsOf = (descriptor: {
 };
 
 describe('offsetOf over the structs of @fulcro/types', () => {
-	it.each(['Mixed', 'Reversed', 'Outer', 'Account'])(
+	it.each(['Mixed', 'Reversed', 'Outer', 'BountyLedger'])(
 		'should emit for %s the offsets its descriptor places',
 		(name) => {
 			const offsets = compiled.exports.offsets as Record<string, unknown>;

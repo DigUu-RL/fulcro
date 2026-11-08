@@ -7,14 +7,14 @@ import { defaultOf, is } from '@fulcro/reflect';
  * offending one.
  */
 
-interface Order {
+interface DockingRecord {
 	readonly id: number;
 }
 
 export const usedAfterMove = (): boolean => {
-	const orders = own(() => createManagedStorage(1, defaultOf<Order>()));
+	const arrivals = own(() => createManagedStorage(1, defaultOf<DockingRecord>()));
 
-	move(orders);
+	move(arrivals);
 
-	return is<Order>(borrow(orders).get(0));
+	return is<DockingRecord>(borrow(arrivals).get(0));
 };

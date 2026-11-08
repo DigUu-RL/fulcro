@@ -87,9 +87,9 @@ describe('local/coded-errors refuses', () => {
 
 describe('local/coded-errors allows', () => {
 	it("a code from the file's own range", () => {
-		expect(reported(`throw createError('FULCRO6021', 'Vector3.from', 'x');`, TYPES_FILE)).toEqual(
-			[],
-		);
+		expect(
+			reported(`throw createError('FULCRO6021', 'Starfighter.from', 'speed');`, TYPES_FILE),
+		).toEqual([]);
 	});
 
 	it('a caught error, thrown again', () => {
