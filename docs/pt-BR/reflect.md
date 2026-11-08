@@ -173,6 +173,34 @@ O resultado traz:
 | `primitive` `nullish` `iterable` | Flags que valem ter sem outra checagem                          |
 | `declared`                       | O tipo **escrito** — só com o transformer                       |
 
+Um callable que não carrega nome próprio é reportado como `'(anonymous)'`, tanto
+por `typeOf` quanto por `nameOf`. A string é exportada como `ANONYMOUS_NAME`,
+então o código que distingue um callable desses compara contra a constante em
+vez de redigitá-la:
+
+```ts
+typeOf(() => 'Use the Force').name === ANONYMOUS_NAME; // true
+```
+
+R2-D2 listando as rotinas plugadas na rede de manutenção da Estrela da Morte, e
+marcando as que ninguém nomeou:
+
+```ts
+import { ANONYMOUS_NAME, typeOf } from '@fulcro/reflect';
+
+const openBlastDoors = (): string => 'blast doors open';
+const stopTrashCompactor = (): string => 'trash compactor stopped';
+
+const routines: (() => string)[] = [openBlastDoors, stopTrashCompactor, () => 'tractor beam off'];
+
+console.log(routines.map((routine) => typeOf(routine).name));
+// ['openBlastDoors', 'stopTrashCompactor', '(anonymous)']
+
+const unnamed = routines.filter((routine) => typeOf(routine).name === ANONYMOUS_NAME);
+
+console.log(unnamed.length, unnamed[0]?.()); // 1 'tractor beam off'
+```
+
 `declared` é o que nada mais consegue te dar:
 
 ```ts
