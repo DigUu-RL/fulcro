@@ -6,7 +6,7 @@ import { SequenceCollection } from '@/src/collections/sequence';
  * Performance suite for `choose`, `ofType`, `cast`, `topBy` and `tap`.
  *
  * Counted, not timed, and over records rather than numbers — a key projection
- * over a number is free, and an operator reading `order.customer.region` twice
+ * over a number is free, and an operator reading `arrival.captain.region` twice
  * per comparison instead of once per element only shows up on real shapes.
  *
  * `topBy` is the one with an algorithmic promise to keep, so it gets the
@@ -23,33 +23,36 @@ const SIZE = 100_000;
 const WANTED = 10;
 
 /** A line on an order, so the records are not flat. */
-interface LineItem {
-	readonly sku: string;
+interface Crate {
+	readonly manifest: string;
 	readonly quantity: number;
 }
 
 /** The record every assertion below works on. */
-interface Order {
+interface DockingRecord {
 	readonly id: number;
 	readonly region: string;
-	readonly status: 'pending' | 'paid' | 'shipped';
-	readonly total: number;
-	readonly placedAt: Date;
-	readonly items: readonly LineItem[];
+	readonly status: 'docked' | 'refuelled' | 'departed';
+	readonly credits: number;
+	readonly arrivedAt: Date;
+	readonly cargo: readonly Crate[];
 	readonly reference: string | null;
 }
 
 /** Statuses the dataset is spread across. */
-const STATUSES: readonly Order['status'][] = ['pending', 'paid', 'shipped'];
+const STATUSES: readonly DockingRecord['status'][] = ['docked', 'refuelled', 'departed'];
 
-let orders: readonly Order[] = [];
+let arrivals: readonly DockingRecord[] = [];
 
 beforeAll(() => {
 	// Built once: a dataset rebuilt per test would make every count below a
 	// measurement of the builder.
-	orders = Array.from({ length: SIZE }, (_, index) => {
-		const region: string | undefined = ['north', 'south', 'east', 'west'][index % 4];
-		const status: Order['status'] | undefined = STATUSES[index % 3];
+	arrivals = Array.from({ length: SIZE }, (_, index) => {
+		const region: string | undefined = ['Core Worlds', 'Mid Rim', 'Outer Rim', 'Unknown Regions'][
+			index % 4
+		];
+
+		const status: DockingRecord['status'] | undefined = STATUSES[index % 3];
 
 		assert.isDefined(region);
 		assert.isDefined(status);
@@ -60,11 +63,11 @@ beforeAll(() => {
 			status,
 			// Spread by a prime so the ranking cannot be satisfied by arrival order,
 			// and so the best elements are not clustered at either end.
-			total: (index * 7919) % 50_000,
-			placedAt: new Date(2020, 0, 1 + (index % 1_000)),
-			items: [
-				{ sku: `sku-${String(index % 97)}`, quantity: (index % 5) + 1 },
-				{ sku: `sku-${String(index % 89)}`, quantity: (index % 3) + 1 },
+			credits: (index * 7919) % 50_000,
+			arrivedAt: new Date(2020, 0, 1 + (index % 1_000)),
+			cargo: [
+				{ manifest: `manifest-${String(index % 97)}`, quantity: (index % 5) + 1 },
+				{ manifest: `manifest-${String(index % 89)}`, quantity: (index % 3) + 1 },
 			],
 			reference: index % 4 === 0 ? null : `ref-${String(index)}`,
 		};
@@ -117,8 +120,8 @@ describe('topBy', () => {
 	it('should make one comparison per element, whatever the volume', () => {
 		conversions = 0;
 
-		SequenceCollection.from(orders)
-			.topBy((order) => countingKey(order.total), WANTED)
+		SequenceCollection.from(arrivals)
+			.topBy((arrival) => countingKey(arrival.credits), WANTED)
 			.toArray();
 
 		// Measured at 2.01 conversions per element: one comparison against the
@@ -132,16 +135,16 @@ describe('topBy', () => {
 	it('should compare far less than a full sort answering the same question', () => {
 		conversions = 0;
 
-		SequenceCollection.from(orders)
-			.topBy((order) => countingKey(order.total), WANTED)
+		SequenceCollection.from(arrivals)
+			.topBy((arrival) => countingKey(arrival.credits), WANTED)
 			.toArray();
 
 		const ranked: number = conversions;
 
 		conversions = 0;
 
-		SequenceCollection.from(orders)
-			.orderByDescending((order) => countingKey(order.total))
+		SequenceCollection.from(arrivals)
+			.orderByDescending((arrival) => countingKey(arrival.credits))
 			.take(WANTED)
 			.toArray();
 
@@ -158,10 +161,10 @@ describe('topBy', () => {
 	it('should extract one key per element and no more', () => {
 		let extracted = 0;
 
-		SequenceCollection.from(orders)
-			.topBy((order) => {
+		SequenceCollection.from(arrivals)
+			.topBy((arrival) => {
 				extracted++;
-				return order.total;
+				return arrival.credits;
 			}, WANTED)
 			.toArray();
 
@@ -171,8 +174,8 @@ describe('topBy', () => {
 	it('should read its source exactly once', () => {
 		let pulled = 0;
 
-		SequenceCollection.from(counted(orders, () => pulled++))
-			.topBy((order) => order.total, WANTED)
+		SequenceCollection.from(counted(arrivals, () => pulled++))
+			.topBy((arrival) => arrival.credits, WANTED)
 			.toArray();
 
 		expect(pulled).toBe(SIZE);
@@ -185,16 +188,16 @@ describe('topBy', () => {
 		// as the larger window costing a hundred times the smaller.
 		conversions = 0;
 
-		SequenceCollection.from(orders)
-			.topBy((order) => countingKey(order.total), 1)
+		SequenceCollection.from(arrivals)
+			.topBy((arrival) => countingKey(arrival.credits), 1)
 			.toArray();
 
 		const forOne: number = conversions;
 
 		conversions = 0;
 
-		SequenceCollection.from(orders)
-			.topBy((order) => countingKey(order.total), 1_000)
+		SequenceCollection.from(arrivals)
+			.topBy((arrival) => countingKey(arrival.credits), 1_000)
 			.toArray();
 
 		const forThousand: number = conversions;
@@ -227,10 +230,12 @@ describe('choose', () => {
 		let pulled = 0;
 		let projected = 0;
 
-		const references = SequenceCollection.from(counted(orders, () => pulled++)).choose((order) => {
-			projected++;
-			return order.reference;
-		});
+		const references = SequenceCollection.from(counted(arrivals, () => pulled++)).choose(
+			(arrival) => {
+				projected++;
+				return arrival.reference;
+			},
+		);
 
 		expect(references.toArray()).toHaveLength(SIZE - SIZE / 4);
 		expect(pulled).toBe(SIZE);
@@ -243,23 +248,23 @@ describe('choose', () => {
 		// once and keeps what it produced.
 		let split = 0;
 
-		SequenceCollection.from(orders)
-			.where((order) => {
+		SequenceCollection.from(arrivals)
+			.where((arrival) => {
 				split++;
-				return order.reference !== null;
+				return arrival.reference !== null;
 			})
-			.select((order) => {
+			.select((arrival) => {
 				split++;
-				return order.reference;
+				return arrival.reference;
 			})
 			.toArray();
 
 		let chosen = 0;
 
-		SequenceCollection.from(orders)
-			.choose((order) => {
+		SequenceCollection.from(arrivals)
+			.choose((arrival) => {
 				chosen++;
-				return order.reference;
+				return arrival.reference;
 			})
 			.toArray();
 
@@ -270,8 +275,8 @@ describe('choose', () => {
 	it('should pull only what a bounded chain needs', () => {
 		let pulled = 0;
 
-		const first = SequenceCollection.from(counted(orders, () => pulled++))
-			.choose((order) => order.reference)
+		const first = SequenceCollection.from(counted(arrivals, () => pulled++))
+			.choose((arrival) => arrival.reference)
 			.take(5)
 			.toArray();
 
@@ -285,7 +290,7 @@ describe('choose', () => {
 
 describe('ofType and cast', () => {
 	it('should each read the source exactly once', () => {
-		const mixed: readonly unknown[] = orders.flatMap((order) => [order, order.id]);
+		const mixed: readonly unknown[] = arrivals.flatMap((arrival) => [arrival, arrival.id]);
 
 		let pulledByOfType = 0;
 		let pulledByCast = 0;
@@ -303,7 +308,7 @@ describe('ofType and cast', () => {
 	});
 
 	it('should stop where a bounded chain stops', () => {
-		const mixed: readonly unknown[] = orders.flatMap((order) => [order, order.id]);
+		const mixed: readonly unknown[] = arrivals.flatMap((arrival) => [arrival, arrival.id]);
 
 		let pulled = 0;
 
@@ -318,7 +323,7 @@ describe('ofType and cast', () => {
 	it('should not read past the element that fails a cast', () => {
 		// A cast over a large sequence must fail where the problem is, not after
 		// walking everything that follows it.
-		const broken: readonly unknown[] = [...orders.slice(0, 5), 'not an order'];
+		const broken: readonly unknown[] = [...arrivals.slice(0, 5), 'not an order'];
 
 		let pulled = 0;
 
@@ -334,9 +339,9 @@ describe('ofType and cast', () => {
 	it('should add no traversal to a chain it sits in', () => {
 		let pulled = 0;
 
-		SequenceCollection.from(counted(orders, () => pulled++))
+		SequenceCollection.from(counted(arrivals, () => pulled++))
 			.cast('object')
-			.select((order) => order)
+			.select((arrival) => arrival)
 			.toArray();
 
 		expect(pulled).toBe(SIZE);
@@ -348,17 +353,17 @@ describe('the shape check the transformer writes', () => {
 	interface Shaped {
 		readonly id: number;
 		readonly region: string;
-		readonly status: 'pending' | 'paid' | 'shipped';
-		readonly total: number;
-		readonly placedAt: Date;
-		readonly items: readonly LineItem[];
+		readonly status: 'docked' | 'refuelled' | 'departed';
+		readonly credits: number;
+		readonly arrivedAt: Date;
+		readonly cargo: readonly Crate[];
 		readonly reference: string | null;
 	}
 
 	it('should read its source exactly once', () => {
 		let pulled = 0;
 
-		SequenceCollection.from(counted(orders, () => pulled++))
+		SequenceCollection.from(counted(arrivals, () => pulled++))
 			.ofType<Shaped>()
 			.toArray();
 
@@ -370,7 +375,7 @@ describe('the shape check the transformer writes', () => {
 		// five records does not validate a hundred thousand.
 		let pulled = 0;
 
-		SequenceCollection.from(counted(orders, () => pulled++))
+		SequenceCollection.from(counted(arrivals, () => pulled++))
 			.ofType<Shaped>()
 			.take(5)
 			.toArray();
@@ -384,37 +389,39 @@ describe('the shape check the transformer writes', () => {
 		// sides. The hand-written version below checks exactly the same clauses.
 		// Read as a check meets a record: every field possibly anything.
 		type Unchecked = { readonly [Key in keyof Shaped]?: unknown };
-		type UncheckedItem = { readonly [Key in keyof Shaped['items'][number]]?: unknown };
+		type UncheckedItem = { readonly [Key in keyof Shaped['cargo'][number]]?: unknown };
 
 		const byHand = (value: unknown): boolean => {
 			if (value === null || typeof value !== 'object') return false;
 
-			const order = value as Unchecked;
+			const arrival = value as Unchecked;
 
 			return (
-				typeof order.id === 'number' &&
-				typeof order.region === 'string' &&
-				(order.status === 'pending' || order.status === 'paid' || order.status === 'shipped') &&
-				typeof order.total === 'number' &&
-				order.placedAt instanceof Date &&
-				Array.isArray(order.items) &&
-				(order.items as readonly unknown[]).every((item) => {
+				typeof arrival.id === 'number' &&
+				typeof arrival.region === 'string' &&
+				(arrival.status === 'docked' ||
+					arrival.status === 'refuelled' ||
+					arrival.status === 'departed') &&
+				typeof arrival.credits === 'number' &&
+				arrival.arrivedAt instanceof Date &&
+				Array.isArray(arrival.cargo) &&
+				(arrival.cargo as readonly unknown[]).every((item) => {
 					if (item === null || typeof item !== 'object') return false;
 
 					const line = item as UncheckedItem;
 
-					return typeof line.sku === 'string' && typeof line.quantity === 'number';
+					return typeof line.manifest === 'string' && typeof line.quantity === 'number';
 				}) &&
-				(order.reference === null || typeof order.reference === 'string')
+				(arrival.reference === null || typeof arrival.reference === 'string')
 			);
 		};
 
 		const handStart: number = performance.now();
-		const byHandKept: number = orders.filter(byHand).length;
+		const byHandKept: number = arrivals.filter(byHand).length;
 		const hand: number = Math.max(performance.now() - handStart, 1);
 
 		const generatedStart: number = performance.now();
-		const generatedKept: number = SequenceCollection.from(orders).ofType<Shaped>().count();
+		const generatedKept: number = SequenceCollection.from(arrivals).ofType<Shaped>().count();
 		const generated: number = performance.now() - generatedStart;
 
 		// Both have to agree on the answer before their costs mean anything.
@@ -426,10 +433,10 @@ describe('the shape check the transformer writes', () => {
 	it('should stay within a generous ceiling over a hundred thousand records', () => {
 		const started: number = performance.now();
 
-		const kept: number = SequenceCollection.from(orders).ofType<Shaped>().count();
+		const kept: number = SequenceCollection.from(arrivals).ofType<Shaped>().count();
 
 		// A smoke ceiling. Validating every field of every record, including the
-		// nested line items, is real work — this exists to catch the regression
+		// nested crates, is real work — this exists to catch the regression
 		// that turns it into minutes, not to detect a ten percent slowdown.
 		expect(performance.now() - started).toBeLessThan(3_000);
 		expect(kept).toBe(SIZE);
@@ -445,7 +452,7 @@ describe('the shape check the transformer writes', () => {
 			id: 'not a number',
 			get region(): string {
 				readLater++;
-				return 'north';
+				return 'Core Worlds';
 			},
 		};
 
@@ -457,10 +464,10 @@ describe('the shape check the transformer writes', () => {
 
 describe('a recursive shape check', () => {
 	/** A comment tree, the shape recursive checking exists for. */
-	interface Comment {
+	interface Transmission {
 		readonly id: number;
 		readonly text: string;
-		readonly replies: Comment[];
+		readonly replies: Transmission[];
 	}
 
 	/**
@@ -471,7 +478,7 @@ describe('a recursive shape check', () => {
 	 * @param next Counter handing out ids.
 	 * @returns The root comment.
 	 */
-	const treeOf = (depth: number, breadth: number, next: { value: number }): Comment => {
+	const treeOf = (depth: number, breadth: number, next: { value: number }): Transmission => {
 		return {
 			id: next.value++,
 			text: `comment ${String(next.value)}`,
@@ -480,7 +487,7 @@ describe('a recursive shape check', () => {
 		};
 	};
 
-	let forest: readonly Comment[] = [];
+	let forest: readonly Transmission[] = [];
 
 	beforeAll(() => {
 		// A thousand trees of about forty nodes each, so the check is exercised
@@ -495,14 +502,14 @@ describe('a recursive shape check', () => {
 		// resolved once, and the sequence is built once.
 		let built = 0;
 
-		const observed: Iterable<Comment> = {
-			*[Symbol.iterator](): Iterator<Comment> {
+		const observed: Iterable<Transmission> = {
+			*[Symbol.iterator](): Iterator<Transmission> {
 				built++;
 				yield* forest;
 			},
 		};
 
-		const kept: number = SequenceCollection.from(observed).ofType<Comment>().count();
+		const kept: number = SequenceCollection.from(observed).ofType<Transmission>().count();
 
 		expect(kept).toBe(forest.length);
 		expect(built).toBe(1);
@@ -512,7 +519,7 @@ describe('a recursive shape check', () => {
 		let pulled = 0;
 
 		SequenceCollection.from(counted(forest, () => pulled++))
-			.ofType<Comment>()
+			.ofType<Transmission>()
 			.toArray();
 
 		expect(pulled).toBe(forest.length);
@@ -522,7 +529,7 @@ describe('a recursive shape check', () => {
 		let pulled = 0;
 
 		SequenceCollection.from(counted(forest, () => pulled++))
-			.ofType<Comment>()
+			.ofType<Transmission>()
 			.take(3)
 			.toArray();
 
@@ -543,7 +550,7 @@ describe('a recursive shape check', () => {
 			},
 		};
 
-		SequenceCollection.from([wrong]).ofType<Comment>().toArray();
+		SequenceCollection.from([wrong]).ofType<Transmission>().toArray();
 
 		expect(readLater).toBe(0);
 	});
@@ -551,7 +558,7 @@ describe('a recursive shape check', () => {
 	it('should stay within a generous ceiling over a forest', () => {
 		const started: number = performance.now();
 
-		const kept: number = SequenceCollection.from(forest).ofType<Comment>().count();
+		const kept: number = SequenceCollection.from(forest).ofType<Transmission>().count();
 
 		// A smoke ceiling. Walking every node of a thousand trees is real work;
 		// this is here to catch the regression that turns it into minutes.
@@ -565,7 +572,7 @@ describe('tap', () => {
 		let pulled = 0;
 		let observed = 0;
 
-		SequenceCollection.from(counted(orders, () => pulled++))
+		SequenceCollection.from(counted(arrivals, () => pulled++))
 			.tap(() => observed++)
 			.toArray();
 
@@ -578,7 +585,7 @@ describe('tap', () => {
 	it('should observe only what a bounded chain pulls', () => {
 		let observed = 0;
 
-		SequenceCollection.from(orders)
+		SequenceCollection.from(arrivals)
 			.tap(() => observed++)
 			.take(7)
 			.toArray();
@@ -589,10 +596,10 @@ describe('tap', () => {
 	it('should observe nothing when the chain is only described', () => {
 		let observed = 0;
 
-		SequenceCollection.from(orders)
+		SequenceCollection.from(arrivals)
 			.tap(() => observed++)
-			.select((order) => order.total)
-			.where((total) => total > 100);
+			.select((arrival) => arrival.credits)
+			.where((credits) => credits > 100);
 
 		expect(observed).toBe(0);
 	});

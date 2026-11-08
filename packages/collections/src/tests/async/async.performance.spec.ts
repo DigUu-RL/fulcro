@@ -149,11 +149,11 @@ describe('single traversal', () => {
 
 describe('concurrency actually overlaps', () => {
 	it('should finish far sooner than the sequential equivalent', async () => {
-		const items: readonly number[] = [...Array(40).keys()];
+		const cargo: readonly number[] = [...Array(40).keys()];
 
 		const sequentialStart: number = performance.now();
 
-		await AsyncSequenceCollection.from(items)
+		await AsyncSequenceCollection.from(cargo)
 			.select(() => delay(5))
 			.toArray();
 
@@ -161,7 +161,7 @@ describe('concurrency actually overlaps', () => {
 
 		const concurrentStart: number = performance.now();
 
-		await AsyncSequenceCollection.from(items)
+		await AsyncSequenceCollection.from(cargo)
 			.selectAwait(() => delay(5), { concurrency: 10 })
 			.toArray();
 
@@ -235,7 +235,7 @@ describe('concurrency actually overlaps', () => {
 
 describe('realistic records at volume', () => {
 	/** The record the assertions below stream. */
-	interface Reading {
+	interface ScannerReading {
 		readonly sensorId: string;
 		readonly takenAt: Date;
 		readonly celsius: number;
@@ -251,9 +251,9 @@ describe('realistic records at volume', () => {
 	 * @param size Amount of readings to produce.
 	 * @returns The source.
 	 */
-	const readings = (size: number): AsyncIterable<Reading> => {
+	const readings = (size: number): AsyncIterable<ScannerReading> => {
 		return asyncSourceOf({
-			*[Symbol.iterator](): Iterator<Reading> {
+			*[Symbol.iterator](): Iterator<ScannerReading> {
 				for (let index = 0; index < size; index++) {
 					pulled++;
 

@@ -346,14 +346,14 @@ describe('SequenceCollection Performance', () => {
 
 			const startedAt = performance.now();
 
-			const total = numbers
+			const credits = numbers
 				.select((value) => value)
 				.take(500)
 				.count();
 
 			const elapsed = performance.now() - startedAt;
 
-			expect(total).toBe(500);
+			expect(credits).toBe(500);
 			expect(elapsed).toBeLessThan(50);
 		});
 

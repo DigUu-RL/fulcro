@@ -95,7 +95,7 @@ describe('ofType at compile time', () => {
 	it('should turn a class type argument into the constructor itself', () => {
 		// A reference to the value, not its name as a string: `instanceof` needs
 		// the binding, and the binding is what survives into the emitted code.
-		expect(emitted).toContain('.ofType(Admin)');
+		expect(emitted).toContain('.ofType(Jedi)');
 	});
 
 	it('should leave a call that was already given a token alone', () => {
@@ -109,7 +109,7 @@ describe('cast at compile time', () => {
 	});
 
 	it('should resolve a class the same way', () => {
-		expect(emitted).toContain('.cast(Admin)');
+		expect(emitted).toContain('.cast(Jedi)');
 	});
 });
 
@@ -133,7 +133,7 @@ describe('an interface, written out as checks', () => {
 	};
 
 	it('should check each declared property', () => {
-		const line: string = lineFor('accounts');
+		const line: string = lineFor('rebelCells');
 
 		expect(line).toContain('typeof v === "object"');
 		expect(line).toContain('typeof v.id === "number"');
@@ -142,25 +142,25 @@ describe('an interface, written out as checks', () => {
 	it('should reject null before reading a property off it', () => {
 		// `typeof null` is `'object'`, so without this the check would go on to
 		// read a property of null and throw instead of answering.
-		expect(lineFor('accounts')).toContain('v !== null');
+		expect(lineFor('rebelCells')).toContain('v !== null');
 	});
 
 	it('should allow an optional property to be absent', () => {
-		expect(lineFor('orders')).toContain('(v.note === undefined || typeof v.note === "string")');
+		expect(lineFor('arrivals')).toContain('(v.note === undefined || typeof v.note === "string")');
 	});
 
 	it('should check every element of an array, not just that it is one', () => {
-		expect(lineFor('orders')).toContain(
+		expect(lineFor('arrivals')).toContain(
 			'Array.isArray(v.tags) && v.tags.every(e0 => typeof e0 === "string")',
 		);
 	});
 
 	it('should descend into a nested object', () => {
-		expect(lineFor('orders')).toContain('typeof v.customer.email === "string"');
+		expect(lineFor('arrivals')).toContain('typeof v.captain.callSign === "string"');
 	});
 
 	it('should compare a union of literals against each one', () => {
-		expect(lineFor('orders')).toContain('(v.status === "pending" || v.status === "paid")');
+		expect(lineFor('arrivals')).toContain('(v.status === "docked" || v.status === "refuelled")');
 	});
 
 	it('should use instanceof for a built-in class', () => {
@@ -168,8 +168,8 @@ describe('an interface, written out as checks', () => {
 		// the class flag alone misses it — and the shape path then writes out a
 		// check for all fifty of its methods, including a symbol-keyed one whose
 		// compiler spelling cannot appear in source at all.
-		expect(lineFor('orders')).toContain('v.placedAt instanceof Date');
-		expect(lineFor('orders')).not.toContain('__@');
+		expect(lineFor('arrivals')).toContain('v.arrivedAt instanceof Date');
+		expect(lineFor('arrivals')).not.toContain('__@');
 	});
 
 	it('should pin the length of a tuple', () => {
@@ -179,7 +179,7 @@ describe('an interface, written out as checks', () => {
 	});
 
 	it('should carry the type as written, for the error cast throws', () => {
-		expect(lineFor('accounts')).toContain('name: "Account"');
+		expect(lineFor('rebelCells')).toContain('name: "RebelCell"');
 	});
 });
 
@@ -216,17 +216,17 @@ describe('a type that contains itself', () => {
 		// Inside an expression that runs where the call is, not once per element
 		// and not as a name added to the surrounding scope.
 		expect(blockFor('trees')).toContain('(() => {');
-		expect(blockFor('trees')).toContain('return { name: "Tree"');
+		expect(blockFor('trees')).toContain('return { name: "JediLineage"');
 	});
 
 	it('should follow a cycle that runs through a second type', () => {
 		const block: string = blockFor('authors');
 
-		// `Author` refers to `Post` which refers back to `Author`. Neither is
+		// `Senator` refers to `Decree` which refers back to `Senator`. Neither is
 		// recursive on its own, and a search that only looked one level down
 		// would write both out inline and never terminate.
 		expect(block).toMatch(/const check\d+ =/);
-		expect(block).toContain('name: "Author"');
+		expect(block).toContain('name: "Senator"');
 		expect(block).toContain('typeof');
 	});
 });
@@ -259,11 +259,11 @@ describe('the asynchronous sequence', () => {
 	it('should write an interface out there too', () => {
 		const line: string | undefined = emitted
 			.split('\n')
-			.find((candidate) => candidate.includes('streamedOrders'));
+			.find((candidate) => candidate.includes('streamedArrivals'));
 
-		expect(line).toContain('name: "Order"');
+		expect(line).toContain('name: "DockingRecord"');
 		expect(line).toContain('typeof v.id === "number"');
-		expect(line).toContain('v.placedAt instanceof Date');
+		expect(line).toContain('v.arrivedAt instanceof Date');
 	});
 });
 

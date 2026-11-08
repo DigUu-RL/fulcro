@@ -66,37 +66,41 @@ const endless = (): AsyncIterable<number> => {
 };
 
 /** Records the suites query, so the assertions are not all about numbers. */
-interface Order {
+interface DockingRecord {
 	readonly id: number;
 	readonly region: string;
-	readonly total: number;
+	readonly credits: number;
 }
 
 /** The dataset both halves are run over. */
-const ORDERS: readonly Order[] = Array.from({ length: 200 }, (_, index) => {
-	const region: string | undefined = ['north', 'south', 'east', 'west'][index % 4];
+const ARRIVALS: readonly DockingRecord[] = Array.from({ length: 200 }, (_, index) => {
+	const region: string | undefined = ['Core Worlds', 'Mid Rim', 'Outer Rim', 'Unknown Regions'][
+		index % 4
+	];
 
 	assert.isDefined(region);
 
 	return {
 		id: index,
 		region,
-		total: (index * 37) % 500,
+		credits: (index * 37) % 500,
 	};
 });
 
 describe('the numeric terminals', () => {
 	it.each([
-		['sum', (order: Order): number => order.total],
-		['average', (order: Order): number => order.total],
-		['min', (order: Order): number => order.total],
-		['max', (order: Order): number => order.total],
+		['sum', (arrival: DockingRecord): number => arrival.credits],
+		['average', (arrival: DockingRecord): number => arrival.credits],
+		['min', (arrival: DockingRecord): number => arrival.credits],
+		['max', (arrival: DockingRecord): number => arrival.credits],
 	])('should agree with the synchronous %s', async (name, selector) => {
 		type Numeric = 'sum' | 'average' | 'min' | 'max';
 
-		const expected = SequenceCollection.from(ORDERS)[name as Numeric](selector);
+		const expected = SequenceCollection.from(ARRIVALS)[name as Numeric](selector);
 
-		const actual = await AsyncSequenceCollection.from(streamOf(ORDERS))[name as Numeric](selector);
+		const actual = await AsyncSequenceCollection.from(streamOf(ARRIVALS))[name as Numeric](
+			selector,
+		);
 
 		expect(actual).toBe(expected);
 	});
@@ -126,10 +130,12 @@ describe('the numeric terminals', () => {
 	it.each(['minBy', 'maxBy'])('should agree with the synchronous %s', async (name) => {
 		type Extreme = 'minBy' | 'maxBy';
 
-		const expected = SequenceCollection.from(ORDERS)[name as Extreme]((order) => order.total);
+		const expected = SequenceCollection.from(ARRIVALS)[name as Extreme](
+			(arrival) => arrival.credits,
+		);
 
-		const actual = await AsyncSequenceCollection.from(streamOf(ORDERS))[name as Extreme](
-			(order) => order.total,
+		const actual = await AsyncSequenceCollection.from(streamOf(ARRIVALS))[name as Extreme](
+			(arrival) => arrival.credits,
 		);
 
 		expect(actual).toEqual(expected);
@@ -149,12 +155,12 @@ describe('the numeric terminals', () => {
 	});
 
 	it('should await a selector that has to wait', async () => {
-		const total = await AsyncSequenceCollection.from(streamOf([1, 2, 3])).sum(async (value) => {
+		const credits = await AsyncSequenceCollection.from(streamOf([1, 2, 3])).sum(async (value) => {
 			await Promise.resolve();
 			return value * 10;
 		});
 
-		expect(total).toBe(60);
+		expect(credits).toBe(60);
 	});
 });
 
@@ -164,10 +170,12 @@ describe('the spread terminals', () => {
 		async (name) => {
 			type Spread = 'standardDeviation' | 'sampleStandardDeviation';
 
-			const expected = SequenceCollection.from(ORDERS)[name as Spread]((order) => order.total);
+			const expected = SequenceCollection.from(ARRIVALS)[name as Spread](
+				(arrival) => arrival.credits,
+			);
 
-			const actual = await AsyncSequenceCollection.from(streamOf(ORDERS))[name as Spread](
-				(order) => order.total,
+			const actual = await AsyncSequenceCollection.from(streamOf(ARRIVALS))[name as Spread](
+				(arrival) => arrival.credits,
 			);
 
 			// Close rather than exact, and deliberately: this accumulates each
@@ -341,9 +349,9 @@ describe('the ends of the sequence', () => {
 	])('should agree with the synchronous %s', async (_label, name) => {
 		type Trailing = 'takeLast' | 'skipLast';
 
-		const expected = SequenceCollection.from(ORDERS)[name as Trailing](7).toArray();
+		const expected = SequenceCollection.from(ARRIVALS)[name as Trailing](7).toArray();
 
-		const streamed = AsyncSequenceCollection.from(streamOf(ORDERS));
+		const streamed = AsyncSequenceCollection.from(streamOf(ARRIVALS));
 		const actual = await streamed[name as Trailing](7).toArray();
 
 		expect(actual).toEqual(expected);
@@ -430,13 +438,13 @@ describe('groupAdjacent', () => {
 	});
 
 	it('should agree with the synchronous operator', async () => {
-		const expected = SequenceCollection.from(ORDERS)
-			.groupAdjacent((order) => order.region)
+		const expected = SequenceCollection.from(ARRIVALS)
+			.groupAdjacent((arrival) => arrival.region)
 			.select((run) => [run.key, run.count()])
 			.toArray();
 
-		const actual = await AsyncSequenceCollection.from(streamOf(ORDERS))
-			.groupAdjacent((order) => order.region)
+		const actual = await AsyncSequenceCollection.from(streamOf(ARRIVALS))
+			.groupAdjacent((arrival) => arrival.region)
 			.select((run) => [run.key, run.count()])
 			.toArray();
 
@@ -525,33 +533,33 @@ describe('the set operations', () => {
 	])('should agree with the synchronous %s', async (_label, name) => {
 		type KeyedOp = 'exceptBy' | 'intersectBy';
 
-		const keys = ['north', 'south'];
+		const keys = ['Core Worlds', 'Mid Rim'];
 
-		const listed = SequenceCollection.from(ORDERS);
-		const streamed = AsyncSequenceCollection.from(streamOf(ORDERS));
+		const listed = SequenceCollection.from(ARRIVALS);
+		const streamed = AsyncSequenceCollection.from(streamOf(ARRIVALS));
 
-		const expected = listed[name as KeyedOp](keys, (order) => order.region)
-			.select((order) => order.id)
+		const expected = listed[name as KeyedOp](keys, (arrival) => arrival.region)
+			.select((arrival) => arrival.id)
 			.toArray();
 
-		const actual = await streamed[name as KeyedOp](keys, (order) => order.region)
-			.select((order) => order.id)
+		const actual = await streamed[name as KeyedOp](keys, (arrival) => arrival.region)
+			.select((arrival) => arrival.id)
 			.toArray();
 
 		expect(actual).toEqual(expected);
 	});
 
 	it('should agree with the synchronous unionBy', async () => {
-		const second = ORDERS.slice(0, 10);
+		const second = ARRIVALS.slice(0, 10);
 
-		const expected = SequenceCollection.from(ORDERS.slice(5))
-			.unionBy(second, (order) => order.region)
-			.select((order) => order.id)
+		const expected = SequenceCollection.from(ARRIVALS.slice(5))
+			.unionBy(second, (arrival) => arrival.region)
+			.select((arrival) => arrival.id)
 			.toArray();
 
-		const actual = await AsyncSequenceCollection.from(streamOf(ORDERS.slice(5)))
-			.unionBy(second, (order) => order.region)
-			.select((order) => order.id)
+		const actual = await AsyncSequenceCollection.from(streamOf(ARRIVALS.slice(5)))
+			.unionBy(second, (arrival) => arrival.region)
+			.select((arrival) => arrival.id)
 			.toArray();
 
 		expect(actual).toEqual(expected);
@@ -579,27 +587,27 @@ describe('the set operations', () => {
 describe('the joins', () => {
 	/** The inner side both joins correlate against. */
 	const regions = [
-		{ name: 'north', manager: 'ana' },
-		{ name: 'south', manager: 'bruno' },
-		{ name: 'north', manager: 'carla' },
+		{ name: 'Core Worlds', manager: 'Wedge' },
+		{ name: 'Mid Rim', manager: 'bruno' },
+		{ name: 'Core Worlds', manager: 'carla' },
 	];
 
 	it('should agree with the synchronous join', async () => {
-		const expected = SequenceCollection.from(ORDERS.slice(0, 8))
+		const expected = SequenceCollection.from(ARRIVALS.slice(0, 8))
 			.join(
 				regions,
-				(order) => order.region,
+				(arrival) => arrival.region,
 				(region) => region.name,
-				(order, region) => `${String(order.id)}:${region.manager}`,
+				(arrival, region) => `${String(arrival.id)}:${region.manager}`,
 			)
 			.toArray();
 
-		const actual = await AsyncSequenceCollection.from(streamOf(ORDERS.slice(0, 8)))
+		const actual = await AsyncSequenceCollection.from(streamOf(ARRIVALS.slice(0, 8)))
 			.join(
 				regions,
-				(order) => order.region,
+				(arrival) => arrival.region,
 				(region) => region.name,
-				(order, region) => `${String(order.id)}:${region.manager}`,
+				(arrival, region) => `${String(arrival.id)}:${region.manager}`,
 			)
 			.toArray();
 
@@ -607,21 +615,21 @@ describe('the joins', () => {
 	});
 
 	it('should agree with the synchronous groupJoin', async () => {
-		const expected = SequenceCollection.from(ORDERS.slice(0, 8))
+		const expected = SequenceCollection.from(ARRIVALS.slice(0, 8))
 			.groupJoin(
 				regions,
-				(order) => order.region,
+				(arrival) => arrival.region,
 				(region) => region.name,
-				(order, matches) => `${String(order.id)}:${String(matches.count())}`,
+				(arrival, matches) => `${String(arrival.id)}:${String(matches.count())}`,
 			)
 			.toArray();
 
-		const actual = await AsyncSequenceCollection.from(streamOf(ORDERS.slice(0, 8)))
+		const actual = await AsyncSequenceCollection.from(streamOf(ARRIVALS.slice(0, 8)))
 			.groupJoin(
 				regions,
-				(order) => order.region,
+				(arrival) => arrival.region,
 				(region) => region.name,
-				(order, matches) => `${String(order.id)}:${String(matches.count())}`,
+				(arrival, matches) => `${String(arrival.id)}:${String(matches.count())}`,
 			)
 			.toArray();
 
@@ -629,23 +637,23 @@ describe('the joins', () => {
 	});
 
 	it('should keep an outer element with no matches, in groupJoin only', async () => {
-		const lonely = [{ id: 1, region: 'nowhere', total: 0 }];
+		const lonely = [{ id: 1, region: 'nowhere', credits: 0 }];
 
 		const joined = await AsyncSequenceCollection.from(streamOf(lonely))
 			.join(
 				regions,
-				(order) => order.region,
+				(arrival) => arrival.region,
 				(region) => region.name,
-				(order) => order.id,
+				(arrival) => arrival.id,
 			)
 			.toArray();
 
 		const grouped = await AsyncSequenceCollection.from(streamOf(lonely))
 			.groupJoin(
 				regions,
-				(order) => order.region,
+				(arrival) => arrival.region,
 				(region) => region.name,
-				(order, matches) => `${String(order.id)}:${String(matches.count())}`,
+				(arrival, matches) => `${String(arrival.id)}:${String(matches.count())}`,
 			)
 			.toArray();
 
@@ -665,12 +673,12 @@ describe('the joins', () => {
 			},
 		};
 
-		await AsyncSequenceCollection.from(streamOf(ORDERS.slice(0, 20)))
+		await AsyncSequenceCollection.from(streamOf(ARRIVALS.slice(0, 20)))
 			.join(
 				inner,
-				(order) => order.region,
+				(arrival) => arrival.region,
 				(region) => region.name,
-				(order) => order.id,
+				(arrival) => arrival.id,
 			)
 			.toArray();
 
@@ -680,24 +688,24 @@ describe('the joins', () => {
 
 describe('the map terminals', () => {
 	it('should agree with the synchronous countBy', async () => {
-		const expected = SequenceCollection.from(ORDERS).countBy((order) => order.region);
+		const expected = SequenceCollection.from(ARRIVALS).countBy((arrival) => arrival.region);
 
-		const actual = await AsyncSequenceCollection.from(streamOf(ORDERS)).countBy(
-			(order) => order.region,
+		const actual = await AsyncSequenceCollection.from(streamOf(ARRIVALS)).countBy(
+			(arrival) => arrival.region,
 		);
 
 		expect([...actual.entries()]).toEqual([...expected.entries()]);
 	});
 
 	it('should agree with the synchronous toMap', async () => {
-		const expected = SequenceCollection.from(ORDERS).toMap(
-			(order) => order.id,
-			(order) => order.total,
+		const expected = SequenceCollection.from(ARRIVALS).toMap(
+			(arrival) => arrival.id,
+			(arrival) => arrival.credits,
 		);
 
-		const actual = await AsyncSequenceCollection.from(streamOf(ORDERS)).toMap(
-			(order) => order.id,
-			(order) => order.total,
+		const actual = await AsyncSequenceCollection.from(streamOf(ARRIVALS)).toMap(
+			(arrival) => arrival.id,
+			(arrival) => arrival.credits,
 		);
 
 		expect([...actual.entries()]).toEqual([...expected.entries()]);
@@ -705,19 +713,19 @@ describe('the map terminals', () => {
 
 	it('should refuse two elements sharing a key', async () => {
 		await expect(
-			AsyncSequenceCollection.from(streamOf(ORDERS)).toMap((order) => order.region),
+			AsyncSequenceCollection.from(streamOf(ARRIVALS)).toMap((arrival) => arrival.region),
 		).rejects.toThrow(/two elements/);
 	});
 
 	it('should agree with the synchronous toLookup', async () => {
-		const expected = SequenceCollection.from(ORDERS).toLookup(
-			(order) => order.region,
-			(order) => order.id,
+		const expected = SequenceCollection.from(ARRIVALS).toLookup(
+			(arrival) => arrival.region,
+			(arrival) => arrival.id,
 		);
 
-		const actual = await AsyncSequenceCollection.from(streamOf(ORDERS)).toLookup(
-			(order) => order.region,
-			(order) => order.id,
+		const actual = await AsyncSequenceCollection.from(streamOf(ARRIVALS)).toLookup(
+			(arrival) => arrival.region,
+			(arrival) => arrival.id,
 		);
 
 		expect([...actual.entries()]).toEqual([...expected.entries()]);

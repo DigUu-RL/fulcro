@@ -197,8 +197,8 @@ describe('operators', () => {
 				{ id: 1, name: 'b' },
 				{ id: 2, name: 'c' },
 			])
-				.distinctBy((user) => user.id)
-				.select((user) => user.name)
+				.distinctBy((pilot) => pilot.id)
+				.select((pilot) => pilot.name)
 				.toArray(),
 		).toEqual(['a', 'c']);
 	});
@@ -224,7 +224,7 @@ describe('operators', () => {
 	it('should yield the running accumulation', async () => {
 		expect(
 			await AsyncSequenceCollection.from([1, 2, 3])
-				.scan(0, (total, value) => total + value)
+				.scan(0, (credits, value) => credits + value)
 				.toArray(),
 		).toEqual([1, 3, 6]);
 	});
@@ -242,7 +242,7 @@ describe('terminals', () => {
 		expect(await convert().all((value) => value > 1)).toBe(false);
 		expect(await convert().first()).toBe(1);
 		expect(await convert().last()).toBe(3);
-		expect(await convert().aggregate(0, (total, value) => total + value)).toBe(6);
+		expect(await convert().aggregate(0, (credits, value) => credits + value)).toBe(6);
 	});
 
 	it('should report absence rather than throwing, where asked to', async () => {

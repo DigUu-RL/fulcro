@@ -234,7 +234,7 @@ describe('single traversal', () => {
 
 	it('should accumulate scan in one pass', () => {
 		SequenceCollection.from(instrumentedSource(VOLUME))
-			.scan(0, (total, value) => total + value)
+			.scan(0, (credits, value) => credits + value)
 			.toArray();
 
 		expect(visits).toBe(VOLUME);

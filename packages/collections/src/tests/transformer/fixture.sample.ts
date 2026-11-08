@@ -13,30 +13,30 @@ import { AsyncSequenceCollection } from '@fulcro/collections/async';
  */
 
 /** A class, which has a runtime counterpart the rewriter can reference. */
-export class Admin {
+export class Jedi {
 	constructor(public readonly name: string) {}
 }
 
 /** An interface, which leaves nothing behind and cannot be resolved. */
-export interface Account {
+export interface RebelCell {
 	readonly id: number;
 }
 
-const values: unknown[] = ['a', 1, new Admin('root')];
+const values: unknown[] = ['a', 1, new Jedi('Yoda')];
 
 /** The primitive form, which becomes a `typeof` name. */
 export const strings = (): unknown => SequenceCollection.from(values).ofType<string>().toArray();
 
 /** The class form, which becomes a reference to the constructor. */
-export const admins = (): unknown => SequenceCollection.from(values).ofType<Admin>().toArray();
+export const jedi = (): unknown => SequenceCollection.from(values).ofType<Jedi>().toArray();
 
 /** The same two, through `cast`. */
 export const castStrings = (): unknown =>
 	SequenceCollection.from(['a', 'b']).cast<string>().toArray();
 
-export const castAdmins = (): unknown =>
-	SequenceCollection.from([new Admin('root')])
-		.cast<Admin>()
+export const castJedi = (): unknown =>
+	SequenceCollection.from([new Jedi('Yoda')])
+		.cast<Jedi>()
 		.toArray();
 
 /** Written with a token already: nothing for the transformer to fill in. */
@@ -47,19 +47,21 @@ export const chained = (): unknown =>
 	SequenceCollection.from(values).ofType<string>().cast<string>().toArray();
 
 /** An interface, written out as the checks its properties imply. */
-export const accounts = (): unknown => SequenceCollection.from(values).ofType<Account>().toArray();
+export const rebelCells = (): unknown =>
+	SequenceCollection.from(values).ofType<RebelCell>().toArray();
 
 /** A record with an optional field, a nested object and an array. */
-export interface Order {
+export interface DockingRecord {
 	readonly id: number;
 	readonly note?: string;
 	readonly tags: string[];
-	readonly customer: { readonly email: string };
-	readonly status: 'pending' | 'paid';
-	readonly placedAt: Date;
+	readonly captain: { readonly callSign: string };
+	readonly status: 'docked' | 'refuelled';
+	readonly arrivedAt: Date;
 }
 
-export const orders = (): unknown => SequenceCollection.from(values).ofType<Order>().toArray();
+export const arrivals = (): unknown =>
+	SequenceCollection.from(values).ofType<DockingRecord>().toArray();
 
 /** A tuple of fixed length. */
 export const pairs = (): unknown =>
@@ -67,38 +69,38 @@ export const pairs = (): unknown =>
 
 /** A union of literals. */
 export const statuses = (): unknown =>
-	SequenceCollection.from(values).ofType<'pending' | 'paid'>().toArray();
+	SequenceCollection.from(values).ofType<'docked' | 'refuelled'>().toArray();
 
 /** Recursive: written as a function that calls itself. */
-export interface Tree {
+export interface JediLineage {
 	readonly value: number;
-	readonly children: Tree[];
+	readonly children: JediLineage[];
 }
 
-export const trees = (): unknown => SequenceCollection.from(values).ofType<Tree>().toArray();
+export const trees = (): unknown => SequenceCollection.from(values).ofType<JediLineage>().toArray();
 
 /** Mutually recursive, where the cycle runs through a second type. */
-export interface Author {
+export interface Senator {
 	readonly name: string;
-	readonly posts: Post[];
+	readonly posts: Decree[];
 }
 
-export interface Post {
+export interface Decree {
 	readonly title: string;
-	readonly author: Author;
+	readonly author: Senator;
 }
 
-export const authors = (): unknown => SequenceCollection.from(values).ofType<Author>().toArray();
+export const authors = (): unknown => SequenceCollection.from(values).ofType<Senator>().toArray();
 
 /**
  * An index signature: still refused, and deliberately. Arbitrary keys mean
  * there is no fixed set of properties to write checks for.
  */
-export interface Settings {
+export interface Garrison {
 	readonly [key: string]: string;
 }
 
-export const settings = (): unknown => SequenceCollection.from(values).ofType<Settings>().toArray();
+export const settings = (): unknown => SequenceCollection.from(values).ofType<Garrison>().toArray();
 
 /**
  * The asynchronous sequence, which declares the same two operators in a
@@ -108,7 +110,8 @@ const streamed = async function* (): AsyncGenerator<unknown> {
 	yield* values;
 };
 
-export const streamedOrders = (): unknown => AsyncSequenceCollection.from(streamed()).cast<Order>();
+export const streamedArrivals = (): unknown =>
+	AsyncSequenceCollection.from(streamed()).cast<DockingRecord>();
 
 export const streamedStrings = (): unknown =>
 	AsyncSequenceCollection.from(streamed()).ofType<string>();
