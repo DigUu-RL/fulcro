@@ -596,7 +596,7 @@ describe('types', () => {
 	it('should be awaitable as its value, and settle as a Result', () => {
 		expectTypeOf<Awaited<Task<number>>>().toEqualTypeOf<number>();
 
-		expectTypeOf<Task<number>['Kessel Run']>().toEqualTypeOf<Promise<Result<number>>>();
+		expectTypeOf<Task<number>['settled']>().toEqualTypeOf<Promise<Result<number>>>();
 	});
 
 	it('should be async disposable, so await using ends it', () => {
