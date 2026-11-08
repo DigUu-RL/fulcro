@@ -209,6 +209,44 @@ describe('pipeline fusion', () => {
 		expect(closed()).toBe(1);
 	});
 
+	it('should close the source and surface the same error when a projection throws', () => {
+		const failure: Error = new RangeError('the hyperdrive motivator failed');
+		const { source, closed } = trackedSource(10);
+
+		const sequence: Sequence<number> = SequenceCollection.from(source)
+			.where((value) => value % 2 === 0)
+			.select((value) => {
+				if (value === 4) throw failure;
+
+				return value * 10;
+			});
+
+		expect(() => sequence.toArray()).toThrow(failure);
+		expect(closed()).toBe(1);
+	});
+
+	it('should surface the error the source itself throws, through every step', () => {
+		const failure: Error = new RangeError('the Death Star plans were corrupted');
+		let finalised = 0;
+
+		const transmission = function* (): Generator<number> {
+			try {
+				yield 1;
+				yield 2;
+				throw failure;
+			} finally {
+				finalised++;
+			}
+		};
+
+		const sequence: Sequence<number> = SequenceCollection.from(transmission())
+			.where(() => true)
+			.select((value) => value * 2);
+
+		expect(() => sequence.toArray()).toThrow(failure);
+		expect(finalised).toBe(1);
+	});
+
 	it('should carry a known count through projections and drop it at a filter', () => {
 		let projections = 0;
 

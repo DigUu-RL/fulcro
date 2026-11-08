@@ -206,4 +206,59 @@ describe('pipeline fusion cost', () => {
 		// The first filter drops 0 and keeps 1, 2 and 3: four pulls, then stop.
 		expect(visits).toBe(4);
 	});
+
+	it('should call every step exactly as often as the data requires, at volume', () => {
+		chain(instrumentedSource(VOLUME), 8, true).toArray();
+
+		// Measured against a model of the chain rather than against another
+		// chain, so a fault both a fused and an unfused chain would share — a
+		// step called twice, say — cannot hide behind the comparison.
+		expect(calls).toBe(expectedCalls(VOLUME, 8, Number.POSITIVE_INFINITY));
+		expect(visits).toBe(VOLUME);
+	});
+
+	it('should cost nothing to build, and call nothing past an early stop', () => {
+		const described: Sequence<number> = chain(instrumentedSource(VOLUME), 8, true);
+
+		expect(visits).toBe(0);
+		expect(calls).toBe(0);
+
+		described.take(3).toArray();
+
+		// Element 0 is dropped by the first filter after one call; elements 1,
+		// 2 and 3 each run all eight steps. Nothing runs for element 4.
+		expect(calls).toBe(expectedCalls(VOLUME, 8, 3));
+		expect(calls).toBe(1 + 3 * 8);
+	});
 });
+
+/**
+ * Counts the calls the chain built by `chain` owes, by walking the data the
+ * way the chain is specified to, one element at a time.
+ *
+ * @param size Amount of elements the source yields.
+ * @param length Amount of stages.
+ * @param limit Elements to produce before stopping, as a `take` would.
+ * @returns The calls the predicates and projections must have received.
+ */
+const expectedCalls = (size: number, length: number, limit: number): number => {
+	let owed = 0;
+	let produced = 0;
+
+	for (let element = 0; element < size && produced < limit; element++) {
+		let value: number = element;
+		let kept = true;
+
+		for (let stage = 0; stage < length && kept; stage++) {
+			owed++;
+
+			// Even stages filter out multiples of seven; odd ones add one.
+			kept = stage % 2 === 0 ? value % 7 !== 0 : kept;
+			value = stage % 2 === 0 ? value : value + 1;
+		}
+
+		if (kept) produced++;
+	}
+
+	return owed;
+};
