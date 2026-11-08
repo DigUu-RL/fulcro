@@ -82,24 +82,25 @@ use 1,000,000.
 
 **Real shapes**, because a sequence of numbers is not what the library is used
 for. A key projection over a number is free; one that reads
-`order.customer.region` is not, and an operator calling it twice per comparison
+`arrival.captain.region` is not, and an operator calling it twice per comparison
 rather than once per element only shows up on records:
 
 ```ts
-interface Order {
+interface DockingRecord {
 	readonly id: number;
-	readonly customerId: number;
+	readonly captainId: number;
 	readonly region: string;
-	readonly total: number;
-	readonly placedAt: Date;
-	readonly items: readonly LineItem[];
+	readonly status: 'docked' | 'refuelled' | 'departed' | 'impounded';
+	readonly credits: number;
+	readonly arrivedAt: Date;
+	readonly cargo: readonly Crate[];
 }
 ```
 
 `realistic.performance.spec.ts` queries a hundred thousand of those against five
-thousand customers — sorting by composite keys, joining, grouping, flattening
-nested line items. Build the dataset **once**, in a `beforeAll`, or every budget
-below it measures the builder.
+thousand captains — sorting by composite keys, joining, grouping, flattening
+the crates in each hold. Build the dataset **once**, in a `beforeAll`, or every
+budget below it measures the builder.
 
 ## When the clock is the right tool
 
@@ -136,8 +137,8 @@ The fix is to measure a baseline in the same run, on the same machine, and
 compare:
 
 ```ts
-const resolved = timed(() => nameOf(() => user.email));
-const baseline = timed(() => 'email');
+const resolved = timed(() => nameOf(() => pilot.callSign));
+const baseline = timed(() => pilot.callSign);
 
 expect(resolved).toBeLessThan(baseline * 25);
 ```

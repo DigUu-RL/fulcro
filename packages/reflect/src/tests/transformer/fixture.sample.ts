@@ -22,15 +22,15 @@ export interface PilotRecord {
 /** Alias over a union, to check how a non nominal type is reported. */
 export type Theme = 'dark' | 'light';
 
-const user: PilotRecord = { callSign: 'Red Five', profile: { theme: 'dark' } };
+const pilot: PilotRecord = { callSign: 'Red Five', profile: { theme: 'dark' } };
 
-export const accessorName = nameOf(() => user.callSign);
-export const deepAccessorName = nameOf(() => user.profile.theme);
-export const indexedName = nameOf(() => user['callSign']);
+export const accessorName = nameOf(() => pilot.callSign);
+export const deepAccessorName = nameOf(() => pilot.profile.theme);
+export const indexedName = nameOf(() => pilot['callSign']);
 export const interfaceName = nameOf<PilotRecord>();
 export const aliasName = nameOf<Theme>();
-export const described = typeOf(user);
-export const describedPrimitive = typeOf(user.callSign);
+export const described = typeOf(pilot);
+export const describedPrimitive = typeOf(pilot.callSign);
 
 /** Shape exercising nesting, optionality and collections at once. */
 export interface DockingRecord {

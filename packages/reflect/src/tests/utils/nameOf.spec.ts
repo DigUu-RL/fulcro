@@ -8,7 +8,7 @@ class Trooper {
 	profile = { theme: 'dark' };
 
 	// A function held by the instance, so reading it off the object is safe:
-	// the expression `user.save` is what is named, as it would be for a method.
+	// the expression `pilot.save` is what is named, as it would be for a method.
 	save = (): void => {
 		// To be named, never called.
 	};
@@ -40,32 +40,32 @@ describe('nameOf', () => {
 	});
 
 	it('should name a property, reporting the last segment of the path', () => {
-		const user = new Trooper();
+		const pilot = new Trooper();
 
-		expect(nameOf(() => user.callSign)).toBe('callSign');
-		expect(nameOf(() => user.profile)).toBe('profile');
-		expect(nameOf(() => user.profile.theme)).toBe('theme');
+		expect(nameOf(() => pilot.callSign)).toBe('callSign');
+		expect(nameOf(() => pilot.profile)).toBe('profile');
+		expect(nameOf(() => pilot.profile.theme)).toBe('theme');
 	});
 
 	it('should name a method and an accessor', () => {
-		const user = new Trooper();
+		const pilot = new Trooper();
 
-		expect(nameOf(() => user.save)).toBe('save');
-		expect(nameOf(() => user.displayName)).toBe('displayName');
+		expect(nameOf(() => pilot.save)).toBe('save');
+		expect(nameOf(() => pilot.displayName)).toBe('displayName');
 	});
 
 	it('should name an indexed access', () => {
-		const user = new Trooper();
+		const pilot = new Trooper();
 
-		expect(nameOf(() => user.callSign)).toBe('callSign');
+		expect(nameOf(() => pilot.callSign)).toBe('callSign');
 	});
 
 	it('should name an optionally chained access', () => {
 		// Through a call, so the compiler keeps the `null` the chain is there for.
 		const find = (): Trooper | null => new Trooper();
-		const user: Trooper | null = find();
+		const pilot: Trooper | null = find();
 
-		expect(nameOf(() => user?.callSign)).toBe('callSign');
+		expect(nameOf(() => pilot?.callSign)).toBe('callSign');
 	});
 
 	it('should name a class', () => {
@@ -74,11 +74,11 @@ describe('nameOf', () => {
 	});
 
 	it('should name a classic function accessor', () => {
-		const user = new Trooper();
+		const pilot = new Trooper();
 
 		expect(
 			nameOf(() => {
-				return user.callSign;
+				return pilot.callSign;
 			}),
 		).toBe('callSign');
 	});

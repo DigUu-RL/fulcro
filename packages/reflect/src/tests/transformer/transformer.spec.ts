@@ -129,8 +129,8 @@ describe('typeOf at compile time', () => {
 	});
 
 	it('should keep the inspected value as the first argument', () => {
-		expect(emitted).toMatch(/typeOf\(user,\s*\{/);
-		expect(emitted).toMatch(/typeOf\(user\.callSign,\s*\{/);
+		expect(emitted).toMatch(/typeOf\(pilot,\s*\{/);
+		expect(emitted).toMatch(/typeOf\(pilot\.callSign,\s*\{/);
 	});
 });
 

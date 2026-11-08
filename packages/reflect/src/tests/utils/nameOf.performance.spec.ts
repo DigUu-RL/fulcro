@@ -44,16 +44,16 @@ const timed = (work: () => void): number => {
 
 describe('what the transformer leaves behind', () => {
 	it('should reduce a resolvable nameOf to a string', () => {
-		const user = { callSign: 'Red Five' };
+		const pilot = { callSign: 'Red Five' };
 
 		const resolved: number = timed(() => {
-			if (nameOf(() => user.callSign) !== 'callSign') throw new Error('not resolved');
+			if (nameOf(() => pilot.callSign) !== 'callSign') throw new Error('not resolved');
 		});
 
 		// A property read and a comparison: slightly more than the constant the
 		// transformer leaves behind, which only makes the ceiling below kinder.
 		const baseline: number = timed(() => {
-			if (user.callSign === '') throw new Error('impossible');
+			if (pilot.callSign === '') throw new Error('impossible');
 		});
 
 		// Parsing the closure's source a hundred thousand times would be orders
