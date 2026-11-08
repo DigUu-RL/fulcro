@@ -141,9 +141,9 @@ describe('offsetOf at compile time', () => {
 			.filter((line) => line.includes('offsetOf'));
 
 		expect(refused).toEqual([
-			"export const missingField = offsetOf<Point>('z');",
-			"export const methodField = offsetOf<Point>('length');",
-			"export const layoutField = offsetOf<Point>('~layout');",
+			"export const missingField = offsetOf<Escort>('z');",
+			"export const methodField = offsetOf<Escort>('length');",
+			"export const layoutField = offsetOf<Escort>('~layout');",
 			"export const numericField = offsetOf<Single>('x');",
 		]);
 	});

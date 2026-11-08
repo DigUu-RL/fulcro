@@ -3,11 +3,11 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 import { type Defaulted, defaultOf } from '@/src/functions/utils/defaultOf';
 
 /** Shape exercising nesting, optionality and collections at once. */
-interface Order {
+interface DockingRecord {
 	id: number;
 	paid: boolean;
 	label: string;
-	customer: { name: string; active: boolean };
+	captain: { name: string; active: boolean };
 	items: string[];
 	pair: [number, string];
 	tags: Set<string>;
@@ -22,9 +22,9 @@ enum Status {
 }
 
 /** Self referencing shape, which has no finite default. */
-interface TreeNode {
+interface JediLineage {
 	label: string;
-	parent: TreeNode;
+	parent: JediLineage;
 }
 
 /**
@@ -47,34 +47,34 @@ describe('defaultOf', () => {
 	});
 
 	it('should build a nested shape, filling what the type requires', () => {
-		const order: Order = defaultOf<Order>();
+		const order: DockingRecord = defaultOf<DockingRecord>();
 
 		expect(order.id).toBe(0);
 		expect(order.paid).toBe(false);
 		expect(order.label).toBe('');
-		expect(order.customer).toEqual({ name: '', active: false });
+		expect(order.captain).toEqual({ name: '', active: false });
 	});
 
 	it('should leave optional properties out, since absence satisfies them', () => {
-		expect('note' in defaultOf<Order>()).toBe(false);
+		expect('note' in defaultOf<DockingRecord>()).toBe(false);
 	});
 
 	it('should fill a tuple position by position and empty an array', () => {
-		const order: Order = defaultOf<Order>();
+		const order: DockingRecord = defaultOf<DockingRecord>();
 
 		expect(order.items).toEqual([]);
 		expect(order.pair).toEqual([0, '']);
 	});
 
 	it('should instantiate the built-in collections rather than describe them', () => {
-		const order: Order = defaultOf<Order>();
+		const order: DockingRecord = defaultOf<DockingRecord>();
 
 		expect(order.tags).toBeInstanceOf(Set);
 		expect(order.tags.size).toBe(0);
 	});
 
 	it('should prefer the empty inhabitant of a nullable union', () => {
-		expect(defaultOf<Order>().nickname).toBeNull();
+		expect(defaultOf<DockingRecord>().nickname).toBeNull();
 		expect(defaultOf<string | undefined>()).toBeUndefined();
 	});
 
@@ -83,7 +83,7 @@ describe('defaultOf', () => {
 	});
 
 	it('should close a circular type instead of nesting forever', () => {
-		const node: TreeNode = defaultOf<TreeNode>();
+		const node: JediLineage = defaultOf<JediLineage>();
 
 		expect(node.label).toBe('');
 		expect(node.parent).toBeNull();
@@ -96,9 +96,9 @@ describe('defaultOf', () => {
 	});
 
 	it('should infer the type from the context when none is written', () => {
-		const customer: Order['customer'] = defaultOf();
+		const captain: DockingRecord['captain'] = defaultOf();
 
-		expect(customer).toEqual({ name: '', active: false });
+		expect(captain).toEqual({ name: '', active: false });
 	});
 
 	it('should refuse to answer when the call cannot be resolved statically', () => {
@@ -113,7 +113,7 @@ describe('defaultOf', () => {
 
 describe('what defaultOf declares', () => {
 	it('should return a value of the type it was asked for', () => {
-		expectTypeOf<ReturnType<typeof defaultOf<Order>>>().toEqualTypeOf<Order>();
+		expectTypeOf<ReturnType<typeof defaultOf<DockingRecord>>>().toEqualTypeOf<DockingRecord>();
 		expectTypeOf<ReturnType<typeof defaultOf<boolean>>>().toEqualTypeOf<boolean>();
 		expectTypeOf<Defaulted<'dark' | 'light'>>().toEqualTypeOf<'dark' | 'light'>();
 	});

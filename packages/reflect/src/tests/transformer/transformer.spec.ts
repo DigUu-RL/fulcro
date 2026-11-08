@@ -83,7 +83,7 @@ beforeAll(() => {
 
 describe('nameOf at compile time', () => {
 	it('should replace an accessor with the name it reads', () => {
-		expect(emitted).toContain('export const accessorName = "email"');
+		expect(emitted).toContain('export const accessorName = "callSign"');
 	});
 
 	it('should report the last segment of a deep accessor', () => {
@@ -91,11 +91,11 @@ describe('nameOf at compile time', () => {
 	});
 
 	it('should resolve an indexed access', () => {
-		expect(emitted).toContain('export const indexedName = "email"');
+		expect(emitted).toContain('export const indexedName = "callSign"');
 	});
 
 	it('should name an interface, which runtime cannot see at all', () => {
-		expect(emitted).toContain('export const interfaceName = "UserContract"');
+		expect(emitted).toContain('export const interfaceName = "PilotRecord"');
 	});
 
 	it('should name a type alias', () => {
@@ -111,7 +111,7 @@ describe('nameOf at compile time', () => {
 
 describe('typeOf at compile time', () => {
 	it('should inject the declared type of the inspected expression', () => {
-		expect(emitted).toContain('text: "UserContract"');
+		expect(emitted).toContain('text: "PilotRecord"');
 		expect(emitted).toContain('kind: "interface"');
 	});
 
@@ -122,7 +122,7 @@ describe('typeOf at compile time', () => {
 	});
 
 	it('should describe a primitive expression without a declaration site', () => {
-		// `user.email` is a `string`, which is declared nowhere.
+		// `pilot.callSign` is a `string`, which is declared nowhere.
 		expect(emitted).toContain('text: "string"');
 		expect(emitted).toContain('kind: "primitive"');
 		expect(emitted).toContain('site: null');
@@ -130,7 +130,7 @@ describe('typeOf at compile time', () => {
 
 	it('should keep the inspected value as the first argument', () => {
 		expect(emitted).toMatch(/typeOf\(user,\s*\{/);
-		expect(emitted).toMatch(/typeOf\(user\.email,\s*\{/);
+		expect(emitted).toMatch(/typeOf\(user\.callSign,\s*\{/);
 	});
 });
 
@@ -167,7 +167,7 @@ describe('defaultOf at compile time', () => {
 		expect(value).toContain('id: 0');
 		expect(value).toContain('paid: false');
 		expect(value).toContain('label: ""');
-		expect(value).toContain('customer: { name: "", active: false }');
+		expect(value).toContain('captain: { name: "", active: false }');
 	});
 
 	it('should leave optional properties out, since absence satisfies them', () => {
@@ -177,7 +177,7 @@ describe('defaultOf at compile time', () => {
 	it('should fill a tuple position by position and empty an array', () => {
 		const value: string = emittedValueOf('defaultOrder');
 
-		expect(value).toContain('items: []');
+		expect(value).toContain('cargo: []');
 		expect(value).toContain('pair: [0, ""]');
 	});
 
@@ -185,7 +185,7 @@ describe('defaultOf at compile time', () => {
 		const value: string = emittedValueOf('defaultOrder');
 
 		expect(value).toContain('tags: new Set()');
-		expect(value).toContain('placedAt: new Date(0)');
+		expect(value).toContain('arrivedAt: new Date(0)');
 	});
 
 	it('should prefer the empty inhabitant of a nullable union', () => {

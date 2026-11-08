@@ -14,35 +14,35 @@
 import { defaultOf, nameOf, typeOf } from '@fulcro/reflect';
 
 /** Interface that leaves no trace at runtime, which is the whole point. */
-export interface UserContract {
-	email: string;
+export interface PilotRecord {
+	callSign: string;
 	profile: { theme: string };
 }
 
 /** Alias over a union, to check how a non nominal type is reported. */
 export type Theme = 'dark' | 'light';
 
-const user: UserContract = { email: 'a@b.c', profile: { theme: 'dark' } };
+const user: PilotRecord = { callSign: 'Red Five', profile: { theme: 'dark' } };
 
-export const accessorName = nameOf(() => user.email);
+export const accessorName = nameOf(() => user.callSign);
 export const deepAccessorName = nameOf(() => user.profile.theme);
-export const indexedName = nameOf(() => user['email']);
-export const interfaceName = nameOf<UserContract>();
+export const indexedName = nameOf(() => user['callSign']);
+export const interfaceName = nameOf<PilotRecord>();
 export const aliasName = nameOf<Theme>();
 export const described = typeOf(user);
-export const describedPrimitive = typeOf(user.email);
+export const describedPrimitive = typeOf(user.callSign);
 
 /** Shape exercising nesting, optionality and collections at once. */
-export interface Order {
+export interface DockingRecord {
 	id: number;
-	total: number;
+	credits: number;
 	paid: boolean;
 	label: string;
-	customer: { name: string; active: boolean };
-	items: string[];
+	captain: { name: string; active: boolean };
+	cargo: string[];
 	pair: [number, string];
 	tags: Set<string>;
-	placedAt: Date;
+	arrivedAt: Date;
 	note?: string;
 	nickname: string | null;
 }
@@ -54,18 +54,18 @@ export enum Status {
 }
 
 /** Self referencing shape, which has no finite default. */
-export interface TreeNode {
+export interface JediLineage {
 	label: string;
-	parent: TreeNode;
+	parent: JediLineage;
 }
 
 export const defaultString = defaultOf<string>();
 export const defaultNumber = defaultOf<number>();
 export const defaultBoolean = defaultOf<boolean>();
 export const defaultTheme = defaultOf<Theme>();
-export const defaultOrder = defaultOf<Order>();
+export const defaultOrder = defaultOf<DockingRecord>();
 export const defaultStatus = defaultOf<Status>();
-export const defaultTree = defaultOf<TreeNode>();
+export const defaultTree = defaultOf<JediLineage>();
 export const defaultCallback = defaultOf<(value: number) => string>();
 export const defaultOptional = defaultOf<string | undefined>();
-export const contextual: Order['customer'] = defaultOf();
+export const contextual: DockingRecord['captain'] = defaultOf();

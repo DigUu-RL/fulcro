@@ -15,7 +15,7 @@ type Single = number & {
 	readonly '~layout': { readonly size: 4; readonly alignment: 4 };
 };
 
-interface Point {
+interface Escort {
 	readonly '~layout': {
 		readonly size: 8;
 		readonly alignment: 4;
@@ -29,8 +29,8 @@ interface Point {
 	length(): number;
 }
 
-export const missingField = offsetOf<Point>('z');
-export const methodField = offsetOf<Point>('length');
-export const layoutField = offsetOf<Point>('~layout');
+export const missingField = offsetOf<Escort>('z');
+export const methodField = offsetOf<Escort>('length');
+export const layoutField = offsetOf<Escort>('~layout');
 export const numericField = offsetOf<Single>('x');
 export const stringLayout = layoutOf<string>();
