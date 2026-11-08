@@ -7,7 +7,7 @@ import { Vector } from '@/src/vector';
 
 const Transform = Matrix(SinglePrecisionFloat, 3, 4);
 const Square = Matrix(SinglePrecisionFloat, 3, 3);
-const Point = Vector(SinglePrecisionFloat, 4, 1);
+const Heading = Vector(SinglePrecisionFloat, 4, 1);
 const Short = Vector(SinglePrecisionFloat, 2, 1);
 
 const shift = Transform.from([
@@ -15,7 +15,7 @@ const shift = Transform.from([
 	[0, 1, 0, 0],
 	[0, 0, 1, 0],
 ]);
-const point = Point.from([1, 2, 3, 1]);
+const point = Heading.from([1, 2, 3, 1]);
 const short = Short.from([1, 2]);
 
 export const moved = Transform.multiply(shift, point);

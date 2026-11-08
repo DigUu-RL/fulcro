@@ -804,7 +804,7 @@ describe('Decimal', () => {
 		});
 
 		it('should serialise to JSON as a string, and interpolate as its text', () => {
-			expect(JSON.stringify({ price: decimalFrom('19.99') })).toBe('{"price":"19.99"}');
+			expect(JSON.stringify({ coupling: decimalFrom('19.99') })).toBe('{"coupling":"19.99"}');
 			expect(String(decimalFrom('1.5'))).toBe('1.5');
 		});
 	});

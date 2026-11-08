@@ -14,7 +14,7 @@ import { type StructType, struct } from '@/src/struct';
  * names no descriptor that wide.
  */
 
-const Point = struct('Point', { x: SinglePrecisionFloat, y: SinglePrecisionFloat });
+const Escort = struct('Escort', { shields: SinglePrecisionFloat, hull: SinglePrecisionFloat });
 
 const Counter = struct(
 	'Counter',
@@ -30,10 +30,10 @@ const Plain = struct('Plain', { value: SignedInteger(32) });
 
 /** A struct of any fields, with methods or without. */
 export const anyWithMethods: StructType<any> = Counter;
-export const anyWithout: StructType<any> = Point;
+export const anyWithout: StructType<any> = Escort;
 
 export const recordWithMethods: StructType<Record<string, any>> = Counter;
-export const recordWithout: StructType<Record<string, any>> = Point;
+export const recordWithout: StructType<Record<string, any>> = Escort;
 
 /** Code that works over any struct, as `docs/types.md` describes it. */
 const nameOf = (descriptor: StructType<any>): string => descriptor.name;
@@ -44,9 +44,9 @@ const register = <TFields extends Record<string, any>>(descriptor: StructType<TF
 
 export const named: readonly string[] = [
 	nameOf(Counter),
-	nameOf(Point),
+	nameOf(Escort),
 	register(Counter),
-	register(Point),
+	register(Escort),
 ];
 
 /** Fields named exactly: the methods are no part of what is asked for. */

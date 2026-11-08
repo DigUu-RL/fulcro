@@ -35,13 +35,13 @@ const coded = <T extends Error>(error: T, details: Readonly<Record<string, unkno
 	});
 };
 
-const Vector3 = struct('Vector3', {
-	x: SinglePrecisionFloat,
-	y: SinglePrecisionFloat,
-	z: SinglePrecisionFloat,
+const Starfighter = struct('Starfighter', {
+	shields: SinglePrecisionFloat,
+	hull: SinglePrecisionFloat,
+	speed: SinglePrecisionFloat,
 });
 
-type Vector3 = Struct<typeof Vector3>;
+type Starfighter = Struct<typeof Starfighter>;
 
 /** Declared smallest first, so that placement by alignment has to reorder it. */
 const Mixed = struct('Mixed', {
@@ -128,12 +128,12 @@ const roundTrip = <T>(
 describe('struct', () => {
 	describe('layout', () => {
 		it('should declare the same layout in its type as it computes at runtime', () => {
-			expectTypeOf<Vector3['~layout']>().toEqualTypeOf<
+			expectTypeOf<Starfighter['~layout']>().toEqualTypeOf<
 				{ readonly size: 12; readonly alignment: 4 } & {
 					readonly fields: {
-						readonly x: { readonly size: 4; readonly alignment: 4 };
-						readonly y: { readonly size: 4; readonly alignment: 4 };
-						readonly z: { readonly size: 4; readonly alignment: 4 };
+						readonly shields: { readonly size: 4; readonly alignment: 4 };
+						readonly hull: { readonly size: 4; readonly alignment: 4 };
+						readonly speed: { readonly size: 4; readonly alignment: 4 };
 					};
 				}
 			>();
@@ -163,7 +163,7 @@ describe('struct', () => {
 				1040 | 16
 			>();
 
-			expect([Vector3.layout.size, Vector3.layout.alignment]).toEqual([12, 4]);
+			expect([Starfighter.layout.size, Starfighter.layout.alignment]).toEqual([12, 4]);
 			expect([Mixed.layout.size, Mixed.layout.alignment]).toEqual([16, 8]);
 			expect([Outer.layout.size, Outer.layout.alignment]).toEqual([8, 4]);
 			expect([Wide.layout.size, Wide.layout.alignment]).toEqual([32, 16]);
@@ -177,9 +177,9 @@ describe('struct', () => {
 				count: { offset: 8, size: 2, alignment: 2 },
 			});
 
-			expect(Vector3.layout.fields.x.offset).toBe(0);
-			expect(Vector3.layout.fields.y.offset).toBe(4);
-			expect(Vector3.layout.fields.z.offset).toBe(8);
+			expect(Starfighter.layout.fields.shields.offset).toBe(0);
+			expect(Starfighter.layout.fields.hull.offset).toBe(4);
+			expect(Starfighter.layout.fields.speed.offset).toBe(8);
 		});
 
 		it('should lay a nested struct out inline, as one field of its own size', () => {
@@ -211,17 +211,17 @@ describe('struct', () => {
 			type Fields = Parameters<typeof struct>[1];
 
 			expectTypeOf<{ value: typeof Decimal }>().toExtend<Fields>();
-			expectTypeOf<{ value: typeof Vector3 }>().toExtend<Fields>();
+			expectTypeOf<{ value: typeof Starfighter }>().toExtend<Fields>();
 			expectTypeOf<{ value: typeof BigInteger }>().not.toExtend<Fields>();
 		});
 
 		it('should refuse a field with no fixed layout at runtime too', () => {
-			expect(() => struct('Account', { balance: BigInteger } as never)).toThrow(
+			expect(() => struct('BountyLedger', { credits: BigInteger } as never)).toThrow(
 				coded(
 					new TypeError(
-						"FULCRO6016: struct Account: field 'balance' has no fixed layout. Declare it with a numeric type of @fulcro/types other than BigInteger, or with another struct.",
+						"FULCRO6016: struct BountyLedger: field 'credits' has no fixed layout. Declare it with a numeric type of @fulcro/types other than BigInteger, or with another struct.",
 					),
-					{ operation: 'struct', name: 'Account', field: 'balance' },
+					{ operation: 'struct', name: 'BountyLedger', field: 'credits' },
 				),
 			);
 
@@ -236,7 +236,7 @@ describe('struct', () => {
 				}),
 			);
 
-			expect(() => struct('', { x: SinglePrecisionFloat })).toThrow(TypeError);
+			expect(() => struct('', { shields: SinglePrecisionFloat })).toThrow(TypeError);
 			expect(() => struct('Indexed', { 0: SinglePrecisionFloat })).toThrow(TypeError);
 			expect(() => struct('Layout', { '~layout': SinglePrecisionFloat })).toThrow(TypeError);
 		});
@@ -250,12 +250,12 @@ describe('struct', () => {
 
 	describe('values', () => {
 		it('should convert each field with its own type, into a frozen value', () => {
-			const value: Vector3 = Vector3.from({ x: 0.1, y: 1, z: -2 });
+			const value: Starfighter = Starfighter.from({ shields: 0.1, hull: 1, speed: -2 });
 
-			expect(value).toEqual({ x: 0.10000000149011612, y: 1, z: -2 });
+			expect(value).toEqual({ shields: 0.10000000149011612, hull: 1, speed: -2 });
 			expect(Object.isFrozen(value)).toBe(true);
-			expect(Object.keys(value)).toEqual(['x', 'y', 'z']);
-			expectTypeOf(value.x).toEqualTypeOf<SinglePrecisionFloat>();
+			expect(Object.keys(value)).toEqual(['shields', 'hull', 'speed']);
+			expectTypeOf(value.shields).toEqualTypeOf<SinglePrecisionFloat>();
 		});
 
 		it('should accept a value already of the struct, and nest', () => {
@@ -294,177 +294,192 @@ describe('struct', () => {
 		});
 
 		it('should refuse a missing field, an unknown one, and a non-object', () => {
-			expect(() => Vector3.from({ x: 1, y: 2 } as never)).toThrow(
-				coded(new TypeError("FULCRO6021: Vector3.from: missing field 'z'."), {
-					operation: 'Vector3.from',
-					field: 'z',
+			expect(() => Starfighter.from({ shields: 1, hull: 2 } as never)).toThrow(
+				coded(new TypeError("FULCRO6021: Starfighter.from: missing field 'speed'."), {
+					operation: 'Starfighter.from',
+					field: 'speed',
 				}),
 			);
 
-			expect(() => Vector3.from({ x: 1, y: 2, z: 3, w: 4 } as never)).toThrow(
+			expect(() => {
+				Starfighter.from({ shields: 1, hull: 2, speed: 3, hyperdrive: 4 } as never);
+			}).toThrow(
 				coded(
-					new TypeError("FULCRO6020: Vector3.from: 'w' is not a field; the fields are x, y, z."),
-					{ operation: 'Vector3.from', key: 'w', fields: 'x, y, z' },
+					new TypeError(
+						"FULCRO6020: Starfighter.from: 'hyperdrive' is not a field; the fields are shields, hull, speed.",
+					),
+					{ operation: 'Starfighter.from', key: 'hyperdrive', fields: 'shields, hull, speed' },
 				),
 			);
 
-			expect(() => Vector3.from(null as never)).toThrow(
-				coded(new TypeError('FULCRO6019: Vector3.from: expected an object, received null.'), {
-					operation: 'Vector3.from',
+			expect(() => Starfighter.from(null as never)).toThrow(
+				coded(new TypeError('FULCRO6019: Starfighter.from: expected an object, received null.'), {
+					operation: 'Starfighter.from',
 					received: 'null',
 				}),
 			);
 		});
 
 		it('should recognise its own values only', () => {
-			const value = Vector3.from({ x: 1, y: 2, z: 3 });
+			const value = Starfighter.from({ shields: 1, hull: 2, speed: 3 });
 
-			expect(Vector3.is(value)).toBe(true);
-			expect(Vector3.is({ ...value })).toBe(false);
-			expect(Vector3.is(Object.freeze({ ...value, w: 4 }))).toBe(false);
-			expect(Vector3.is(Object.freeze({ x: 1, y: 2, z: 0.1 }))).toBe(false);
-			expect(Vector3.is(null)).toBe(false);
-			expect(Vector3.is(Inner.from({ flag: 1 }))).toBe(false);
+			expect(Starfighter.is(value)).toBe(true);
+			expect(Starfighter.is({ ...value })).toBe(false);
+			expect(Starfighter.is(Object.freeze({ ...value, hyperdrive: 4 }))).toBe(false);
+			expect(Starfighter.is(Object.freeze({ shields: 1, hull: 2, speed: 0.1 }))).toBe(false);
+			expect(Starfighter.is(null)).toBe(false);
+			expect(Starfighter.is(Inner.from({ flag: 1 }))).toBe(false);
 		});
 
 		it('should compare by field, as each field type compares', () => {
-			const left = Vector3.from({ x: 1, y: 2, z: 3 });
-			const right = Vector3.from({ x: 1, y: 2, z: 3 });
+			const left = Starfighter.from({ shields: 1, hull: 2, speed: 3 });
+			const right = Starfighter.from({ shields: 1, hull: 2, speed: 3 });
 
 			expect(left === right).toBe(false);
-			expect(Vector3.equals(left, right)).toBe(true);
-			expect(Vector3.equals(left, Vector3.from({ x: 1, y: 2, z: 4 }))).toBe(false);
+			expect(Starfighter.equals(left, right)).toBe(true);
+
+			expect(Starfighter.equals(left, Starfighter.from({ shields: 1, hull: 2, speed: 4 }))).toBe(
+				false,
+			);
 
 			expect(
-				Vector3.equals(Vector3.from({ x: 0, y: 0, z: 0 }), Vector3.from({ x: -0, y: 0, z: 0 })),
+				Starfighter.equals(
+					Starfighter.from({ shields: 0, hull: 0, speed: 0 }),
+					Starfighter.from({ shields: -0, hull: 0, speed: 0 }),
+				),
 			).toBe(true);
 
-			const withNaN = Vector3.from({ x: NaN, y: 0, z: 0 });
+			const withNaN = Starfighter.from({ shields: NaN, hull: 0, speed: 0 });
 
-			expect(Vector3.equals(withNaN, withNaN)).toBe(false);
+			expect(Starfighter.equals(withNaN, withNaN)).toBe(false);
 		});
 
 		it('should compare decimals and nested structs by value', () => {
-			const Price = struct('Price', { amount: Decimal, inner: Inner });
+			const Bounty = struct('Bounty', { credits: Decimal, inner: Inner });
 
 			expect(
-				Price.equals(
-					Price.from({ amount: '1.50', inner: { flag: 1 } }),
-					Price.from({ amount: '1.5', inner: { flag: 1 } }),
+				Bounty.equals(
+					Bounty.from({ credits: '1.50', inner: { flag: 1 } }),
+					Bounty.from({ credits: '1.5', inner: { flag: 1 } }),
 				),
 			).toBe(true);
 		});
 	});
 
 	describe('methods', () => {
-		const Point = struct(
-			'Point',
-			{ x: SinglePrecisionFloat, y: SinglePrecisionFloat },
+		const Escort = struct(
+			'Escort',
+			{ shields: SinglePrecisionFloat, hull: SinglePrecisionFloat },
 			{
 				length() {
-					return Math.hypot(this.x, this.y);
+					return Math.hypot(this.shields, this.hull);
 				},
-				scale(factor: number): { x: number; y: number } {
-					return { x: this.x * factor, y: this.y * factor };
+				scale(factor: number): { shields: number; hull: number } {
+					return { shields: this.shields * factor, hull: this.hull * factor };
 				},
 			},
 		);
 
-		type Point = Struct<typeof Point>;
+		type Escort = Struct<typeof Escort>;
 
 		it('should give every value its methods, with this as the value', () => {
-			const point: Point = Point.from({ x: 3, y: 4 });
+			const point: Escort = Escort.from({ shields: 3, hull: 4 });
 
 			expect(point.length()).toBe(5);
-			expect(point.scale(2)).toEqual({ x: 6, y: 8 });
+			expect(point.scale(2)).toEqual({ shields: 6, hull: 8 });
 			expectTypeOf(point.length).toEqualTypeOf<() => number>();
-			expectTypeOf<Point['x']>().toEqualTypeOf<SinglePrecisionFloat>();
+			expectTypeOf<Escort['shields']>().toEqualTypeOf<SinglePrecisionFloat>();
 		});
 
 		it('should give the values read from bytes their methods too', () => {
-			const read = roundTrip(Point, Point.from({ x: 3, y: 4 }));
+			const read = roundTrip(Escort, Escort.from({ shields: 3, hull: 4 }));
 
 			expect(read.length()).toBe(5);
-			expect(Point.is(read)).toBe(true);
+			expect(Escort.is(read)).toBe(true);
 		});
 
 		it('should keep a nested struct its own methods', () => {
-			const Segment = struct('Segment', { start: Point, end: Point });
+			const Patrol = struct('Patrol', { start: Escort, end: Escort });
 
-			const segment = Segment.from({
-				start: { x: 0, y: 0 },
-				end: { x: 3, y: 4 },
+			const segment = Patrol.from({
+				start: { shields: 0, hull: 0 },
+				end: { shields: 3, hull: 4 },
 			});
 
 			expect(segment.end.length()).toBe(5);
-			expect(roundTrip(Segment, segment).end.length()).toBe(5);
+			expect(roundTrip(Patrol, segment).end.length()).toBe(5);
 		});
 
 		it('should share one prototype, and keep only the fields as own keys', () => {
-			const left = Point.from({ x: 1, y: 2 });
-			const right = Point.from({ x: 3, y: 4 });
+			const left = Escort.from({ shields: 1, hull: 2 });
+			const right = Escort.from({ shields: 3, hull: 4 });
 
 			expect(Object.getPrototypeOf(left)).toBe(Object.getPrototypeOf(right));
-			expect(Object.keys(left)).toEqual(['x', 'y']);
-			expect({ ...left }).toEqual({ x: 1, y: 2 });
+			expect(Object.keys(left)).toEqual(['shields', 'hull']);
+			expect({ ...left }).toEqual({ shields: 1, hull: 2 });
 			expect(Object.isFrozen(Object.getPrototypeOf(left))).toBe(true);
 		});
 
 		it('should leave the layout, equality and bytes as the fields alone make them', () => {
 			const Plain = struct('Plain', {
-				x: SinglePrecisionFloat,
-				y: SinglePrecisionFloat,
+				shields: SinglePrecisionFloat,
+				hull: SinglePrecisionFloat,
 			});
 
-			expect(Point.layout).toEqual(Plain.layout);
-			expectTypeOf<Point['~layout']>().toEqualTypeOf<Struct<typeof Plain>['~layout']>();
-			expect(Point.equals(Point.from({ x: 1, y: 2 }), Point.from({ x: 1, y: 2 }))).toBe(true);
+			expect(Escort.layout).toEqual(Plain.layout);
+			expectTypeOf<Escort['~layout']>().toEqualTypeOf<Struct<typeof Plain>['~layout']>();
+
+			expect(
+				Escort.equals(Escort.from({ shields: 1, hull: 2 }), Escort.from({ shields: 1, hull: 2 })),
+			).toBe(true);
 		});
 
 		it('should refuse an object with the right fields but not made by the struct', () => {
-			expect(Point.is(Object.freeze({ x: 3, y: 4 }))).toBe(false);
-			expect(Point.is(Object.freeze({ ...Point.from({ x: 3, y: 4 }) }))).toBe(false);
+			expect(Escort.is(Object.freeze({ shields: 3, hull: 4 }))).toBe(false);
+			expect(Escort.is(Object.freeze({ ...Escort.from({ shields: 3, hull: 4 }) }))).toBe(false);
 		});
 
 		it('should keep is as it was for a struct without methods', () => {
-			expect(Vector3.is(Object.freeze({ x: 1, y: 2, z: 3 }))).toBe(true);
+			expect(Starfighter.is(Object.freeze({ shields: 1, hull: 2, speed: 3 }))).toBe(true);
 		});
 
 		it('should infer a struct without methods as its fields and its layout alone', () => {
-			expectTypeOf<Vector3>().toEqualTypeOf<
+			expectTypeOf<Starfighter>().toEqualTypeOf<
 				{
-					readonly x: SinglePrecisionFloat;
-					readonly y: SinglePrecisionFloat;
-					readonly z: SinglePrecisionFloat;
+					readonly shields: SinglePrecisionFloat;
+					readonly hull: SinglePrecisionFloat;
+					readonly speed: SinglePrecisionFloat;
 				} & Layout<12, 4> & {
 						readonly '~layout': {
 							readonly fields: {
-								readonly x: { readonly size: 4; readonly alignment: 4 };
-								readonly y: { readonly size: 4; readonly alignment: 4 };
-								readonly z: { readonly size: 4; readonly alignment: 4 };
+								readonly shields: { readonly size: 4; readonly alignment: 4 };
+								readonly hull: { readonly size: 4; readonly alignment: 4 };
+								readonly speed: { readonly size: 4; readonly alignment: 4 };
 							};
 						};
 					}
 			>();
 
-			expect(Object.getPrototypeOf(Vector3.from({ x: 1, y: 2, z: 3 }))).toBe(Object.prototype);
+			expect(Object.getPrototypeOf(Starfighter.from({ shields: 1, hull: 2, speed: 3 }))).toBe(
+				Object.prototype,
+			);
 		});
 
 		it('should not let a method change the value', () => {
-			const point = Point.from({ x: 1, y: 2 });
+			const point = Escort.from({ shields: 1, hull: 2 });
 
 			const Mutating = struct(
 				'Mutating',
-				{ x: SinglePrecisionFloat },
+				{ shields: SinglePrecisionFloat },
 				{
 					reset() {
-						(this as { x: number }).x = 0;
+						(this as { shields: number }).shields = 0;
 					},
 				},
 			);
 
 			expect(() => {
-				Mutating.from({ x: 1 }).reset();
+				Mutating.from({ shields: 1 }).reset();
 			}).toThrow(TypeError);
 
 			expect(() => {
@@ -474,27 +489,29 @@ describe('struct', () => {
 
 		it('should refuse a method named like a field, an index or the layout', () => {
 			expect(() => {
-				return struct('Clash', { x: SinglePrecisionFloat }, { x: () => 1 } as never);
+				return struct('Clash', { shields: SinglePrecisionFloat }, { shields: () => 1 } as never);
 			}).toThrow(
 				coded(
 					new TypeError(
-						"FULCRO6009: struct Clash: method 'x' has the name of a field; a value could not hold both.",
+						"FULCRO6009: struct Clash: method 'shields' has the name of a field; a value could not hold both.",
 					),
-					{ operation: 'struct', name: 'Clash', method: 'x' },
+					{ operation: 'struct', name: 'Clash', method: 'shields' },
 				),
 			);
 
-			expect(() => struct('Indexed', { x: SinglePrecisionFloat }, { 0: () => 1 })).toThrow(
+			expect(() => struct('Indexed', { shields: SinglePrecisionFloat }, { 0: () => 1 })).toThrow(
 				TypeError,
 			);
 
-			expect(() => struct('Layout', { x: SinglePrecisionFloat }, { '~layout': () => 1 })).toThrow(
-				TypeError,
-			);
+			expect(() => {
+				struct('Layout', { shields: SinglePrecisionFloat }, { '~layout': () => 1 });
+			}).toThrow(TypeError);
 		});
 
 		it('should refuse a method that is not a function, and methods that are not an object', () => {
-			expect(() => struct('Loose', { x: SinglePrecisionFloat }, { size: 3 } as never)).toThrow(
+			expect(() => {
+				struct('Loose', { shields: SinglePrecisionFloat }, { size: 3 } as never);
+			}).toThrow(
 				coded(
 					new TypeError(
 						"FULCRO6011: struct Loose: method 'size' must be a function, received number.",
@@ -508,7 +525,7 @@ describe('struct', () => {
 				),
 			);
 
-			expect(() => struct('Null', { x: SinglePrecisionFloat }, null as never)).toThrow(
+			expect(() => struct('Null', { shields: SinglePrecisionFloat }, null as never)).toThrow(
 				coded(
 					new TypeError('FULCRO6008: struct Null: expected an object of methods, received null.'),
 					{ operation: 'struct', name: 'Null', received: 'null' },
@@ -517,14 +534,14 @@ describe('struct', () => {
 		});
 
 		it('should lose its methods through a structured clone or JSON, and get them back from from', () => {
-			const point = Point.from({ x: 3, y: 4 });
+			const point = Escort.from({ shields: 3, hull: 4 });
 			const cloned: unknown = structuredClone(point);
 			const parsed: unknown = JSON.parse(JSON.stringify(point));
 
-			expect(Point.is(cloned)).toBe(false);
-			expect(Point.is(parsed)).toBe(false);
-			expect(Point.from(cloned as never).length()).toBe(5);
-			expect(Point.from(parsed as never).length()).toBe(5);
+			expect(Escort.is(cloned)).toBe(false);
+			expect(Escort.is(parsed)).toBe(false);
+			expect(Escort.from(cloned as never).length()).toBe(5);
+			expect(Escort.from(parsed as never).length()).toBe(5);
 		});
 
 		it('should let a method return a new value of its own struct', () => {
@@ -672,17 +689,17 @@ describe('struct', () => {
 		it('should refuse an offset the struct does not fit at, and leave the bytes alone', () => {
 			const bytes = new Uint8Array(12);
 			const view = new DataView(bytes.buffer);
-			const value = Vector3.from({ x: 1, y: 2, z: 3 });
+			const value = Starfighter.from({ shields: 1, hull: 2, speed: 3 });
 
 			expect(() => {
-				Vector3.write(view, 4, value);
+				Starfighter.write(view, 4, value);
 			}).toThrow(
 				coded(
 					new RangeError(
-						'FULCRO6018: Vector3.write: 12 bytes at offset 4 do not fit in a view of 12 bytes.',
+						'FULCRO6018: Starfighter.write: 12 bytes at offset 4 do not fit in a view of 12 bytes.',
 					),
 					{
-						operation: 'Vector3.write',
+						operation: 'Starfighter.write',
 						size: 12,
 						offset: 4,
 						available: 12,
@@ -691,9 +708,9 @@ describe('struct', () => {
 			);
 
 			expect([...bytes].every((byte) => byte === 0)).toBe(true);
-			expect(() => Vector3.read(view, -1)).toThrow(RangeError);
-			expect(() => Vector3.read(view, 0.5)).toThrow(RangeError);
-			expect(() => Vector3.read({} as DataView, 0)).toThrow(TypeError);
+			expect(() => Starfighter.read(view, -1)).toThrow(RangeError);
+			expect(() => Starfighter.read(view, 0.5)).toThrow(RangeError);
+			expect(() => Starfighter.read({} as DataView, 0)).toThrow(TypeError);
 		});
 
 		it('should leave the padding bytes as they were', () => {
@@ -707,30 +724,30 @@ describe('struct', () => {
 		});
 
 		it('should make a new object on every read', () => {
-			const view = new DataView(new ArrayBuffer(Vector3.layout.size));
+			const view = new DataView(new ArrayBuffer(Starfighter.layout.size));
 
-			expect(Vector3.read(view, 0)).not.toBe(Vector3.read(view, 0));
+			expect(Starfighter.read(view, 0)).not.toBe(Starfighter.read(view, 0));
 		});
 
 		it('should read at an offset inside a larger buffer', () => {
-			const view = new DataView(new ArrayBuffer(Vector3.layout.size * 3));
-			const second = Vector3.from({ x: 4, y: 5, z: 6 });
+			const view = new DataView(new ArrayBuffer(Starfighter.layout.size * 3));
+			const second = Starfighter.from({ shields: 4, hull: 5, speed: 6 });
 
-			Vector3.write(view, Vector3.layout.size, second);
+			Starfighter.write(view, Starfighter.layout.size, second);
 
-			expect(Vector3.read(view, Vector3.layout.size)).toEqual(second);
-			expect(Vector3.read(view, 0)).toEqual({ x: 0, y: 0, z: 0 });
+			expect(Starfighter.read(view, Starfighter.layout.size)).toEqual(second);
+			expect(Starfighter.read(view, 0)).toEqual({ shields: 0, hull: 0, speed: 0 });
 		});
 	});
 });
 
 describe('a struct declared without methods', () => {
 	it('should make values that are their fields alone, with no marker showing', () => {
-		const Plain = struct('Plain', { x: SinglePrecisionFloat });
+		const Plain = struct('Plain', { shields: SinglePrecisionFloat });
 
-		const value = Plain.from({ x: 1 });
+		const value = Plain.from({ shields: 1 });
 
 		expectTypeOf(value).not.toHaveProperty('~noMethods');
-		expectTypeOf(value).toHaveProperty('x').toEqualTypeOf<SinglePrecisionFloat>();
+		expectTypeOf(value).toHaveProperty('shields').toEqualTypeOf<SinglePrecisionFloat>();
 	});
 });
