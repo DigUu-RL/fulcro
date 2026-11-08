@@ -98,6 +98,47 @@ describe('early termination', () => {
 		expect(visits).toBe(2);
 	});
 
+	it('should close each side a stopped sequenceEqual() or zip() left unfinished, once', () => {
+		let closed = 0;
+
+		/**
+		 * The instrumented source, with its closing counted.
+		 *
+		 * @returns An iterable whose iterators count their return() calls.
+		 */
+		const closing = (): Iterable<number> => {
+			return {
+				[Symbol.iterator](): Iterator<number> {
+					const inner: Iterator<number> = instrumentedSource(VOLUME)[Symbol.iterator]();
+
+					return {
+						next: (): IteratorResult<number> => inner.next(),
+						return: (): IteratorResult<number> => {
+							closed++;
+							return inner.return?.() ?? { done: true, value: undefined };
+						},
+					};
+				},
+			};
+		};
+
+		SequenceCollection.from(closing()).sequenceEqual(closing());
+		// Equal all the way: both sides ran out, so neither needed closing.
+		expect(closed).toBe(0);
+
+		SequenceCollection.from(closing()).sequenceEqual([0, 99]);
+		expect(closed).toBe(1);
+
+		closed = 0;
+
+		SequenceCollection.from(closing())
+			.zip(closing(), (left) => left)
+			.take(3)
+			.toArray();
+
+		expect(closed).toBe(2);
+	});
+
 	it('should stop takeWhile() at the element that failed', () => {
 		SequenceCollection.from(instrumentedSource(VOLUME))
 			.takeWhile((value) => value < 5)

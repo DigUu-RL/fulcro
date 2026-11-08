@@ -164,6 +164,30 @@ describe('SequenceCollection Unit Tests', () => {
 		expect(SequenceCollection.empty().any()).toBe(false);
 	});
 
+	it('should close the source any() opened, with and without a condition', () => {
+		// A generator holding something open — the Death Star's hangar bay doors,
+		// here — only releases it from its finally block, which runs only when
+		// the consumer finishes or returns.
+		let baysOpen = 0;
+
+		const hangarBays = function* (): Generator<string> {
+			baysOpen++;
+
+			try {
+				yield 'Bay 327';
+				yield 'Bay 2187';
+			} finally {
+				baysOpen--;
+			}
+		};
+
+		expect(SequenceCollection.from(hangarBays()).any()).toBe(true);
+		expect(baysOpen).toBe(0);
+
+		expect(SequenceCollection.from(hangarBays()).any((bay) => bay === 'Bay 327')).toBe(true);
+		expect(baysOpen).toBe(0);
+	});
+
 	it('should group elements by key using groupBy()', () => {
 		const cargo = SequenceCollection.from([
 			{ category: 'A', val: 1 },

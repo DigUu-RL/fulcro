@@ -445,7 +445,16 @@ export class SequenceCollection<T> implements Sequence<T> {
 			const known: number | null = this.knownCount;
 			if (known !== null) return known > 0;
 
-			return !this.source[Symbol.iterator]().next().done;
+			// One element answers the question, and the iterator is closed
+			// rather than abandoned: a generator source releases what it holds
+			// only in its finally block, which return() is what runs.
+			const iterator: Iterator<T> = this.source[Symbol.iterator]();
+
+			try {
+				return iterator.next().done !== true;
+			} finally {
+				iterator.return?.();
+			}
 		}
 
 		for (const item of this.source) {
@@ -1064,17 +1073,27 @@ export class SequenceCollection<T> implements Sequence<T> {
 		const left: Iterator<T> = this.source[Symbol.iterator]();
 		const right: Iterator<T> = second[Symbol.iterator]();
 
+		let leftStep: IteratorResult<T> | undefined;
+		let rightStep: IteratorResult<T> | undefined;
+
 		// Stepped together rather than materialised, so the first difference
 		// ends the comparison and neither side is read past it.
-		for (;;) {
-			const leftStep: IteratorResult<T> = left.next();
-			const rightStep: IteratorResult<T> = right.next();
+		try {
+			for (;;) {
+				leftStep = left.next();
+				rightStep = right.next();
 
-			if (leftStep.done === true || rightStep.done === true) {
-				return leftStep.done === rightStep.done;
+				if (leftStep.done === true || rightStep.done === true) {
+					return leftStep.done === rightStep.done;
+				}
+
+				if (leftStep.value !== rightStep.value) return false;
 			}
-
-			if (leftStep.value !== rightStep.value) return false;
+		} finally {
+			// A side stopped before its end is closed, so a generator behind it
+			// runs its finally block instead of holding what it opened.
+			if (leftStep?.done !== true) left.return?.();
+			if (rightStep?.done !== true) right.return?.();
 		}
 	}
 
@@ -1344,15 +1363,25 @@ export class SequenceCollection<T> implements Sequence<T> {
 					const left: Iterator<T> = source[Symbol.iterator]();
 					const right: Iterator<S> = second[Symbol.iterator]();
 
-					for (;;) {
-						const leftStep: IteratorResult<T> = left.next();
-						const rightStep: IteratorResult<S> = right.next();
+					let leftStep: IteratorResult<T> | undefined;
+					let rightStep: IteratorResult<S> | undefined;
 
-						// Whichever runs out first ends it, so the longer sequence
-						// is never pulled past the pairing.
-						if (leftStep.done === true || rightStep.done === true) return;
+					try {
+						for (;;) {
+							leftStep = left.next();
+							rightStep = right.next();
 
-						yield resultSelector(leftStep.value, rightStep.value);
+							// Whichever runs out first ends it, so the longer sequence
+							// is never pulled past the pairing.
+							if (leftStep.done === true || rightStep.done === true) return;
+
+							yield resultSelector(leftStep.value, rightStep.value);
+						}
+					} finally {
+						// The longer side, or both when the consumer stopped first, is
+						// closed rather than abandoned mid-traversal.
+						if (leftStep?.done !== true) left.return?.();
+						if (rightStep?.done !== true) right.return?.();
 					}
 				},
 			},
