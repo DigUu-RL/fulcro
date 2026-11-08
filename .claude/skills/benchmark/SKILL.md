@@ -410,7 +410,7 @@ other projects are load on the machine the measurement is taken on.
 
 **Use this skill when:**
 
-- "How much does `groupBy` cost over a hundred thousand orders?"
+- "How much does `groupBy` cost over a hundred thousand docking records?"
 - "I have two implementations of the join — measure them against each other."
 - "Is this operator linear? It reads like it walks the source twice."
 - "What does the transformer actually save on `nameOf`?"

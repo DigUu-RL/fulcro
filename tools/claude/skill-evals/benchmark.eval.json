@@ -4,7 +4,7 @@
 		{
 			"id": "the-cost-of-an-operator",
 			"kind": "positive",
-			"prompt": "How much does groupBy cost over a hundred thousand orders?",
+			"prompt": "How much does groupBy cost over a hundred thousand docking records?",
 			"expect": {
 				"invokes": true,
 				"output": "The workload stated in words first — size, record shape, generator source, how many distinct keys, what the key projection reads — then the counted result leading the report, a comparator measured in the same run, and the scaling probe at N, 2N and 4N naming the class.",
