@@ -892,6 +892,28 @@ console.log(offsetOf<SensorReading>('alert')); // 10
 console.log(layoutOf<SensorReading>().size === SensorReading.layout.size); // true
 ```
 
+The descriptor also keeps the type of each field, as `fields`, apart from
+`layout`, which says only where the bytes are and stays the object
+`layoutOf<T>()` reports. It is the object the struct was declared with, copied
+and frozen, so `SensorReading.fields.distance === DoublePrecisionFloat`. What
+reads one field on its own needs the type of that field: a
+[storage held one field at a time](./memory.md#laid-out-one-field-at-a-time)
+and the view of one field find it here.
+
+```ts
+import { DoublePrecisionFloat, struct, UnsignedInteger } from '@fulcro/types';
+
+const SensorReading = struct('SensorReading', {
+	alert: UnsignedInteger(8),
+	distance: DoublePrecisionFloat,
+	contacts: UnsignedInteger(16),
+});
+
+console.log(SensorReading.fields.distance === DoublePrecisionFloat); // true
+console.log(Object.keys(SensorReading.fields)); // ['alert', 'distance', 'contacts'] — as declared
+console.log(SensorReading.fields.alert.layout.size); // 1
+```
+
 ### Bytes
 
 A value can be written into a `DataView` and read back, which is how a struct

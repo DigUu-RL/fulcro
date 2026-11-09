@@ -1,7 +1,14 @@
 import type { Allocation, Allocator } from '@/src/allocator';
 import { requireAlignment } from '@/src/allocator/requireRequest';
-import { createByteStorage } from '@/src/byteStorage';
+import { ArrayOfStructures } from '@/src/arrayOfStructures';
+import {
+	createLaidOutStorage,
+	type DataLayout,
+	type LayoutStrategy,
+	strategyOf,
+} from '@/src/dataLayout';
 import { type AlignedElement, requireElement } from '@/src/element';
+import { type FieldBytes, fieldBytesOf } from '@/src/element/fieldBytes';
 import type { Storage } from '@/src/storage';
 import { requireLength } from '@/src/storage/requireLength';
 
@@ -26,8 +33,8 @@ import { requireLength } from '@/src/storage/requireLength';
  * }
  * ```
  *
- * The values are held as their bytes, end to end, exactly as in
- * `createFixedBufferStorage` — what changes is only where the bytes come from.
+ * The values are held as their bytes, exactly as in `createFixedBufferStorage`
+ * and in the layout it names — what changes is only where the bytes come from.
  * They start zeroed, so every position reads as the element type's zero value
  * until it is set.
  *
@@ -39,9 +46,11 @@ import { requireLength } from '@/src/storage/requireLength';
  * a layout alignment.
  * @param length How many values it holds, fixed from now on.
  * @param allocator Where the memory comes from.
+ * @param layout How the bytes are arranged; `ArrayOfStructures` when omitted.
  * @returns The storage, frozen.
  * @throws {TypeError} When the element type lacks a name, a layout size, or
- * `read`, `write` or `is`.
+ * `read`, `write` or `is`, when its fields overlap, or when the layout is not
+ * `ArrayOfStructures` or `StructureOfArrays`.
  * @throws {RangeError} When the length is not a non-negative safe integer, the
  * element's alignment is not a power of two, or the allocator has no room.
  */
@@ -49,21 +58,27 @@ export const allocate = <T>(
 	element: AlignedElement<T>,
 	length: number,
 	allocator: Allocator,
+	layout: DataLayout = ArrayOfStructures,
 ): Storage<T> => {
 	requireElement('allocate', element);
 	requireLength('allocate', length);
 	requireAlignment('allocate', element.layout.alignment);
 
+	const strategy: LayoutStrategy = strategyOf('allocate', layout);
+	const fields: readonly FieldBytes[] | undefined = fieldBytesOf('allocate', element);
+
+	// One allocation for every column, aligned to the element: a column starts
+	// at `length × offset` of its field, a multiple of that field's alignment
+	// whenever its offset is, so it lands aligned as well.
 	const allocation: Allocation = allocator.allocate(
-		length * element.layout.size,
+		strategy.byteLength(element, fields, length),
 		element.layout.alignment,
 	);
 
-	return createByteStorage(
+	return createLaidOutStorage(
+		strategy,
 		element,
-		length,
-		allocation.bytes,
+		{ element, fields, length, view: allocation.bytes, layout, allocation },
 		{ get: 'Storage.get', set: 'Storage.set' },
-		allocation,
 	);
 };

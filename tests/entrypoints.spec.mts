@@ -1153,7 +1153,10 @@ describe('@fulcro/memory', () => {
 				.filter((name) => name !== 'default')
 				.sort(),
 		).toEqual([
+			'ArrayOfStructures',
+			'StructureOfArrays',
 			'allocate',
+			'asFieldView',
 			'asReadOnlyView',
 			'asView',
 			'borrow',
@@ -1408,6 +1411,30 @@ describe('@fulcro/memory', () => {
 
 		expect(contacts.get(1)).toEqual({ bearing: 1, range: 2 });
 		expect(names.get(1)).toBe('b');
+	});
+
+	it('should hold a struct from the published types package one field at a time', async () => {
+		const { ArrayOfStructures, StructureOfArrays, asFieldView, createFixedBufferStorage } =
+			await import('@fulcro/memory');
+
+		const { SinglePrecisionFloat, struct } = await import('@fulcro/types');
+
+		const Starfighter = struct('Starfighter', {
+			shields: SinglePrecisionFloat,
+			hull: SinglePrecisionFloat,
+		});
+
+		expect(Starfighter.fields.hull).toBe(SinglePrecisionFloat);
+
+		for (const layout of [StructureOfArrays, ArrayOfStructures]) {
+			const squadron = createFixedBufferStorage(Starfighter, 3, layout);
+
+			squadron.set(2, Starfighter.from({ shields: 1, hull: 0.5 }));
+			asFieldView(squadron, 'shields').set(1, SinglePrecisionFloat.from(0.25));
+
+			expect(asFieldView(squadron, 'hull').get(2)).toBe(0.5);
+			expect(squadron.get(1)).toEqual({ shields: 0.25, hull: 0 });
+		}
 	});
 
 	it('should view, point into and reference values, copying nothing', async () => {

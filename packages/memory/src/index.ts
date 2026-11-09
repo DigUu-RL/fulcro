@@ -18,6 +18,8 @@
 export { allocate } from '@/src/allocate';
 export type { Allocation, AllocationDomain, Allocator } from '@/src/allocator';
 export { type ArenaAllocator, createArenaAllocator } from '@/src/arenaAllocator';
+export { ArrayOfStructures } from '@/src/arrayOfStructures';
+export { asFieldView } from '@/src/asFieldView';
 export { asReadOnlyView } from '@/src/asReadOnlyView';
 export { asView } from '@/src/asView';
 export { borrow } from '@/src/borrow';
@@ -41,4 +43,5 @@ export { createPoolAllocator, type PoolAllocator } from '@/src/poolAllocator';
 export { referenceTo } from '@/src/referenceTo';
 export { createStackAllocator, type StackAllocator } from '@/src/stackAllocator';
 export type { Storage } from '@/src/storage';
+export { StructureOfArrays } from '@/src/structureOfArrays';
 export type { ReadOnlyView, View } from '@/src/view';

@@ -1,5 +1,12 @@
-import { allocate, asView, createManagedAllocator, type Storage, type View } from '@fulcro/memory';
-import { SignedInteger } from '@fulcro/types';
+import {
+	allocate,
+	asView,
+	createManagedAllocator,
+	type Storage,
+	StructureOfArrays,
+	type View,
+} from '@fulcro/memory';
+import { SignedInteger, struct } from '@fulcro/types';
 
 import { shared } from './escape.allocator';
 
@@ -193,4 +200,17 @@ export const reassignableStorage = (): number => {
 	keptLet = allocate(Integer, 2, managed);
 
 	return keptLet.length;
+};
+
+const TieFighter = struct('TieFighter', {
+	laserCharge: SignedInteger(32),
+	solarPanels: SignedInteger(16),
+});
+
+export const inColumns = (): number => {
+	const localColumns = allocate(TieFighter, 4, managed, StructureOfArrays);
+
+	localColumns.set(3, TieFighter.from({ laserCharge: 40, solarPanels: 2 }));
+
+	return localColumns.get(3).laserCharge + localColumns.get(3).solarPanels;
 };

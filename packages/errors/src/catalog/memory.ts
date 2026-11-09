@@ -317,4 +317,52 @@ export const memoryCatalog = {
 			return `${operation}: the owner was disposed when its scope ended; nothing can be borrowed or moved from it any more.`;
 		},
 	},
+	FULCRO7031: {
+		kind: TypeError,
+		message: ({ operation, received }: { operation: string; received: string }) => {
+			return `${operation}: expected ArrayOfStructures or StructureOfArrays as the layout, received ${received}.`;
+		},
+	},
+	FULCRO7032: {
+		kind: TypeError,
+		message: ({
+			operation,
+			element,
+			field,
+		}: {
+			operation: string;
+			element: string;
+			field: string;
+		}) => {
+			return `${operation}: the layout of ${element} places its field '${field}' where it cannot be stored; expected an offset and a size, inside the value, after the field before it, and the size of the field's type.`;
+		},
+	},
+	FULCRO7033: {
+		kind: TypeError,
+		message: ({ operation }: { operation: string }) => {
+			return `${operation}: expected a storage made by createFixedBufferStorage or allocate, which holds its values as bytes.`;
+		},
+	},
+	FULCRO7034: {
+		kind: TypeError,
+		message: ({
+			operation,
+			element,
+			field,
+			fields,
+		}: {
+			operation: string;
+			element: string;
+			field: string;
+			fields: string;
+		}) => {
+			return `${operation}: ${element} has no field '${field}'; its fields are ${fields}.`;
+		},
+	},
+	FULCRO7035: {
+		kind: TypeError,
+		message: ({ operation, element }: { operation: string; element: string }) => {
+			return `${operation}: ${element} declares no fields to view one of; expected a storage of a struct.`;
+		},
+	},
 } as const satisfies RangeCatalog<'7'>;
