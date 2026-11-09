@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { SinglePrecisionFloat, struct } from '@fulcro/types';
+import { SinglePrecisionFloat, type Struct, struct } from '@fulcro/types';
 
 import { allocate } from '@/src/allocate';
 import { ArrayOfStructures } from '@/src/arrayOfStructures';
@@ -8,6 +8,7 @@ import { storedLayoutOf } from '@/src/dataLayout';
 import { createFixedBufferStorage } from '@/src/fixedBufferStorage';
 import { createManagedAllocator } from '@/src/managedAllocator';
 import { createManagedStorage } from '@/src/managedStorage';
+import type { Storage } from '@/src/storage';
 import { StructureOfArrays } from '@/src/structureOfArrays';
 import type { AlignedElement } from '@/src/element';
 import { coded } from '@/src/tests/coded';
@@ -53,6 +54,37 @@ const elementWithFields = (fields: Record<string, unknown>): AlignedElement<numb
 };
 
 describe('the layout of a storage', () => {
+	it('should refuse a layout this package did not make in the type checker too', () => {
+		type FixedBufferLayout = Parameters<typeof createFixedBufferStorage>[2];
+		type AllocateLayout = Parameters<typeof allocate>[3];
+
+		// An object with the name of a layout is not one: the type carries a mark
+		// only this package's values have.
+		expectTypeOf<{ readonly name: string }>().not.toExtend<NonNullable<FixedBufferLayout>>();
+		expectTypeOf<typeof forgedLayout>().not.toExtend<NonNullable<AllocateLayout>>();
+
+		expectTypeOf(StructureOfArrays).toExtend<NonNullable<FixedBufferLayout>>();
+		expectTypeOf(ArrayOfStructures).toExtend<NonNullable<AllocateLayout>>();
+
+		// Optional, so every call written before the layout existed still compiles.
+		expectTypeOf<undefined>().toExtend<FixedBufferLayout>();
+		expectTypeOf<undefined>().toExtend<AllocateLayout>();
+	});
+
+	it('should infer the same storage whichever layout is named, or none', () => {
+		type Starfighter = Struct<typeof Starfighter>;
+
+		expectTypeOf(createFixedBufferStorage(Starfighter, 1)).toEqualTypeOf<Storage<Starfighter>>();
+
+		expectTypeOf(createFixedBufferStorage(Starfighter, 1, StructureOfArrays)).toEqualTypeOf<
+			Storage<Starfighter>
+		>();
+
+		expectTypeOf(
+			allocate(Starfighter, 1, createManagedAllocator(), ArrayOfStructures),
+		).toEqualTypeOf<Storage<Starfighter>>();
+	});
+
 	it('should refuse a layout this package did not make, whatever its name', () => {
 		for (const received of [forgedLayout, 'StructureOfArrays', null]) {
 			expect(() => createFixedBufferStorage(Starfighter, 2, received as never)).toThrow(TypeError);
