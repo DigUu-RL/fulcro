@@ -158,6 +158,11 @@ type StructSource<TFields extends StructFields> = {
  * The descriptor of a struct: its layout, and how its values are made,
  * recognised, compared and stored.
  *
+ * Only {@link struct} makes one. The contract is what a descriptor offers, to
+ * be read and passed on, not a shape to implement: a later minor version may
+ * add a member to it, as 2.4.0 added `fields`, and an object typed
+ * `StructType` by hand would then no longer compile.
+ *
  * @template TFields Descriptors of the fields, by name.
  * @template TMethods Methods every value carries, by name. Left out, methods in
  * general, so that `StructType<TFields>` accepts every struct with those

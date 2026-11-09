@@ -4,7 +4,7 @@
 
 ### Minor Changes
 
-- 29daa48: A storage of structs can now hold its bytes one field at a time: pass `StructureOfArrays` as the last argument of `createFixedBufferStorage` or `allocate`, and walk one field with `asFieldView(storage, key)`. `ArrayOfStructures` names the layout every storage already had, and stays the default. A struct descriptor now carries the type of each field as `fields`.
+- 29daa48: A struct descriptor now carries the type of each field as `fields`, the object the struct was declared with, copied and frozen: `Starfighter.fields.hull === SinglePrecisionFloat`. `layout` is unchanged, and stays the object `layoutOf<T>()` reports. `StructType` is made only by `struct()`; an object typed `StructType` by hand needs the new member. `@fulcro/memory` 1.4.0 reads `fields` to view one field of a storage on its own.
 
 ## 2.3.1
 
