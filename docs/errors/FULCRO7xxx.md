@@ -771,3 +771,8 @@ written by hand without `fields` and `layout.fields` — so there is no field to
 view on its own. Its values are already end to end.
 
 View the storage itself with `asView`.
+
+A struct whose fields you can see, refused all the same, comes from an
+`@fulcro/types` older than 2.4.0, which does not carry `fields`. Install
+`@fulcro/types` 2.4.0 or later; `@fulcro/memory` declares that range as an
+optional peer, and your package manager reports the older one beside it.

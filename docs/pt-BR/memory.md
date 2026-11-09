@@ -409,9 +409,14 @@ Algumas coisas para saber:
   declara, com [`FULCRO7034`](./errors/FULCRO7xxx.md#fulcro7034).
 - Os layouts são valores deste pacote. Um objeto com o mesmo `name` não é um
   deles, e é recusado com [`FULCRO7031`](./errors/FULCRO7xxx.md#fulcro7031).
-- Os tipos dos campos vêm do [`fields`](./types.md#structs) da struct, então um
-  tipo de elemento escrito fora do `@fulcro/types` chega ao `asFieldView`
-  carregando `fields` e `layout.fields` com a mesma forma.
+- Os tipos dos campos vêm do [`fields`](./types.md#structs) da struct, que o
+  `@fulcro/types` carrega a partir da 2.4.0. Este pacote o declara como peer
+  opcional, `>=2.4.0 <3`, então um `@fulcro/types` mais antigo ao lado dele é
+  apontado na instalação; uma struct de um deles não tem `fields`, e o
+  `asFieldView` a recusa com
+  [`FULCRO7035`](./errors/FULCRO7xxx.md#fulcro7035). Um tipo de elemento
+  escrito fora do `@fulcro/types` chega ao `asFieldView` carregando `fields` e
+  `layout.fields` com a mesma forma.
 
 O quadro de prontidão do Esquadrão Vermelho, dez mil caças guardados um campo
 de cada vez, com os cascos percorridos sozinhos e um caça lido inteiro:

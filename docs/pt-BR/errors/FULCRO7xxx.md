@@ -777,3 +777,9 @@ escrito à mão sem `fields` e `layout.fields` — então não há campo para ve
 sozinho. Os valores dele já ficam ponta a ponta.
 
 Veja o próprio storage com `asView`.
+
+Uma struct cujos campos você enxerga, recusada mesmo assim, vem de um
+`@fulcro/types` anterior à 2.4.0, que não carrega `fields`. Instale o
+`@fulcro/types` 2.4.0 ou mais novo; o `@fulcro/memory` declara essa faixa como
+peer opcional, e o seu gerenciador de pacotes aponta o mais antigo ao lado
+dele.

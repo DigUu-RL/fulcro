@@ -53,7 +53,9 @@ interface Manifest {
 	readonly types?: string;
 	readonly license?: string;
 	readonly exports?: Record<string, unknown>;
+	readonly dependencies?: Record<string, string>;
 	readonly peerDependencies?: Record<string, string>;
+	readonly peerDependenciesMeta?: Record<string, { readonly optional?: boolean }>;
 	readonly publishConfig?: { readonly access?: string };
 }
 
@@ -1552,12 +1554,29 @@ describe('@fulcro/memory/transformer', () => {
 		// installs it, so the main entry point must not reach the transformer.
 		const { manifest } = manifestOf('@fulcro/memory');
 
-		expect(manifest.peerDependencies).toEqual({ typescript: '>=5.9 <7' });
+		expect(manifest.peerDependencies?.typescript).toBe('>=5.9 <7');
+		expect(manifest.peerDependenciesMeta?.typescript).toEqual({ optional: true });
 
 		// Every way a module can load another: the build is ES modules, so a check
 		// for `require(` alone would pass whatever the entry point imported.
 		expect(readFileSync(resolve('@fulcro/memory'), 'utf8')).not.toMatch(
 			/(?:\bfrom\s*|\bimport\s*\(\s*|\brequire\(\s*)["'][^"']*(transformer|typescript)/,
+		);
+	});
+
+	it('should ask for the types that carry their fields, and import none of them', () => {
+		// asFieldView reads `fields`, which @fulcro/types carries from 2.4.0 on. The
+		// package reads a descriptor by its shape and never imports the types, so
+		// the range is an optional peer: a consumer of storage alone installs
+		// nothing more, and an older @fulcro/types beside it is reported.
+		const { manifest } = manifestOf('@fulcro/memory');
+
+		expect(manifest.peerDependencies?.['@fulcro/types']).toBe('>=2.4.0 <3');
+		expect(manifest.peerDependenciesMeta?.['@fulcro/types']).toEqual({ optional: true });
+		expect(manifest.dependencies).not.toHaveProperty('@fulcro/types');
+
+		expect(readFileSync(resolve('@fulcro/memory'), 'utf8')).not.toMatch(
+			/(?:\bfrom\s*|\bimport\s*\(\s*|\brequire\(\s*)["']@fulcro\/types/,
 		);
 	});
 });

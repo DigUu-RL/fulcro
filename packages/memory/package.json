@@ -43,9 +43,13 @@
 		"@fulcro/types": "^2.4.0"
 	},
 	"peerDependencies": {
+		"@fulcro/types": ">=2.4.0 <3",
 		"typescript": ">=5.9 <7"
 	},
 	"peerDependenciesMeta": {
+		"@fulcro/types": {
+			"optional": true
+		},
 		"typescript": {
 			"optional": true
 		}

@@ -403,9 +403,14 @@ A few things to know:
   not declare, with [`FULCRO7034`](./errors/FULCRO7xxx.md#fulcro7034).
 - The layouts are values of this package. An object with the same `name` is not
   one, and is refused with [`FULCRO7031`](./errors/FULCRO7xxx.md#fulcro7031).
-- The field types come from the struct's [`fields`](./types.md#structs), so an
-  element type written outside `@fulcro/types` reaches `asFieldView` by
-  carrying `fields` and `layout.fields` of the same shape.
+- The field types come from the struct's [`fields`](./types.md#structs), which
+  `@fulcro/types` carries from 2.4.0 on. This package declares it as an
+  optional peer, `>=2.4.0 <3`, so an older `@fulcro/types` beside it is
+  reported when it is installed; a struct from one has no `fields`, and
+  `asFieldView` refuses it with
+  [`FULCRO7035`](./errors/FULCRO7xxx.md#fulcro7035). An element type written
+  outside `@fulcro/types` reaches `asFieldView` by carrying `fields` and
+  `layout.fields` of the same shape.
 
 Red Squadron's readiness board, ten thousand starfighters held a field at a
 time, with the hulls walked on their own and one fighter read whole:
