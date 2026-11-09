@@ -517,6 +517,13 @@ With the plugin wired up, the type argument is enough:
 { "plugins": [{ "transform": "@fulcro/collections/transformer" }] }
 ```
 
+Beside its default export, `@fulcro/collections/transformer` exports
+`REWRITERS`, the rewrites it applies, which the bundler entry point builds on.
+`@fulcro/collections/unplugin` exports one plugin per bundler — `vite`,
+`rollup`, `webpack`, `rspack`, `esbuild`, `farm` — and `unpluginFactory`, for
+a bundler unplugin has no adapter for. Neither list is needed to use the
+transformer.
+
 ```ts
 fragments.ofType<string>(); // → ofType('string')
 hangar.ofType<Starship>(); // → ofType(Starship)

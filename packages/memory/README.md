@@ -325,6 +325,12 @@ cannot outlive its block, which it allocates from a frame of that allocator
 (`using frame = managed.enter()`), so the next run of the block reuses its
 bytes.
 
+Beside its default export, `@fulcro/memory/transformer` exports `ANALYZERS`,
+the analyses it runs over every file, which the bundler entry point builds on.
+`@fulcro/memory/unplugin` exports one plugin per bundler — `vite`, `rollup`,
+`webpack`, `rspack`, `esbuild`, `farm` — and `unpluginFactory`, for a bundler
+unplugin has no adapter for. Neither list is needed to use the transformer.
+
 The launch queue handed from the flight controller to the hangar crew — and the
 controller's console, which still held the old owner. The transformer refuses
 `borrow(launchQueue)` after the move when it compiles, so the runtime refusal is

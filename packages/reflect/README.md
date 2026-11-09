@@ -48,6 +48,12 @@ tsconfig:
 or one plugin in a bundler, from `@fulcro/reflect/unplugin`. See
 [docs/reflect.md](../../docs/reflect.md) for the full setup.
 
+Beside its default export, `@fulcro/reflect/transformer` exports `REWRITERS`,
+the rewrites it applies, which the bundler entry point builds on.
+`@fulcro/reflect/unplugin` exports one plugin per bundler — `vite`, `rollup`,
+`webpack`, `rspack`, `esbuild`, `farm` — and `unpluginFactory`, for a bundler
+unplugin has no adapter for. Neither list is needed to use the transformer.
+
 Looking for `switchFor` or `tryCatch`? They moved to
 [`@fulcro/functions`](../functions). Neither has anything to do with the
 compiler, and keeping them here blurred what this package is for.
