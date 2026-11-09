@@ -6,6 +6,8 @@
 
 - 29daa48: A storage of structs can now hold its bytes one field at a time: pass `StructureOfArrays` as the last argument of `createFixedBufferStorage` or `allocate`, and walk one field with `asFieldView(storage, key)`. `ArrayOfStructures` names the layout every storage already had, and stays the default. A struct descriptor now carries the type of each field as `fields`.
 
+  `asFieldView` reads the type of each field from `fields`, which `@fulcro/types` carries from 2.4.0 on, so `@fulcro/types` `>=2.4.0 <3` is now an optional peer. Installing storage alone adds nothing; an older `@fulcro/types` beside it is reported by your package manager, where `asFieldView` would otherwise refuse its structs with `FULCRO7035`.
+
 ### Patch Changes
 
 - Updated dependencies [fed48f2]
