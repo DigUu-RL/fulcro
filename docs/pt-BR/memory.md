@@ -353,6 +353,113 @@ Nomeá-la é prometer que o `read` e o `write` dele produzem exatamente os bytes
 do elemento desse typed array, em little-endian; uma codificação sem typed
 array por trás não é um erro, só é lida do outro jeito.
 
+### Um campo de cada vez
+
+Um storage de structs pode guardar os seus bytes em dois layouts, escolhidos
+pelo último argumento de `createFixedBufferStorage` e de
+[`allocate`](#alocadores):
+
+- **`ArrayOfStructures`**, o usado quando nenhum é escolhido: os bytes de cada
+  valor juntos, um valor depois do outro.
+- **`StructureOfArrays`**: os bytes de cada campo juntos, uma coluna por campo,
+  um campo depois do outro.
+
+```ts
+const fleet = createFixedBufferStorage(Starfighter, 10_000, StructureOfArrays);
+const hulls: View<SinglePrecisionFloat> = asFieldView(fleet, 'hull');
+```
+
+**O código escrito contra `Storage<T>` não muda.** `get` e `set` recebem e
+devolvem os mesmos valores nos dois layouts, com as mesmas verificações e os
+mesmos erros, então uma função que recebe um `Storage<Starfighter>` nunca fica
+sabendo qual dos dois recebeu. Um valor lido das colunas é exatamente o valor
+lido das linhas — o mesmo tipo, os seus métodos, os mesmos bytes em cada
+campo.
+
+**O que muda é quanto custa percorrer um campo.** `asFieldView(storage, key)` é
+uma [`View<T>`](#viewt-e-readonlyviewt) de um campo de todos os valores, feita
+sem ler nada. Numa estrutura de arrays, os bytes desse campo são uma coluna,
+ponta a ponta, então percorrê-lo lê esses bytes e nada mais; um campo numérico
+cuja codificação tem typed array é [guardado num](#guardado-num-typed-array).
+Num array de estruturas, cada passo pula os outros campos do valor. Percorrer
+o casco de quatro bytes de 4.096 caças de dezesseis bytes toca 256 linhas de
+memória de 64 bytes em colunas, e 1.024 em linhas; o suíte de desempenho conta
+exatamente isso.
+
+**Ler um valor inteiro custa ao contrário.** Em colunas, o `get` junta o valor
+de todas as colunas e o `set` o espalha de volta; em linhas, os bytes dele são
+uma sequência só. Escolha colunas quando o laço quente percorre um ou dois
+campos de muitos valores, e linhas quando ele lê ou escreve valores inteiros.
+
+**As colunas não guardam padding no final.** `ScannerReading`, um double e um
+byte, ocupa dezesseis bytes em linhas e nove em colunas: `length` valores
+ocupam `length` vezes a soma dos tamanhos dos campos.
+
+Algumas coisas para saber:
+
+- Um campo que é ele mesmo uma struct é uma coluna, de valores aninhados
+  inteiros, e a view dele os lê inteiros.
+- Um tipo sem campos — um tipo numérico — tem uma coluna só dele, o que é um
+  array de estruturas com outro nome. O `asFieldView` o recusa com
+  [`FULCRO7035`](./errors/FULCRO7xxx.md#fulcro7035).
+- O `asFieldView` recebe um storage feito por `createFixedBufferStorage` ou
+  `allocate`. Uma view de um deles, um empréstimo ou um storage gerenciado não
+  guarda bytes que ele consiga achar, e é recusado com
+  [`FULCRO7033`](./errors/FULCRO7xxx.md#fulcro7033); um campo que a struct não
+  declara, com [`FULCRO7034`](./errors/FULCRO7xxx.md#fulcro7034).
+- Os layouts são valores deste pacote. Um objeto com o mesmo `name` não é um
+  deles, e é recusado com [`FULCRO7031`](./errors/FULCRO7xxx.md#fulcro7031).
+- Os tipos dos campos vêm do [`fields`](./types.md#structs) da struct, então um
+  tipo de elemento escrito fora do `@fulcro/types` chega ao `asFieldView`
+  carregando `fields` e `layout.fields` com a mesma forma.
+
+O quadro de prontidão do Esquadrão Vermelho, dez mil caças guardados um campo
+de cada vez, com os cascos percorridos sozinhos e um caça lido inteiro:
+
+```ts
+import {
+	asFieldView,
+	createFixedBufferStorage,
+	StructureOfArrays,
+	type View,
+} from '@fulcro/memory';
+import { SinglePrecisionFloat, type Struct, struct, UnsignedInteger } from '@fulcro/types';
+
+const Starfighter = struct(
+	'Starfighter',
+	{
+		shields: SinglePrecisionFloat,
+		hull: SinglePrecisionFloat,
+		torpedoes: UnsignedInteger(8),
+	},
+	{
+		isCombatReady(): boolean {
+			return this.hull > 0.5 && this.torpedoes > 0;
+		},
+	},
+);
+type Starfighter = Struct<typeof Starfighter>;
+
+const squadron = createFixedBufferStorage(Starfighter, 10_000, StructureOfArrays);
+
+squadron.set(5, Starfighter.from({ shields: 1, hull: 0.9, torpedoes: 6 }));
+
+const hulls: View<SinglePrecisionFloat> = asFieldView(squadron, 'hull');
+let damaged = 0;
+
+for (let index = 0; index < hulls.length; index++) {
+	if (hulls.get(index) < 0.5) damaged++;
+}
+
+console.log(damaged); // 9999 — todo caça menos o Vermelho Cinco lê zero até ser escrito
+console.log(squadron.get(5).isCombatReady()); // true — um valor inteiro, juntado das colunas
+
+asFieldView(squadron, 'torpedoes').set(5, UnsignedInteger(8).from(0));
+
+console.log(squadron.get(5)); // { shields: 1, hull: 0.8999999761581421, torpedoes: 0 }
+console.log(squadron.get(5).isCombatReady()); // false — a view escreveu no storage
+```
+
 ## Alocadores
 
 `createFixedBufferStorage` cria o seu próprio buffer. Quando você quer escolher
@@ -1711,3 +1818,8 @@ visível no tipo que você tem nas mãos.
 | [`FULCRO7028`](./errors/FULCRO7xxx.md#fulcro7028) | Na compilação: um empréstimo usado depois de um conflitante     |
 | [`FULCRO7029`](./errors/FULCRO7xxx.md#fulcro7029) | Na compilação: um empréstimo usado depois que o dono foi movido |
 | [`FULCRO7030`](./errors/FULCRO7xxx.md#fulcro7030) | Um dono usado depois que o seu escopo `using` o descartou       |
+| [`FULCRO7031`](./errors/FULCRO7xxx.md#fulcro7031) | Um layout que não é um dos deste pacote                         |
+| [`FULCRO7032`](./errors/FULCRO7xxx.md#fulcro7032) | Um campo posto onde os seus bytes não podem ser dispostos       |
+| [`FULCRO7033`](./errors/FULCRO7xxx.md#fulcro7033) | Uma view de campo de um storage que não guarda bytes            |
+| [`FULCRO7034`](./errors/FULCRO7xxx.md#fulcro7034) | Uma view de um campo que a struct não declara                   |
+| [`FULCRO7035`](./errors/FULCRO7xxx.md#fulcro7035) | Uma view de campo de um storage cujo tipo não declara campos    |

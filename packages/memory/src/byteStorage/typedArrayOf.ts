@@ -57,13 +57,15 @@ const TYPED_ARRAYS: ReadonlyMap<string, TypedElementsConstructor> = new Map<
  *
  * @param layout Layout of the element type, already checked.
  * @param length How many values the storage holds.
- * @param view Bytes it holds them in, at least `length × layout.size`.
+ * @param view Bytes it holds them in, at least `start + length × layout.size`.
+ * @param start Where in the view the first value starts; `0` when omitted.
  * @returns The typed array over exactly those bytes, or `undefined`.
  */
 export const typedArrayOf = (
 	layout: FixedLayoutElement<unknown>['layout'],
 	length: number,
 	view: DataView,
+	start = 0,
 ): TypedElements | undefined => {
 	const { size, encoding } = layout;
 
@@ -73,7 +75,7 @@ export const typedArrayOf = (
 
 	if (TypedArray?.BYTES_PER_ELEMENT !== size) return undefined;
 	if (size > 1 && !platformIsLittleEndian) return undefined;
-	if (view.byteOffset % size !== 0) return undefined;
+	if ((view.byteOffset + start) % size !== 0) return undefined;
 
-	return new TypedArray(view.buffer, view.byteOffset, length);
+	return new TypedArray(view.buffer, view.byteOffset + start, length);
 };

@@ -61,6 +61,7 @@ const results = async (exports: Record<string, unknown>): Promise<Record<string,
 		fromAReassignableAllocator: () => number;
 		fromAnAllocatorMadeInPlace: () => number;
 		reassignableStorage: () => number;
+		inColumns: () => number;
 	};
 
 	return {
@@ -86,6 +87,7 @@ const results = async (exports: Record<string, unknown>): Promise<Record<string,
 		fromAReassignableAllocator: fixture.fromAReassignableAllocator(),
 		fromAnAllocatorMadeInPlace: fixture.fromAnAllocatorMadeInPlace(),
 		reassignableStorage: fixture.reassignableStorage(),
+		inColumns: fixture.inColumns(),
 	};
 };
 
@@ -103,7 +105,7 @@ describe('escape analysis at compile time', () => {
 		for (const name of named('local')) {
 			expect(compiled.rewritten, name).toMatch(
 				new RegExp(
-					`using (frame_\\d+) = (managed|shared)\\.enter\\(\\);\\s+const ${name} = allocate\\([^;]*, \\1\\);`,
+					`using (frame_\\d+) = (managed|shared)\\.enter\\(\\);\\s+const ${name} = allocate\\([^;]*, \\1(?:, StructureOfArrays)?\\);`,
 				),
 			);
 		}
@@ -117,6 +119,12 @@ describe('escape analysis at compile time', () => {
 
 			expect(compiled.rewritten, name).not.toMatch(new RegExp(`${name} = allocate\\([^;]*frame`));
 		}
+	});
+
+	it('should keep the layout of a storage it moves into a frame', () => {
+		expect(compiled.rewritten).toMatch(
+			/using (frame_\d+) = managed\.enter\(\);\s+const localColumns = allocate\(TieFighter, 4, \1, StructureOfArrays\);/,
+		);
 	});
 
 	it('should open exactly one frame per local storage, and none anywhere else', () => {

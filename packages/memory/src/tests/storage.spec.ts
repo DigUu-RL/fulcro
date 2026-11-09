@@ -8,6 +8,7 @@ import { createFixedBufferStorage } from '@/src/fixedBufferStorage';
 import { createManagedAllocator } from '@/src/managedAllocator';
 import { createManagedStorage } from '@/src/managedStorage';
 import type { Storage } from '@/src/storage';
+import { StructureOfArrays } from '@/src/structureOfArrays';
 import { coded } from '@/src/tests/coded';
 
 /**
@@ -43,6 +44,20 @@ const STRATEGIES = [
 		'Storage',
 		(length: number): Storage<SensorContact> => {
 			return allocate(SensorContact, length, createManagedAllocator());
+		},
+	],
+	// Each field in a column of its own, behind the same contract: the name is
+	// the strategy's, which is what an error names, whatever the layout.
+	[
+		'FixedBufferStorage',
+		(length: number): Storage<SensorContact> => {
+			return createFixedBufferStorage(SensorContact, length, StructureOfArrays);
+		},
+	],
+	[
+		'Storage',
+		(length: number): Storage<SensorContact> => {
+			return allocate(SensorContact, length, createManagedAllocator(), StructureOfArrays);
 		},
 	],
 	// A view is accepted wherever a storage is; this one sits inside a larger

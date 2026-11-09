@@ -73,10 +73,21 @@ interface Candidate {
 	/** Its one declaration. */
 	readonly declaration: typescript.VariableDeclaration & { readonly name: typescript.Identifier };
 
-	/** The call to `allocate`, three arguments, the last one a name. */
+	/**
+	 * The call to `allocate`: the element, the length, a name as the allocator
+	 * and, when it is given, the layout.
+	 */
 	readonly call: typescript.CallExpression & {
 		readonly arguments: typescript.NodeArray<typescript.Expression> &
-			readonly [typescript.Expression, typescript.Expression, typescript.Identifier];
+			(
+				| readonly [typescript.Expression, typescript.Expression, typescript.Identifier]
+				| readonly [
+						typescript.Expression,
+						typescript.Expression,
+						typescript.Identifier,
+						typescript.Expression,
+				  ]
+			);
 	};
 }
 
@@ -119,11 +130,16 @@ const candidateOf = (statement: typescript.Statement): Candidate | null => {
 	if (call === undefined || !typescript.isCallExpression(call)) return null;
 	if (!typescript.isIdentifier(call.expression) || call.expression.text !== 'allocate') return null;
 
-	const [, , allocator, ...rest] = call.arguments;
+	// The layout, when it is given, says how the bytes are arranged and not
+	// where they come from, so it travels to the frame as it was written. A
+	// spread hides how many arguments there are, and is left alone.
+	const [, , allocator, , ...rest] = call.arguments;
 
 	if (allocator === undefined || rest.length > 0 || !typescript.isIdentifier(allocator)) {
 		return null;
 	}
+
+	if (call.arguments.some((argument) => typescript.isSpreadElement(argument))) return null;
 
 	return { statement, declaration, call } as Candidate;
 };
@@ -359,7 +375,7 @@ export const escapeRewriter: StatementRewriter = {
 
 		const { factory } = context;
 		const frame: typescript.Identifier = factory.createUniqueName('frame');
-		const [element, length, allocator] = current.call.arguments;
+		const [element, length, allocator, ...layout] = current.call.arguments;
 
 		const opened: typescript.VariableStatement = factory.createVariableStatement(
 			undefined,
@@ -393,7 +409,7 @@ export const escapeRewriter: StatementRewriter = {
 						current.call,
 						current.call.expression,
 						current.call.typeArguments,
-						[element, length, frame],
+						[element, length, frame, ...layout],
 					),
 				),
 			]),

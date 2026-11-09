@@ -172,6 +172,18 @@ export interface StructType<
 	readonly name: string;
 
 	/**
+	 * The descriptor of each field, by name, exactly as the struct was declared
+	 * with them — `Starfighter.fields.hull === SinglePrecisionFloat`.
+	 *
+	 * Kept apart from {@link StructType.layout}, which is where the bytes are and
+	 * nothing else, so that it stays the same object `layoutOf<T>()` reports.
+	 * What reads one field on its own — a storage holding each field in an array
+	 * of its own, a view of one field — needs the type that field is, and finds
+	 * it here.
+	 */
+	readonly fields: TFields;
+
+	/**
 	 * Where each field sits and how much room the struct takes.
 	 *
 	 * Fields are placed by alignment, largest first, and in declaration order
@@ -560,8 +572,13 @@ export const struct = <TFields extends StructFields, TMethods extends StructMeth
 
 	type Value = StructValue<TFields, TMethods>;
 
+	// A copy, so that changing the object the struct was declared with afterwards
+	// changes nothing the descriptor reports.
+	const declaredFields: TFields = Object.freeze({ ...fields });
+
 	const descriptor: StructType<TFields, TMethods> = {
 		name,
+		fields: declaredFields,
 		layout: layout as StructType<TFields, TMethods>['layout'],
 
 		from: (source) => {

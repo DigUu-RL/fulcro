@@ -897,6 +897,28 @@ console.log(offsetOf<SensorReading>('alert')); // 10
 console.log(layoutOf<SensorReading>().size === SensorReading.layout.size); // true
 ```
 
+O descritor também guarda o tipo de cada campo, como `fields`, separado do
+`layout`, que diz só onde ficam os bytes e continua sendo o objeto que o
+`layoutOf<T>()` reporta. É o objeto com que a struct foi declarada, copiado e
+congelado, então `SensorReading.fields.distance === DoublePrecisionFloat`. O
+que lê um campo sozinho precisa do tipo desse campo: um
+[storage guardado um campo de cada vez](./memory.md#um-campo-de-cada-vez) e a
+view de um campo o encontram aqui.
+
+```ts
+import { DoublePrecisionFloat, struct, UnsignedInteger } from '@fulcro/types';
+
+const SensorReading = struct('SensorReading', {
+	alert: UnsignedInteger(8),
+	distance: DoublePrecisionFloat,
+	contacts: UnsignedInteger(16),
+});
+
+console.log(SensorReading.fields.distance === DoublePrecisionFloat); // true
+console.log(Object.keys(SensorReading.fields)); // ['alert', 'distance', 'contacts'] — como declarados
+console.log(SensorReading.fields.alert.layout.size); // 1
+```
+
 ### Bytes
 
 Um valor pode ser escrito num `DataView` e lido de volta, que é como um struct

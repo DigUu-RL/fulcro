@@ -675,3 +675,105 @@ mais para fora, ou capturado por uma função que rodou depois. Declare o dono n
 escopo que o usa, ou faça `move` dele antes de o escopo terminar: um dono de
 onde se moveu não é descartado, e o dono que o `move` devolveu sobrevive ao
 escopo.
+
+## FULCRO7031
+
+```text
+TypeError: FULCRO7031: createFixedBufferStorage: expected ArrayOfStructures or StructureOfArrays as the layout, received an object named 'StructureOfArrays'.
+```
+
+Detalhes:
+
+```text
+{ operation: string; received: string }
+```
+
+`createFixedBufferStorage` ou `allocate` recebeu algo que não é um dos dois
+layouts que o `@fulcro/memory` exporta. Os layouts são valores do pacote,
+reconhecidos pela identidade: um objeto escrito para parecer um deles, com o
+mesmo `name`, não é um deles, e a string `'StructureOfArrays'` também não.
+
+Importe `ArrayOfStructures` ou `StructureOfArrays` de `@fulcro/memory` e passe
+o valor, ou omita o argumento para ter um array de estruturas.
+
+## FULCRO7032
+
+```text
+TypeError: FULCRO7032: createFixedBufferStorage: the layout of Interdictor places its field 'shields' where it cannot be stored; expected an offset and a size, inside the value, after the field before it, and the size of the field's type.
+```
+
+Detalhes:
+
+```text
+{ operation: string; element: string; field: string }
+```
+
+O `layout.fields` do tipo de elemento põe o campo indicado onde os seus bytes
+não podem ser dispostos: sem um offset ou um tamanho que conte bytes,
+sobrepondo o campo anterior, ou passando do `layout.size` do valor. Numa
+estrutura de arrays cada campo ganha uma coluna própria, e um campo assim seria
+escrito por cima de outro. O `asFieldView` também recusa um campo cujo tipo, em
+`fields`, ocupa um número de bytes diferente do que o layout dá a ele.
+
+Uma struct do `@fulcro/types` sempre posiciona os seus campos corretamente;
+isto vem de um tipo de elemento escrito à mão. Dê a cada campo um offset no fim
+do anterior ou depois dele, um tamanho igual ao do seu tipo, e mantenha o
+último dentro do valor.
+
+## FULCRO7033
+
+```text
+TypeError: FULCRO7033: asFieldView: expected a storage made by createFixedBufferStorage or allocate, which holds its values as bytes.
+```
+
+Detalhes:
+
+```text
+{ operation: string }
+```
+
+O `asFieldView` recebeu um storage cujos bytes ele não consegue achar: um
+storage gerenciado, que guarda objetos e não bytes, uma view, um empréstimo, ou
+um storage escrito fora do pacote. Só um storage feito por
+`createFixedBufferStorage` ou `allocate` sabe onde fica cada campo de cada
+valor.
+
+Faça a view do campo a partir do próprio storage, e não de uma view dele, e
+tome uma parte dela depois com `subview`.
+
+## FULCRO7034
+
+```text
+TypeError: FULCRO7034: asFieldView: Starfighter has no field 'isCrippled'; its fields are shields, hull, bounty, hyperdrive, pilots.
+```
+
+Detalhes:
+
+```text
+{ operation: string; element: string; field: string; fields: string }
+```
+
+A struct que o storage guarda não declara um campo com esse nome; `fields`
+lista os que ela declara, na ordem em que os declarou. Um método não é um
+campo, e `'~layout'` também não. O compilador já recusa uma chave assim; isto é
+para a que chega de código sem tipos.
+
+Use um dos campos listados.
+
+## FULCRO7035
+
+```text
+TypeError: FULCRO7035: asFieldView: SinglePrecisionFloat declares no fields to view one of; expected a storage of a struct.
+```
+
+Detalhes:
+
+```text
+{ operation: string; element: string }
+```
+
+O storage guarda um tipo sem campos — um tipo numérico, ou um tipo de elemento
+escrito à mão sem `fields` e `layout.fields` — então não há campo para ver
+sozinho. Os valores dele já ficam ponta a ponta.
+
+Veja o próprio storage com `asView`.

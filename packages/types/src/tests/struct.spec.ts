@@ -241,6 +241,28 @@ describe('struct', () => {
 			expect(() => struct('Layout', { '~layout': SinglePrecisionFloat })).toThrow(TypeError);
 		});
 
+		it('should report the descriptor of each field, as it was declared with it', () => {
+			expect(Starfighter.fields.hull).toBe(SinglePrecisionFloat);
+			expect(Outer.fields.inner).toBe(Inner);
+			expect(Object.keys(Mixed.fields)).toEqual(['flag', 'weight', 'count']);
+
+			expectTypeOf(Outer.fields.inner).toEqualTypeOf<typeof Inner>();
+			expectTypeOf(Starfighter.fields.speed).toEqualTypeOf<typeof SinglePrecisionFloat>();
+		});
+
+		it('should keep its fields apart from the object it was declared with', () => {
+			const declared: Record<string, typeof SinglePrecisionFloat> = {
+				shields: SinglePrecisionFloat,
+			};
+
+			const Interceptor = struct('Interceptor', declared);
+
+			declared.hull = SinglePrecisionFloat;
+
+			expect(Object.isFrozen(Interceptor.fields)).toBe(true);
+			expect(Object.keys(Interceptor.fields)).toEqual(['shields']);
+		});
+
 		it('should recognise an integer descriptor by identity, not by shape', () => {
 			const lookalike = { ...SignedInteger(32) };
 
