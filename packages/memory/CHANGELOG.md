@@ -6,6 +6,11 @@
 
 - 29daa48: A storage of structs can now hold its bytes one field at a time: pass `StructureOfArrays` as the last argument of `createFixedBufferStorage` or `allocate`, and walk one field with `asFieldView(storage, key)`. `ArrayOfStructures` names the layout every storage already had, and stays the default. A struct descriptor now carries the type of each field as `fields`.
 
+### Patch Changes
+
+- Updated dependencies [fed48f2]
+  - @fulcro/errors@3.2.0
+
 ## 1.3.1
 
 ### Patch Changes

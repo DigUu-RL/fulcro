@@ -36,7 +36,7 @@
 	],
 	"sideEffects": false,
 	"dependencies": {
-		"@fulcro/errors": "^3.1.1",
+		"@fulcro/errors": "^3.2.0",
 		"@fulcro/transform-core": "^2.1.2"
 	},
 	"devDependencies": {
